@@ -1,0 +1,41 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment files; keep the safe template
+.env
+.env.*
+!.env.example
+
+# Uploaded and user-provided files
+storage/**
+!storage/.gitkeep
+
+# Logs and local diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Local databases, backups, and credentials
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.sql
+*.sql.gz
+*.bak
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+credentials*.json
+service-account*.json
+secrets/
+
+# Operating system files
+.DS_Store
+Thumbs.db

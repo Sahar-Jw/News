@@ -1,0 +1,93 @@
+const ar: Record<string, string> = {
+  // common
+  'app.loading': 'جارٍ التحميل…', 'app.error': 'حدث خطأ', 'app.save': 'حفظ', 'app.cancel': 'إلغاء', 'app.delete': 'حذف', 'app.edit': 'تعديل',
+  'app.add': 'إضافة', 'app.view': 'عرض', 'app.close': 'إغلاق', 'app.search': 'بحث', 'app.confirm': 'تأكيد', 'app.yes': 'نعم', 'app.no': 'لا',
+  'app.back': 'رجوع', 'app.all': 'الكل', 'app.none': '—', 'app.saved': 'تم الحفظ بنجاح', 'app.deleted': 'تم الحذف', 'app.actions': 'إجراءات',
+  'app.next': 'التالي', 'app.prev': 'السابق', 'app.sending': 'جارٍ الإرسال…', 'app.reset': 'إعادة ضبط', 'app.apply': 'تطبيق',
+  // site
+  'site.home': 'الرئيسية', 'site.categories': 'التصنيفات', 'site.sections': 'الأقسام', 'site.language': 'English', 'site.readMore': 'اقرأ المزيد',
+  'site.share': 'مشاركة', 'site.views': 'مشاهدة', 'site.breaking': 'عاجل', 'site.noNews': 'لا توجد أخبار', 'site.related': 'مقالات ذات صلة',
+  'site.searchPlaceholder': 'ابحث في الأخبار…', 'site.searchMin': 'اكتب حرفين على الأقل', 'site.results': 'نتائج البحث', 'site.topics': 'المواضيع',
+  'site.allNews': 'كل الأخبار', 'site.backTop': 'العودة للأعلى', 'site.quickLinks': 'روابط سريعة', 'site.services': 'الخدمات', 'site.contact': 'التواصل',
+  'site.privacy': 'سياسة الخصوصية', 'site.terms': 'الشروط والأحكام', 'site.sitemap': 'خريطة الموقع', 'site.rights': 'جميع الحقوق محفوظة',
+  'site.notFound': 'الصفحة غير موجودة', 'site.pageEmpty': 'لم يُضف محتوى لهذه الصفحة بعد.', 'site.dashboard': 'لوحة الإدارة', 'site.profile': 'الملف الشخصي', 'site.logout': 'تسجيل الخروج',
+  'site.phone': 'الهاتف', 'site.email': 'البريد', 'site.address': 'العنوان', 'site.hours': 'ساعات العمل', 'site.map': 'الخريطة',
+  'contact.name': 'الاسم', 'contact.email': 'البريد الإلكتروني', 'contact.subject': 'الموضوع', 'contact.message': 'الرسالة', 'contact.send': 'إرسال',
+  'contact.ok': 'تم إرسال رسالتك بنجاح', 'contact.title': 'تواصل معنا',
+  // auth
+  'auth.login': 'تسجيل الدخول', 'auth.register': 'إنشاء حساب', 'auth.email': 'البريد الإلكتروني', 'auth.password': 'كلمة المرور', 'auth.fullName': 'الاسم الكامل',
+  'auth.phone': 'الهاتف (اختياري)', 'auth.registered': 'تم إنشاء الحساب وهو بانتظار التفعيل من المسؤول.', 'auth.noAccount': 'ليس لديك حساب؟', 'auth.haveAccount': 'لديك حساب؟',
+  // sections
+  'sec.hero': 'الرئيسية', 'sec.featured': 'الأخبار المميزة', 'sec.news': 'آخر الأخبار', 'sec.team': 'فريقنا', 'sec.services': 'خدماتنا', 'sec.testimonials': 'آراء العملاء',
+  'sec.partners': 'شركاؤنا', 'sec.experts': 'خبراؤنا', 'sec.statistics': 'إحصائياتنا', 'sec.company': 'نبذة عن الشركة', 'sec.contact': 'تواصل معنا',
+  'section.BREAKING': 'الأخبار العاجلة', 'section.SERVICES': 'الخدمات', 'section.TEAM': 'الفريق', 'section.TESTIMONIALS': 'آراء العملاء', 'section.PARTNERS': 'الشركاء',
+  'section.EXPERTS': 'الخبراء', 'section.STATISTICS': 'الإحصائيات', 'section.COMPANY_OVERVIEW': 'نبذة الشركة',
+  // admin nav
+  'adm.title': 'لوحة الإدارة', 'adm.dashboard': 'الرئيسية', 'adm.content': 'المحتوى', 'adm.news': 'الأخبار العادية', 'adm.security': 'الإعدادات والأمان', 'adm.users': 'المستخدمون',
+  'adm.roles': 'الأدوار', 'adm.permissions': 'الصلاحيات', 'adm.settings': 'إعدادات الموقع', 'adm.audit': 'سجل التدقيق', 'adm.cities': 'المدن', 'adm.messages': 'رسائل التواصل',
+  'adm.welcome': 'مرحباً', 'adm.noAccess': 'ليست لديك صلاحية لهذه الصفحة', 'adm.visitSite': 'زيارة الموقع',
+  // table
+  'tbl.search': 'بحث عام…', 'tbl.pageSize': 'حجم الصفحة', 'tbl.showing': 'عرض', 'tbl.of': 'من', 'tbl.total': 'الإجمالي', 'tbl.from': 'من تاريخ', 'tbl.to': 'إلى تاريخ',
+  'tbl.export': 'تصدير', 'tbl.print': 'طباعة', 'tbl.columns': 'اختر الأعمدة', 'tbl.exportCsv': 'CSV', 'tbl.exportXlsx': 'Excel', 'tbl.noRows': 'لا توجد سجلات',
+  'tbl.selectAll': 'تحديد الكل', 'tbl.deleteSelected': 'حذف المحدد', 'tbl.confirmDelete': 'هل أنت متأكد من حذف العناصر المحددة؟ لا يمكن التراجع.', 'tbl.selected': 'محدد',
+  'tbl.needColumn': 'اختر عموداً واحداً على الأقل', 'tbl.no': '#',
+  // news fields
+  'f.title': 'العنوان', 'f.subject': 'الموضوع', 'f.mainCategory': 'الفئة الرئيسية', 'f.subcategory': 'الفئة الفرعية', 'f.topics': 'المواضيع (مفصولة بفواصل)', 'f.body': 'المحتوى',
+  'f.images': 'الصور', 'f.featured': 'مميز في الرئيسية', 'f.publishAt': 'وقت النشر', 'f.language': 'اللغة', 'f.visibility': 'الظهور', 'f.status': 'الحالة', 'f.views': 'المشاهدات',
+  'f.rating': 'التقييم', 'f.newCategory': 'فئة جديدة…', 'f.fixed': 'الفئة ثابتة لهذا القسم', 'f.newImage': 'جديدة', 'f.removeImage': 'إزالة', 'f.undo': 'تراجع', 'f.addImages': 'إضافة صور',
+  'v.public': 'عام', 'v.members': 'الأعضاء', 's.draft': 'مسودة', 's.scheduled': 'مجدولة', 's.published': 'منشورة', 'l.ar': 'العربية', 'l.en': 'الإنجليزية',
+  'f.preview': 'معاينة', 'f.section': 'القسم', 'f.date': 'التاريخ',
+  // users
+  'u.name': 'الاسم', 'u.email': 'البريد', 'u.role': 'الدور', 'u.phone': 'الهاتف', 'u.active': 'مفعّل', 'u.activate': 'تفعيل', 'u.deactivate': 'تعطيل', 'u.password': 'كلمة المرور',
+  'u.gender': 'الجنس', 'u.male': 'ذكر', 'u.female': 'أنثى', 'u.country': 'الدولة', 'u.city': 'المدينة', 'u.nationality': 'الجنسية', 'u.bio': 'نبذة', 'u.social': 'رابط تواصل',
+  'u.expert': 'خبير', 'u.researcher': 'باحث علمي', 'u.avatar': 'الصورة الشخصية', 'u.cv': 'السيرة الذاتية (PDF/DOC)', 'u.pending': 'بانتظار التفعيل', 'u.changePassword': 'تغيير كلمة المرور',
+  'u.currentPassword': 'كلمة المرور الحالية', 'u.newPassword': 'كلمة المرور الجديدة', 'u.addCity': 'إضافة مدينة', 'u.cityCode': 'الرمز', 'u.cityAr': 'الاسم بالعربية', 'u.cityEn': 'الاسم بالإنجليزية',
+  // roles
+  'r.code': 'الرمز', 'r.nameAr': 'الاسم بالعربية', 'r.nameEn': 'الاسم بالإنجليزية', 'r.users': 'المستخدمون', 'r.perms': 'الصلاحيات', 'r.pickRole': 'اختر دوراً', 'r.savePerms': 'حفظ الصلاحيات',
+  // misc
+  'm.read': 'مقروءة', 'm.unread': 'غير مقروءة', 'a.category': 'الفئة', 'a.action': 'الإجراء', 'a.desc': 'الوصف', 'a.actor': 'المنفّذ', 's.value': 'القيمة', 's.key': 'المفتاح', 's.type': 'النوع',
+  's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+};
+
+const en: Record<string, string> = {
+  'app.loading': 'Loading…', 'app.error': 'Something went wrong', 'app.save': 'Save', 'app.cancel': 'Cancel', 'app.delete': 'Delete', 'app.edit': 'Edit',
+  'app.add': 'Add', 'app.view': 'View', 'app.close': 'Close', 'app.search': 'Search', 'app.confirm': 'Confirm', 'app.yes': 'Yes', 'app.no': 'No',
+  'app.back': 'Back', 'app.all': 'All', 'app.none': '—', 'app.saved': 'Saved successfully', 'app.deleted': 'Deleted', 'app.actions': 'Actions',
+  'app.next': 'Next', 'app.prev': 'Previous', 'app.sending': 'Sending…', 'app.reset': 'Reset', 'app.apply': 'Apply',
+  'site.home': 'Home', 'site.categories': 'Categories', 'site.sections': 'Sections', 'site.language': 'العربية', 'site.readMore': 'Read more',
+  'site.share': 'Share', 'site.views': 'views', 'site.breaking': 'Breaking', 'site.noNews': 'No news found', 'site.related': 'Related articles',
+  'site.searchPlaceholder': 'Search news…', 'site.searchMin': 'Type at least 2 characters', 'site.results': 'Search results', 'site.topics': 'Topics',
+  'site.allNews': 'All news', 'site.backTop': 'Back to top', 'site.quickLinks': 'Quick links', 'site.services': 'Services', 'site.contact': 'Contact',
+  'site.privacy': 'Privacy policy', 'site.terms': 'Terms & conditions', 'site.sitemap': 'Sitemap', 'site.rights': 'All rights reserved',
+  'site.notFound': 'Page not found', 'site.pageEmpty': 'No content has been added to this page yet.', 'site.dashboard': 'Dashboard', 'site.profile': 'Profile', 'site.logout': 'Log out',
+  'site.phone': 'Phone', 'site.email': 'Email', 'site.address': 'Address', 'site.hours': 'Working hours', 'site.map': 'Map',
+  'contact.name': 'Name', 'contact.email': 'Email', 'contact.subject': 'Subject', 'contact.message': 'Message', 'contact.send': 'Send',
+  'contact.ok': 'Your message was sent successfully', 'contact.title': 'Contact us',
+  'auth.login': 'Log in', 'auth.register': 'Create account', 'auth.email': 'Email', 'auth.password': 'Password', 'auth.fullName': 'Full name',
+  'auth.phone': 'Phone (optional)', 'auth.registered': 'Account created. It is pending activation by an administrator.', 'auth.noAccount': "Don't have an account?", 'auth.haveAccount': 'Already have an account?',
+  'sec.hero': 'Home', 'sec.featured': 'Featured news', 'sec.news': 'Latest news', 'sec.team': 'Our team', 'sec.services': 'Our services', 'sec.testimonials': 'Testimonials',
+  'sec.partners': 'Our partners', 'sec.experts': 'Our experts', 'sec.statistics': 'Our statistics', 'sec.company': 'About the company', 'sec.contact': 'Contact us',
+  'section.BREAKING': 'Breaking news', 'section.SERVICES': 'Services', 'section.TEAM': 'Team', 'section.TESTIMONIALS': 'Testimonials', 'section.PARTNERS': 'Partners',
+  'section.EXPERTS': 'Experts', 'section.STATISTICS': 'Statistics', 'section.COMPANY_OVERVIEW': 'Company overview',
+  'adm.title': 'Admin panel', 'adm.dashboard': 'Dashboard', 'adm.content': 'Content', 'adm.news': 'Regular news', 'adm.security': 'Settings & security', 'adm.users': 'Users',
+  'adm.roles': 'Roles', 'adm.permissions': 'Permissions', 'adm.settings': 'Site settings', 'adm.audit': 'Audit log', 'adm.cities': 'Cities', 'adm.messages': 'Contact messages',
+  'adm.welcome': 'Welcome', 'adm.noAccess': "You don't have permission for this page", 'adm.visitSite': 'Visit site',
+  'tbl.search': 'Search…', 'tbl.pageSize': 'Page size', 'tbl.showing': 'Showing', 'tbl.of': 'of', 'tbl.total': 'Total', 'tbl.from': 'From date', 'tbl.to': 'To date',
+  'tbl.export': 'Export', 'tbl.print': 'Print', 'tbl.columns': 'Choose columns', 'tbl.exportCsv': 'CSV', 'tbl.exportXlsx': 'Excel', 'tbl.noRows': 'No records',
+  'tbl.selectAll': 'Select all', 'tbl.deleteSelected': 'Delete selected', 'tbl.confirmDelete': 'Delete the selected items? This cannot be undone.', 'tbl.selected': 'selected',
+  'tbl.needColumn': 'Select at least one column', 'tbl.no': '#',
+  'f.title': 'Title', 'f.subject': 'Subject', 'f.mainCategory': 'Main category', 'f.subcategory': 'Subcategory', 'f.topics': 'Topics (comma separated)', 'f.body': 'Content',
+  'f.images': 'Images', 'f.featured': 'Featured on home', 'f.publishAt': 'Publish time', 'f.language': 'Language', 'f.visibility': 'Visibility', 'f.status': 'Status', 'f.views': 'Views',
+  'f.rating': 'Rating', 'f.newCategory': 'New category…', 'f.fixed': 'Category is fixed for this section', 'f.newImage': 'New', 'f.removeImage': 'Remove', 'f.undo': 'Undo', 'f.addImages': 'Add images',
+  'v.public': 'Public', 'v.members': 'Members', 's.draft': 'Draft', 's.scheduled': 'Scheduled', 's.published': 'Published', 'l.ar': 'Arabic', 'l.en': 'English',
+  'f.preview': 'Preview', 'f.section': 'Section', 'f.date': 'Date',
+  'u.name': 'Name', 'u.email': 'Email', 'u.role': 'Role', 'u.phone': 'Phone', 'u.active': 'Active', 'u.activate': 'Activate', 'u.deactivate': 'Deactivate', 'u.password': 'Password',
+  'u.gender': 'Gender', 'u.male': 'Male', 'u.female': 'Female', 'u.country': 'Country', 'u.city': 'City', 'u.nationality': 'Nationality', 'u.bio': 'Bio', 'u.social': 'Social link',
+  'u.expert': 'Expert', 'u.researcher': 'Researcher', 'u.avatar': 'Avatar', 'u.cv': 'CV (PDF/DOC)', 'u.pending': 'Pending activation', 'u.changePassword': 'Change password',
+  'u.currentPassword': 'Current password', 'u.newPassword': 'New password', 'u.addCity': 'Add city', 'u.cityCode': 'Code', 'u.cityAr': 'Arabic name', 'u.cityEn': 'English name',
+  'r.code': 'Code', 'r.nameAr': 'Arabic name', 'r.nameEn': 'English name', 'r.users': 'Users', 'r.perms': 'Permissions', 'r.pickRole': 'Select a role', 'r.savePerms': 'Save permissions',
+  'm.read': 'Read', 'm.unread': 'Unread', 'a.category': 'Category', 'a.action': 'Action', 'a.desc': 'Description', 'a.actor': 'Actor', 's.value': 'Value', 's.key': 'Key', 's.type': 'Type',
+  's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+};
+
+export const DICT: Record<string, Record<string, string>> = { ar, en };

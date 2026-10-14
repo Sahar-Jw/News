@@ -1,0 +1,157 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
+import { adminPage, paged, publicPage } from '../../common/utils/pagination';
+import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
+import { News } from '../../entities';
+import { FileStorageService } from '../files/file-storage.service';
+import { SettingsService } from '../settings/settings.service';
+import { PublicNewsQueryDto } from './news.dto';
+import { applyEligibility, onlyRegular } from './news.eligibility';
+import { ViewCounterService } from './view-counter.service';
+
+export interface Viewer {
+  authenticated: boolean;
+}
+
+@Injectable()
+export class NewsPublicService {
+  constructor(
+    @InjectRepository(News) private readonly repo: Repository<News>,
+    private readonly storage: FileStorageService,
+    private readonly settings: SettingsService,
+    private readonly views: ViewCounterService,
+  ) {}
+
+  /** Card = what lists/sections need. Never exposes created_by, status, or storage paths of other kinds. */
+  card(n: News, withBody = false) {
+    const images = n.images ?? [];
+    return {
+      id: n.id,
+      title: n.title,
+      subject: n.subject,
+      mainCategory: n.mainCategory,
+      subcategory: n.subcategory,
+      topics: n.topics ?? [],
+      excerpt: excerpt(n.body) || n.subject || '',
+      images: images.map((p) => this.storage.url(p)),
+      rating: n.rating,
+      isFeatured: n.isFeatured,
+      publishAt: n.publishAt,
+      language: n.language,
+      viewCount: n.viewCount,
+      ...(withBody && { body: n.body }),
+    };
+  }
+
+  private base(lang: Language | undefined, v: Viewer) {
+    const qb = this.repo.createQueryBuilder('n');
+    applyEligibility(qb, 'n', { lang, authenticated: v.authenticated });
+    return qb;
+  }
+
+  private order(qb: ReturnType<NewsPublicService['base']>) {
+    return qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC');
+  }
+
+  async list(q: PublicNewsQueryDto, v: Viewer) {
+    const p = publicPage(q);
+    const qb = onlyRegular(this.base(q.lang ?? Language.AR, v), 'n');
+    if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: normalizeLabel(q.category) });
+    if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
+    if (q.q) this.applyTextSearch(qb, q.q);
+    const [rows, total] = await this.order(qb).skip(p.skip).take(p.limit).getManyAndCount();
+    return paged(rows.map((r) => this.card(r)), total, p);
+  }
+
+  private applyTextSearch(qb: ReturnType<NewsPublicService['base']>, raw: string) {
+    const like = `%${escapeLike(normalizeLabel(raw))}%`;
+    // title + category + subcategory only – never the rich body (SRS FR-SEARCH-001/003)
+    qb.andWhere('(n.title LIKE :like OR n.mainCategory LIKE :like OR n.subcategory LIKE :like)', { like });
+  }
+
+  async search(q: PublicNewsQueryDto, v: Viewer) {
+    const text = normalizeLabel(q.q ?? '');
+    if (text.length < 2) throw new BadRequestException('اكتب حرفين على الأقل للبحث');
+    return this.list({ ...q, q: text }, v);
+  }
+
+  async detail(id: number, v: Viewer, ip: string, ua: string) {
+    // no language filter: a record stays reachable in its own language (SRS 26)
+    const n = await this.base(undefined, v).andWhere('n.id = :id', { id }).getOne();
+    if (!n) throw new NotFoundException('الصفحة غير موجودة');
+    if (this.views.shouldCount(id, ip, ua)) {
+      await this.repo.increment({ id }, 'viewCount', 1);
+      n.viewCount += 1;
+    }
+    return { ...this.card(n, true), createdAt: n.createdAt, related: await this.related(n, v) };
+  }
+
+  /** Same language + main category, ≥1 shared topic, ordered by shared count then newest, max 4 (SRS 13.5). */
+  private async related(n: News, v: Viewer) {
+    const mine = (n.topics ?? []).map((t) => t.toLowerCase());
+    if (!mine.length) return [];
+    const candidates = await this.order(this.base(n.language, v))
+      .andWhere('n.mainCategory = :mc', { mc: n.mainCategory })
+      .andWhere('n.id <> :id', { id: n.id })
+      .take(200)
+      .getMany();
+    return candidates
+      .map((c) => ({ c, shared: (c.topics ?? []).filter((t) => mine.includes(t.toLowerCase())).length }))
+      .filter((x) => x.shared > 0)
+      .sort((a, b) => b.shared - a.shared || (b.c.publishAt?.getTime() ?? 0) - (a.c.publishAt?.getTime() ?? 0))
+      .slice(0, 4)
+      .map((x) => this.card(x.c));
+  }
+
+  /** Public category menu, derived from published regular news only. */
+  async categories(lang: Language | undefined, v: Viewer) {
+    const rows = await onlyRegular(this.base(lang ?? Language.AR, v), 'n')
+      .select('n.mainCategory', 'main')
+      .addSelect('n.subcategory', 'sub')
+      .distinct(true)
+      .getRawMany();
+    const map = new Map<string, Set<string>>();
+    for (const r of rows) {
+      if (!map.has(r.main)) map.set(r.main, new Set());
+      if (r.sub) map.get(r.main).add(r.sub);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, subs]) => ({ name, subcategories: [...subs].sort() }));
+  }
+
+  async section(code: string, lang: Language | undefined, v: Viewer) {
+    const sec = codeKey(code);
+    if (!SPECIAL_CATEGORY_CODES.includes(sec)) throw new NotFoundException('القسم غير موجود');
+    const rows = await this.order(this.base(lang ?? Language.AR, v)).andWhere('n.mainCategory = :sec', { sec }).take(100).getMany();
+    return rows.map((r) => this.card(r, sec === SpecialCategory.COMPANY_OVERVIEW));
+  }
+
+  /** One round-trip set for the whole home page; section order/visibility come from `sections_home` settings. */
+  async home(lang: Language | undefined, v: Viewer) {
+    const L = lang ?? Language.AR;
+    const [settings, specials, featured, regular] = await Promise.all([
+      this.settings.publicMap(),
+      this.order(this.base(L, v)).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
+      this.order(this.base(L, v)).andWhere('n.isFeatured = 1').take(5).getMany(), // flag is independent of status/visibility, but the record must still be eligible
+      this.order(onlyRegular(this.base(L, v), 'n')).take(4).getMany(),
+    ]);
+    const by = (c: SpecialCategory) => specials.filter((s) => s.mainCategory === c);
+    const card = (n: News) => this.card(n);
+
+    return {
+      lang: L,
+      settings,
+      breaking: by(SpecialCategory.BREAKING).slice(0, 10).map(card),
+      featured: featured.map(card),
+      news: regular.map(card),
+      team: shuffle(by(SpecialCategory.TEAM)).slice(0, 6).map(card),
+      services: by(SpecialCategory.SERVICES).map(card),
+      testimonials: by(SpecialCategory.TESTIMONIALS).map(card),
+      partners: shuffle(by(SpecialCategory.PARTNERS).filter((p) => (p.images ?? []).length)).slice(0, 5).map((p) => ({ id: p.id, title: p.title, logo: this.storage.url(p.images[0]) })),
+      experts: by(SpecialCategory.EXPERTS).map(card),
+      statistics: by(SpecialCategory.STATISTICS).slice(0, 4).map(card),
+      company: by(SpecialCategory.COMPANY_OVERVIEW)[0] ? this.card(by(SpecialCategory.COMPANY_OVERVIEW)[0], true) : null,
+    };
+  }
+}

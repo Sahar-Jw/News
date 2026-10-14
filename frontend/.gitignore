@@ -1,0 +1,33 @@
+# Dependencies and generated output
+node_modules/
+.next/
+out/
+build/
+coverage/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local environment files; keep the safe template
+.env
+.env.*
+!.env.example
+
+# Logs and local diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Local credentials and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+credentials*.json
+service-account*.json
+secrets/
+
+# Operating system files
+.DS_Store
+Thumbs.db

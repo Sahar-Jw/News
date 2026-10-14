@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --primary: #0b5ed7; --secondary: #1f2937; }
+html { scroll-behavior: smooth; }
+body { font-family: Cairo, 'Segoe UI', Tahoma, Arial, sans-serif; color: #111827; background: #f8fafc; }
+.prose-news { line-height: 1.9; font-size: 1.05rem; }
+.prose-news h1, .prose-news h2, .prose-news h3, .prose-news h4 { font-weight: 700; margin: 1.2em 0 .5em; line-height: 1.4; }
+.prose-news h1 { font-size: 1.8rem } .prose-news h2 { font-size: 1.5rem } .prose-news h3 { font-size: 1.25rem }
+.prose-news p { margin: .8em 0 }
+.prose-news ul { list-style: disc; padding-inline-start: 1.6rem; margin: .8em 0 }
+.prose-news ol { list-style: decimal; padding-inline-start: 1.6rem; margin: .8em 0 }
+.prose-news a { color: var(--primary); text-decoration: underline }
+.prose-news blockquote { border-inline-start: 4px solid var(--primary); padding-inline-start: 1rem; color: #4b5563; margin: 1em 0 }
+.editor:empty:before { content: attr(data-placeholder); color: #9ca3af; }
+.ticker-track:hover { animation-play-state: paused; }
+[dir='rtl'] .ticker-track { animation-direction: reverse; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .print-only { display: block !important; }
+  table { font-size: 11px; }
+}
+.print-only { display: none; }
