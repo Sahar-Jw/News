@@ -25,7 +25,7 @@ function List() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">{subcategory || category || t('site.allNews')}</h1>
+      <h1 className="mb-6 text-3xl font-bold">{[category, subcategory].filter(Boolean).join(' / ') || t('site.allNews')}</h1>
       {!data ? <Center><Spinner /></Center> : data.data.length === 0 ? <Center>{t('site.noNews')}</Center> : (
         <>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{data.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>

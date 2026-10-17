@@ -5,8 +5,9 @@ import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
-import { City } from '../../entities';
+import { City } from './city.entity';
 import { AuditService } from '../audit/audit.service';
+import { applyColumnFilters } from '../../common/utils/column-filters';
 import { CreateCityDto, UpdateCityDto } from './cities.dto';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class CitiesService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('c.nameAr LIKE :like', { like }).orWhere('c.nameEn LIKE :like', { like }).orWhere('c.code LIKE :like', { like })));
     }
+    applyColumnFilters(qb, q.cf, { code: 'c.code', nameAr: 'c.nameAr', nameEn: 'c.nameEn' });
     qb.orderBy('c.id', q.sortDir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC');
     const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows, total, p);

@@ -1,5 +1,5 @@
 import { BeforeInsert, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../users/user.entity';
 
 @Entity('audit_logs')
 @Index('idx_audit_created_category', ['createdAt', 'category'])

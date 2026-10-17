@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IS_PUBLIC } from '../decorators';
-import { User } from '../../entities';
+import { User } from '../../modules/users/user.entity';
 import { PermissionsService } from '../../modules/access/permissions.service';
 import { AuthRequest } from '../types';
 

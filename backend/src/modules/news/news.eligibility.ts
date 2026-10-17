@@ -1,6 +1,6 @@
 import { Brackets, SelectQueryBuilder } from 'typeorm';
 import { NewsStatus, SPECIAL_CATEGORY_CODES, Visibility } from '../../common/constants';
-import { News } from '../../entities';
+import { News } from './news.entity';
 
 /**
  * A record is publicly "eligible" when (SRS 13.3):

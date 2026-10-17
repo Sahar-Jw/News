@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { TimestampedEntity } from './base.entity';
-import { City } from './city.entity';
-import { Role } from './role.entity';
+import { TimestampedEntity } from '../../common/entities/base.entity';
+import { City } from '../cities/city.entity';
+import { Role } from '../access/role.entity';
 
 @Entity('users')
 export class User extends TimestampedEntity {

@@ -3,7 +3,14 @@ import 'reflect-metadata';
 import * as bcrypt from 'bcryptjs';
 import dataSource from './data-source';
 import { NewsStatus, PERMISSIONS, Visibility } from '../common/constants';
-import { City, ContactMessage, News, Permission, Role, RolePermission, SiteSetting, User } from '../entities';
+import { Permission } from '../modules/access/permission.entity';
+import { RolePermission } from '../modules/access/role-permission.entity';
+import { Role } from '../modules/access/role.entity';
+import { City } from '../modules/cities/city.entity';
+import { ContactMessage } from '../modules/contact/contact-message.entity';
+import { News } from '../modules/news/news.entity';
+import { SiteSetting } from '../modules/settings/site-setting.entity';
+import { User } from '../modules/users/user.entity';
 import { CITY_SEEDS, CONTACT_MESSAGE_SEEDS, NEWS_SEEDS, ROLE_SEEDS, SETTING_SEEDS } from './seed-data';
 
 /**

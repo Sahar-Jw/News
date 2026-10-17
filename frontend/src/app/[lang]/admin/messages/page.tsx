@@ -19,8 +19,8 @@ export default function MessagesPage() {
     { key: 'name', label: t('contact.name') },
     { key: 'email', label: t('contact.email'), render: (r) => <span dir="ltr">{r.email}</span> },
     { key: 'subject', label: t('contact.subject') },
-    { key: 'isRead', label: t('f.status'), render: (r) => (r.isRead ? <span className="text-gray-400">{t('m.read')}</span> : <span className="rounded bg-primary px-1.5 text-xs text-white">{t('m.unread')}</span>), text: (r) => (r.isRead ? t('m.read') : t('m.unread')) },
-    { key: 'createdAt', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
+    { key: 'isRead', searchable: false, label: t('f.status'), render: (r) => (r.isRead ? <span className="text-gray-400">{t('m.read')}</span> : <span className="rounded bg-primary px-1.5 text-xs text-white">{t('m.unread')}</span>), text: (r) => (r.isRead ? t('m.read') : t('m.unread')) },
+    { key: 'createdAt', type: 'date', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
   ];
   return (
     <RequirePerm any={['messages.read']}>

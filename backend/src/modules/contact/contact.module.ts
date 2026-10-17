@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ContactMessage } from '../../entities';
+import { ContactMessage } from './contact-message.entity';
 import { ContactController } from './contact.controller';
 import { ContactService } from './contact.service';
 

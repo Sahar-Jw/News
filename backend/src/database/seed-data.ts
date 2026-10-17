@@ -1,5 +1,5 @@
 import { Language, PERM, SpecialCategory } from '../common/constants';
-import { SettingValueType } from '../entities/site-setting.entity';
+import { SettingValueType } from '../modules/settings/site-setting.entity';
 
 export interface CitySeed {
   code: string;

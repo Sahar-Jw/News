@@ -2,9 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { AuthUser } from '../../common/types';
+import { applyColumnFilters } from '../../common/utils/column-filters';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
-import { SiteSetting } from '../../entities';
+import { SiteSetting } from './site-setting.entity';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { SettingsListQueryDto } from './settings.dto';
@@ -110,6 +111,7 @@ export class SettingsService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('s.key LIKE :like', { like }).orWhere('s.value LIKE :like', { like })));
     }
+    applyColumnFilters(qb, q.cf, { category: 's.category', key: 's.key', valueType: 's.valueType', value: 's.value' });
     qb.orderBy('s.category', 'ASC').addOrderBy('s.id', 'ASC');
     const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows.map((r) => this.present(r)), total, p);

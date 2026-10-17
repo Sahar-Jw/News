@@ -1,12 +1,13 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Language, NewsStatus, Visibility } from '../common/constants';
-import { TimestampedEntity } from './base.entity';
-import { User } from './user.entity';
+import { Language, NewsStatus, Visibility } from '../../common/constants';
+import { TimestampedEntity } from '../../common/entities/base.entity';
+import { User } from '../users/user.entity';
 
 /** The single unified content table (SRS 13 / 17.5). */
 @Entity('news')
 @Index('idx_news_status_publish', ['status', 'publishAt'])
 @Index('idx_news_listing', ['language', 'status', 'visibility', 'mainCategory'])
+@Index('idx_news_subcategory', ['language', 'status', 'visibility', 'subcategory'])
 @Index('idx_news_featured', ['isFeatured', 'publishAt'])
 export class News extends TimestampedEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
@@ -45,7 +46,7 @@ export class News extends TimestampedEntity {
   @Column({ type: 'enum', enum: NewsStatus, default: NewsStatus.DRAFT })
   status: NewsStatus;
 
-  @Column({ type: 'enum', enum: Language })
+  @Column({ type: 'enum', enum: Language, default: Language.AR })
   language: Language;
 
   @Column({ type: 'enum', enum: Visibility, default: Visibility.PUBLIC })

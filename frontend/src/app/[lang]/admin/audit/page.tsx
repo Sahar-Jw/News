@@ -11,7 +11,7 @@ const CATS = ['auth', 'news', 'users', 'permissions', 'settings', 'cities', 'mes
 export default function AuditPage() {
   const { t, lang } = useI18n();
   const cols: Col<Row>[] = [
-    { key: 'createdAt', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
+    { key: 'createdAt', type: 'date', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
     { key: 'category', label: t('a.category') },
     { key: 'action', label: t('a.action'), render: (r) => <span dir="ltr">{r.action}</span> },
     { key: 'description', label: t('a.desc') },

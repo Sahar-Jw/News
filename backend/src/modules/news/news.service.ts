@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import {
+  Language,
   MAX_IMAGES_PER_RECORD,
   NewsStatus,
   PERM,
@@ -12,8 +13,9 @@ import {
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
+import { applyColumnFilters } from '../../common/utils/column-filters';
 import { codeKey, escapeLike, normalizeLabel, sanitizeRichText } from '../../common/utils/text';
-import { News } from '../../entities';
+import { News } from './news.entity';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { CreateNewsDto, NewsAdminQueryDto, UpdateNewsDto } from './news.dto';
@@ -65,6 +67,7 @@ export class NewsService {
         ),
       );
     }
+    applyColumnFilters(qb, q.cf, { title: 'n.title', subject: 'n.subject', mainCategory: 'n.mainCategory', subcategory: 'n.subcategory', topics: 'CAST(n.topics AS CHAR)', publishAt: 'CAST(n.publishAt AS CHAR)', viewCount: 'CAST(n.viewCount AS CHAR)' });
     qb.orderBy('n.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     return qb;
   }
@@ -85,34 +88,40 @@ export class NewsService {
     return this.present(n);
   }
 
-  /** Dropdown values come from the real DISTINCT values in `news` (SRS 13.2) – there is no categories table. */
-  async categories(mainCategory?: string) {
+  /**
+   * Dropdown values come from the real DISTINCT values in `news` (SRS 13.2) – there is no categories table.
+   * Main category and subcategory are two independent lists: neither is filtered by the other.
+   */
+  async categories() {
     const main = await this.repo
       .createQueryBuilder('n')
       .select('DISTINCT n.mainCategory', 'v')
       .where('n.mainCategory NOT IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES })
       .orderBy('v', 'ASC')
       .getRawMany();
-    const subQb = this.repo.createQueryBuilder('n').select('DISTINCT n.subcategory', 'v').where('n.subcategory IS NOT NULL').orderBy('v', 'ASC');
-    if (mainCategory) subQb.andWhere('n.mainCategory = :mc', { mc: normalizeLabel(mainCategory) });
-    const sub = await subQb.getRawMany();
+    const sub = await this.repo
+      .createQueryBuilder('n')
+      .select('DISTINCT n.subcategory', 'v')
+      .where('n.subcategory IS NOT NULL')
+      .orderBy('v', 'ASC')
+      .getRawMany();
     return { main: main.map((r) => r.v), sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
   }
 
   // ---------------------------------------------------------------- validation helpers
-  private async canonical(kind: 'main' | 'sub', value: string, main?: string): Promise<string | null> {
+  private async canonical(kind: 'main' | 'sub', value: string): Promise<string | null> {
     const qb = this.repo.createQueryBuilder('n');
     if (kind === 'main') qb.select('n.mainCategory', 'v').where('n.mainCategory = :v', { v: value });
-    else qb.select('n.subcategory', 'v').where('n.subcategory = :v', { v: value }).andWhere('n.mainCategory = :m', { m: main });
+    else qb.select('n.subcategory', 'v').where('n.subcategory = :v', { v: value });
     const r = await qb.limit(1).getRawOne();
     return r?.v ?? null; // case-insensitive match returns the stored spelling
   }
 
-  private async regularValue(kind: 'main' | 'sub', raw: string, perms: Set<string>, main?: string): Promise<string> {
+  private async regularValue(kind: 'main' | 'sub', raw: string, perms: Set<string>): Promise<string> {
     const v = normalizeLabel(raw);
     if (!v) throw new BadRequestException('قيمة الفئة فارغة');
     if (v.length > 100) throw new BadRequestException('اسم الفئة أطول من 100 حرف');
-    const existing = await this.canonical(kind, v, main);
+    const existing = await this.canonical(kind, v);
     if (existing) return existing;
     if (!perms.has(PERM.NEWS_CATEGORY_CREATE)) throw new ForbiddenException('ليست لديك صلاحية إضافة فئة جديدة');
     return v;
@@ -156,11 +165,11 @@ export class NewsService {
       }
       sub = null;
     } else if (given === undefined) {
-      sub = existing && existing.mainCategory.toLowerCase() === main.toLowerCase() ? existing.subcategory : null;
+      sub = existing ? existing.subcategory : null; // independent of the main category: changing main never resets sub
     } else if (given === null) {
       sub = null;
     } else {
-      sub = await this.regularValue('sub', given, perms, main);
+      sub = await this.regularValue('sub', given, perms);
     }
     return { main, sub };
   }
@@ -236,7 +245,7 @@ export class NewsService {
           isFeatured: dto.isFeatured ?? false,
           publishAt: pub.publishAt,
           status: pub.status,
-          language: dto.language,
+          language: dto.language ?? Language.AR,
           visibility: dto.visibility,
           createdById: actor.id,
         }),

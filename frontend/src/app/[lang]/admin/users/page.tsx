@@ -28,8 +28,8 @@ export default function UsersPage() {
     { key: 'email', label: t('u.email'), render: (r) => <span dir="ltr">{r.email}</span> },
     { key: 'role', label: t('u.role'), render: (r) => roleName(r.role), text: (r) => roleName(r.role) },
     { key: 'phone', label: t('u.phone'), render: (r) => <span dir="ltr">{r.phone ?? ''}</span> },
-    { key: 'isActive', label: t('u.active'), render: (r) => r.isActive ? <span className="text-emerald-600">●</span> : <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-700">{t('u.pending')}</span>, text: (r) => (r.isActive ? t('app.yes') : t('app.no')) },
-    { key: 'createdAt', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt), text: (r) => fmtDate(lang, r.createdAt) },
+    { key: 'isActive', searchable: false, label: t('u.active'), render: (r) => r.isActive ? <span className="text-emerald-600">●</span> : <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-700">{t('u.pending')}</span>, text: (r) => (r.isActive ? t('app.yes') : t('app.no')) },
+    { key: 'createdAt', type: 'date', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt), text: (r) => fmtDate(lang, r.createdAt) },
   ];
 
   const save = async (e: React.FormEvent) => {

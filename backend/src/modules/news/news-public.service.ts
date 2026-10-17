@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
-import { News } from '../../entities';
+import { News } from './news.entity';
 import { FileStorageService } from '../files/file-storage.service';
 import { SettingsService } from '../settings/settings.service';
 import { PublicNewsQueryDto } from './news.dto';
@@ -105,19 +105,18 @@ export class NewsPublicService {
       .map((x) => this.card(x.c));
   }
 
-  /** Public category menu, derived from published regular news only. */
+  /**
+   * Public menus, derived from published regular news only.
+   * Main categories and subcategories are two independent lists (each has its own nav dropdown).
+   */
   async categories(lang: Language | undefined, v: Viewer) {
-    const rows = await onlyRegular(this.base(lang ?? Language.AR, v), 'n')
-      .select('n.mainCategory', 'main')
-      .addSelect('n.subcategory', 'sub')
-      .distinct(true)
-      .getRawMany();
-    const map = new Map<string, Set<string>>();
-    for (const r of rows) {
-      if (!map.has(r.main)) map.set(r.main, new Set());
-      if (r.sub) map.get(r.main).add(r.sub);
-    }
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, subs]) => ({ name, subcategories: [...subs].sort() }));
+    const L = lang ?? Language.AR;
+    const [mainRows, subRows] = await Promise.all([
+      onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).getRawMany(),
+      this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
+    ]);
+    const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
+    return { main: sort(mainRows), sub: sort(subRows) };
   }
 
   async section(code: string, lang: Language | undefined, v: Viewer) {

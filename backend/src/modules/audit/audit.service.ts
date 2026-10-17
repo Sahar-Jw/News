@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
-import { AuditLog } from '../../entities';
+import { applyColumnFilters } from '../../common/utils/column-filters';
+import { AuditLog } from './audit-log.entity';
 import { scrubSecrets, escapeLike } from '../../common/utils/text';
 import { AuditListQueryDto } from './audit.dto';
 import { adminPage, paged } from '../../common/utils/pagination';
@@ -59,6 +60,7 @@ export class AuditService {
         ),
       );
     }
+    applyColumnFilters(qb, q.cf, { createdAt: 'CAST(a.createdAt AS CHAR)', category: 'a.category', action: 'a.action', description: 'a.description', actor: ['u.fullName', 'u.email'] });
     qb.orderBy('a.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('a.id', 'DESC');
     return qb;
   }

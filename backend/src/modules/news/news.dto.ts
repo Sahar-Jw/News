@@ -44,7 +44,8 @@ export class CreateNewsDto {
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @emptyToNull() @IsDateString() publishAt?: string | null;
   @IsOptional() @IsIn(Object.values(NewsStatus)) status?: NewsStatus;
-  @IsIn(Object.values(Language)) language: Language;
+  /** Defaults to Arabic when omitted. */
+  @IsOptional() @IsIn(Object.values(Language)) language?: Language;
   @IsOptional() @IsIn(Object.values(Visibility)) visibility?: Visibility;
 }
 
@@ -76,10 +77,6 @@ export class NewsAdminQueryDto extends AdminListQueryDto {
   @IsOptional() @IsString() @MaxLength(100) subcategory?: string;
   @IsOptional() @IsString() @MaxLength(100) topic?: string;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
-}
-
-export class CategoriesQueryDto {
-  @IsOptional() @IsString() @MaxLength(100) mainCategory?: string;
 }
 
 export class BulkDeleteDto {

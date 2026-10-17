@@ -3,12 +3,14 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
-export interface CategoryItem { name: string; subcategories: string[] }
+/** Two independent lists: a subcategory does not belong to any main category. */
+export interface Categories { main: string[]; sub: string[] }
+const NO_CATEGORIES: Categories = { main: [], sub: [] };
 type Settings = Record<string, Record<string, any>>;
 
 interface SiteCtx {
   settings: Settings;
-  categories: CategoryItem[];
+  categories: Categories;
   /** raw setting value (null when unset) */
   s: (cat: string, key: string) => any;
   /** localised setting: <key>_ar / <key>_en */
@@ -21,15 +23,15 @@ const Ctx = createContext<SiteCtx>(null as unknown as SiteCtx);
 export function SiteProvider({ children }: { children: React.ReactNode }) {
   const { lang } = useI18n();
   const [settings, setSettings] = useState<Settings>({});
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [categories, setCategories] = useState<Categories>(NO_CATEGORIES);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api<Settings>('/public/settings').catch(() => ({})), api<CategoryItem[]>('/public/categories', { params: { lang } }).catch(() => [])]).then(([st, cats]) => {
+    Promise.all([api<Settings>('/public/settings').catch(() => ({})), api<Categories>('/public/categories', { params: { lang } }).catch(() => NO_CATEGORIES)]).then(([st, cats]) => {
       if (!alive) return;
       setSettings(st as Settings);
-      setCategories(cats as CategoryItem[]);
+      setCategories(cats as Categories);
       setReady(true);
       const a = (st as Settings).appearance ?? {};
       const r = document.documentElement.style;

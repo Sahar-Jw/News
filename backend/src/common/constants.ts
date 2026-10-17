@@ -23,6 +23,9 @@ export const SPECIAL_CATEGORY_CONFIG: Record<SpecialCategory, { supportsSubcateg
   [SpecialCategory.COMPANY_OVERVIEW]: { supportsSubcategory: false },
 };
 
+/** Built-in super role: always holds every permission and cannot be edited or deleted. */
+export const TECHNICAL_ADMIN_ROLE = 'technical_admin';
+
 export enum NewsStatus {
   DRAFT = 'draft',
   SCHEDULED = 'scheduled',

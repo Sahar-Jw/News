@@ -7,7 +7,7 @@ import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
-import { BulkDeleteDto, CategoriesQueryDto, CreateNewsDto, LangQueryDto, NewsAdminQueryDto, PublicNewsQueryDto, SearchQueryDto, UpdateNewsDto } from './news.dto';
+import { BulkDeleteDto, CreateNewsDto, LangQueryDto, NewsAdminQueryDto, PublicNewsQueryDto, SearchQueryDto, UpdateNewsDto } from './news.dto';
 import { NewsPublicService } from './news-public.service';
 import { NewsService } from './news.service';
 import { SettingsService } from '../settings/settings.service';
@@ -44,8 +44,8 @@ export class NewsAdminController {
 
   @Get('categories')
   @Permissions(PERM.NEWS_READ)
-  categories(@Query() q: CategoriesQueryDto) {
-    return this.service.categories(q.mainCategory);
+  categories() {
+    return this.service.categories();
   }
 
   @Get('export')

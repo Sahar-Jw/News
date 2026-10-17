@@ -7,7 +7,7 @@ export interface PageParams {
   all: boolean;
 }
 
-/** Admin tables: limit is 10 | 20 | all (SRS FR-TBL-004). */
+/** Admin tables: limit is 10 | 20 | 50 | 100 | all (SRS FR-TBL-004). */
 export function adminPage(q: { page?: number; limit?: string }): PageParams {
   const all = q.limit === 'all';
   const limit = all ? MAX_ALL_ROWS : Number(q.limit ?? 10) || 10;

@@ -52,12 +52,6 @@ function Form() {
   useEffect(() => {
     api<{ main: string[]; sub: string[] }>('/admin/news/categories').then(setCats).catch(() => {});
   }, []);
-  // subcategory options follow the chosen main category
-  useEffect(() => {
-    if (special || !f.mainCategory || f.mainCategory === NEW) return;
-    api<{ sub: string[] }>('/admin/news/categories', { params: { mainCategory: f.mainCategory } }).then((r) => setCats((c) => ({ ...c, sub: r.sub }))).catch(() => {});
-  }, [f.mainCategory, special]);
-
   useEffect(() => {
     if (!id) return;
     api<Existing>(`/admin/news/${id}`).then((n) => {

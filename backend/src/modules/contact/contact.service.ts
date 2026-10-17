@@ -5,7 +5,8 @@ import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
-import { ContactMessage } from '../../entities';
+import { applyColumnFilters } from '../../common/utils/column-filters';
+import { ContactMessage } from './contact-message.entity';
 import { AuditService } from '../audit/audit.service';
 import { CreateContactDto, MessageListQueryDto } from './contact.dto';
 
@@ -30,6 +31,7 @@ export class ContactService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('m.name LIKE :like', { like }).orWhere('m.email LIKE :like', { like }).orWhere('m.subject LIKE :like', { like })));
     }
+    applyColumnFilters(qb, q.cf, { name: 'm.name', email: 'm.email', subject: 'm.subject', createdAt: 'CAST(m.createdAt AS CHAR)' });
     qb.orderBy('m.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('m.id', 'DESC');
     return qb;
   }

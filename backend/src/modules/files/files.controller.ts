@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { PERM } from '../../common/constants';
 import { Public } from '../../common/decorators';
 import { AuthRequest } from '../../common/types';
-import { User } from '../../entities';
+import { User } from '../users/user.entity';
 import { FileStorageService } from './file-storage.service';
 import { UnauthorizedException } from '@nestjs/common';
 

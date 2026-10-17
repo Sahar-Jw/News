@@ -2,9 +2,12 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { ConfigService } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { PERM } from '../../common/constants';
+import { PERM, TECHNICAL_ADMIN_ROLE } from '../../common/constants';
 import { AuthUser } from '../../common/types';
-import { Permission, Role, RolePermission, User } from '../../entities';
+import { Permission } from './permission.entity';
+import { Role } from './role.entity';
+import { RolePermission } from './role-permission.entity';
+import { User } from '../users/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from './access.dto';
 import { PermissionsService } from './permissions.service';
@@ -63,6 +66,7 @@ export class RolesService {
 
   async remove(id: number, actor: AuthUser) {
     const role = await this.getOrFail(id);
+    if (role.code === TECHNICAL_ADMIN_ROLE) throw new ConflictException('لا يمكن حذف دور المدير التقني');
     if (role.code === this.config.get('DEFAULT_ROLE_CODE', 'registered')) {
       throw new ConflictException('لا يمكن حذف الدور الافتراضي للتسجيل');
     }
@@ -92,10 +96,12 @@ export class RolesService {
   async countAssigners(excludeRoleId?: number): Promise<number> {
     const rows = await this.ds.query(
       `SELECT COUNT(*) AS c FROM users u
-         JOIN role_permissions rp ON rp.role_id = u.role_id
-         JOIN permissions p ON p.id = rp.permission_id AND p.code = ?
-        WHERE u.is_active = 1 ${excludeRoleId ? 'AND u.role_id <> ?' : ''}`,
-      excludeRoleId ? [PERM.PERMISSIONS_ASSIGN, excludeRoleId] : [PERM.PERMISSIONS_ASSIGN],
+         JOIN roles r ON r.id = u.role_id
+        WHERE u.is_active = 1 ${excludeRoleId ? 'AND u.role_id <> ?' : ''}
+          AND (r.code = ? OR EXISTS (
+                SELECT 1 FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
+                 WHERE rp.role_id = u.role_id AND p.code = ?))`,
+      excludeRoleId ? [excludeRoleId, TECHNICAL_ADMIN_ROLE, PERM.PERMISSIONS_ASSIGN] : [TECHNICAL_ADMIN_ROLE, PERM.PERMISSIONS_ASSIGN],
     );
     return Number(rows[0].c);
   }
@@ -103,6 +109,7 @@ export class RolesService {
   /** PUT: replace the role's permission set, always persisted in role_permissions (SRS FR-PERM-002). */
   async setRolePermissions(roleId: number, dto: SetRolePermissionsDto, actor: AuthUser) {
     const role = await this.getOrFail(roleId);
+    if (role.code === TECHNICAL_ADMIN_ROLE) throw new ConflictException('دور المدير التقني يملك كل الصلاحيات دائماً ولا يمكن تعديلها');
     const wanted = new Set(dto.permissionCodes);
     const all = await this.perms.find();
     const known = new Map(all.map((p) => [p.code, p]));

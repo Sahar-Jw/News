@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SiteSetting } from '../../entities';
+import { SiteSetting } from './site-setting.entity';
 import { SettingsController } from './settings.controller';
 import { SettingsService } from './settings.service';
 

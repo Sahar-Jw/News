@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { TimestampedEntity } from './base.entity';
+import { TimestampedEntity } from '../../common/entities/base.entity';
 
 @Entity('roles')
 export class Role extends TimestampedEntity {

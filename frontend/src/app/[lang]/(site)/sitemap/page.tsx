@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from '@/components/site/site-context';
 
-/** Generated from live content: categories come from published news. */
+/** Generated from live content: main categories and subcategories are independent lists. */
 export default function SitemapPage() {
   const { t, href } = useI18n();
   const { categories } = useSite();
@@ -13,17 +13,23 @@ export default function SitemapPage() {
       <h1 className="mb-6 text-3xl font-bold">{t('site.sitemap')}</h1>
       <ul className="space-y-2">
         {fixed.map(([p, l]) => <li key={p}><Link className="text-primary hover:underline" href={href(p)}>{l}</Link></li>)}
-        {categories.map((c) => (
-          <li key={c.name}>
-            <Link className="text-primary hover:underline" href={href(`/news?category=${encodeURIComponent(c.name)}`)}>{c.name}</Link>
-            {c.subcategories.length > 0 && (
-              <ul className="ms-6 mt-1 list-disc space-y-1 ps-4">
-                {c.subcategories.map((s) => <li key={s}><Link className="hover:underline" href={href(`/news?category=${encodeURIComponent(c.name)}&subcategory=${encodeURIComponent(s)}`)}>{s}</Link></li>)}
-              </ul>
-            )}
-          </li>
-        ))}
       </ul>
+      {categories.main.length > 0 && (
+        <>
+          <h2 className="mb-2 mt-8 text-xl font-bold">{t('site.categories')}</h2>
+          <ul className="space-y-2">
+            {categories.main.map((c) => <li key={c}><Link className="text-primary hover:underline" href={href(`/news?category=${encodeURIComponent(c)}`)}>{c}</Link></li>)}
+          </ul>
+        </>
+      )}
+      {categories.sub.length > 0 && (
+        <>
+          <h2 className="mb-2 mt-8 text-xl font-bold">{t('site.subcategories')}</h2>
+          <ul className="space-y-2">
+            {categories.sub.map((c) => <li key={c}><Link className="text-primary hover:underline" href={href(`/news?subcategory=${encodeURIComponent(c)}`)}>{c}</Link></li>)}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

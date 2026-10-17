@@ -2,12 +2,15 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Brackets, In, Repository } from 'typeorm';
+import { applyColumnFilters } from '../../common/utils/column-filters';
 import { PERM } from '../../common/constants';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
-import { City, Role, User } from '../../entities';
+import { City } from '../cities/city.entity';
+import { Role } from '../access/role.entity';
+import { User } from './user.entity';
 import { PermissionsService } from '../access/permissions.service';
 import { RolesService } from '../access/roles.service';
 import { AuditService } from '../audit/audit.service';
@@ -42,6 +45,7 @@ export class UsersService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('u.fullName LIKE :like', { like }).orWhere('u.email LIKE :like', { like }).orWhere('u.phone LIKE :like', { like })));
     }
+    applyColumnFilters(qb, q.cf, { fullName: 'u.fullName', email: 'u.email', phone: 'u.phone', role: ['role.nameAr', 'role.nameEn', 'role.code'], createdAt: 'CAST(u.createdAt AS CHAR)' });
     qb.orderBy('u.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     return qb;
   }

@@ -1,5 +1,5 @@
 import { DataSourceOptions } from 'typeorm';
-import { ALL_ENTITIES } from '../entities';
+import { ALL_ENTITIES } from './entities';
 import { join } from 'path';
 
 export function buildDbOptions(env: Record<string, any>): DataSourceOptions {

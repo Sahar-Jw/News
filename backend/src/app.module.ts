@@ -8,7 +8,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { validateEnv } from './config/env.validation';
 import { buildDbOptions } from './database/db-options';
-import { User } from './entities';
+import { User } from './modules/users/user.entity';
 import { AccessModule } from './modules/access/access.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';

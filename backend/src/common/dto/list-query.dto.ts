@@ -4,7 +4,9 @@ import { IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } 
 /** Shared query shape for every admin table (SRS TBL-FR). */
 export class AdminListQueryDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
-  @IsOptional() @IsIn(['10', '20', 'all']) limit?: string;
+  @IsOptional() @IsIn(['10', '20', '50', '100', 'all']) limit?: string;
+  /** per-column search: JSON object {columnKey: text} */
+  @IsOptional() @IsString() @MaxLength(2000) cf?: string;
   @IsOptional() @IsString() @MaxLength(200) q?: string;
   @IsOptional() @IsDateString() from?: string;
   @IsOptional() @IsDateString() to?: string;

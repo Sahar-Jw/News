@@ -84,24 +84,23 @@ export function Navbar() {
         <nav className={`${menu ? 'flex' : 'hidden'} w-full flex-col gap-1 md:ms-auto md:flex md:w-auto md:flex-row md:items-center md:gap-1`}>
           <Link href={href('/')} className="rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.home')}</Link>
 
-          {categories.length > 0 && (
+          {categories.main.length > 0 && (
             <div className="group relative">
               <Link href={href('/news')} className="block rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.categories')} ▾</Link>
               <div className="invisible absolute start-0 top-full z-50 min-w-48 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
-                {categories.map((c) => (
-                  <div key={c.name} className="group/sub relative">
-                    <Link href={href(`/news?category=${encodeURIComponent(c.name)}`)} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
-                      {c.name}
-                      {c.subcategories.length > 0 && <span className="text-xs text-gray-400">▸</span>}
-                    </Link>
-                    {c.subcategories.length > 0 && (
-                      <div className="invisible absolute start-full top-0 min-w-44 rounded-lg border bg-white py-1 opacity-0 shadow-lg group-hover/sub:visible group-hover/sub:opacity-100">
-                        {c.subcategories.map((sc) => (
-                          <Link key={sc} href={href(`/news?category=${encodeURIComponent(c.name)}&subcategory=${encodeURIComponent(sc)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{sc}</Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                {categories.main.map((c) => (
+                  <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {categories.sub.length > 0 && (
+            <div className="group relative">
+              <span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.subcategories')} ▾</span>
+              <div className="invisible absolute start-0 top-full z-50 min-w-48 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
+                {categories.sub.map((c) => (
+                  <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
                 ))}
               </div>
             </div>

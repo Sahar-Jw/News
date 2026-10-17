@@ -31,7 +31,7 @@ function View() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <article lang={n.language} dir={n.language === 'ar' ? 'rtl' : 'ltr'}>
         <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className="rounded bg-primary px-2 py-0.5 text-xs text-white">{n.mainCategory}</Link>
-        {n.subcategory && <span className="ms-2 text-xs text-gray-500">/ {n.subcategory}</span>}
+        {n.subcategory && <Link href={href(`/news?subcategory=${encodeURIComponent(n.subcategory)}`)} className="ms-2 rounded border px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50">{n.subcategory}</Link>}
         <h1 className="mt-3 text-3xl font-bold leading-snug">{n.title}</h1>
         {n.subject && <p className="mt-2 text-lg text-gray-600">{n.subject}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">

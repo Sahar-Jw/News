@@ -27,10 +27,10 @@ export function NewsTable({ section }: { section: string }) {
       { key: 'subcategory', label: t('f.subcategory') } as Col<Row>,
     ]),
     { key: 'topics', label: t('site.topics'), render: (r) => (r.topics ?? []).join('، '), text: (r) => (r.topics ?? []).join(', ') },
-    { key: 'publishAt', label: t('f.publishAt'), render: (r) => <div>{fmtDate(lang, r.publishAt, true)} {statusBadge(r.status)}</div>, text: (r) => `${fmtDate(lang, r.publishAt)} (${r.status})` },
+    { key: 'publishAt', type: 'date', label: t('f.publishAt'), render: (r) => <div>{fmtDate(lang, r.publishAt, true)} {statusBadge(r.status)}</div>, text: (r) => `${fmtDate(lang, r.publishAt)} (${r.status})` },
     { key: 'viewCount', label: t('f.views'), render: (r) => fmtNum(lang, r.viewCount) },
-    { key: 'language', label: t('f.language'), render: (r) => t(`l.${r.language}`) },
-    { key: 'visibility', label: t('f.visibility'), render: (r) => t(`v.${r.visibility}`) },
+    { key: 'language', searchable: false, label: t('f.language'), render: (r) => t(`l.${r.language}`) },
+    { key: 'visibility', searchable: false, label: t('f.visibility'), render: (r) => t(`v.${r.visibility}`) },
   ];
 
   return (
