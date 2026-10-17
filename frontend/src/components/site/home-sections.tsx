@@ -1,12 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Stars } from '@/components/ui/ui';
 import { Card, NewsCard, Thumb } from './cards';
 import { ContactForm } from './contact-form';
 import { useSite } from './site-context';
+
+export { BreakingTicker } from './breaking-ticker';
 
 export function SectionWrap({ code, title, children, action }: { code: string; title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -17,27 +19,6 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
       </div>
       {children}
     </section>
-  );
-}
-
-export function BreakingTicker({ items }: { items: Card[] }) {
-  const { t, href } = useI18n();
-  if (!items.length) return null;
-  return (
-    <div className="no-print flex items-center overflow-hidden bg-red-600 text-white">
-      <span className="z-10 shrink-0 bg-red-800 px-4 py-2 text-sm font-bold">{t('site.breaking')}</span>
-      <div className="relative flex-1 overflow-hidden">
-        <div dir="ltr" className="ticker-track flex w-max whitespace-nowrap">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex min-w-full shrink-0 justify-around gap-10 px-6 py-2">
-              {items.map((n) => (
-                <Link key={`${n.id}-${copy}`} dir="auto" href={href(`/news/view?id=${n.id}`)} className="text-sm hover:underline">● {n.title}</Link>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 
