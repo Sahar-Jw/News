@@ -43,7 +43,7 @@ export class News extends TimestampedEntity {
   @Column({ name: 'publish_at', type: 'datetime', nullable: true })
   publishAt: Date | null;
 
-  @Column({ type: 'enum', enum: NewsStatus, default: NewsStatus.DRAFT })
+  @Column({ type: 'enum', enum: NewsStatus, default: NewsStatus.PUBLISHED })
   status: NewsStatus;
 
   @Column({ type: 'enum', enum: Language, default: Language.AR })

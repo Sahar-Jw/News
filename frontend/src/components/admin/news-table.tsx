@@ -41,12 +41,12 @@ export function NewsTable({ section }: { section: string }) {
       dateFilter
       exportName={special ? section.toLowerCase() : 'news'}
       filters={[
-        { key: 'status', label: t('f.status'), options: ['draft', 'scheduled', 'published'].map((s) => ({ value: s, label: t(`s.${s}`) })) },
+        { key: 'status', label: t('f.status'), options: ['scheduled', 'published'].map((s) => ({ value: s, label: t(`s.${s}`) })) },
         { key: 'language', label: t('f.language'), options: ['ar', 'en'].map((s) => ({ value: s, label: t(`l.${s}`) })) },
         { key: 'visibility', label: t('f.visibility'), options: ['public', 'members'].map((s) => ({ value: s, label: t(`v.${s}`) })) },
       ]}
       bulkDelete={{ path: '/admin/news/bulk-delete', can: can('news.delete') }}
-      toolbar={can('news.create') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
+      toolbar={can('news.create') && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
       rowActions={(r, reload) => (
         <div className="flex gap-1">
           {can('news.update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}

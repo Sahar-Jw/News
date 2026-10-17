@@ -27,7 +27,6 @@ export const SPECIAL_CATEGORY_CONFIG: Record<SpecialCategory, { supportsSubcateg
 export const TECHNICAL_ADMIN_ROLE = 'technical_admin';
 
 export enum NewsStatus {
-  DRAFT = 'draft',
   SCHEDULED = 'scheduled',
   PUBLISHED = 'published',
 }

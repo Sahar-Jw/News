@@ -94,7 +94,7 @@ export class InitialSchema1760400000000 implements MigrationInterface {
       \`rating\` TINYINT UNSIGNED NULL,
       \`is_featured\` TINYINT(1) NOT NULL DEFAULT 0,
       \`publish_at\` DATETIME NULL,
-      \`status\` ENUM('draft','scheduled','published') NOT NULL DEFAULT 'draft',
+      \`status\` ENUM('scheduled','published') NOT NULL DEFAULT 'published',
       \`language\` ENUM('ar','en') NOT NULL,
       \`visibility\` ENUM('public','members') NOT NULL DEFAULT 'public',
       \`view_count\` INT UNSIGNED NOT NULL DEFAULT 0,

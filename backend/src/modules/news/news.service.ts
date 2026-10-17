@@ -1,6 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { Brackets, In, LessThanOrEqual, Repository } from 'typeorm';
 import {
   Language,
   MAX_IMAGES_PER_RECORD,
@@ -27,12 +27,36 @@ const LIST_COLUMNS = [
 ];
 
 @Injectable()
-export class NewsService {
+export class NewsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(NewsService.name);
+  private publishTimer: NodeJS.Timeout | undefined;
+
   constructor(
     @InjectRepository(News) private readonly repo: Repository<News>,
     private readonly storage: FileStorageService,
     private readonly audit: AuditService,
   ) {}
+
+  async onModuleInit() {
+    await this.publishDueNews();
+    this.publishTimer = setInterval(() => {
+      void this.publishDueNews().catch((error: unknown) => {
+        this.logger.error('Failed to publish scheduled news', error instanceof Error ? error.stack : String(error));
+      });
+    }, 30_000);
+    this.publishTimer.unref();
+  }
+
+  onModuleDestroy() {
+    if (this.publishTimer) clearInterval(this.publishTimer);
+  }
+
+  private publishDueNews() {
+    return this.repo.update(
+      { status: NewsStatus.SCHEDULED, publishAt: LessThanOrEqual(new Date()) },
+      { status: NewsStatus.PUBLISHED },
+    );
+  }
 
   present(n: News) {
     const { createdBy, ...rest } = n as any;
@@ -180,12 +204,12 @@ export class NewsService {
     perms: Set<string>,
   ): { status: NewsStatus; publishAt: Date | null } {
     const now = new Date();
-    const status = dto.status ?? existing?.status ?? NewsStatus.DRAFT;
+    const status = dto.status ?? existing?.status ?? NewsStatus.PUBLISHED;
     const providedAt = dto.publishAt !== undefined;
     let publishAt: Date | null = providedAt ? (dto.publishAt ? new Date(dto.publishAt) : null) : existing?.publishAt ?? null;
     if (publishAt && Number.isNaN(publishAt.getTime())) throw new BadRequestException('تاريخ النشر غير صالح');
 
-    const statusChanged = existing ? status !== existing.status : status !== NewsStatus.DRAFT;
+    const statusChanged = existing ? status !== existing.status : true;
     if (statusChanged && !perms.has(PERM.NEWS_PUBLISH)) throw new ForbiddenException('ليست لديك صلاحية النشر أو الجدولة');
 
     if (providedAt || statusChanged) {

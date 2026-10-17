@@ -36,6 +36,8 @@ Production: `npm run build` -> upload the contents of `out/` to `public_html` (t
 
 The news detail uses `?id=` (not `/news/123`) because a static export cannot create pages for ids that don't exist yet.
 
+The shared top bar, navigation, and footer wrap every public page (including login and registration); the admin area uses its own dashboard navigation. News publishes immediately by default, while scheduled news becomes published when its scheduled time arrives.
+
 ## How it follows the SRS
 - Every admin table uses one `DataTable`: global search, column filters, date range, page size 10/20/all, server-side paging, row numbers, checkbox + select-all + confirmed bulk delete, CSV/Excel export and print with a column picker.
 - Menu items and buttons are hidden by permission (UI hint only; the API enforces every permission and returns 403).

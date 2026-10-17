@@ -32,7 +32,7 @@ function Form() {
   const [cats, setCats] = useState<{ main: string[]; sub: string[] }>({ main: [], sub: [] });
   const [f, setF] = useState({
     title: '', subject: '', mainCategory: '', newMain: '', subcategory: '', newSub: '', topics: '', body: '', rating: '', isFeatured: false,
-    publishAt: '', status: 'draft', language: lang as string, visibility: 'public',
+    publishAt: '', status: 'published', language: lang as string, visibility: 'public',
   });
   const [existing, setExisting] = useState<string[]>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -173,7 +173,7 @@ function Form() {
         </Field>
         <Field label={t('f.status')}>
           <select className={inputCls} value={f.status} disabled={!mayPublish} onChange={(e) => set('status', e.target.value)}>
-            <option value="draft">{t('s.draft')}</option><option value="scheduled">{t('s.scheduled')}</option><option value="published">{t('s.published')}</option>
+            <option value="scheduled">{t('s.scheduled')}</option><option value="published">{t('s.published')}</option>
           </select>
         </Field>
         <Field label={t('f.publishAt')}>

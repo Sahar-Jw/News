@@ -23,14 +23,17 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
 export function BreakingTicker({ items }: { items: Card[] }) {
   const { t, href } = useI18n();
   if (!items.length) return null;
-  const row = [...items, ...items]; // duplicated for a seamless loop
   return (
     <div className="no-print flex items-center overflow-hidden bg-red-600 text-white">
       <span className="z-10 shrink-0 bg-red-800 px-4 py-2 text-sm font-bold">{t('site.breaking')}</span>
       <div className="relative flex-1 overflow-hidden">
-        <div className="ticker-track flex w-max animate-ticker gap-10 whitespace-nowrap py-2 ps-6">
-          {row.map((n, i) => (
-            <Link key={`${n.id}-${i}`} href={href(`/news/view?id=${n.id}`)} className="text-sm hover:underline">● {n.title}</Link>
+        <div className="ticker-track flex w-max animate-ticker whitespace-nowrap">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex shrink-0 gap-10 py-2 ps-6">
+              {items.map((n) => (
+                <Link key={`${n.id}-${copy}`} href={href(`/news/view?id=${n.id}`)} className="text-sm hover:underline">● {n.title}</Link>
+              ))}
+            </div>
           ))}
         </div>
       </div>

@@ -13,7 +13,7 @@ const config: Config = {
       keyframes: {
         ticker: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },
       },
-      animation: { ticker: 'ticker 40s linear infinite' },
+      animation: { ticker: 'ticker 18s linear infinite' },
     },
   },
   plugins: [],
