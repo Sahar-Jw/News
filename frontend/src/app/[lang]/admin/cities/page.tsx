@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
@@ -11,6 +12,7 @@ interface Row { id: number; code: string; nameAr: string; nameEn: string }
 
 export default function CitiesPage() {
   const { t } = useI18n();
+  const { can } = useAuth();
   const toast = useToast();
   const [edit, setEdit] = useState<null | Partial<Row>>(null);
   const [key, setKey] = useState(0);
@@ -29,15 +31,15 @@ export default function CitiesPage() {
     } catch (err: any) { toast(err.message, 'err'); }
   };
   return (
-    <RequirePerm any={['cities.manage']}>
+    <RequirePerm any={['cities.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.cities')}</h1>
       <DataTable<Row>
         endpoint="/admin/cities" columns={cols} exportable={false} refreshKey={key}
-        toolbar={<Button onClick={() => setEdit({})}>＋ {t('app.add')}</Button>}
+        toolbar={can('cities.create') && <Button onClick={() => setEdit({})}>＋ {t('app.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <Button size="sm" variant="outline" onClick={() => setEdit(r)}>{t('app.edit')}</Button>
-            <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => { if (!confirm(t('tbl.confirmDelete'))) return; try { await api(`/admin/cities/${r.id}`, { method: 'DELETE' }); reload(); } catch (e: any) { toast(e.message, 'err'); } }}>✕</Button>
+            {can('cities.update') && <Button size="sm" variant="outline" onClick={() => setEdit(r)}>{t('app.edit')}</Button>}
+            {can('cities.delete') && <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => { if (!confirm(t('tbl.confirmDelete'))) return; try { await api(`/admin/cities/${r.id}`, { method: 'DELETE' }); reload(); } catch (e: any) { toast(e.message, 'err'); } }}>✕</Button>}
           </div>
         )}
       />

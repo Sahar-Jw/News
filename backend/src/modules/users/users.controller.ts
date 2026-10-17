@@ -7,7 +7,7 @@ import { CurrentUser, Permissions } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
-import { ActivateUserDto, BulkIdsDto, ChangePasswordDto, CreateUserDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
+import { ActivateUserDto, BulkIdsDto, ChangePasswordDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
 import { UsersService } from './users.service';
 
 const userCols = (ar: boolean): ExportColumn[] => [
@@ -31,7 +31,7 @@ export class UsersController {
   }
 
   @Get('export')
-  @Permissions(PERM.USERS_READ)
+  @Permissions(PERM.USERS_EXPORT)
   async export(@Query() q: UserListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(userCols(ar), ex.columns);
@@ -43,12 +43,6 @@ export class UsersController {
   @Permissions(PERM.USERS_DELETE)
   bulkDelete(@Body() dto: BulkIdsDto, @CurrentUser() u: AuthUser) {
     return this.service.removeMany(dto.ids, u);
-  }
-
-  @Post()
-  @Permissions(PERM.USERS_CREATE)
-  create(@Body() dto: CreateUserDto, @CurrentUser() u: AuthUser) {
-    return this.service.create(dto, u);
   }
 
   @Get(':id')

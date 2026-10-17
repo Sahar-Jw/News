@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Button, Modal } from '@/components/ui/ui';
@@ -12,6 +13,7 @@ interface Row { id: number; name: string; email: string; subject: string; messag
 
 export default function MessagesPage() {
   const { t, lang } = useI18n();
+  const { can } = useAuth();
   const toast = useToast();
   const [open, setOpen] = useState<Row | null>(null);
   const [key, setKey] = useState(0);
@@ -26,7 +28,7 @@ export default function MessagesPage() {
     <RequirePerm any={['messages.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.messages')}</h1>
       <DataTable<Row>
-        endpoint="/admin/messages" columns={cols} dateFilter refreshKey={key} exportName="messages"
+        endpoint="/admin/messages" columns={cols} dateFilter refreshKey={key} exportable={can('messages.export')} exportName="messages"
         filters={[{ key: 'isRead', label: t('f.status'), options: [{ value: 'false', label: t('m.unread') }, { value: 'true', label: t('m.read') }] }]}
         rowActions={(r) => (
           <Button size="sm" variant="outline" onClick={async () => {

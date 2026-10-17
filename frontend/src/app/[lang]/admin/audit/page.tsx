@@ -1,4 +1,5 @@
 'use client';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Col, DataTable } from '@/components/admin/data-table';
@@ -10,6 +11,7 @@ const CATS = ['auth', 'news', 'users', 'permissions', 'settings', 'cities', 'mes
 /** Read-only: no add / edit / delete controls exist for audit logs. */
 export default function AuditPage() {
   const { t, lang } = useI18n();
+  const { can } = useAuth();
   const cols: Col<Row>[] = [
     { key: 'createdAt', type: 'date', label: t('f.date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
     { key: 'category', label: t('a.category') },
@@ -20,7 +22,7 @@ export default function AuditPage() {
   return (
     <RequirePerm any={['audit.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.audit')}</h1>
-      <DataTable<Row> endpoint="/admin/audit-logs" columns={cols} dateFilter exportName="audit-logs" filters={[{ key: 'category', label: t('a.category'), options: CATS.map((c) => ({ value: c, label: c })) }]} />
+      <DataTable<Row> endpoint="/admin/audit-logs" columns={cols} dateFilter exportable={can('audit.export')} exportName="audit-logs" filters={[{ key: 'category', label: t('a.category'), options: CATS.map((c) => ({ value: c, label: c })) }]} />
     </RequirePerm>
   );
 }

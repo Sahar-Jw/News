@@ -136,7 +136,7 @@ export class SettingsService {
     const s = await this.getOrFail(id);
     if (s.valueType !== 'file') throw new BadRequestException('هذا الإعداد ليس من نوع ملف');
     if (!file) throw new BadRequestException('لم يتم إرسال ملف');
-    const rel = await this.storage.saveImage(file, 'site');
+    const rel = s.key === 'favicon' ? await this.storage.saveFavicon(file, 'site') : await this.storage.saveImage(file, 'site');
     const old = s.value;
     try {
       s.value = rel;

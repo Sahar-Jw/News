@@ -38,7 +38,7 @@ export class ContactController {
   }
 
   @Get('admin/messages/export')
-  @Permissions(PERM.MESSAGES_READ)
+  @Permissions(PERM.MESSAGES_EXPORT)
   async export(@Query() q: MessageListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);

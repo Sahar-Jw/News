@@ -11,25 +11,25 @@ export class RolesController {
 
   // The roles list also feeds user-management dropdowns.
   @Get()
-  @Permissions(PERM.ROLES_MANAGE, PERM.USERS_READ, PERM.USERS_CREATE, PERM.USERS_UPDATE, PERM.PERMISSIONS_READ, PERM.PERMISSIONS_ASSIGN)
+  @Permissions(PERM.ROLES_READ, PERM.USERS_READ, PERM.USERS_UPDATE, PERM.USERS_ROLE_CHANGE, PERM.PERMISSIONS_READ, PERM.PERMISSIONS_ASSIGN)
   list() {
     return this.service.list();
   }
 
   @Post()
-  @Permissions(PERM.ROLES_MANAGE)
+  @Permissions(PERM.ROLES_CREATE)
   create(@Body() dto: CreateRoleDto, @CurrentUser() u: AuthUser) {
     return this.service.create(dto, u);
   }
 
   @Patch(':id')
-  @Permissions(PERM.ROLES_MANAGE)
+  @Permissions(PERM.ROLES_UPDATE)
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRoleDto, @CurrentUser() u: AuthUser) {
     return this.service.update(id, dto, u);
   }
 
   @Delete(':id')
-  @Permissions(PERM.ROLES_MANAGE)
+  @Permissions(PERM.ROLES_DELETE)
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.remove(id, u);
   }

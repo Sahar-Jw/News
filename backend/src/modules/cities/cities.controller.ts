@@ -18,25 +18,25 @@ export class CitiesController {
   }
 
   @Get('admin/cities')
-  @Permissions(PERM.CITIES_MANAGE)
+  @Permissions(PERM.CITIES_READ)
   list(@Query() q: AdminListQueryDto) {
     return this.service.list(q);
   }
 
   @Post('admin/cities')
-  @Permissions(PERM.CITIES_MANAGE)
+  @Permissions(PERM.CITIES_CREATE)
   create(@Body() dto: CreateCityDto, @CurrentUser() u: AuthUser) {
     return this.service.create(dto, u);
   }
 
   @Patch('admin/cities/:id')
-  @Permissions(PERM.CITIES_MANAGE)
+  @Permissions(PERM.CITIES_UPDATE)
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCityDto, @CurrentUser() u: AuthUser) {
     return this.service.update(id, dto, u);
   }
 
   @Delete('admin/cities/:id')
-  @Permissions(PERM.CITIES_MANAGE)
+  @Permissions(PERM.CITIES_DELETE)
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.remove(id, u);
   }

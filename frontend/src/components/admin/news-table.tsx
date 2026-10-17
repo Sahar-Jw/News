@@ -39,6 +39,7 @@ export function NewsTable({ section }: { section: string }) {
       baseParams={{ section }}
       columns={cols}
       dateFilter
+      exportable={can('news.export')}
       exportName={special ? section.toLowerCase() : 'news'}
       filters={[
         { key: 'status', label: t('f.status'), options: ['scheduled', 'published'].map((s) => ({ value: s, label: t(`s.${s}`) })) },

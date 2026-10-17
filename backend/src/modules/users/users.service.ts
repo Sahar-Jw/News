@@ -15,7 +15,7 @@ import { PermissionsService } from '../access/permissions.service';
 import { RolesService } from '../access/roles.service';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
-import { ChangePasswordDto, CreateUserDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
+import { ChangePasswordDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
 
 @Injectable()
 export class UsersService {
@@ -99,30 +99,18 @@ export class UsersService {
     if (total - holders.length < 1) throw new ConflictException('لا يمكن تعطيل أو حذف أو خفض آخر مستخدم يملك صلاحية تعيين الصلاحيات');
   }
 
-  // ---------- CRUD ----------
-  async create(dto: CreateUserDto, actor: AuthUser) {
-    await this.assertRoleAssignable(dto.roleId, actor);
-    if (await this.users.findOne({ where: { email: dto.email }, select: { id: true } })) throw new ConflictException('البريد الإلكتروني مسجّل مسبقاً');
-    const u = await this.users.save(
-      this.users.create({
-        fullName: dto.fullName,
-        email: dto.email,
-        passwordHash: await bcrypt.hash(dto.password, 12),
-        roleId: dto.roleId,
-        phone: dto.phone ?? null,
-        isActive: dto.isActive ?? true,
-      }),
-    );
-    await this.audit.log({ category: 'users', action: 'create', description: `إنشاء المستخدم ${u.email}`, actorId: actor.id, entityType: 'users', entityId: u.id, details: { roleId: dto.roleId } });
-    return this.get(u.id);
-  }
-
+  // ---------- update / activate / delete (users are never created from the admin area) ----------
   async update(id: number, dto: UpdateUserDto, actor: AuthUser) {
     const u = await this.getOrFail(id, false);
     await this.assertCanManage(u, actor);
     const changes: Record<string, any> = {};
 
     if (dto.roleId !== undefined && dto.roleId !== u.roleId) {
+      // changing a role is its own permission, separate from editing name / email / phone
+      if (!actor.permissions.has(PERM.USERS_ROLE_CHANGE)) {
+        await this.audit.log({ category: 'security', action: 'permission_denied', description: 'محاولة تغيير دور مستخدم دون صلاحية', actorId: actor.id, entityType: 'users', entityId: id });
+        throw new ForbiddenException('ليست لديك صلاحية تغيير دور المستخدم');
+      }
       await this.assertRoleAssignable(dto.roleId, actor);
       const newCodes = await this.permissions.getRoleCodes(dto.roleId);
       if (!newCodes.has(PERM.PERMISSIONS_ASSIGN)) await this.assertNotLastAssigner([u]);

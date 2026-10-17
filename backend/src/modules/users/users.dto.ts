@@ -13,15 +13,6 @@ export class UserListQueryDto extends AdminListQueryDto {
   @IsOptional() @toBool() @IsBoolean() isActive?: boolean;
 }
 
-export class CreateUserDto {
-  @trim() @IsString() @MinLength(2) @MaxLength(150) fullName: string;
-  @lower() @IsEmail() @MaxLength(190) email: string;
-  @IsString() @MinLength(8) @MaxLength(72) password: string;
-  @Type(() => Number) @IsInt() roleId: number;
-  @IsOptional() @nullIfEmpty() @Matches(PHONE, { message: 'رقم هاتف غير صالح' }) phone?: string;
-  @IsOptional() @toBool() @IsBoolean() isActive?: boolean;
-}
-
 export class UpdateUserDto {
   @IsOptional() @trim() @IsString() @MinLength(2) @MaxLength(150) fullName?: string;
   @IsOptional() @lower() @IsEmail() @MaxLength(190) email?: string;

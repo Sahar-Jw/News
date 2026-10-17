@@ -90,9 +90,9 @@ export function Navbar() {
   ];
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
-    { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.manage', 'permissions.read', 'permissions.assign') },
+    { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
     { label: t('adm.settings'), to: '/admin/settings', show: can('settings.read') },
-    { label: t('adm.cities'), to: '/admin/cities', show: can('cities.manage') },
+    { label: t('adm.cities'), to: '/admin/cities', show: can('cities.read') },
     { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
   ];
 

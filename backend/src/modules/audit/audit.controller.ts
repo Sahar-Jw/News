@@ -28,6 +28,7 @@ export class AuditController {
   }
 
   @Get('export')
+  @Permissions(PERM.AUDIT_EXPORT)
   async export(@Query() q: AuditListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);

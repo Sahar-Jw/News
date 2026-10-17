@@ -51,28 +51,50 @@ export interface PermissionDef {
   nameEn: string;
 }
 
-/** SRS Annex B */
+/**
+ * SRS Annex B – every action is its own permission, so a role can be given exactly
+ * "read only", "create only", "export only", etc.
+ * NOTE: there is intentionally NO permission (and no route) for creating users from the admin area:
+ * accounts are created only through public self-registration.
+ */
 export const PERMISSIONS: PermissionDef[] = [
+  // news / content
   { code: 'news.read', module: 'news', nameAr: 'عرض المحتوى', nameEn: 'View content' },
   { code: 'news.create', module: 'news', nameAr: 'إنشاء محتوى', nameEn: 'Create content' },
   { code: 'news.update', module: 'news', nameAr: 'تعديل المحتوى', nameEn: 'Update content' },
   { code: 'news.delete', module: 'news', nameAr: 'حذف المحتوى', nameEn: 'Delete content' },
+  { code: 'news.export', module: 'news', nameAr: 'تصدير المحتوى', nameEn: 'Export content' },
   { code: 'news.publish', module: 'news', nameAr: 'نشر/جدولة المحتوى', nameEn: 'Publish / schedule content' },
   { code: 'news.category.create', module: 'news', nameAr: 'إضافة فئة جديدة', nameEn: 'Create new category value' },
   { code: 'news.category.change', module: 'news', nameAr: 'تغيير الفئة الرئيسية', nameEn: 'Change main category' },
+  // users
   { code: 'users.read', module: 'users', nameAr: 'عرض المستخدمين', nameEn: 'View users' },
-  { code: 'users.create', module: 'users', nameAr: 'إضافة مستخدم', nameEn: 'Create users' },
   { code: 'users.update', module: 'users', nameAr: 'تعديل مستخدم', nameEn: 'Update users' },
+  { code: 'users.role.change', module: 'users', nameAr: 'تغيير دور مستخدم', nameEn: 'Change a user\'s role' },
   { code: 'users.delete', module: 'users', nameAr: 'حذف مستخدم', nameEn: 'Delete users' },
   { code: 'users.activate', module: 'users', nameAr: 'تفعيل المستخدمين', nameEn: 'Activate users' },
-  { code: 'roles.manage', module: 'roles', nameAr: 'إدارة الأدوار', nameEn: 'Manage roles' },
+  { code: 'users.export', module: 'users', nameAr: 'تصدير المستخدمين', nameEn: 'Export users' },
+  // roles & permissions
+  { code: 'roles.read', module: 'roles', nameAr: 'عرض الأدوار', nameEn: 'View roles' },
+  { code: 'roles.create', module: 'roles', nameAr: 'إنشاء دور', nameEn: 'Create roles' },
+  { code: 'roles.update', module: 'roles', nameAr: 'تعديل دور', nameEn: 'Update roles' },
+  { code: 'roles.delete', module: 'roles', nameAr: 'حذف دور', nameEn: 'Delete roles' },
   { code: 'permissions.read', module: 'roles', nameAr: 'عرض الصلاحيات', nameEn: 'View permissions' },
   { code: 'permissions.assign', module: 'roles', nameAr: 'تعيين الصلاحيات', nameEn: 'Assign permissions' },
+  // settings
   { code: 'settings.read', module: 'settings', nameAr: 'عرض الإعدادات', nameEn: 'View settings' },
   { code: 'settings.update', module: 'settings', nameAr: 'تعديل الإعدادات', nameEn: 'Update settings' },
-  { code: 'cities.manage', module: 'cities', nameAr: 'إدارة المدن', nameEn: 'Manage cities' },
+  // cities
+  { code: 'cities.read', module: 'cities', nameAr: 'عرض المدن', nameEn: 'View cities' },
+  { code: 'cities.create', module: 'cities', nameAr: 'إضافة مدينة', nameEn: 'Create cities' },
+  { code: 'cities.update', module: 'cities', nameAr: 'تعديل مدينة', nameEn: 'Update cities' },
+  { code: 'cities.delete', module: 'cities', nameAr: 'حذف مدينة', nameEn: 'Delete cities' },
+  // audit log
   { code: 'audit.read', module: 'audit', nameAr: 'عرض سجل التدقيق', nameEn: 'View audit log' },
+  { code: 'audit.export', module: 'audit', nameAr: 'تصدير سجل التدقيق', nameEn: 'Export audit log' },
+  // contact messages
   { code: 'messages.read', module: 'messages', nameAr: 'قراءة رسائل التواصل', nameEn: 'Read contact messages' },
+  { code: 'messages.export', module: 'messages', nameAr: 'تصدير رسائل التواصل', nameEn: 'Export contact messages' },
 ];
 
 export const PERM = {
@@ -80,20 +102,30 @@ export const PERM = {
   NEWS_CREATE: 'news.create',
   NEWS_UPDATE: 'news.update',
   NEWS_DELETE: 'news.delete',
+  NEWS_EXPORT: 'news.export',
   NEWS_PUBLISH: 'news.publish',
   NEWS_CATEGORY_CREATE: 'news.category.create',
   NEWS_CATEGORY_CHANGE: 'news.category.change',
   USERS_READ: 'users.read',
-  USERS_CREATE: 'users.create',
   USERS_UPDATE: 'users.update',
+  USERS_ROLE_CHANGE: 'users.role.change',
   USERS_DELETE: 'users.delete',
   USERS_ACTIVATE: 'users.activate',
-  ROLES_MANAGE: 'roles.manage',
+  USERS_EXPORT: 'users.export',
+  ROLES_READ: 'roles.read',
+  ROLES_CREATE: 'roles.create',
+  ROLES_UPDATE: 'roles.update',
+  ROLES_DELETE: 'roles.delete',
   PERMISSIONS_READ: 'permissions.read',
   PERMISSIONS_ASSIGN: 'permissions.assign',
   SETTINGS_READ: 'settings.read',
   SETTINGS_UPDATE: 'settings.update',
-  CITIES_MANAGE: 'cities.manage',
+  CITIES_READ: 'cities.read',
+  CITIES_CREATE: 'cities.create',
+  CITIES_UPDATE: 'cities.update',
+  CITIES_DELETE: 'cities.delete',
   AUDIT_READ: 'audit.read',
+  AUDIT_EXPORT: 'audit.export',
   MESSAGES_READ: 'messages.read',
+  MESSAGES_EXPORT: 'messages.export',
 } as const;

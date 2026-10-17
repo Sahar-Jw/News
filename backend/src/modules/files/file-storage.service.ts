@@ -44,6 +44,13 @@ export class FileStorageService implements OnModuleInit {
     return null;
   }
 
+  /** Windows .ico (00 00 01 00 + image count) – only accepted for the site favicon. */
+  detectIco(b: Buffer): Detected | null {
+    if (b.length < 22) return null;
+    if (b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00 && b.readUInt16LE(4) > 0) return { mime: 'image/x-icon', ext: 'ico' };
+    return null;
+  }
+
   detectDocument(b: Buffer, originalName: string): Detected | null {
     if (b.length < 8) return null;
     if (b.subarray(0, 5).toString('latin1') === '%PDF-') return { mime: 'application/pdf', ext: 'pdf' };
@@ -58,11 +65,15 @@ export class FileStorageService implements OnModuleInit {
   }
 
   // ---------- processing ----------
-  private async processImage(file: Express.Multer.File, maxWidth: number): Promise<{ buffer: Buffer; ext: string }> {
+  private async processImage(file: Express.Multer.File, maxWidth: number, allowIco = false): Promise<{ buffer: Buffer; ext: string }> {
     if (!file?.buffer?.length) throw new BadRequestException('ملف فارغ');
     if (file.size > MAX_IMAGE_BYTES) throw new BadRequestException(`الصورة ${file.originalname} تتجاوز 5 ميغابايت`);
+    if (allowIco) {
+      const ico = this.detectIco(file.buffer);
+      if (ico) return { buffer: file.buffer, ext: ico.ext }; // stored as uploaded (sharp cannot read .ico)
+    }
     const det = this.detectImage(file.buffer);
-    if (!det) throw new BadRequestException(`الملف ${file.originalname} ليس صورة مدعومة (JPG, PNG, WEBP, GIF)`);
+    if (!det) throw new BadRequestException(`الملف ${file.originalname} ليس صورة مدعومة (${allowIco ? 'ICO, ' : ''}JPG, PNG, WEBP, GIF)`);
     if (!sharp || det.ext === 'gif') return { buffer: file.buffer, ext: det.ext };
     try {
       let pipe = sharp(file.buffer, { failOn: 'error' }).rotate().resize({ width: maxWidth, withoutEnlargement: true });
@@ -86,6 +97,12 @@ export class FileStorageService implements OnModuleInit {
   /** Validate + compress + store one image; returns the relative path. */
   async saveImage(file: Express.Multer.File, folder: string, maxWidth = 1920): Promise<string> {
     const { buffer, ext } = await this.processImage(file, maxWidth);
+    return this.writeNew(folder, ext, buffer);
+  }
+
+  /** Site favicon: same as saveImage but also accepts .ico, and is kept small. */
+  async saveFavicon(file: Express.Multer.File, folder: string): Promise<string> {
+    const { buffer, ext } = await this.processImage(file, 256, true);
     return this.writeNew(folder, ext, buffer);
   }
 

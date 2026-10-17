@@ -36,11 +36,8 @@ export default function UsersPage() {
     e.preventDefault();
     if (!edit) return;
     try {
-      if (edit.id) {
-        await api(`/admin/users/${edit.id}`, { method: 'PATCH', body: { fullName: edit.fullName, email: edit.email, phone: edit.phone ?? '', roleId: edit.roleId, ...(edit.password ? { password: edit.password } : {}) } });
-      } else {
-        await api('/admin/users', { method: 'POST', body: { fullName: edit.fullName, email: edit.email, password: edit.password, roleId: edit.roleId, phone: edit.phone || undefined, isActive: true } });
-      }
+      if (!edit.id) return; // users are never created from here (public registration only)
+      await api(`/admin/users/${edit.id}`, { method: 'PATCH', body: { fullName: edit.fullName, email: edit.email, phone: edit.phone ?? '', ...(can('users.role.change') ? { roleId: edit.roleId } : {}), ...(edit.password ? { password: edit.password } : {}) } });
       toast(t('app.saved')); setEdit(null); setKey((k) => k + 1);
     } catch (err: any) { toast(err.message, 'err'); }
   };
@@ -58,8 +55,8 @@ export default function UsersPage() {
           { key: 'roleId', label: t('u.role'), options: roles.map((r) => ({ value: String(r.id), label: roleName(r) })) },
           { key: 'isActive', label: t('u.active'), options: [{ value: 'true', label: t('app.yes') }, { value: 'false', label: t('u.pending') }] },
         ]}
+        exportable={can('users.export')}
         bulkDelete={{ path: '/admin/users/bulk-delete', can: can('users.delete') }}
-        toolbar={can('users.create') && <Button onClick={() => setEdit({ roleId: roles.find((r) => r.code === 'registered')?.id ?? roles[0]?.id })}>＋ {t('app.add')}</Button>}
         rowActions={(r, reload) => {
           const self = r.id === me?.id; // own account is edited from "Profile", never from this table
           return (
@@ -74,16 +71,16 @@ export default function UsersPage() {
           );
         }}
       />
-      <Modal open={!!edit} onClose={() => setEdit(null)} title={edit?.id ? t('app.edit') : t('app.add')}>
+      <Modal open={!!edit} onClose={() => setEdit(null)} title={t('app.edit')}>
         {edit && (
           <form onSubmit={save} className="space-y-3">
             <Field label={t('u.name')}><input required minLength={2} className={inputCls} value={edit.fullName ?? ''} onChange={(e) => setEdit({ ...edit, fullName: e.target.value })} /></Field>
             <Field label={t('u.email')}><input required type="email" dir="ltr" className={inputCls} value={edit.email ?? ''} onChange={(e) => setEdit({ ...edit, email: e.target.value })} /></Field>
             <Field label={t('u.phone')}><input dir="ltr" className={inputCls} value={edit.phone ?? ''} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} /></Field>
             <Field label={t('u.role')}>
-              <select className={inputCls} value={edit.roleId} onChange={(e) => setEdit({ ...edit, roleId: Number(e.target.value) })}>{roles.map((r) => <option key={r.id} value={r.id}>{roleName(r)}</option>)}</select>
+              <select disabled={!can('users.role.change')} className={inputCls} value={edit.roleId} onChange={(e) => setEdit({ ...edit, roleId: Number(e.target.value) })}>{roles.map((r) => <option key={r.id} value={r.id}>{roleName(r)}</option>)}</select>
             </Field>
-            <Field label={t('u.password')} hint={edit.id ? '—' : '8+'}><input type="password" dir="ltr" minLength={8} maxLength={72} required={!edit.id} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>
+            <Field label={t('u.password')} hint="—"><input type="password" dir="ltr" minLength={8} maxLength={72} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>
             <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
           </form>
         )}

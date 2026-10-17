@@ -59,11 +59,11 @@ export default function RolesPage() {
   const name = (x: { nameAr: string; nameEn: string }) => (lang === 'ar' ? x.nameAr : x.nameEn);
 
   return (
-    <RequirePerm any={['roles.manage', 'permissions.read', 'permissions.assign']}>
+    <RequirePerm any={['roles.read', 'permissions.read', 'permissions.assign']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.roles')} / {t('adm.permissions')}</h1>
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="rounded-xl border bg-white p-4">
-          <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{t('adm.roles')}</h2>{can('roles.manage') && <Button size="sm" onClick={() => setEdit({})}>＋ {t('app.add')}</Button>}</div>
+          <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{t('adm.roles')}</h2>{can('roles.create') && <Button size="sm" onClick={() => setEdit({})}>＋ {t('app.add')}</Button>}</div>
           {!roles ? <Center><Spinner /></Center> : (
             <ul className="space-y-1">
               {roles.map((r) => (
@@ -72,7 +72,7 @@ export default function RolesPage() {
                     <div className="text-sm font-medium">{name(r)}</div>
                     <div className="text-xs text-gray-500" dir="ltr">{r.code} · {r.usersCount} {t('r.users')} · {r.permissionsCount}</div>
                   </button>
-                  {can('roles.manage') && <div className="flex"><Button size="sm" variant="ghost" onClick={() => setEdit(r)}>✎</Button><Button size="sm" variant="ghost" className="text-red-600" onClick={() => delRole(r)}>✕</Button></div>}
+                  {(can('roles.update') || can('roles.delete')) && <div className="flex">{can('roles.update') && <Button size="sm" variant="ghost" onClick={() => setEdit(r)}>✎</Button>}{can('roles.delete') && <Button size="sm" variant="ghost" className="text-red-600" onClick={() => delRole(r)}>✕</Button>}</div>}
                 </li>
               ))}
             </ul>

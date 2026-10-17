@@ -49,7 +49,7 @@ export class NewsAdminController {
   }
 
   @Get('export')
-  @Permissions(PERM.NEWS_READ)
+  @Permissions(PERM.NEWS_EXPORT)
   async export(@Query() q: NewsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);

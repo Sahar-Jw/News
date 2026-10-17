@@ -20,6 +20,21 @@ interface SiteCtx {
 }
 const Ctx = createContext<SiteCtx>(null as unknown as SiteCtx);
 
+/** Points every <link rel="icon"> at the uploaded favicon (Next.js static export has no built-in hook for a DB-driven icon). */
+function applyFavicon(url: string) {
+  if (!url) return;
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
+  const type = ext === 'ico' ? 'image/x-icon' : ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+  document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]').forEach((l) => l.remove());
+  for (const rel of ['icon', 'shortcut icon']) {
+    const l = document.createElement('link');
+    l.rel = rel;
+    l.type = type;
+    l.href = url;
+    document.head.appendChild(l);
+  }
+}
+
 export function SiteProvider({ children }: { children: React.ReactNode }) {
   const { lang } = useI18n();
   const [settings, setSettings] = useState<Settings>({});
@@ -37,6 +52,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       const r = document.documentElement.style;
       if (a.primary_color) r.setProperty('--primary', a.primary_color);
       if (a.secondary_color) r.setProperty('--secondary', a.secondary_color);
+      applyFavicon(fileUrl((st as Settings).branding?.favicon_url));
     });
     return () => {
       alive = false;

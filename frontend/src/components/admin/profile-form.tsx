@@ -77,7 +77,7 @@ export function ProfileForm() {
         <div className="md:col-span-2"><Button>{t('app.save')}</Button></div>
       </form>
 
-      {can('cities.manage') && (
+      {can('cities.create') && (
         <div className="grid gap-3 rounded-xl border bg-white p-5 md:grid-cols-4">
           <input dir="ltr" placeholder={t('u.cityCode')} className={inputCls} value={newCity.code} onChange={(e) => setNewCity({ ...newCity, code: e.target.value })} />
           <input placeholder={t('u.cityAr')} className={inputCls} value={newCity.nameAr} onChange={(e) => setNewCity({ ...newCity, nameAr: e.target.value })} />
