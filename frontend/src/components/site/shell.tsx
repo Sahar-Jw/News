@@ -7,6 +7,25 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { SECTION_ORDER_KEYS } from './sections-meta';
+import { SECTIONS } from '@/lib/utils';
+
+type NavItem = { label: string; to: string; show: boolean };
+
+/** Hover dropdown used for the permission-based menus (same look as the other nav dropdowns). */
+function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; href: (p: string) => string }) {
+  const visible = items.filter((i) => i.show);
+  if (visible.length === 0) return null;
+  return (
+    <div className="group relative">
+      <button type="button" className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{label} ▾</button>
+      <div className="invisible absolute start-0 top-full z-50 min-w-52 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+        {visible.map((i) => (
+          <Link key={i.to} href={href(i.to)} className="block px-4 py-2 text-sm hover:bg-gray-50">{i.label}</Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SocialLinks() {
   const { s } = useSite();
@@ -61,7 +80,21 @@ export function Navbar() {
   const secs = SECTION_ORDER_KEYS.filter((c) => settings.sections_home?.[`${c}_visible`] !== false && c !== 'hero')
     .sort((a, b) => (settings.sections_home?.[`${a}_order`] ?? 99) - (settings.sections_home?.[`${b}_order`] ?? 99));
   const isHome = pathname === `/${lang}/` || pathname === `/${lang}`;
-  const isStaff = can('news.read', 'users.read', 'settings.read', 'audit.read', 'messages.read', 'permissions.read', 'roles.manage', 'cities.manage');
+
+  // Extra dropdowns for logged-in users. Each item only appears if the user holds the permission
+  // (UI hint only - the API still enforces every permission).
+  const manageItems: NavItem[] = [
+    { label: t('adm.news'), to: '/admin/news', show: can('news.read') },
+    ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can('news.read') })),
+    { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
+  ];
+  const securityItems: NavItem[] = [
+    { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
+    { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.manage', 'permissions.read', 'permissions.assign') },
+    { label: t('adm.settings'), to: '/admin/settings', show: can('settings.read') },
+    { label: t('adm.cities'), to: '/admin/cities', show: can('cities.manage') },
+    { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
+  ];
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,15 +159,16 @@ export function Navbar() {
             {t('site.language')}
           </Link>
 
+          {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
+          {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
+
           {me && (
             <div className="group relative">
-              <button className="flex items-center gap-2 rounded-full border p-1 pe-3 hover:bg-gray-50">
+              <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border p-1 hover:bg-gray-50">
                 {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>}
-                <span className="max-w-24 truncate text-sm">{me.fullName}</span>
               </button>
-              <div className="invisible absolute end-0 top-full z-50 min-w-44 rounded-lg border bg-white py-1 opacity-0 shadow-lg group-hover:visible group-hover:opacity-100">
+              <div className="invisible absolute end-0 top-full z-50 min-w-44 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                 <Link href={href('/profile')} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('site.profile')}</Link>
-                {isStaff && <Link href={href('/admin')} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('site.dashboard')}</Link>}
                 <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full px-4 py-2 text-start text-sm text-red-600 hover:bg-gray-50">{t('site.logout')}</button>
               </div>
             </div>

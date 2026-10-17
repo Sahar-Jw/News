@@ -14,8 +14,10 @@ body { font-family: Cairo, 'Segoe UI', Tahoma, Arial, sans-serif; color: #111827
 .prose-news a { color: var(--primary); text-decoration: underline }
 .prose-news blockquote { border-inline-start: 4px solid var(--primary); padding-inline-start: 1rem; color: #4b5563; margin: 1em 0 }
 .editor:empty:before { content: attr(data-placeholder); color: #9ca3af; }
-.ticker-track:hover { animation-play-state: paused; }
-[dir='rtl'] .ticker-track { animation-direction: reverse; }
+@keyframes ticker-ltr { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ticker-rtl { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+[dir='ltr'] .ticker-track { animation: ticker-ltr 18s linear infinite; }
+[dir='rtl'] .ticker-track { animation: ticker-rtl 18s linear infinite; }
 
 @media print {
   .no-print { display: none !important; }

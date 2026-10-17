@@ -27,11 +27,11 @@ export function BreakingTicker({ items }: { items: Card[] }) {
     <div className="no-print flex items-center overflow-hidden bg-red-600 text-white">
       <span className="z-10 shrink-0 bg-red-800 px-4 py-2 text-sm font-bold">{t('site.breaking')}</span>
       <div className="relative flex-1 overflow-hidden">
-        <div className="ticker-track flex w-max animate-ticker whitespace-nowrap">
+        <div dir="ltr" className="ticker-track flex w-max whitespace-nowrap">
           {[0, 1].map((copy) => (
-            <div key={copy} className="flex shrink-0 gap-10 py-2 ps-6">
+            <div key={copy} className="flex min-w-full shrink-0 justify-around gap-10 px-6 py-2">
               {items.map((n) => (
-                <Link key={`${n.id}-${copy}`} href={href(`/news/view?id=${n.id}`)} className="text-sm hover:underline">● {n.title}</Link>
+                <Link key={`${n.id}-${copy}`} dir="auto" href={href(`/news/view?id=${n.id}`)} className="text-sm hover:underline">● {n.title}</Link>
               ))}
             </div>
           ))}

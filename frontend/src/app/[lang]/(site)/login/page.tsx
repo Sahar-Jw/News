@@ -20,9 +20,9 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      const me = await login(email, password);
-      const staff = me.permissions.some((p) => /^(news|users|settings|audit|messages|permissions|roles|cities)\./.test(p));
-      router.push(href(staff ? '/admin' : '/'));
+      await login(email, password);
+      // Everyone lands on the normal site; the navbar shows what this user is allowed to do.
+      router.push(href('/'));
     } catch (e: any) {
       setErr(e.message);
     } finally { setBusy(false); }
