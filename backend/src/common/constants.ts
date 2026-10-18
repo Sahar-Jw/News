@@ -89,6 +89,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'cities.create', module: 'cities', nameAr: 'إضافة مدينة', nameEn: 'Create cities' },
   { code: 'cities.update', module: 'cities', nameAr: 'تعديل مدينة', nameEn: 'Update cities' },
   { code: 'cities.delete', module: 'cities', nameAr: 'حذف مدينة', nameEn: 'Delete cities' },
+  { code: 'countries.create', module: 'cities', nameAr: 'إضافة دولة', nameEn: 'Create countries' },
   // audit log
   { code: 'audit.read', module: 'audit', nameAr: 'عرض سجل التدقيق', nameEn: 'View audit log' },
   { code: 'audit.export', module: 'audit', nameAr: 'تصدير سجل التدقيق', nameEn: 'Export audit log' },
@@ -124,6 +125,7 @@ export const PERM = {
   CITIES_CREATE: 'cities.create',
   CITIES_UPDATE: 'cities.update',
   CITIES_DELETE: 'cities.delete',
+  COUNTRIES_CREATE: 'countries.create',
   AUDIT_READ: 'audit.read',
   AUDIT_EXPORT: 'audit.export',
   MESSAGES_READ: 'messages.read',

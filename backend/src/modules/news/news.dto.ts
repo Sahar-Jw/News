@@ -88,6 +88,8 @@ export class PublicNewsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsString() @MaxLength(100) category?: string;
   @IsOptional() @IsString() @MaxLength(100) subcategory?: string;
   @IsOptional() @IsString() @MaxLength(100) q?: string;
+  /** comma-separated topics: matches news that has at least one of them */
+  @IsOptional() @IsString() @MaxLength(500) topics?: string;
 }
 
 export class SearchQueryDto extends PublicNewsQueryDto {}

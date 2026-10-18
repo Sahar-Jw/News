@@ -65,6 +65,15 @@ function View() {
           </div>
         )}
         <div className="mt-6 border-t pt-4"><ShareRow id={n.id} title={n.title} /></div>
+        <div className="mt-6">
+          <Link
+            href={href(n.topics.length > 0 ? `/news?topics=${encodeURIComponent(n.topics.join(','))}` : `/news?category=${encodeURIComponent(n.mainCategory)}`)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+          >
+            {t('site.readMoreAbout')}
+            <span aria-hidden className="rtl:rotate-180">→</span>
+          </Link>
+        </div>
       </article>
 
       {n.related.length > 0 && (

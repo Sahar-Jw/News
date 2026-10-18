@@ -13,19 +13,20 @@ function List() {
   const router = useRouter();
   const category = sp.get('category') ?? '';
   const subcategory = sp.get('subcategory') ?? '';
+  const topics = sp.get('topics') ?? '';
   const page = Number(sp.get('page') ?? 1);
   const [data, setData] = useState<{ data: Card[]; meta: { totalPages: number; total: number } } | null>(null);
 
   useEffect(() => {
     setData(null);
-    api('/public/news', { params: { lang, category, subcategory, page, limit: 12 } }).then(setData).catch(() => setData({ data: [], meta: { totalPages: 1, total: 0 } }));
-  }, [lang, category, subcategory, page]);
+    api('/public/news', { params: { lang, category, subcategory, topics, page, limit: 12 } }).then(setData).catch(() => setData({ data: [], meta: { totalPages: 1, total: 0 } }));
+  }, [lang, category, subcategory, topics, page]);
 
-  const go = (p: number) => router.push(href(`/news?${new URLSearchParams({ ...(category && { category }), ...(subcategory && { subcategory }), page: String(p) })}`));
+  const go = (p: number) => router.push(href(`/news?${new URLSearchParams({ ...(category && { category }), ...(subcategory && { subcategory }), ...(topics && { topics }), page: String(p) })}`));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">{[category, subcategory].filter(Boolean).join(' / ') || t('site.allNews')}</h1>
+      <h1 className="mb-6 text-3xl font-bold">{topics ? `${t('site.relatedTo')} ${topics.split(',').join(' • ')}` : [category, subcategory].filter(Boolean).join(' / ') || t('site.allNews')}</h1>
       {!data ? <Center><Spinner /></Center> : data.data.length === 0 ? <Center>{t('site.noNews')}</Center> : (
         <>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{data.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>

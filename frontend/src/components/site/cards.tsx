@@ -25,6 +25,17 @@ export function Thumb({ src, className = '', alt = '' }: { src?: string | null; 
   return <div className={`flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 text-3xl text-primary/40 ${className}`} aria-hidden>▤</div>;
 }
 
+/** Default picture for a testimonial that has no image: a neutral person silhouette (inline, so nothing to host). */
+export function DefaultAvatar({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" role="img" aria-label="" className={`shrink-0 ${className}`}>
+      <rect width="64" height="64" fill="#e5e7eb" />
+      <circle cx="32" cy="24" r="11" fill="#9ca3af" />
+      <path d="M10 64c0-13 10-22 22-22s22 9 22 22z" fill="#9ca3af" />
+    </svg>
+  );
+}
+
 export function ShareRow({ id, title }: { id: number; title: string }) {
   const { href, t } = useI18n();
   const url = typeof window !== 'undefined' ? `${location.origin}${href(`/news/view?id=${id}`)}` : '';

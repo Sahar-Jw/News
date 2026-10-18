@@ -35,10 +35,24 @@ export class CitiesService {
   }
 
   async create(dto: CreateCityDto, actor: AuthUser) {
-    if (await this.repo.findOne({ where: { code: dto.code } })) throw new ConflictException('رمز المدينة مستخدم مسبقاً');
-    const c = await this.repo.save(this.repo.create(dto));
+    if (dto.code && (await this.repo.findOne({ where: { code: dto.code } }))) throw new ConflictException('رمز المدينة مستخدم مسبقاً');
+    const dup = await this.repo
+      .createQueryBuilder('c')
+      .where('LOWER(c.nameEn) = LOWER(:en) OR c.nameAr = :ar', { en: dto.nameEn.trim(), ar: dto.nameAr.trim() })
+      .getOne();
+    if (dup) throw new ConflictException('المدينة موجودة مسبقاً');
+    const code = dto.code ?? (await this.freeCode(dto.nameEn));
+    const c = await this.repo.save(this.repo.create({ ...dto, code }));
     await this.audit.log({ category: 'cities', action: 'create', description: `إضافة المدينة ${c.nameAr}`, actorId: actor.id, entityType: 'cities', entityId: c.id });
     return c;
+  }
+
+  private async freeCode(nameEn: string) {
+    let base = nameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 44);
+    if (base.length < 2) base = 'city';
+    let code = base;
+    for (let i = 2; await this.repo.findOne({ where: { code } }); i++) code = `${base}-${i}`;
+    return code;
   }
 
   async update(id: number, dto: UpdateCityDto, actor: AuthUser) {

@@ -42,9 +42,9 @@ export function BreakingTicker({ items }: { items: Card[] }) {
       const natural = one.getBoundingClientRect().width; // all headlines side by side
       const bar = view.getBoundingClientRect().width;
       if (natural <= 0 || bar <= 0) return;
-      const k = Math.max(1, Math.floor(bar / (natural + MIN_GAP)));
-      const next = Math.ceil(Math.max(natural * k, bar));
-      setReps(k);
+      // Each headline appears once per half (never cloned side by side); the empty space just scrolls past.
+      const next = Math.ceil(Math.max(natural + MIN_GAP, bar));
+      setReps(1);
       setCell((prev) => (Math.abs(prev - next) < 2 ? prev : next));
     };
     calc();

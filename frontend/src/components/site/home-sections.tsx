@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Stars } from '@/components/ui/ui';
-import { Card, NewsCard, Thumb } from './cards';
+import { Card, DefaultAvatar, NewsCard, Thumb } from './cards';
 import { ContactForm } from './contact-form';
 import { useSite } from './site-context';
 
@@ -130,28 +130,56 @@ export function ServicesGrid({ items }: { items: Card[] }) {
   );
 }
 
+/** Facebook page plugin sized to its container (the plugin itself allows 180-500px) and clipped to the same radius as the cards. */
+function FacebookCard({ pageUrl }: { pageUrl: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setW(Math.floor(el.getBoundingClientRect().width));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const width = Math.min(500, Math.max(180, w));
+  return (
+    <div ref={box} className="h-[500px] w-full overflow-hidden rounded-xl border bg-white shadow-sm">
+      {w > 0 && (
+        <iframe
+          key={width}
+          title="facebook"
+          className="mx-auto block h-full border-0"
+          style={{ width }}
+          loading="lazy"
+          src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(pageUrl)}&tabs=timeline&width=${width}&height=500&small_header=true`}
+        />
+      )}
+    </div>
+  );
+}
+
 export function Testimonials({ items }: { items: Card[] }) {
   const { s } = useSite();
   const fb = s('social', 'facebook_page_url');
   if (!items.length && !fb) return null;
   return (
-    <div className={`grid gap-5 ${fb ? 'lg:grid-cols-3' : ''}`}>
-      <div className={`grid gap-5 sm:grid-cols-2 ${fb ? 'lg:col-span-2' : 'lg:grid-cols-3'}`}>
+    <div className={`grid items-start gap-5 ${fb ? 'lg:grid-cols-3' : ''}`}>
+      <div className={`grid content-start gap-5 sm:grid-cols-2 ${fb ? 'lg:col-span-2' : 'lg:grid-cols-3'}`}>
         {items.map((x) => (
           <div key={x.id} className="rounded-xl border bg-white p-5 shadow-sm">
             <Stars value={x.rating} />
             <h4 className="mt-2 font-bold">{x.title}</h4>
             <p className="mt-2 text-sm leading-7 text-gray-600">{x.excerpt}</p>
             <div className="mt-4 flex items-center gap-3">
-              <Thumb src={x.images[0]} className="h-10 w-10 rounded-full" />
+              {x.images[0] ? <Thumb src={x.images[0]} className="h-10 w-10 rounded-full" /> : <DefaultAvatar className="h-10 w-10 rounded-full" />}
               <span className="text-sm text-gray-500">{x.subject}</span>
             </div>
           </div>
         ))}
       </div>
-      {fb && (
-        <iframe title="facebook" className="h-[500px] w-full rounded-xl border" loading="lazy" src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(fb)}&tabs=timeline&width=340&height=500&small_header=true`} />
-      )}
+      {fb && <FacebookCard pageUrl={fb} />}
     </div>
   );
 }

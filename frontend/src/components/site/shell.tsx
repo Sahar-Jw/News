@@ -1,42 +1,63 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { SECTION_ORDER_KEYS } from './sections-meta';
 import { SECTIONS } from '@/lib/utils';
+import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean };
+
+/**
+ * Hover/focus dropdown that closes as soon as an item is chosen (the menu would otherwise stay open because the
+ * clicked link keeps focus and the pointer is still over it). It re-opens after the pointer leaves and comes back.
+ */
+function Dropdown({ trigger, panelClass, children }: { trigger: React.ReactNode; panelClass: string; children: React.ReactNode }) {
+  const [shut, setShut] = useState(false);
+  const close = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('a, button')) {
+      (document.activeElement as HTMLElement | null)?.blur();
+      setShut(true);
+    }
+  };
+  return (
+    <div className="group relative" onMouseLeave={() => setShut(false)} onFocus={() => setShut(false)}>
+      {trigger}
+      <div onClick={close} className={`invisible absolute top-full z-50 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${shut ? '!invisible !opacity-0' : ''} ${panelClass}`}>{children}</div>
+    </div>
+  );
+}
 
 /** Hover dropdown used for the permission-based menus (same look as the other nav dropdowns). */
 function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; href: (p: string) => string }) {
   const visible = items.filter((i) => i.show);
   if (visible.length === 0) return null;
   return (
-    <div className="group relative">
-      <button type="button" className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{label} ▾</button>
-      <div className="invisible absolute start-0 top-full z-50 min-w-52 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-        {visible.map((i) => (
-          <Link key={i.to} href={href(i.to)} className="block px-4 py-2 text-sm hover:bg-gray-50">{i.label}</Link>
-        ))}
-      </div>
-    </div>
+    <Dropdown
+      trigger={<button type="button" className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{label} ▾</button>}
+      panelClass="start-0 min-w-52"
+    >
+      {visible.map((i) => (
+        <Link key={i.to} href={href(i.to)} className="block px-4 py-2 text-sm hover:bg-gray-50">{i.label}</Link>
+      ))}
+    </Dropdown>
   );
 }
 
 function SocialLinks() {
   const { s } = useSite();
-  const items: [string, string][] = [['facebook_url', 'f'], ['x_url', '𝕏'], ['instagram_url', 'ig'], ['linkedin_url', 'in'], ['youtube_url', '▶'], ['whatsapp_url', 'wa']];
+  const keys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url'];
   return (
     <div className="flex items-center gap-2">
-      {items.map(([k, ic]) => {
+      {keys.map((k) => {
         const v = s('social', k);
         return v ? (
-          <a key={k} href={v} target="_blank" rel="noopener noreferrer" className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] hover:bg-white/30" aria-label={k}>
-            {ic}
+          <a key={k} href={v} target="_blank" rel="noopener noreferrer" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/30" aria-label={k.replace('_url', '')} title={k.replace('_url', '')}>
+            <SocialIcon name={k} />
           </a>
         ) : null;
       })}
@@ -53,14 +74,16 @@ export function TopBar() {
     setNow(new Intl.DateTimeFormat(loc2, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()));
   }, [lang]);
   const phone = s('contact', 'phone');
+  const email = s('contact', 'email');
   const addr = loc('contact', 'address');
   return (
     <div className="no-print bg-secondary text-xs text-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5">
         <div className="flex flex-wrap items-center gap-4">
           <span>{now}</span>
-          {phone && <a href={`tel:${phone}`} dir="ltr">☎ {phone}</a>}
-          {addr && <span>⚲ {addr}</span>}
+          {phone && <a href={`tel:${phone}`} dir="ltr" className="flex items-center gap-1.5"><ContactIcon name="phone" />{phone}</a>}
+          {email && <a href={`mailto:${email}`} dir="ltr" className="flex items-center gap-1.5"><ContactIcon name="email" />{email}</a>}
+          {addr && <span className="flex items-center gap-1.5"><ContactIcon name="address" />{addr}</span>}
         </div>
         <SocialLinks />
       </div>
@@ -96,9 +119,47 @@ export function Navbar() {
     { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
   ];
 
+  // Live search: runs shortly after typing stops (no Enter needed). Clearing it returns to the page the visitor came from.
+  const onSearchPage = /\/search\/?$/.test(pathname);
+  const origin = useRef<string | null>(null); // page the search started from
+  const selfNav = useRef(false); // true while our own navigation is in flight (so the input is not overwritten)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    if (selfNav.current) { selfNav.current = false; return; }
+    if (onSearchPage) setQ(new URLSearchParams(window.location.search).get('q') ?? '');
+    else { setQ(''); origin.current = null; }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const goSearch = (text: string) => {
+    const value = text.trim();
+    if (value.length < 2) return;
+    if (!onSearchPage && origin.current === null) origin.current = window.location.pathname + window.location.search;
+    selfNav.current = !onSearchPage;
+    const url = href(`/search?q=${encodeURIComponent(value)}`);
+    onSearchPage ? router.replace(url) : router.push(url);
+  };
+  const leaveSearch = () => {
+    clearTimeout(timer.current);
+    const back = origin.current;
+    origin.current = null;
+    if (!onSearchPage) return;
+    selfNav.current = false;
+    router.push(back || href('/'));
+  };
+  const typing = (text: string) => {
+    setQ(text);
+    clearTimeout(timer.current);
+    if (!text.trim()) { if (onSearchPage) leaveSearch(); return; }
+    timer.current = setTimeout(() => goSearch(text), 500);
+  };
+  const clear = () => { setQ(''); leaveSearch(); };
+  useEffect(() => () => clearTimeout(timer.current), []);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (q.trim().length >= 2) router.push(href(`/search?q=${encodeURIComponent(q.trim())}`));
+    clearTimeout(timer.current);
+    goSearch(q);
   };
 
   return (
@@ -118,40 +179,47 @@ export function Navbar() {
           <Link href={href('/')} className="rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.home')}</Link>
 
           {categories.main.length > 0 && (
-            <div className="group relative">
-              <Link href={href('/news')} className="block rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.categories')} ▾</Link>
-              <div className="invisible absolute start-0 top-full z-50 min-w-48 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
-                {categories.main.map((c) => (
-                  <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
-                ))}
-              </div>
-            </div>
+            <Dropdown
+              trigger={<Link href={href('/news')} className="block rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.categories')} ▾</Link>}
+              panelClass="start-0 min-w-48"
+            >
+              {categories.main.map((c) => (
+                <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
+              ))}
+            </Dropdown>
           )}
 
           {categories.sub.length > 0 && (
-            <div className="group relative">
-              <span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.subcategories')} ▾</span>
-              <div className="invisible absolute start-0 top-full z-50 min-w-48 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
-                {categories.sub.map((c) => (
-                  <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
-                ))}
-              </div>
-            </div>
+            <Dropdown
+              trigger={<span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.subcategories')} ▾</span>}
+              panelClass="start-0 min-w-48"
+            >
+              {categories.sub.map((c) => (
+                <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
+              ))}
+            </Dropdown>
           )}
 
-          <div className="group relative">
-            <span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.sections')} ▾</span>
-            <div className="invisible absolute start-0 top-full z-50 min-w-48 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100">
-              {secs.map((c) => (
-                <a key={c} href={isHome ? `#sec-${c}` : `${href('/')}#sec-${c}`} className="block px-4 py-2 text-sm hover:bg-gray-50">
-                  {loc('sections_home', `${c}_title`) || t(`sec.${c}`)}
-                </a>
-              ))}
-            </div>
-          </div>
+          <Dropdown
+            trigger={<span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.sections')} ▾</span>}
+            panelClass="start-0 min-w-48"
+          >
+            {secs.map((c) => (
+              <a key={c} href={isHome ? `#sec-${c}` : `${href('/')}#sec-${c}`} className="block px-4 py-2 text-sm hover:bg-gray-50">
+                {loc('sections_home', `${c}_title`) || t(`sec.${c}`)}
+              </a>
+            ))}
+          </Dropdown>
 
           <form onSubmit={submit} className="flex">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('site.searchPlaceholder')} className="w-36 rounded-s-lg border px-3 py-1.5 text-sm outline-none focus:border-primary lg:w-48" />
+            <div className="relative">
+              <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="w-36 rounded-s-lg border py-1.5 pe-7 ps-3 text-sm outline-none focus:border-primary lg:w-48" />
+              {q && (
+                <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              )}
+            </div>
             <button className="rounded-e-lg bg-primary px-3 text-sm text-white" aria-label={t('app.search')}>⌕</button>
           </form>
 
@@ -163,15 +231,17 @@ export function Navbar() {
           {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
 
           {me && (
-            <div className="group relative">
-              <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border p-1 hover:bg-gray-50">
-                {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>}
-              </button>
-              <div className="invisible absolute end-0 top-full z-50 min-w-44 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
-                <Link href={href('/profile')} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('site.profile')}</Link>
-                <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full px-4 py-2 text-start text-sm text-red-600 hover:bg-gray-50">{t('site.logout')}</button>
-              </div>
-            </div>
+            <Dropdown
+              trigger={
+                <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border p-1 hover:bg-gray-50">
+                  {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>}
+                </button>
+              }
+              panelClass="end-0 min-w-44"
+            >
+              <Link href={href('/profile')} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('site.profile')}</Link>
+              <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full px-4 py-2 text-start text-sm text-red-600 hover:bg-gray-50">{t('site.logout')}</button>
+            </Dropdown>
           )}
         </nav>
       </div>
@@ -196,6 +266,7 @@ export function Footer() {
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
           <div className="mb-2 text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
           <p className="text-sm leading-7">{loc('branding', 'site_description')}</p>
+          <div className="mt-4"><SocialLinks /></div>
         </div>
         <div>
           <h4 className="mb-3 font-bold text-white">{t('site.quickLinks')}</h4>
@@ -212,10 +283,10 @@ export function Footer() {
         <div>
           <h4 className="mb-3 font-bold text-white">{t('site.contact')}</h4>
           <ul className="space-y-2 text-sm">
-            {s('contact', 'phone') && <li dir="ltr" className="text-start">☎ {s('contact', 'phone')}</li>}
-            {s('contact', 'email') && <li>✉ {s('contact', 'email')}</li>}
-            {loc('contact', 'address') && <li>⚲ {loc('contact', 'address')}</li>}
-            {loc('contact', 'working_hours') && <li>⏱ {loc('contact', 'working_hours')}</li>}
+            {s('contact', 'phone') && <li dir="ltr" className="flex items-center gap-2 text-start"><ContactIcon name="phone" />{s('contact', 'phone')}</li>}
+            {s('contact', 'email') && <li className="flex items-center gap-2"><ContactIcon name="email" />{s('contact', 'email')}</li>}
+            {loc('contact', 'address') && <li className="flex items-center gap-2"><ContactIcon name="address" />{loc('contact', 'address')}</li>}
+            {loc('contact', 'working_hours') && <li className="flex items-center gap-2"><ContactIcon name="hours" />{loc('contact', 'working_hours')}</li>}
           </ul>
           {map && <iframe src={map} title="map" loading="lazy" className="mt-3 h-28 w-full rounded border-0" />}
         </div>

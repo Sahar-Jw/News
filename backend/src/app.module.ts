@@ -13,6 +13,7 @@ import { AccessModule } from './modules/access/access.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CitiesModule } from './modules/cities/cities.module';
+import { CountriesModule } from './modules/countries/countries.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { FilesModule } from './modules/files/files.module';
 import { NewsModule } from './modules/news/news.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     UsersModule,
     CitiesModule,
+    CountriesModule,
     ContactModule,
     NewsModule,
   ],

@@ -60,6 +60,17 @@ export class NewsPublicService {
     const qb = onlyRegular(this.base(q.lang ?? Language.AR, v), 'n');
     if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: normalizeLabel(q.category) });
     if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
+    if (q.topics) {
+      const list = [...new Set(q.topics.split(',').map(normalizeLabel).filter(Boolean))].slice(0, 10);
+      if (list.length) {
+        const params: Record<string, string> = {};
+        const conds = list.map((t, i) => {
+          params[`tp${i}`] = `%${escapeLike(JSON.stringify(t))}%`;
+          return `CAST(n.topics AS CHAR) LIKE :tp${i}`;
+        });
+        qb.andWhere(`(${conds.join(' OR ')})`, params);
+      }
+    }
     if (q.q) this.applyTextSearch(qb, q.q);
     const [rows, total] = await this.order(qb).skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows.map((r) => this.card(r)), total, p);
