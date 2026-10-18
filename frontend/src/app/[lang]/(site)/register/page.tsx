@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, inputCls } from '@/components/ui/ui';
+import { Button, Field, inputCls, PasswordInput } from '@/components/ui/ui';
 
 export default function RegisterPage() {
   const { t, href } = useI18n();
@@ -31,7 +31,7 @@ export default function RegisterPage() {
         <Field label={t('auth.fullName')}><input required minLength={2} className={inputCls} value={f.fullName} onChange={set('fullName')} /></Field>
         <Field label={t('auth.email')}><input type="email" required dir="ltr" className={inputCls} value={f.email} onChange={set('email')} /></Field>
         <Field label={t('auth.phone')}><input dir="ltr" className={inputCls} value={f.phone} onChange={set('phone')} /></Field>
-        <Field label={t('auth.password')} hint="8+"><input type="password" required minLength={8} maxLength={72} dir="ltr" className={inputCls} value={f.password} onChange={set('password')} autoComplete="new-password" /></Field>
+        <Field label={t('auth.password')} hint="8+"><PasswordInput required minLength={8} maxLength={72} dir="ltr" className={inputCls} value={f.password} onChange={set('password')} autoComplete="new-password" /></Field>
         <Button disabled={busy} className="w-full">{t('auth.register')}</Button>
         <p className="text-center text-sm text-gray-600">{t('auth.haveAccount')} <Link href={href('/login')} className="text-primary">{t('auth.login')}</Link></p>
       </form>

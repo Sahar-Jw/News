@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export function Spinner({ className }: { className?: string }) {
@@ -117,6 +118,36 @@ export function Stars({ value }: { value: number | null | undefined }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <span key={i} className={i <= v ? '' : 'text-gray-300'}>★</span>
       ))}
+    </div>
+  );
+}
+
+/** Password field with a show / hide toggle (eye icon). Takes the same props as <input>. */
+export function PasswordInput({ className, ...p }: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const { t } = useI18n();
+  const [show, setShow] = useState(false);
+  const label = show ? t('app.hidePassword') : t('app.showPassword');
+  return (
+    // same direction as the input, so the padding and the button are always on the same side
+    <div className="relative" dir={p.dir}>
+      <input {...p} type={show ? 'text' : 'password'} className={cn(className, 'pe-10')} />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        title={label}
+        aria-label={label}
+        aria-pressed={show}
+        className="absolute end-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {/* the icon shows the current state: eye = password visible, crossed eye = hidden */}
+          {show ? (
+            <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>
+          ) : (
+            <><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></>
+          )}
+        </svg>
+      </button>
     </div>
   );
 }

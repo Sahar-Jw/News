@@ -99,6 +99,18 @@ export class NewsPublicService {
     return { ...this.card(n, true), createdAt: n.createdAt, related: await this.related(n, v) };
   }
 
+  /** Data for the link-preview page behind the share buttons. Anonymous viewer: members-only news only exposes a generic page. */
+  async shareData(id: number, apiOrigin: string) {
+    const n = await this.base(undefined, { authenticated: false }).andWhere('n.id = :id', { id }).getOne();
+    const img = n?.images?.[0] ? this.storage.url(n.images[0]) : '';
+    return {
+      title: n?.title ?? 'News',
+      description: n ? (excerpt(n.body) || n.subject || '').slice(0, 200) : '',
+      image: img ? (/^https?:\/\//.test(img) ? img : `${apiOrigin}${img}`) : '',
+      lang: n?.language ?? Language.AR,
+    };
+  }
+
   /** Same language + main category, ≥1 shared topic, ordered by shared count then newest, max 4 (SRS 13.5). */
   private async related(n: News, v: Viewer) {
     const mine = (n.topics ?? []).map((t) => t.toLowerCase());
@@ -143,7 +155,7 @@ export class NewsPublicService {
     const [settings, specials, featured, regular] = await Promise.all([
       this.settings.publicMap(),
       this.order(this.base(L, v)).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
-      this.order(this.base(L, v)).andWhere('n.isFeatured = 1').take(5).getMany(), // flag is independent of status/visibility, but the record must still be eligible
+      this.order(onlyRegular(this.base(L, v), 'n')).andWhere('n.isFeatured = 1').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
       this.order(onlyRegular(this.base(L, v), 'n')).take(4).getMany(),
     ]);
     const by = (c: SpecialCategory) => specials.filter((s) => s.mainCategory === c);

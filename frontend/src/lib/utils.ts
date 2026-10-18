@@ -28,8 +28,9 @@ export function shareLinks(url: string, title: string) {
   const t = encodeURIComponent(title);
   return {
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
-    whatsapp: `https://wa.me/?text=${t}%20${u}`,
+    whatsapp: `https://wa.me/?text=${t}%0A${u}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`,
-    email: `mailto:?subject=${t}&body=${u}`,
+    // Gmail's compose window (opens in a new tab) instead of the system mail app
+    email: `https://mail.google.com/mail/?view=cm&fs=1&su=${t}&body=${u}`,
   };
 }

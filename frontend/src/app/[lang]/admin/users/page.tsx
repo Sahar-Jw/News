@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Field, Modal, inputCls, PasswordInput } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
@@ -80,7 +80,7 @@ export default function UsersPage() {
             <Field label={t('u.role')}>
               <select disabled={!can('users.role.change')} className={inputCls} value={edit.roleId} onChange={(e) => setEdit({ ...edit, roleId: Number(e.target.value) })}>{roles.map((r) => <option key={r.id} value={r.id}>{roleName(r)}</option>)}</select>
             </Field>
-            <Field label={t('u.password')} hint="—"><input type="password" dir="ltr" minLength={8} maxLength={72} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>
+            <Field label={t('u.password')} hint="—"><PasswordInput dir="ltr" minLength={8} maxLength={72} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>
             <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
           </form>
         )}

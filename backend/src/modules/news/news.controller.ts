@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM } from '../../common/constants';
@@ -9,6 +10,7 @@ import { AuthRequest, AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { BulkDeleteDto, CreateNewsDto, LangQueryDto, NewsAdminQueryDto, PublicNewsQueryDto, SearchQueryDto, UpdateNewsDto } from './news.dto';
 import { NewsPublicService } from './news-public.service';
+import { renderSharePage } from './news-share';
 import { NewsService } from './news.service';
 import { SettingsService } from '../settings/settings.service';
 
@@ -122,6 +124,24 @@ export class NewsPublicController {
   @Get('news/:id')
   detail(@Param('id', ParseIntPipe) id: number, @Req() req: AuthRequest) {
     return this.service.detail(id, this.viewer(req), req.ip ?? '', String(req.headers['user-agent'] ?? ''));
+  }
+
+  /** What the share buttons link to: Open Graph preview for crawlers, instant redirect to the article for people. */
+  @Get('news/:id/share')
+  async share(@Param('id', ParseIntPipe) id: number, @Req() req: AuthRequest, @Res() res: Response) {
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const d = await this.service.shareData(id, origin);
+    const front = (process.env.FRONTEND_URL || (process.env.CORS_ORIGINS ?? '').split(',')[0] || '').trim().replace(/\/+$/, '');
+    const nonce = randomBytes(16).toString('base64');
+    const html = renderSharePage({ ...d, shareUrl: `${origin}${req.originalUrl.split('?')[0]}`, target: `${front}/${d.lang}/news/view/?id=${id}`, nonce });
+    res
+      .set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300',
+        // helmet's default CSP forbids inline scripts; allow only this page's own redirect script
+        'Content-Security-Policy': `default-src 'none'; img-src * data:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'`,
+      })
+      .send(html);
   }
 
   @Get('categories')

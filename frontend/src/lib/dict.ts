@@ -46,7 +46,7 @@ const ar: Record<string, string> = {
   'u.name': 'الاسم', 'u.email': 'البريد', 'u.role': 'الدور', 'u.phone': 'الهاتف', 'u.active': 'مفعّل', 'u.activate': 'تفعيل', 'u.deactivate': 'تعطيل', 'u.password': 'كلمة المرور',
   'u.gender': 'الجنس', 'u.male': 'ذكر', 'u.female': 'أنثى', 'u.country': 'الدولة', 'u.city': 'المدينة', 'u.nationality': 'الجنسية', 'u.bio': 'نبذة', 'u.social': 'رابط تواصل',
   'u.expert': 'خبير', 'u.researcher': 'باحث علمي', 'u.avatar': 'الصورة الشخصية', 'u.cv': 'السيرة الذاتية (PDF/DOC)', 'u.pending': 'بانتظار التفعيل', 'u.changePassword': 'تغيير كلمة المرور',
-  'u.currentPassword': 'كلمة المرور الحالية', 'u.newPassword': 'كلمة المرور الجديدة', 'u.addCity': 'إضافة مدينة', 'u.cityCode': 'الرمز', 'u.cityAr': 'الاسم بالعربية', 'u.cityEn': 'الاسم بالإنجليزية', 'u.addCountry': 'إضافة دولة', 'u.countryAr': 'الاسم بالعربية', 'u.countryEn': 'الاسم بالإنجليزية', 'site.clearSearch': 'مسح البحث',
+  'u.currentPassword': 'كلمة المرور الحالية', 'u.newPassword': 'كلمة المرور الجديدة', 'u.addCity': 'إضافة مدينة', 'u.cityCode': 'الرمز', 'u.cityAr': 'الاسم بالعربية', 'u.cityEn': 'الاسم بالإنجليزية', 'u.addCountry': 'إضافة دولة', 'u.countryAr': 'الاسم بالعربية', 'u.countryEn': 'الاسم بالإنجليزية', 'site.clearSearch': 'مسح البحث', 'app.showPassword': 'إظهار كلمة المرور', 'app.hidePassword': 'إخفاء كلمة المرور',
   // roles
   'r.code': 'الرمز', 'r.nameAr': 'الاسم بالعربية', 'r.nameEn': 'الاسم بالإنجليزية', 'r.users': 'المستخدمون', 'r.perms': 'الصلاحيات', 'r.pickRole': 'اختر دوراً', 'r.savePerms': 'حفظ الصلاحيات',
   // misc
@@ -94,7 +94,7 @@ const en: Record<string, string> = {
   'u.name': 'Name', 'u.email': 'Email', 'u.role': 'Role', 'u.phone': 'Phone', 'u.active': 'Active', 'u.activate': 'Activate', 'u.deactivate': 'Deactivate', 'u.password': 'Password',
   'u.gender': 'Gender', 'u.male': 'Male', 'u.female': 'Female', 'u.country': 'Country', 'u.city': 'City', 'u.nationality': 'Nationality', 'u.bio': 'Bio', 'u.social': 'Social link',
   'u.expert': 'Expert', 'u.researcher': 'Researcher', 'u.avatar': 'Avatar', 'u.cv': 'CV (PDF/DOC)', 'u.pending': 'Pending activation', 'u.changePassword': 'Change password',
-  'u.currentPassword': 'Current password', 'u.newPassword': 'New password', 'u.addCity': 'Add city', 'u.cityCode': 'Code', 'u.cityAr': 'Arabic name', 'u.cityEn': 'English name', 'u.addCountry': 'Add country', 'u.countryAr': 'Arabic name', 'u.countryEn': 'English name', 'site.clearSearch': 'Clear search',
+  'u.currentPassword': 'Current password', 'u.newPassword': 'New password', 'u.addCity': 'Add city', 'u.cityCode': 'Code', 'u.cityAr': 'Arabic name', 'u.cityEn': 'English name', 'u.addCountry': 'Add country', 'u.countryAr': 'Arabic name', 'u.countryEn': 'English name', 'site.clearSearch': 'Clear search', 'app.showPassword': 'Show password', 'app.hidePassword': 'Hide password',
   'r.code': 'Code', 'r.nameAr': 'Arabic name', 'r.nameEn': 'English name', 'r.users': 'Users', 'r.perms': 'Permissions', 'r.pickRole': 'Select a role', 'r.savePerms': 'Save permissions',
   'm.read': 'Read', 'm.unread': 'Unread', 'a.category': 'Category', 'a.action': 'Action', 'a.desc': 'Description', 'a.actor': 'Actor', 's.value': 'Value', 's.key': 'Key', 's.type': 'Type',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',

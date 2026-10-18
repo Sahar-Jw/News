@@ -251,6 +251,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const perms = actor.permissions;
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms);
+    if (main === SpecialCategory.TEAM && (files?.length ?? 0) > 1) throw new BadRequestException('عضو الفريق له صورة واحدة فقط');
     const pub = this.resolvePublishing(dto, undefined, perms);
     const rating = this.resolveRating(main, dto.rating);
 
@@ -297,6 +298,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     if (keep.some((p) => !existingImgs.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     const removed = existingImgs.filter((p) => !keep.includes(p));
     if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (main === SpecialCategory.TEAM && keep.length + (files?.length ?? 0) > 1) throw new BadRequestException('عضو الفريق له صورة واحدة فقط');
     const added = await this.storage.saveImages(files ?? [], 'news');
 
     try {

@@ -1,10 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Stars } from '@/components/ui/ui';
-import { Card, DefaultAvatar, NewsCard, Thumb } from './cards';
+import { Card, DefaultAvatar, FitImage, NewsCard, Thumb } from './cards';
 import { ContactForm } from './contact-form';
 import { useSite } from './site-context';
 
@@ -38,7 +38,7 @@ export function HeroSlider() {
     <section id="sec-hero" className="relative h-[320px] overflow-hidden bg-secondary md:h-[460px]">
       {slides.map((sl, k) => (
         <div key={k} className={`absolute inset-0 transition-opacity duration-700 ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-          {sl.image && <img src={sl.image} alt="" className="h-full w-full object-cover" />}
+          <FitImage src={sl.image} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl p-6 text-white md:p-12">
             <h2 className="max-w-3xl text-2xl font-bold md:text-4xl">{sl.title}</h2>
@@ -55,30 +55,73 @@ export function HeroSlider() {
   );
 }
 
-export function FeaturedGrid({ items }: { items: Card[] }) {
-  const { href } = useI18n();
-  if (!items.length) return null;
-  const [first, ...rest] = items;
+/** Round carousel arrow on the physical left / right edge (an SVG, so the browser never mirrors it in RTL). */
+function Arrow({ side, onClick, label }: { side: 'left' | 'right'; onClick: () => void; label: string }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Link href={href(`/news/view?id=${first.id}`)} className="group relative block min-h-72 overflow-hidden rounded-xl">
-        <Thumb src={first.images[0]} className="absolute inset-0 h-full w-full transition group-hover:scale-105" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-          <span className="rounded bg-primary px-2 py-0.5 text-xs">{first.mainCategory}</span>
-          <h3 className="mt-2 text-xl font-bold leading-snug">{first.title}</h3>
-          {first.subject && <p className="mt-1 text-sm text-gray-200">{first.subject}</p>}
-        </div>
-      </Link>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {rest.map((n) => (
-          <Link key={n.id} href={href(`/news/view?id=${n.id}`)} className="group relative block min-h-36 overflow-hidden rounded-xl">
-            <Thumb src={n.images[0]} className="absolute inset-0 h-full w-full transition group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-            <h3 className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-sm font-bold text-white">{n.title}</h3>
-          </Link>
-        ))}
-      </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 ${side === 'left' ? 'left-3' : 'right-3'}`}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={side === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
+      </svg>
+    </button>
+  );
+}
+
+/** Latest featured news (max 5), one at a time: auto-advances, pauses on hover, arrows + dots. */
+export function FeaturedCarousel({ items }: { items: Card[] }) {
+  const { href, dir, t } = useI18n();
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const n = items.length;
+  useEffect(() => {
+    if (n < 2 || paused) return;
+    const id = setInterval(() => setI((v) => (v + 1) % n), 5000);
+    return () => clearInterval(id);
+  }, [n, paused]);
+  useEffect(() => { if (i >= n) setI(0); }, [i, n]);
+  if (!n) return null;
+  const go = (d: number) => setI((v) => (v + d + n) % n);
+  const rtl = dir === 'rtl';
+  return (
+    <div
+      className="relative h-72 overflow-hidden rounded-xl bg-secondary md:h-[26rem]"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      role="region"
+      aria-roledescription="carousel"
+    >
+      {items.map((x, k) => (
+        <Link
+          key={x.id}
+          href={href(`/news/view?id=${x.id}`)}
+          aria-hidden={k !== i}
+          tabIndex={k === i ? 0 : -1}
+          className={`absolute inset-0 block transition-opacity duration-700 ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        >
+          <FitImage src={x.images[0]} alt={x.title} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 p-5 pb-10 text-white md:p-8 md:pb-12">
+            <span className="rounded bg-primary px-2 py-0.5 text-xs">{x.mainCategory}</span>
+            <h3 className="mt-2 line-clamp-2 max-w-3xl text-xl font-bold leading-snug md:text-3xl">{x.title}</h3>
+            {x.subject && <p className="mt-1 line-clamp-1 max-w-2xl text-sm text-gray-200 md:text-base">{x.subject}</p>}
+          </div>
+        </Link>
+      ))}
+      {n > 1 && (
+        <>
+          {/* left/right are physical: in Arabic the left arrow goes forward, in English backward */}
+          <Arrow side="left" onClick={() => go(rtl ? 1 : -1)} label={rtl ? t('app.next') : t('app.prev')} />
+          <Arrow side="right" onClick={() => go(rtl ? -1 : 1)} label={rtl ? t('app.prev') : t('app.next')} />
+          <div className="absolute inset-x-0 bottom-3 z-10 flex justify-center gap-2" dir={dir}>
+            {items.map((x, k) => <button key={x.id} type="button" onClick={() => setI(k)} aria-label={`${k + 1} / ${n}`} className={`h-2.5 rounded-full transition-all ${k === i ? 'w-7 bg-white' : 'w-2.5 bg-white/50'}`} />)}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -89,42 +132,87 @@ export function RegularNews({ items }: { items: Card[] }) {
   return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{items.map((n) => <NewsCard key={n.id} n={n} />)}</div>;
 }
 
-/** Random six team members, photo first, shown in a sliding strip. */
+/** Team: up to six random members (picked by the API on every load), picture only, three at a time. */
 export function TeamSlider({ items }: { items: Card[] }) {
-  const [start, setStart] = useState(0);
-  const perView = 4;
+  const { dir, t } = useI18n();
+  const [perView, setPerView] = useState(3);
+  const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
-    if (items.length <= perView) return;
-    const id = setInterval(() => setStart((v) => (v + 1) % items.length), 3500);
+    const mq = window.matchMedia('(max-width: 639px)');
+    const apply = () => setPerView(mq.matches ? 2 : 3);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  // pages of `perView` members; a short last page is filled with the last members so it is never half empty
+  const pages = useMemo(() => {
+    if (items.length <= perView) return items.length ? [items] : [];
+    const out: Card[][] = [];
+    for (let k = 0; k < items.length; k += perView) out.push(k + perView <= items.length ? items.slice(k, k + perView) : items.slice(items.length - perView));
+    return out;
+  }, [items, perView]);
+  const n = pages.length;
+  useEffect(() => { if (page >= n) setPage(0); }, [page, n]);
+  useEffect(() => {
+    if (n < 2 || paused) return;
+    const id = setInterval(() => setPage((v) => (v + 1) % n), 4000);
     return () => clearInterval(id);
-  }, [items.length]);
-  if (!items.length) return null;
-  const visible = items.length <= perView ? items : Array.from({ length: perView }, (_, k) => items[(start + k) % items.length]);
+  }, [n, paused]);
+  if (!n) return null;
+  const rtl = dir === 'rtl';
+  const go = (d: number) => setPage((v) => (v + d + n) % n);
   return (
-    <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
-      {visible.map((m) => (
-        <div key={m.id} className="overflow-hidden rounded-xl border bg-white text-center shadow-sm">
-          <Thumb src={m.images[0]} className="aspect-square w-full" alt={m.title} />
-          <div className="p-3">
-            <div className="font-bold">{m.title}</div>
-            {m.subject && <div className="text-sm text-gray-500">{m.subject}</div>}
+    <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} role="region" aria-roledescription="carousel">
+      <div className="relative">
+        <div className="overflow-hidden">
+          <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(${(rtl ? 1 : -1) * page * 100}%)` }}>
+            {pages.map((pg, k) => (
+              <div key={k} aria-hidden={k !== page} className="grid w-full shrink-0 gap-5" style={{ gridTemplateColumns: `repeat(${pg.length}, minmax(0, 1fr))` }}>
+                {pg.map((m) => (
+                  <div key={m.id} title={m.title} className="aspect-square overflow-hidden rounded-xl border bg-white shadow-sm">
+                    {m.images[0] ? <Thumb src={m.images[0]} alt={m.title} className="h-full w-full" /> : <DefaultAvatar className="h-full w-full" />}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
-      ))}
+        {n > 1 && (
+          <>
+            <Arrow side="left" onClick={() => go(rtl ? 1 : -1)} label={rtl ? t('app.next') : t('app.prev')} />
+            <Arrow side="right" onClick={() => go(rtl ? -1 : 1)} label={rtl ? t('app.prev') : t('app.next')} />
+          </>
+        )}
+      </div>
+      {n > 1 && (
+        <div className="mt-4 flex justify-center gap-2">
+          {pages.map((_, k) => <button key={k} type="button" onClick={() => setPage(k)} aria-label={`${k + 1} / ${n}`} className={`h-2.5 rounded-full transition-all ${k === page ? 'w-7 bg-primary' : 'w-2.5 bg-gray-300'}`} />)}
+        </div>
+      )}
     </div>
   );
 }
 
+/** Service cards: icon, title, subject and a short content excerpt; each opens the full news item. */
 export function ServicesGrid({ items }: { items: Card[] }) {
+  const { href } = useI18n();
   if (!items.length) return null;
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((x) => (
-        <div key={x.id} className="rounded-xl border bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-          {x.images[0] ? <img src={fileUrl(x.images[0])} alt="" className="mx-auto mb-4 h-16 w-16 object-contain" /> : <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl text-primary">✦</div>}
-          <h3 className="mb-2 text-lg font-bold">{x.title}</h3>
-          <p className="text-sm leading-7 text-gray-600">{x.excerpt || x.subject}</p>
-        </div>
+        <Link key={x.id} href={href(`/news/view?id=${x.id}`)} className="group block rounded-xl border bg-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+          {x.images[0] ? (
+            <img src={fileUrl(x.images[0])} alt="" className="mx-auto mb-4 h-16 w-16 object-contain" />
+          ) : (
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden>
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+            </div>
+          )}
+          <h3 className="mb-1 text-lg font-bold group-hover:text-primary">{x.title}</h3>
+          {x.subject && <p className="mb-2 text-sm font-medium text-gray-500">{x.subject}</p>}
+          {x.excerpt && x.excerpt !== x.subject && <p className="line-clamp-3 text-sm leading-7 text-gray-600">{x.excerpt}</p>}
+        </Link>
       ))}
     </div>
   );

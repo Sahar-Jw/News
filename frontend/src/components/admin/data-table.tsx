@@ -242,7 +242,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
 
       <div className="no-print flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
         <div>{meta && `${t('tbl.showing')} ${meta.from}–${meta.to} ${t('tbl.of')} ${meta.total}`}</div>
-        {limit !== 'all' && meta && meta.totalPages > 1 && (() => {
+        {limit !== 'all' && meta && (() => {
           const last = meta.totalPages;
           const start = Math.max(1, Math.min(page - 2, last - 4));
           const nums = Array.from({ length: Math.min(5, last) }, (_, k) => start + k);

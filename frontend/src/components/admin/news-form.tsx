@@ -45,6 +45,7 @@ function Form() {
   // Special section: category is pinned. When editing a record we learn its section from the record itself.
   const section = sectionParam || (SECTIONS as readonly string[]).includes(f.mainCategory) ? (sectionParam || f.mainCategory) : '';
   const special = !!section;
+  const single = section === 'TEAM'; // a team member has exactly one picture
   const mayChangeCategory = !isEdit || can('news.category.change');
   const mayCreateCategory = can('news.category.create');
   const mayPublish = can('news.publish');
@@ -70,6 +71,14 @@ function Form() {
     if (!list) return;
     const next = [...list].filter((x) => /^image\//.test(x.type) && x.size <= 5 * 1024 * 1024);
     if (next.length !== list.length) toast('JPG/PNG/WEBP/GIF ≤ 5MB', 'err');
+    if (single) {
+      // the new picture replaces the old one
+      if (!next.length) return;
+      fresh.forEach((i) => URL.revokeObjectURL(i.url));
+      setRemoved(new Set(existing));
+      setFresh([{ file: next[0], url: URL.createObjectURL(next[0]) }]);
+      return;
+    }
     setFresh((s) => [...s, ...next.map((file) => ({ file, url: URL.createObjectURL(file) }))]);
   };
 
@@ -189,7 +198,7 @@ function Form() {
 
       <div className="rounded-xl border bg-white p-5">
         <div className="mb-3 text-sm font-medium">{t('f.images')}</div>
-        <FilePicker label={t('f.addImages')} hint={t('f.imageHint')} accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={addFiles} />
+        <FilePicker label={t('f.addImages')} hint={t('f.imageHint')} accept="image/jpeg,image/png,image/webp,image/gif" multiple={!single} onChange={addFiles} />
         <div className="mt-4 flex flex-wrap gap-3">
           {existing.map((p) => {
             const gone = removed.has(p);

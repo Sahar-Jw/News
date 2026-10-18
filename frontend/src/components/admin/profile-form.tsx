@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, FilePicker, inputCls } from '@/components/ui/ui';
+import { Button, Field, FilePicker, inputCls, PasswordInput } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 
 interface City { id: number; nameAr: string; nameEn: string }
@@ -136,8 +136,8 @@ export function ProfileForm() {
       </form>
 
       <form onSubmit={changePw} className="grid gap-4 rounded-xl border bg-white p-5 md:grid-cols-3 md:items-end">
-        <Field label={t('u.currentPassword')}><input required type="password" dir="ltr" className={inputCls} value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} autoComplete="current-password" /></Field>
-        <Field label={t('u.newPassword')}><input required minLength={8} maxLength={72} type="password" dir="ltr" className={inputCls} value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} autoComplete="new-password" /></Field>
+        <Field label={t('u.currentPassword')}><PasswordInput required dir="ltr" className={inputCls} value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} autoComplete="current-password" /></Field>
+        <Field label={t('u.newPassword')}><PasswordInput required minLength={8} maxLength={72} dir="ltr" className={inputCls} value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} autoComplete="new-password" /></Field>
         <Button>{t('u.changePassword')}</Button>
       </form>
     </div>
