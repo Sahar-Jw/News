@@ -6,7 +6,7 @@ import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { SECTIONS, toLocalInput } from '@/lib/utils';
-import { Button, Center, Field, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
+import { Button, Center, Field, FilePicker, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RichEditor } from './rich-editor';
 
@@ -188,11 +188,9 @@ function Form() {
       </div>
 
       <div className="rounded-xl border bg-white p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="text-sm font-medium">{t('f.images')}</div>
-          <label className="cursor-pointer rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50">＋ {t('f.addImages')}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} /></label>
-        </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="mb-3 text-sm font-medium">{t('f.images')}</div>
+        <FilePicker label={t('f.addImages')} hint={t('f.imageHint')} accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={addFiles} />
+        <div className="mt-4 flex flex-wrap gap-3">
           {existing.map((p) => {
             const gone = removed.has(p);
             return (

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export function Spinner({ className }: { className?: string }) {
@@ -40,23 +40,73 @@ export function Field({ label, children, hint, error }: { label?: string; childr
 }
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title?: string; children: React.ReactNode; wide?: boolean }) {
+  const dialog = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialog.current?.focus();
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close.current();
+      if (e.key !== 'Tab' || !dialog.current) return;
+      const items = dialog.current.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])');
+      if (!items.length) { e.preventDefault(); dialog.current.focus(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener('keydown', h);
+      document.body.style.overflow = overflow;
+      previous?.focus();
+    };
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onMouseDown={onClose}>
-      <div role="dialog" aria-modal className={cn('max-h-[90vh] w-full overflow-auto rounded-xl bg-white p-5 shadow-xl', wide ? 'max-w-3xl' : 'max-w-lg')} onMouseDown={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : 'Dialog'} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-xl bg-white p-5 shadow-2xl outline-none', wide ? 'max-w-3xl' : 'max-w-lg')}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold">{title}</h3>
-          <button onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="close">✕</button>
+          {title ? <h3 id={titleId} className="text-lg font-bold">{title}</h3> : <span />}
+          <button type="button" onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="close">✕</button>
         </div>
         {children}
       </div>
     </div>
+  );
+}
+
+export function FilePicker({ label, hint, accept, multiple, onChange }: { label: string; hint?: string; accept?: string; multiple?: boolean; onChange: (files: FileList | null) => void }) {
+  const [selected, setSelected] = useState('');
+  return (
+    <label className="group relative block cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-4 transition hover:border-primary hover:bg-blue-50/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+      <input
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        aria-label={label}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        onChange={(e) => {
+          const files = e.target.files;
+          if (files?.length) setSelected(multiple ? `${files.length} files selected` : files[0].name);
+          onChange(files);
+          e.target.value = '';
+        }}
+      />
+      <span className="flex items-center gap-3">
+        <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-xl text-primary shadow-sm">↑</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-gray-800">{selected || label}</span>
+          {hint && <span className="mt-0.5 block text-xs text-gray-500">{hint}</span>}
+        </span>
+        <span className="shrink-0 rounded-md border bg-white px-3 py-1.5 text-xs font-medium text-gray-700 group-hover:border-primary group-hover:text-primary">{multiple ? 'Choose files' : 'Choose file'}</span>
+      </span>
+    </label>
   );
 }
 

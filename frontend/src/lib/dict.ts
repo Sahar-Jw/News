@@ -32,9 +32,9 @@ const ar: Record<string, string> = {
   'tbl.selectAll': 'تحديد الكل', 'tbl.deleteSelected': 'حذف المحدد', 'tbl.confirmDelete': 'هل أنت متأكد من حذف العناصر المحددة؟ لا يمكن التراجع.', 'tbl.selected': 'محدد',
   'tbl.needColumn': 'اختر عموداً واحداً على الأقل', 'tbl.no': '#',
   // news fields
-  'f.title': 'العنوان', 'f.subject': 'الموضوع', 'f.mainCategory': 'الفئة الرئيسية', 'f.subcategory': 'الفئة الفرعية', 'f.topics': 'المواضيع (مفصولة بفواصل)', 'f.body': 'المحتوى',
+  'f.title': 'العنوان', 'f.subject': 'الموضوع', 'f.mainCategory': 'الفئة الرئيسية', 'f.subcategory': 'الفئة الفرعية', 'f.topics': 'المواضيع ذات العلاقة (مفصولة بفواصل)', 'f.body': 'المحتوى',
   'f.images': 'الصور', 'f.featured': 'مميز في الرئيسية', 'f.publishAt': 'وقت النشر', 'f.language': 'اللغة', 'f.visibility': 'الظهور', 'f.status': 'الحالة', 'f.views': 'المشاهدات',
-  'f.rating': 'التقييم', 'f.newCategory': 'فئة جديدة…', 'f.fixed': 'الفئة ثابتة لهذا القسم', 'f.newImage': 'جديدة', 'f.removeImage': 'إزالة', 'f.undo': 'تراجع', 'f.addImages': 'إضافة صور',
+  'f.rating': 'التقييم', 'f.newCategory': 'فئة جديدة…', 'f.fixed': 'الفئة ثابتة لهذا القسم', 'f.newImage': 'جديدة', 'f.removeImage': 'إزالة', 'f.undo': 'تراجع', 'f.addImages': 'إضافة صور', 'f.imageHint': 'JPG، PNG، WEBP أو GIF، بحد أقصى 5MB لكل صورة',
   'v.public': 'عام', 'v.members': 'الأعضاء', 's.draft': 'مسودة', 's.scheduled': 'مجدولة', 's.published': 'منشورة', 'l.ar': 'العربية', 'l.en': 'الإنجليزية',
   'f.preview': 'معاينة', 'f.section': 'القسم', 'f.date': 'التاريخ',
   // users
@@ -76,9 +76,9 @@ const en: Record<string, string> = {
   'tbl.export': 'Export', 'tbl.print': 'Print', 'tbl.columns': 'Choose columns', 'tbl.exportCsv': 'CSV', 'tbl.exportXlsx': 'Excel', 'tbl.noRows': 'No records',
   'tbl.selectAll': 'Select all', 'tbl.deleteSelected': 'Delete selected', 'tbl.confirmDelete': 'Delete the selected items? This cannot be undone.', 'tbl.selected': 'selected',
   'tbl.needColumn': 'Select at least one column', 'tbl.no': '#',
-  'f.title': 'Title', 'f.subject': 'Subject', 'f.mainCategory': 'Main category', 'f.subcategory': 'Subcategory', 'f.topics': 'Topics (comma separated)', 'f.body': 'Content',
+  'f.title': 'Title', 'f.subject': 'Subject', 'f.mainCategory': 'Main category', 'f.subcategory': 'Subcategory', 'f.topics': 'Related topics (comma separated)', 'f.body': 'Content',
   'f.images': 'Images', 'f.featured': 'Featured on home', 'f.publishAt': 'Publish time', 'f.language': 'Language', 'f.visibility': 'Visibility', 'f.status': 'Status', 'f.views': 'Views',
-  'f.rating': 'Rating', 'f.newCategory': 'New category…', 'f.fixed': 'Category is fixed for this section', 'f.newImage': 'New', 'f.removeImage': 'Remove', 'f.undo': 'Undo', 'f.addImages': 'Add images',
+  'f.rating': 'Rating', 'f.newCategory': 'New category…', 'f.fixed': 'Category is fixed for this section', 'f.newImage': 'New', 'f.removeImage': 'Remove', 'f.undo': 'Undo', 'f.addImages': 'Add images', 'f.imageHint': 'JPG, PNG, WEBP or GIF, up to 5MB per image',
   'v.public': 'Public', 'v.members': 'Members', 's.draft': 'Draft', 's.scheduled': 'Scheduled', 's.published': 'Published', 'l.ar': 'Arabic', 'l.en': 'English',
   'f.preview': 'Preview', 'f.section': 'Section', 'f.date': 'Date',
   'u.name': 'Name', 'u.email': 'Email', 'u.role': 'Role', 'u.phone': 'Phone', 'u.active': 'Active', 'u.activate': 'Activate', 'u.deactivate': 'Deactivate', 'u.password': 'Password',

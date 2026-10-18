@@ -15,6 +15,7 @@ export default function CitiesPage() {
   const { can } = useAuth();
   const toast = useToast();
   const [edit, setEdit] = useState<null | Partial<Row>>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
   const cols: Col<Row>[] = [
     { key: 'code', label: t('u.cityCode'), exportable: false },
@@ -30,6 +31,14 @@ export default function CitiesPage() {
       toast(t('app.saved')); setEdit(null); setKey((k) => k + 1);
     } catch (err: any) { toast(err.message, 'err'); }
   };
+  const removeCity = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api(`/admin/cities/${deleteTarget.row.id}`, { method: 'DELETE' });
+      deleteTarget.reload();
+      setDeleteTarget(null);
+    } catch (err: any) { toast(err.message, 'err'); }
+  };
   return (
     <RequirePerm any={['cities.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.cities')}</h1>
@@ -39,7 +48,7 @@ export default function CitiesPage() {
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             {can('cities.update') && <Button size="sm" variant="outline" onClick={() => setEdit(r)}>{t('app.edit')}</Button>}
-            {can('cities.delete') && <Button size="sm" variant="ghost" className="text-red-600" onClick={async () => { if (!confirm(t('tbl.confirmDelete'))) return; try { await api(`/admin/cities/${r.id}`, { method: 'DELETE' }); reload(); } catch (e: any) { toast(e.message, 'err'); } }}>✕</Button>}
+            {can('cities.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>
         )}
       />
@@ -52,6 +61,10 @@ export default function CitiesPage() {
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
           </form>
         )}
+      </Modal>
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
+        <p className="mb-5">{t('tbl.confirmDelete')}</p>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={removeCity}>{t('app.delete')}</Button></div>
       </Modal>
     </RequirePerm>
   );

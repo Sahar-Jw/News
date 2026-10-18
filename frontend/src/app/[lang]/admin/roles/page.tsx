@@ -20,6 +20,7 @@ export default function RolesPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [orig, setOrig] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<null | Partial<Role>>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
 
   const loadRoles = useCallback(() => api<Role[]>('/admin/roles').then(setRoles).catch((e) => toast(e.message, 'err')), [toast]);
   useEffect(() => { loadRoles(); api<Perm[]>('/admin/permissions').then(setPerms).catch(() => {}); }, [loadRoles]);
@@ -40,9 +41,15 @@ export default function RolesPage() {
       toast(t('app.saved')); setEdit(null); loadRoles();
     } catch (err: any) { toast(err.message, 'err'); }
   };
-  const delRole = async (r: Role) => {
-    if (!confirm(t('tbl.confirmDelete'))) return;
-    try { await api(`/admin/roles/${r.id}`, { method: 'DELETE' }); toast(t('app.deleted')); if (sel?.id === r.id) setSel(null); loadRoles(); } catch (e: any) { toast(e.message, 'err'); }
+  const delRole = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api(`/admin/roles/${deleteTarget.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      if (sel?.id === deleteTarget.id) setSel(null);
+      setDeleteTarget(null);
+      loadRoles();
+    } catch (e: any) { toast(e.message, 'err'); }
   };
   const savePerms = async () => {
     if (!sel) return;
@@ -72,7 +79,7 @@ export default function RolesPage() {
                     <div className="text-sm font-medium">{name(r)}</div>
                     <div className="text-xs text-gray-500" dir="ltr">{r.code} · {r.usersCount} {t('r.users')} · {r.permissionsCount}</div>
                   </button>
-                  {(can('roles.update') || can('roles.delete')) && <div className="flex">{can('roles.update') && <Button size="sm" variant="ghost" onClick={() => setEdit(r)}>✎</Button>}{can('roles.delete') && <Button size="sm" variant="ghost" className="text-red-600" onClick={() => delRole(r)}>✕</Button>}</div>}
+                  {(can('roles.update') || can('roles.delete')) && <div className="flex">{can('roles.update') && <Button size="sm" variant="ghost" onClick={() => setEdit(r)}>✎</Button>}{can('roles.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget(r)}>✕</Button>}</div>}
                 </li>
               ))}
             </ul>
@@ -116,6 +123,10 @@ export default function RolesPage() {
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
           </form>
         )}
+      </Modal>
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
+        <p className="mb-5">{t('tbl.confirmDelete')}</p>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={delRole}>{t('app.delete')}</Button></div>
       </Modal>
     </RequirePerm>
   );

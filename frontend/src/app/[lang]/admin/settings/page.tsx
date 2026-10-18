@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
@@ -68,8 +68,8 @@ export default function SettingsPage() {
               <div className="flex gap-2"><input type="color" value={/^#[0-9a-f]{6}$/i.test(val) ? val : '#000000'} onChange={(e) => setVal(e.target.value)} className="h-10 w-14" /><input dir="ltr" className={inputCls} value={val ?? ''} onChange={(e) => setVal(e.target.value)} placeholder="#0b5ed7" /></div>
             ) : edit.valueType === 'file' ? (
               <div className="space-y-2">
-                {edit.fileUrl && <img src={fileUrl(edit.fileUrl)} alt="" className="max-h-32 rounded border" />}
-                <Field label={t('s.upload')}><input type="file" accept="image/*" onChange={(e) => upload(e.target.files?.[0])} /></Field>
+                {edit.fileUrl && <img src={fileUrl(edit.fileUrl)} alt="Current setting file" className="max-h-40 rounded-lg border bg-gray-50 p-1" />}
+                <FilePicker label={t('s.upload')} hint="PNG, JPG, WEBP or GIF" accept="image/*" onChange={(files) => upload(files?.[0])} />
               </div>
             ) : edit.valueType === 'json' || edit.valueType === 'text' ? (
               <textarea rows={edit.valueType === 'json' ? 10 : 4} dir={edit.valueType === 'json' ? 'ltr' : undefined} className={`${inputCls} ${edit.valueType === 'json' ? 'font-mono text-xs' : ''}`} value={val ?? ''} onChange={(e) => setVal(e.target.value)} />

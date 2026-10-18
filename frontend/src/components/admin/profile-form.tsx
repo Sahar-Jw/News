@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, inputCls } from '@/components/ui/ui';
+import { Button, Field, FilePicker, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 
 interface City { id: number; nameAr: string; nameEn: string }
@@ -52,9 +52,9 @@ export function ProfileForm() {
         {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-20 w-20 rounded-full object-cover" /> : <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-3xl text-white">{me.fullName.slice(0, 1)}</div>}
         <div className="space-y-2">
           <div className="font-bold">{me.fullName} <span className="text-sm font-normal text-gray-500">({lang === 'ar' ? me.role?.nameAr : me.role?.nameEn})</span></div>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <label className="cursor-pointer rounded border px-3 py-1 hover:bg-gray-50">{t('u.avatar')}<input type="file" accept="image/*" className="hidden" onChange={(e) => up('/profile/avatar', e.target.files?.[0])} /></label>
-            <label className="cursor-pointer rounded border px-3 py-1 hover:bg-gray-50">{t('u.cv')}{me.hasCv ? ' ✓' : ''}<input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => up('/profile/cv', e.target.files?.[0])} /></label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <FilePicker label={t('u.avatar')} hint="JPG, PNG or WEBP" accept="image/*" onChange={(files) => up('/profile/avatar', files?.[0])} />
+            <FilePicker label={`${t('u.cv')}${me.hasCv ? ' ✓' : ''}`} hint="PDF, DOC or DOCX" accept=".pdf,.doc,.docx" onChange={(files) => up('/profile/cv', files?.[0])} />
           </div>
         </div>
       </div>
