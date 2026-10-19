@@ -34,3 +34,6 @@ export function shareLinks(url: string, title: string) {
     email: `https://mail.google.com/mail/?view=cm&fs=1&su=${t}&body=${u}`,
   };
 }
+
+/** Permission needed to create content of a section: `news.create.<section>`; regular news (no section) is `news.create`. */
+export const createPermFor = (section?: string) => (section ? `news.create.${section.toLowerCase()}` : 'news.create');

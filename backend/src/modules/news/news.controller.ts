@@ -3,7 +3,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM } from '../../common/constants';
+import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM, NEWS_CREATE_PERMISSIONS } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
@@ -67,7 +67,8 @@ export class NewsAdminController {
 
   /** multipart/form-data (field "images", up to 20 files) or plain JSON. */
   @Post()
-  @Permissions(PERM.NEWS_CREATE)
+  // any create permission gets in; the service then requires the one for the chosen section
+  @Permissions(...NEWS_CREATE_PERMISSIONS)
   @UseInterceptors(upload())
   create(@Body() dto: CreateNewsDto, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() u: AuthUser) {
     return this.service.create(dto, files, u);

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtNum } from '@/lib/utils';
+import { fmtDate, fmtNum, createPermFor } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { Button, Modal } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
@@ -59,7 +59,7 @@ export function NewsTable({ section }: { section: string }) {
         { key: 'visibility', label: t('f.visibility'), options: ['public', 'members'].map((s) => ({ value: s, label: t(`v.${s}`) })) },
       ]}
       bulkDelete={{ path: '/admin/news/bulk-delete', can: can('news.delete') }}
-      toolbar={can('news.create') && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
+      toolbar={can(createPermFor(special ? section : undefined)) && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
       rowActions={(r, reload) => (
         <div className="flex gap-1">
           {can('news.update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}

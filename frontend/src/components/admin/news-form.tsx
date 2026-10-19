@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { SECTIONS, toLocalInput } from '@/lib/utils';
+import { SECTIONS, createPermFor, toLocalInput } from '@/lib/utils';
 import { Button, Center, Field, FilePicker, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RichEditor } from './rich-editor';
@@ -118,6 +118,8 @@ function Form() {
   const sectionOptions = useMemo(() => [...cats.main], [cats.main]);
 
   if (loading) return <Center><Spinner /></Center>;
+  // a new record needs the create permission of its own section (regular news: news.create)
+  if (!isEdit && !can(createPermFor(section))) return <Center>{t('adm.noAccess')}</Center>;
   return (
     <form onSubmit={submit} className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-center justify-between">

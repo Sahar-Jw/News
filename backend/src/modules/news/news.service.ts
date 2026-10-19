@@ -9,6 +9,7 @@ import {
   SPECIAL_CATEGORY_CODES,
   SPECIAL_CATEGORY_CONFIG,
   SpecialCategory,
+  createPermissionFor,
 } from '../../common/constants';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
@@ -25,6 +26,9 @@ const LIST_COLUMNS = [
   'id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'images', 'rating', 'isFeatured',
   'publishAt', 'status', 'language', 'visibility', 'viewCount', 'createdAt', 'updatedAt', 'createdById',
 ];
+
+/** 'regular' for ordinary news, otherwise the section code. */
+const kindOf = (main: string) => (SPECIAL_CATEGORY_CODES.includes(main) ? main : 'regular');
 
 /** Sections whose records carry exactly one picture. */
 const SINGLE_IMAGE_SECTIONS: SpecialCategory[] = [SpecialCategory.TEAM, SpecialCategory.COMPANY_OVERVIEW];
@@ -201,6 +205,11 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     return { main, sub };
   }
 
+  /** One permission per kind of content: regular news, or one of the special sections. */
+  private assertMayCreate(main: string, perms: Set<string>) {
+    if (!perms.has(createPermissionFor(main))) throw new ForbiddenException('ليست لديك صلاحية إنشاء هذا النوع من المحتوى');
+  }
+
   private resolvePublishing(
     dto: { status?: NewsStatus; publishAt?: string | null },
     existing: News | undefined,
@@ -254,6 +263,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const perms = actor.permissions;
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms);
+    this.assertMayCreate(main, perms);
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     const pub = this.resolvePublishing(dto, undefined, perms);
     const rating = this.resolveRating(main, dto.rating);
@@ -292,6 +302,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const perms = actor.permissions;
 
     const { main, sub } = await this.resolveCategories(dto, perms, n);
+    // moving a record into another kind of content (regular ↔ a section, or section → section) counts as creating it there
+    if (kindOf(main) !== kindOf(n.mainCategory)) this.assertMayCreate(main, perms);
     const pub = this.resolvePublishing(dto, n, perms);
     const rating = this.resolveRating(main, dto.rating, n);
 
