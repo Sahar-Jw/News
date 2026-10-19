@@ -2,17 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --primary: #0b5ed7; --secondary: #1f2937; }
+/* ---------- design tokens (primary / secondary are overridden from Settings at runtime) ---------- */
+:root {
+  --primary: #0b5ed7;
+  --secondary: #1f2937;
+  --ink: #0f1729;
+  --canvas: #f4f6fb;
+  --line: #e3e8f1;
+  --muted: #5a6477;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-card: 0 1px 2px rgb(15 23 41 / 0.05), 0 12px 28px -16px rgb(15 23 41 / 0.2);
+  --shadow-lift: 0 2px 4px rgb(15 23 41 / 0.06), 0 26px 44px -20px color-mix(in srgb, var(--primary) 55%, rgb(15 23 41 / 0.45));
+}
 html { scroll-behavior: smooth; }
-body { font-family: Cairo, 'Segoe UI', Tahoma, Arial, sans-serif; color: #111827; background: #f8fafc; }
-.prose-news { line-height: 1.9; font-size: 1.05rem; }
+body {
+  font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; }
+::selection { background: color-mix(in srgb, var(--primary) 22%, white); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- motion ---------- */
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes word-up { from { transform: translateY(110%); } to { transform: none; } }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
+@keyframes seg-fill { from { width: 0; } to { width: 100%; } }
+@keyframes bar-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* whole page fades in on navigation (opacity only, so fixed elements keep working) */
+.page-in { animation: fade 0.45s var(--ease-out) backwards; }
+
+/* scroll reveal: hidden until the element is first seen; "backwards" fill so hover transforms still work afterwards */
+[data-reveal]:not([data-in]), [data-stagger]:not([data-in]) > * { opacity: 0; }
+[data-reveal][data-in] { animation: rise 0.7s var(--ease-out) backwards; animation-delay: var(--d, 0ms); }
+[data-stagger][data-in] > * { animation: rise 0.65s var(--ease-out) backwards; animation-delay: calc(var(--n, 0) * 70ms); }
+[data-stagger] > *:nth-child(1) { --n: 0; } [data-stagger] > *:nth-child(2) { --n: 1; } [data-stagger] > *:nth-child(3) { --n: 2; }
+[data-stagger] > *:nth-child(4) { --n: 3; } [data-stagger] > *:nth-child(5) { --n: 4; } [data-stagger] > *:nth-child(n + 6) { --n: 5; }
+[data-in] .bar-draw { transform-origin: center; animation: bar-draw 0.8s var(--ease-out) 0.2s backwards; }
+
+/* hero: slow zoom on the picture, title words rise out of a mask, story-style progress bars */
+.kenburns { animation: kenburns 14s ease-out forwards; }
+.hero-in .hero-word { animation: word-up 0.85s var(--ease-out) backwards; }
+.hero-in .hero-desc { animation: rise 0.8s var(--ease-out) 0.45s backwards; }
+.seg-fill { animation: seg-fill var(--hero-time, 6s) linear forwards; }
+.hero:hover .seg-fill { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [data-reveal]:not([data-in]), [data-stagger]:not([data-in]) > * { opacity: 1; }
+  .seg-fill { animation: none !important; width: 100%; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+}
+
+.prose-news { line-height: 1.95; font-size: 1.03rem; color: #1f2937; }
 .prose-news h1, .prose-news h2, .prose-news h3, .prose-news h4 { font-weight: 700; margin: 1.2em 0 .5em; line-height: 1.4; }
 .prose-news h1 { font-size: 1.8rem } .prose-news h2 { font-size: 1.5rem } .prose-news h3 { font-size: 1.25rem }
 .prose-news p { margin: .8em 0 }
 .prose-news ul { list-style: disc; padding-inline-start: 1.6rem; margin: .8em 0 }
 .prose-news ol { list-style: decimal; padding-inline-start: 1.6rem; margin: .8em 0 }
 .prose-news a { color: var(--primary); text-decoration: underline }
-.prose-news blockquote { border-inline-start: 4px solid var(--primary); padding-inline-start: 1rem; color: #4b5563; margin: 1em 0 }
+.prose-news blockquote { border-inline-start: 4px solid var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); padding: .6rem 1rem; border-radius: 0 .75rem .75rem 0; color: #374151; margin: 1.2em 0 }
+.prose-news img { border-radius: .75rem; margin: 1em 0; max-width: 100% }
 .editor:empty:before { content: attr(data-placeholder); color: #9ca3af; }
 
 @media print {

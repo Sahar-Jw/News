@@ -26,6 +26,9 @@ const LIST_COLUMNS = [
   'publishAt', 'status', 'language', 'visibility', 'viewCount', 'createdAt', 'updatedAt', 'createdById',
 ];
 
+/** Sections whose records carry exactly one picture. */
+const SINGLE_IMAGE_SECTIONS: SpecialCategory[] = [SpecialCategory.TEAM, SpecialCategory.COMPANY_OVERVIEW];
+
 @Injectable()
 export class NewsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(NewsService.name);
@@ -251,7 +254,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const perms = actor.permissions;
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms);
-    if (main === SpecialCategory.TEAM && (files?.length ?? 0) > 1) throw new BadRequestException('عضو الفريق له صورة واحدة فقط');
+    if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     const pub = this.resolvePublishing(dto, undefined, perms);
     const rating = this.resolveRating(main, dto.rating);
 
@@ -298,7 +301,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     if (keep.some((p) => !existingImgs.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     const removed = existingImgs.filter((p) => !keep.includes(p));
     if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
-    if (main === SpecialCategory.TEAM && keep.length + (files?.length ?? 0) > 1) throw new BadRequestException('عضو الفريق له صورة واحدة فقط');
+    if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && keep.length + (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     const added = await this.storage.saveImages(files ?? [], 'news');
 
     try {

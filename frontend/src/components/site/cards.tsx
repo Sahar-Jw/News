@@ -105,21 +105,21 @@ export function NewsCard({ n }: { n: Card }) {
   const { href, lang, t } = useI18n();
   const link = href(`/news/view?id=${n.id}`);
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md">
-      <Link href={link} className="relative block">
-        <Thumb src={n.images[0]} alt={n.title} className="h-44 w-full" />
-        <span className="absolute start-2 top-2 rounded bg-primary px-2 py-0.5 text-xs text-white">{n.mainCategory}</span>
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+      <Link href={link} className="relative block overflow-hidden">
+        <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
+        <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-primary shadow-sm backdrop-blur">{n.mainCategory}</span>
       </Link>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <Link href={link}><h3 className="line-clamp-2 text-base font-bold leading-snug hover:text-primary">{n.title}</h3></Link>
-        {n.subject && <p className="line-clamp-1 text-sm font-medium text-gray-500">{n.subject}</p>}
-        {n.excerpt && <p className="line-clamp-3 text-sm text-gray-600">{n.excerpt}</p>}
+      <div className="flex flex-1 flex-col gap-2 p-5">
+        <Link href={link}><h3 className="line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary">{n.title}</h3></Link>
+        {n.subject && <p className="line-clamp-1 text-sm font-medium text-[color:var(--muted)]">{n.subject}</p>}
+        {n.excerpt && <p className="line-clamp-3 text-sm leading-7 text-gray-600">{n.excerpt}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">
           <span>{fmtDate(lang, n.publishAt)}</span>
           <span>👁 {fmtNum(lang, n.viewCount)} {t('site.views')}</span>
         </div>
-        <div className="flex items-center justify-between border-t pt-3">
-          <Link href={link} className="text-sm font-semibold text-primary">{t('site.readMore')} →</Link>
+        <div className="flex items-center justify-between border-t border-line pt-3">
+          <Link href={link} className="text-sm font-semibold text-primary">{t('site.readMore')} <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">→</span></Link>
           <ShareRow id={n.id} title={n.title} />
         </div>
       </div>

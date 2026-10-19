@@ -168,12 +168,12 @@ export class NewsPublicService {
       featured: featured.map(card),
       news: regular.map(card),
       team: shuffle(by(SpecialCategory.TEAM)).slice(0, 6).map(card),
-      services: by(SpecialCategory.SERVICES).map(card),
-      testimonials: by(SpecialCategory.TESTIMONIALS).map(card),
+      services: by(SpecialCategory.SERVICES).slice(0, 3).map(card), // latest 3
+      testimonials: shuffle(by(SpecialCategory.TESTIMONIALS)).slice(0, 4).map(card), // 4 random, new pick on every load
       partners: shuffle(by(SpecialCategory.PARTNERS).filter((p) => (p.images ?? []).length)).slice(0, 5).map((p) => ({ id: p.id, title: p.title, logo: this.storage.url(p.images[0]) })),
-      experts: by(SpecialCategory.EXPERTS).map(card),
-      statistics: by(SpecialCategory.STATISTICS).slice(0, 4).map(card),
-      company: by(SpecialCategory.COMPANY_OVERVIEW)[0] ? this.card(by(SpecialCategory.COMPANY_OVERVIEW)[0], true) : null,
+      experts: by(SpecialCategory.EXPERTS).slice(0, 4).map(card), // latest 4
+      statistics: by(SpecialCategory.STATISTICS).slice(0, 5).map(card), // latest 5
+      company: shuffle(by(SpecialCategory.COMPANY_OVERVIEW)).slice(0, 5).map(card), // 5 random, picture only
     };
   }
 }

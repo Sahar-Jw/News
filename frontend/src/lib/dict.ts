@@ -24,9 +24,9 @@ const ar: Record<string, string> = {
   'auth.phone': 'الهاتف (اختياري)', 'auth.registered': 'تم إنشاء الحساب وهو بانتظار التفعيل من المسؤول.', 'auth.noAccount': 'ليس لديك حساب؟', 'auth.haveAccount': 'لديك حساب؟',
   // sections
   'sec.hero': 'الرئيسية', 'sec.featured': 'الأخبار المميزة', 'sec.news': 'آخر الأخبار', 'sec.team': 'فريقنا', 'sec.services': 'خدماتنا', 'sec.testimonials': 'آراء العملاء',
-  'sec.partners': 'شركاؤنا', 'sec.experts': 'خبراؤنا', 'sec.statistics': 'إحصائياتنا', 'sec.company': 'نبذة عن الشركة', 'sec.contact': 'تواصل معنا',
+  'sec.partners': 'شركاؤنا', 'sec.experts': 'خبراؤنا', 'sec.statistics': 'إحصائياتنا', 'sec.company': 'الشركات الشريكة', 'sec.contact': 'تواصل معنا',
   'section.BREAKING': 'الأخبار العاجلة', 'section.SERVICES': 'الخدمات', 'section.TEAM': 'الفريق', 'section.TESTIMONIALS': 'آراء العملاء', 'section.PARTNERS': 'الشركاء',
-  'section.EXPERTS': 'الخبراء', 'section.STATISTICS': 'الإحصائيات', 'section.COMPANY_OVERVIEW': 'نبذة الشركة',
+  'section.EXPERTS': 'الخبراء', 'section.STATISTICS': 'الإحصائيات', 'section.COMPANY_OVERVIEW': 'الشركات الشريكة',
   // admin nav
   'adm.title': 'لوحة الإدارة', 'adm.dashboard': 'الرئيسية', 'adm.content': 'المحتوى', 'adm.news': 'الأخبار العادية', 'adm.security': 'الإعدادات والأمان', 'adm.users': 'المستخدمون',
   'adm.roles': 'الأدوار', 'adm.permissions': 'الصلاحيات', 'adm.settings': 'إعدادات الموقع', 'adm.audit': 'سجل التدقيق', 'adm.cities': 'المدن', 'adm.messages': 'رسائل التواصل',
@@ -76,9 +76,9 @@ const en: Record<string, string> = {
   'auth.login': 'Log in', 'auth.register': 'Create account', 'auth.email': 'Email', 'auth.password': 'Password', 'auth.fullName': 'Full name',
   'auth.phone': 'Phone (optional)', 'auth.registered': 'Account created. It is pending activation by an administrator.', 'auth.noAccount': "Don't have an account?", 'auth.haveAccount': 'Already have an account?',
   'sec.hero': 'Home', 'sec.featured': 'Featured news', 'sec.news': 'Latest news', 'sec.team': 'Our team', 'sec.services': 'Our services', 'sec.testimonials': 'Testimonials',
-  'sec.partners': 'Our partners', 'sec.experts': 'Our experts', 'sec.statistics': 'Our statistics', 'sec.company': 'About the company', 'sec.contact': 'Contact us',
+  'sec.partners': 'Our partners', 'sec.experts': 'Our experts', 'sec.statistics': 'Our statistics', 'sec.company': 'Partner companies', 'sec.contact': 'Contact us',
   'section.BREAKING': 'Breaking news', 'section.SERVICES': 'Services', 'section.TEAM': 'Team', 'section.TESTIMONIALS': 'Testimonials', 'section.PARTNERS': 'Partners',
-  'section.EXPERTS': 'Experts', 'section.STATISTICS': 'Statistics', 'section.COMPANY_OVERVIEW': 'Company overview',
+  'section.EXPERTS': 'Experts', 'section.STATISTICS': 'Statistics', 'section.COMPANY_OVERVIEW': 'Partner companies',
   'adm.title': 'Admin panel', 'adm.dashboard': 'Dashboard', 'adm.content': 'Content', 'adm.news': 'Regular news', 'adm.security': 'Settings & security', 'adm.users': 'Users',
   'adm.roles': 'Roles', 'adm.permissions': 'Permissions', 'adm.settings': 'Site settings', 'adm.audit': 'Audit log', 'adm.cities': 'Cities', 'adm.messages': 'Contact messages',
   'adm.welcome': 'Welcome', 'adm.noAccess': "You don't have permission for this page", 'adm.visitSite': 'Visit site',

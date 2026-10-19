@@ -63,8 +63,11 @@ export function BreakingTicker({ items }: { items: Card[] }) {
   );
 
   return (
-    <div className="no-print flex items-center overflow-hidden bg-red-600 text-white">
-      <span className="z-10 shrink-0 bg-red-800 px-4 py-2 text-sm font-bold">{t('site.breaking')}</span>
+    <div className="no-print flex items-center overflow-hidden bg-gradient-to-r from-red-700 via-red-600 to-red-500 text-white">
+      <span className="z-10 flex shrink-0 items-center gap-2 bg-red-900 px-4 py-2 text-sm font-bold">
+        <span className="relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
+        {t('site.breaking')}
+      </span>
       <div ref={viewRef} dir="ltr" className="relative min-w-0 flex-1 overflow-hidden" style={{ WebkitMaskImage: fade, maskImage: fade }}>
         {/* hidden copy used only to measure how wide the headlines are */}
         <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute flex w-max whitespace-nowrap py-2">

@@ -1,7 +1,8 @@
 import '../globals.css';
-import '@fontsource/cairo/400.css';
-import '@fontsource/cairo/600.css';
-import '@fontsource/cairo/700.css';
+import '@fontsource/ibm-plex-sans-arabic/400.css';
+import '@fontsource/ibm-plex-sans-arabic/500.css';
+import '@fontsource/ibm-plex-sans-arabic/700.css';
+import '@fontsource-variable/readex-pro/index.css';
 import { notFound } from 'next/navigation';
 import { AuthProvider } from '@/lib/auth';
 import { I18nProvider } from '@/lib/i18n';

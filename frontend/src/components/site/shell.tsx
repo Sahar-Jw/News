@@ -27,7 +27,7 @@ function Dropdown({ trigger, panelClass, children }: { trigger: React.ReactNode;
   return (
     <div className="group relative" onMouseLeave={() => setShut(false)} onFocus={() => setShut(false)}>
       {trigger}
-      <div onClick={close} className={`invisible absolute top-full z-50 rounded-lg border bg-white py-1 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${shut ? '!invisible !opacity-0' : ''} ${panelClass}`}>{children}</div>
+      <div onClick={close} className={`invisible absolute top-full z-50 mt-1 origin-top translate-y-2 scale-95 rounded-2xl bg-white p-1.5 opacity-0 shadow-lift ring-1 ring-line transition duration-200 ease-out group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 ${shut ? '!invisible !opacity-0' : ''} ${panelClass}`}>{children}</div>
     </div>
   );
 }
@@ -38,11 +38,11 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
   if (visible.length === 0) return null;
   return (
     <Dropdown
-      trigger={<button type="button" className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{label} ▾</button>}
+      trigger={<button type="button" className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{label} ▾</button>}
       panelClass="start-0 min-w-52"
     >
       {visible.map((i) => (
-        <Link key={i.to} href={href(i.to)} className="block px-4 py-2 text-sm hover:bg-gray-50">{i.label}</Link>
+        <Link key={i.to} href={href(i.to)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{i.label}</Link>
       ))}
     </Dropdown>
   );
@@ -77,12 +77,12 @@ export function TopBar() {
   const email = s('contact', 'email');
   const addr = loc('contact', 'address');
   return (
-    <div className="no-print bg-secondary text-xs text-white">
+    <div className="no-print bg-secondary text-xs text-white/90">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5">
         <div className="flex flex-wrap items-center gap-4">
-          <span>{now}</span>
-          {phone && <a href={`tel:${phone}`} dir="ltr" className="flex items-center gap-1.5"><ContactIcon name="phone" />{phone}</a>}
-          {email && <a href={`mailto:${email}`} dir="ltr" className="flex items-center gap-1.5"><ContactIcon name="email" />{email}</a>}
+          {now && <span className="flex items-center gap-1.5"><ContactIcon name="date" />{now}</span>}
+          {phone && <a href={`tel:${phone}`} className="flex items-center gap-1.5"><ContactIcon name="phone" /><bdi dir="ltr">{phone}</bdi></a>}
+          {email && <a href={`mailto:${email}`} className="flex items-center gap-1.5"><ContactIcon name="email" /><bdi dir="ltr">{email}</bdi></a>}
           {addr && <span className="flex items-center gap-1.5"><ContactIcon name="address" />{addr}</span>}
         </div>
         <SocialLinks />
@@ -99,6 +99,13 @@ export function Navbar() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 12);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
   const logo = img('branding', 'logo');
   const secs = SECTION_ORDER_KEYS.filter((c) => settings.sections_home?.[`${c}_visible`] !== false && c !== 'hero')
     .sort((a, b) => (settings.sections_home?.[`${a}_order`] ?? 99) - (settings.sections_home?.[`${b}_order`] ?? 99));
@@ -163,67 +170,69 @@ export function Navbar() {
   };
 
   return (
-    <header className="no-print sticky top-0 z-40 border-b bg-white shadow-sm" style={{ background: settings.appearance?.header_background || undefined }}>
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
+    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: settings.appearance?.header_background || undefined }}>
+      <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2.5'}`}>
         <Link href={href('/')} className="flex items-center gap-3">
-          {logo && <img src={logo} alt="" className="h-12 w-auto" />}
+          {logo && <img src={logo} alt="" className={`w-auto transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
           <div className="leading-tight">
-            <div className="text-lg font-bold text-primary">{loc('branding', 'site_name')}</div>
+            <div className="font-display text-lg font-bold text-primary">{loc('branding', 'site_name')}</div>
             {loc('branding', 'site_description') && <div className="max-w-[16rem] truncate text-xs text-gray-500">{loc('branding', 'site_description')}</div>}
           </div>
         </Link>
 
-        <button className="ms-auto rounded border px-2 py-1 md:hidden" onClick={() => setMenu(!menu)} aria-label="menu">☰</button>
+        <button className="ms-auto flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white md:hidden" onClick={() => setMenu(!menu)} aria-label="menu" aria-expanded={menu}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">{menu ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
+        </button>
 
         <nav className={`${menu ? 'flex' : 'hidden'} w-full flex-col gap-1 md:ms-auto md:flex md:w-auto md:flex-row md:items-center md:gap-1`}>
-          <Link href={href('/')} className="rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.home')}</Link>
+          <Link href={href('/')} className={`rounded-full px-3.5 py-2 text-sm font-medium transition hover:bg-primary/10 hover:text-primary ${isHome ? 'bg-primary/10 text-primary' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
           {categories.main.length > 0 && (
             <Dropdown
-              trigger={<Link href={href('/news')} className="block rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.categories')} ▾</Link>}
+              trigger={<Link href={href('/news')} className="block rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.categories')} ▾</Link>}
               panelClass="start-0 min-w-48"
             >
               {categories.main.map((c) => (
-                <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
+                <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
               ))}
             </Dropdown>
           )}
 
           {categories.sub.length > 0 && (
             <Dropdown
-              trigger={<span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.subcategories')} ▾</span>}
+              trigger={<span className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.subcategories')} ▾</span>}
               panelClass="start-0 min-w-48"
             >
               {categories.sub.map((c) => (
-                <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block px-4 py-2 text-sm hover:bg-gray-50">{c}</Link>
+                <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
               ))}
             </Dropdown>
           )}
 
           <Dropdown
-            trigger={<span className="block cursor-pointer rounded px-3 py-2 text-sm font-medium hover:bg-gray-100">{t('site.sections')} ▾</span>}
+            trigger={<span className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.sections')} ▾</span>}
             panelClass="start-0 min-w-48"
           >
             {secs.map((c) => (
-              <a key={c} href={isHome ? `#sec-${c}` : `${href('/')}#sec-${c}`} className="block px-4 py-2 text-sm hover:bg-gray-50">
+              <a key={c} href={isHome ? `#sec-${c}` : `${href('/')}#sec-${c}`} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">
                 {loc('sections_home', `${c}_title`) || t(`sec.${c}`)}
               </a>
             ))}
           </Dropdown>
 
-          <form onSubmit={submit} className="flex">
-            <div className="relative">
-              <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="w-36 rounded-s-lg border py-1.5 pe-7 ps-3 text-sm outline-none focus:border-primary lg:w-48" />
-              {q && (
-                <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800">
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                </button>
-              )}
-            </div>
-            <button className="rounded-e-lg bg-primary px-3 text-sm text-white" aria-label={t('app.search')}>⌕</button>
+          <form onSubmit={submit} role="search" className="relative">
+            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-40 rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:w-52 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 lg:w-48 lg:focus:w-64" />
+            {q && (
+              <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-10 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-gray-800">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            )}
+            <button className="absolute end-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white transition hover:brightness-110 active:scale-95" aria-label={t('app.search')}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            </button>
           </form>
 
-          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-100">
+          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} className="rounded-full border border-line bg-white px-3.5 py-2 text-sm font-medium transition hover:border-primary hover:text-primary">
             {t('site.language')}
           </Link>
 
@@ -233,14 +242,14 @@ export function Navbar() {
           {me && (
             <Dropdown
               trigger={
-                <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border p-1 hover:bg-gray-50">
+                <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">
                   {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>}
                 </button>
               }
               panelClass="end-0 min-w-44"
             >
-              <Link href={href('/profile')} className="block px-4 py-2 text-sm hover:bg-gray-50">{t('site.profile')}</Link>
-              <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full px-4 py-2 text-start text-sm text-red-600 hover:bg-gray-50">{t('site.logout')}</button>
+              <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{t('site.profile')}</Link>
+              <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{t('site.logout')}</button>
             </Dropdown>
           )}
         </nav>
@@ -260,31 +269,32 @@ export function Footer() {
   const map = s('contact', 'map_url');
   const bg = settings.appearance?.footer_background;
   return (
-    <footer className="no-print mt-16 text-gray-300" style={{ background: bg || '#111827' }}>
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 md:grid-cols-4">
+    <footer className="no-print relative mt-20 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 90%, black)' }}>
+      <div className="h-1 bg-gradient-to-r from-primary via-primary/40 to-transparent" aria-hidden="true" />
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
         <div>
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
-          <div className="mb-2 text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
+          <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
           <p className="text-sm leading-7">{loc('branding', 'site_description')}</p>
           <div className="mt-4"><SocialLinks /></div>
         </div>
         <div>
-          <h4 className="mb-3 font-bold text-white">{t('site.quickLinks')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.quickLinks')}</h4>
           <ul className="space-y-2 text-sm">
-            <li><Link href={href('/')} className="hover:text-white">{t('site.home')}</Link></li>
+            <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
             <li><Link href={href('/news')} className="hover:text-white">{t('site.allNews')}</Link></li>
             <li><Link href={href('/sitemap')} className="hover:text-white">{t('site.sitemap')}</Link></li>
           </ul>
         </div>
         <div>
-          <h4 className="mb-3 font-bold text-white">{t('site.services')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.services')}</h4>
           <ul className="space-y-2 text-sm">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
         </div>
         <div>
-          <h4 className="mb-3 font-bold text-white">{t('site.contact')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.contact')}</h4>
           <ul className="space-y-2 text-sm">
-            {s('contact', 'phone') && <li dir="ltr" className="flex items-center gap-2 text-start"><ContactIcon name="phone" />{s('contact', 'phone')}</li>}
-            {s('contact', 'email') && <li className="flex items-center gap-2"><ContactIcon name="email" />{s('contact', 'email')}</li>}
+            {s('contact', 'phone') && <li className="flex items-center gap-2"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></li>}
+            {s('contact', 'email') && <li className="flex items-center gap-2"><ContactIcon name="email" /><bdi dir="ltr">{s('contact', 'email')}</bdi></li>}
             {loc('contact', 'address') && <li className="flex items-center gap-2"><ContactIcon name="address" />{loc('contact', 'address')}</li>}
             {loc('contact', 'working_hours') && <li className="flex items-center gap-2"><ContactIcon name="hours" />{loc('contact', 'working_hours')}</li>}
           </ul>
@@ -310,11 +320,19 @@ export function BackToTop() {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const h = () => setShow(window.scrollY > 300);
-    window.addEventListener('scroll', h);
+    h();
+    window.addEventListener('scroll', h, { passive: true });
     return () => window.removeEventListener('scroll', h);
   }, []);
-  if (!show) return null;
   return (
-    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="no-print fixed bottom-5 end-5 z-40 h-11 w-11 rounded-full bg-primary text-xl text-white shadow-lg" aria-label={t('site.backTop')}>↑</button>
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      tabIndex={show ? 0 : -1}
+      aria-hidden={!show}
+      className={`no-print fixed bottom-5 end-5 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white shadow-lift transition duration-300 hover:-translate-y-0.5 active:scale-95 ${show ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
+      aria-label={t('site.backTop')}
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7M12 19V5" /></svg>
+    </button>
   );
 }

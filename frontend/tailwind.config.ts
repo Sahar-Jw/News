@@ -5,11 +5,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--primary)',
-        secondary: 'var(--secondary)',
-        ink: '#111827',
+        // brand colours come from Settings (CSS variables); <alpha-value> makes bg-primary/10, ring-primary/20 … work
+        primary: 'color-mix(in srgb, var(--primary) calc(<alpha-value> * 100%), transparent)',
+        secondary: 'color-mix(in srgb, var(--secondary) calc(<alpha-value> * 100%), transparent)',
+        ink: 'color-mix(in srgb, var(--ink) calc(<alpha-value> * 100%), transparent)',
+        canvas: 'var(--canvas)',
+        line: 'var(--line)',
       },
-      fontFamily: { sans: ['Cairo', 'Segoe UI', 'Tahoma', 'Arial', 'sans-serif'] },
+      fontFamily: {
+        sans: ['"IBM Plex Sans Arabic"', 'Segoe UI', 'Tahoma', 'Arial', 'sans-serif'],
+        display: ['"Readex Pro Variable"', '"IBM Plex Sans Arabic"', 'Segoe UI', 'Tahoma', 'sans-serif'],
+      },
+      boxShadow: { card: 'var(--shadow-card)', lift: 'var(--shadow-lift)' },
       keyframes: {
         ticker: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },
       },

@@ -77,7 +77,7 @@ export function ContactForm() {
         <Field label={t('contact.email')} error={errors.email}><input type="email" aria-invalid={!!errors.email} className={cls('email')} value={f.email} onChange={set('email')} onBlur={blur('email')} dir="ltr" /></Field>
       </div>
       <Field label={t('contact.subject')} error={errors.subject}><input aria-invalid={!!errors.subject} className={cls('subject')} value={f.subject} onChange={set('subject')} onBlur={blur('subject')} /></Field>
-      <Field label={t('contact.message')} error={errors.message}><textarea rows={5} aria-invalid={!!errors.message} className={cls('message')} value={f.message} onChange={set('message')} onBlur={blur('message')} /></Field>
+      <Field label={t('contact.message')} error={errors.message}><textarea rows={5} aria-invalid={!!errors.message} className={`${cls('message')} resize-none overflow-x-hidden overflow-y-auto [overflow-wrap:anywhere]`} value={f.message} onChange={set('message')} onBlur={blur('message')} /></Field>
       <Button disabled={busy}>{busy ? t('app.sending') : t('contact.send')}</Button>
     </form>
   );

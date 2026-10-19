@@ -45,7 +45,7 @@ function Form() {
   // Special section: category is pinned. When editing a record we learn its section from the record itself.
   const section = sectionParam || (SECTIONS as readonly string[]).includes(f.mainCategory) ? (sectionParam || f.mainCategory) : '';
   const special = !!section;
-  const single = section === 'TEAM'; // a team member has exactly one picture
+  const single = section === 'TEAM' || section === 'COMPANY_OVERVIEW'; // these records have exactly one picture
   const mayChangeCategory = !isEdit || can('news.category.change');
   const mayCreateCategory = can('news.category.create');
   const mayPublish = can('news.publish');

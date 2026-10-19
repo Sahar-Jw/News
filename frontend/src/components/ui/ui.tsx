@@ -14,7 +14,7 @@ export function Center({ children }: { children: React.ReactNode }) {
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' | 'outline'; size?: 'sm' | 'md' };
 export function Button({ variant = 'primary', size = 'md', className, ...p }: BtnProps) {
   const v = {
-    primary: 'bg-primary text-white hover:opacity-90',
+    primary: 'bg-primary text-white shadow-sm shadow-primary/30 hover:brightness-110',
     ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
     danger: 'bg-red-600 text-white hover:bg-red-700',
     outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
@@ -22,12 +22,12 @@ export function Button({ variant = 'primary', size = 'md', className, ...p }: Bt
   return (
     <button
       {...p}
-      className={cn('inline-flex items-center justify-center gap-2 rounded-lg font-medium transition disabled:cursor-not-allowed disabled:opacity-50', size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm', v, className)}
+      className={cn('inline-flex items-center justify-center gap-2 rounded-xl font-medium transition duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50', size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm', v, className)}
     />
   );
 }
 
-export const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-100';
+export const inputCls = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-100';
 
 export function Field({ label, children, hint, error }: { label?: string; children: React.ReactNode; hint?: string; error?: string }) {
   return (

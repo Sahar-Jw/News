@@ -73,7 +73,7 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'partners', titleAr: 'شركاؤنا', titleEn: 'Our Partners' },
   { code: 'experts', titleAr: 'خبراؤنا', titleEn: 'Our Experts' },
   { code: 'statistics', titleAr: 'إحصائياتنا', titleEn: 'Our Statistics' },
-  { code: 'company', titleAr: 'نبذة عن الشركة', titleEn: 'About the Company' },
+  { code: 'company', titleAr: 'الشركات الشريكة', titleEn: 'Partner Companies' },
   { code: 'contact', titleAr: 'تواصل معنا', titleEn: 'Contact Us' },
 ];
 
@@ -118,6 +118,15 @@ export const SETTING_SEEDS: SettingSeed[] = [
     s('sections_home', `${sec.code}_title_en`, 'text', sec.titleEn),
     s('sections_home', `${sec.code}_order`, 'number', String(i + 1)),
     s('sections_home', `${sec.code}_visible`, 'boolean', 'true'),
+    // optional small label above the title and a line under it, per language (empty = not shown)
+    ...(sec.code === 'hero'
+      ? []
+      : [
+          s('sections_home', `${sec.code}_eyebrow_ar`, 'text'),
+          s('sections_home', `${sec.code}_eyebrow_en`, 'text'),
+          s('sections_home', `${sec.code}_subtitle_ar`, 'text'),
+          s('sections_home', `${sec.code}_subtitle_en`, 'text'),
+        ]),
   ]),
   // appearance
   s('appearance', 'primary_color', 'color', '#0b5ed7'),

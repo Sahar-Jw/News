@@ -4,9 +4,10 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtNum } from '@/lib/utils';
+import { SECTIONS, fmtDate, fmtNum } from '@/lib/utils';
 import { Center, Spinner, Stars } from '@/components/ui/ui';
 import { Card, NewsCard, ShareRow } from '@/components/site/cards';
+import { ReadingProgress } from '@/components/site/motion';
 
 type Detail = Card & { body: string | null; related: Card[] };
 
@@ -28,12 +29,18 @@ function View() {
 
   // a record in the other language keeps working; its own language is shown via lang attributes
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <article lang={n.language} dir={n.language === 'ar' ? 'rtl' : 'ltr'}>
-        <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className="rounded bg-primary px-2 py-0.5 text-xs text-white">{n.mainCategory}</Link>
-        {n.subcategory && <Link href={href(`/news?subcategory=${encodeURIComponent(n.subcategory)}`)} className="ms-2 rounded border px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50">{n.subcategory}</Link>}
-        <h1 className="mt-3 text-3xl font-bold leading-snug">{n.title}</h1>
-        {n.subject && <p className="mt-2 text-lg text-gray-600">{n.subject}</p>}
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <ReadingProgress />
+      <article lang={n.language} dir={n.language === 'ar' ? 'rtl' : 'ltr'} className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:p-10">
+        {(SECTIONS as readonly string[]).includes(n.mainCategory) ? (
+          // home-page sections (services, team…) are not news categories: show the translated name, no filter link
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{t(`section.${n.mainCategory}`)}</span>
+        ) : (
+          <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white">{n.mainCategory}</Link>
+        )}
+        {n.subcategory && <Link href={href(`/news?subcategory=${encodeURIComponent(n.subcategory)}`)} className="ms-2 rounded-full border border-line px-3 py-1 text-xs text-gray-600 transition hover:border-primary hover:text-primary">{n.subcategory}</Link>}
+        <h1 className="mt-4 text-2xl font-extrabold leading-snug md:text-3xl">{n.title}</h1>
+        {n.subject && <p className="mt-2 text-base text-gray-600">{n.subject}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
           <span>{fmtDate(lang, n.publishAt, true)}</span>
           <span>👁 {fmtNum(lang, n.viewCount)} {t('site.views')}</span>
@@ -42,7 +49,7 @@ function View() {
 
         {n.images.length > 0 && (
           <div className="mt-5">
-            <img src={fileUrl(n.images[active])} alt={n.title} className="max-h-[520px] w-full rounded-xl object-cover" />
+            <img src={fileUrl(n.images[active])} alt={n.title} className="max-h-[520px] w-full rounded-2xl object-cover" />
             {n.images.length > 1 && (
               <div className="mt-2 flex gap-2 overflow-x-auto">
                 {n.images.map((im, i) => (
@@ -64,21 +71,21 @@ function View() {
             {n.topics.map((tp) => <span key={tp} className="rounded-full bg-gray-100 px-3 py-1 text-xs">{tp}</span>)}
           </div>
         )}
-        <div className="mt-6 border-t pt-4"><ShareRow id={n.id} title={n.title} /></div>
+        <div className="mt-6 border-t border-line pt-4"><ShareRow id={n.id} title={n.title} /></div>
         <div className="mt-6">
           <Link
             href={href(n.topics.length > 0 ? `/news?topics=${encodeURIComponent(n.topics.join(','))}` : `/news?category=${encodeURIComponent(n.mainCategory)}`)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            className="group inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:brightness-110 active:scale-[0.97]"
           >
             {t('site.readMoreAbout')}
-            <span aria-hidden className="rtl:rotate-180">→</span>
+            <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">→</span>
           </Link>
         </div>
       </article>
 
       {n.related.length > 0 && (
         <section className="mt-12">
-          <h2 className="mb-4 text-2xl font-bold">{t('site.related')}</h2>
+          <h2 className="mb-4 text-xl font-bold">{t('site.related')}</h2>
           <div className="grid gap-5 sm:grid-cols-2">{n.related.map((r) => <NewsCard key={r.id} n={r} />)}</div>
         </section>
       )}
