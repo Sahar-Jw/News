@@ -65,6 +65,11 @@ function SocialLinks() {
   );
 }
 
+/** A colour chosen in Settings, or undefined while it is empty / still the old default (so the new look applies). */
+function custom(v: string | undefined, oldDefaults: string[]) {
+  return v && !oldDefaults.includes(v.toLowerCase()) ? v : undefined;
+}
+
 export function TopBar() {
   const { lang, t } = useI18n();
   const { s, loc } = useSite();
@@ -77,7 +82,7 @@ export function TopBar() {
   const email = s('contact', 'email');
   const addr = loc('contact', 'address');
   return (
-    <div className="no-print bg-secondary text-xs text-white/90">
+    <div className="no-print bg-gradient-to-r from-secondary via-secondary to-primary/70 text-xs text-white/90">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5">
         <div className="flex flex-wrap items-center gap-4">
           {now && <span className="flex items-center gap-1.5"><ContactIcon name="date" />{now}</span>}
@@ -170,7 +175,7 @@ export function Navbar() {
   };
 
   return (
-    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: settings.appearance?.header_background || undefined }}>
+    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: custom(settings.appearance?.header_background, ['#ffffff', '#fff']) }}>
       <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2.5'}`}>
         <Link href={href('/')} className="flex items-center gap-3">
           {logo && <img src={logo} alt="" className={`w-auto transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
@@ -267,11 +272,13 @@ export function Footer() {
   }, [lang]);
   const logo = img('branding', 'logo');
   const map = s('contact', 'map_url');
-  const bg = settings.appearance?.footer_background;
+  const bg = custom(settings.appearance?.footer_background, ['#111827']);
   return (
-    <footer className="no-print relative mt-20 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 90%, black)' }}>
-      <div className="h-1 bg-gradient-to-r from-primary via-primary/40 to-transparent" aria-hidden="true" />
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
+    <footer className="no-print relative mt-20 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 94%, black)' }}>
+      <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
+      <div className="pointer-events-none absolute -start-24 top-10 h-72 w-72 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_45%,transparent),transparent_70%)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute -end-24 bottom-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_28%,transparent),transparent_70%)]" aria-hidden="true" />
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
         <div>
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
           <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
@@ -279,7 +286,7 @@ export function Footer() {
           <div className="mt-4"><SocialLinks /></div>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.quickLinks')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.quickLinks')}</h4>
           <ul className="space-y-2 text-sm">
             <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
             <li><Link href={href('/news')} className="hover:text-white">{t('site.allNews')}</Link></li>
@@ -287,11 +294,11 @@ export function Footer() {
           </ul>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.services')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.services')}</h4>
           <ul className="space-y-2 text-sm">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-primary" />{t('site.contact')}</h4>
+          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
           <ul className="space-y-2 text-sm">
             {s('contact', 'phone') && <li className="flex items-center gap-2"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></li>}
             {s('contact', 'email') && <li className="flex items-center gap-2"><ContactIcon name="email" /><bdi dir="ltr">{s('contact', 'email')}</bdi></li>}

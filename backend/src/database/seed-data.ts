@@ -129,10 +129,12 @@ export const SETTING_SEEDS: SettingSeed[] = [
         ]),
   ]),
   // appearance
-  s('appearance', 'primary_color', 'color', '#0b5ed7'),
-  s('appearance', 'secondary_color', 'color', '#1f2937'),
-  s('appearance', 'header_background', 'color', '#ffffff'),
-  s('appearance', 'footer_background', 'color', '#111827'),
+  s('appearance', 'primary_color', 'color', '#2748e8'),
+  s('appearance', 'secondary_color', 'color', '#0a1236'),
+  s('appearance', 'accent_color', 'color', '#ff7a2f'),
+  // empty = the built-in glass header / navy footer
+  s('appearance', 'header_background', 'color'),
+  s('appearance', 'footer_background', 'color'),
   s('appearance', 'default_service_icon', 'file'),
   s('appearance', 'default_person_image', 'file'),
   // labels

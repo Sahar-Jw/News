@@ -12,6 +12,9 @@ import { useSite } from './site-context';
 
 export { BreakingTicker } from './breaking-ticker';
 
+/** Background band per section, so the page has rhythm instead of one flat sheet. */
+const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', contact: 'tint', testimonials: 'dark' };
+
 /**
  * Section frame: optional eyebrow (small label above), title, accent bar and optional subtitle.
  * Eyebrow and subtitle come from Settings (sections_home → <section>_eyebrow / <section>_subtitle, per language)
@@ -21,27 +24,35 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
   const { loc } = useSite();
   const eyebrow = loc('sections_home', `${code}_eyebrow`);
   const subtitle = loc('sections_home', `${code}_subtitle`);
+  const band = BANDS[code];
+  const dark = band === 'dark';
   return (
-    <section id={`sec-${code}`} className="mx-auto max-w-7xl scroll-mt-24 px-4 py-12">
-      <Reveal className="mb-9 text-center">
-        {eyebrow && <span className="inline-block rounded-full bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">{eyebrow}</span>}
-        <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl`}>{title}</h2>
-        <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
-          <span className="bar-draw h-1 w-10 rounded-full bg-primary" />
-          <span className="h-1 w-2 rounded-full bg-primary/50" />
-          <span className="h-1 w-1 rounded-full bg-primary/25" />
-        </div>
-        {subtitle && <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-[color:var(--muted)]">{subtitle}</p>}
-      </Reveal>
-      {children}
-      {action && <div className="mt-8 text-center">{action}</div>}
+    <section
+      id={`sec-${code}`}
+      className={`relative scroll-mt-20 ${band === 'tint' ? 'bg-gradient-to-b from-transparent via-primary/[0.07] to-transparent' : ''} ${dark ? 'my-8 overflow-hidden bg-gradient-to-br from-secondary via-secondary to-primary/60 text-white' : ''}`}
+    >
+      {dark && <div className="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_40%,transparent),transparent_70%)]" aria-hidden="true" />}
+      <div className="relative mx-auto max-w-7xl px-4 py-14">
+        <Reveal className="mb-10 text-center">
+          {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-primary/10 text-primary ring-1 ring-primary/15'}`}>{eyebrow}</span>}
+          <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl`}>{title}</h2>
+          <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
+            <span className="bar-draw h-1 w-12 rounded-full bg-gradient-to-r from-primary to-accent" />
+            <span className="h-1 w-2 rounded-full bg-accent/60" />
+            <span className="h-1 w-1 rounded-full bg-accent/30" />
+          </div>
+          {subtitle && <p className={`mx-auto mt-3 max-w-2xl text-sm leading-7 ${dark ? 'text-white/70' : 'text-[color:var(--muted)]'}`}>{subtitle}</p>}
+        </Reveal>
+        {children}
+        {action && <div className="mt-8 text-center">{action}</div>}
+      </div>
     </section>
   );
 }
 
 /**
- * Home hero. One orchestrated moment: the picture drifts in slowly, the title rises word by word, and story-style
- * bars at the bottom fill while a slide is on screen (they pause on hover and double as the slide selector).
+ * Home hero. The picture drifts in slowly (a CSS transition, so it never snaps back while it fades out), the title
+ * rises word by word, and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
  */
 export function HeroSlider() {
   const { s, loc, img } = useSite();
@@ -49,35 +60,49 @@ export function HeroSlider() {
     .map((n) => ({ image: img('hero', `slide${n}_image`), title: loc('hero', `slide${n}_title`), desc: loc('hero', `slide${n}_description`), has: !!(s('hero', `slide${n}_image`) || s('hero', `slide${n}_title_ar`) || s('hero', `slide${n}_title_en`)) }))
     .filter((x) => x.has);
   const [i, setI] = useState(0);
+  const [ready, setReady] = useState(false); // lets the first slide start its zoom after mount
+  useEffect(() => { const id = requestAnimationFrame(() => setReady(true)); return () => cancelAnimationFrame(id); }, []);
   if (!slides.length) return null;
   const many = slides.length > 1;
   const next = () => setI((v) => (v + 1) % slides.length);
   return (
-    <section id="sec-hero" className="hero relative h-[360px] overflow-hidden bg-secondary md:h-[520px]" aria-roledescription="carousel">
-      {slides.map((sl, k) => (
-        <div key={k} aria-hidden={k !== i} className={`absolute inset-0 transition-opacity duration-1000 ${k === i ? 'hero-in opacity-100' : 'pointer-events-none opacity-0'}`}>
-          <div className={`absolute inset-0 ${k === i ? 'kenburns' : ''}`}><FitImage src={sl.image} /></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-14 text-white md:px-12 md:pb-20">
-            {sl.title && (
-              <h2 className="max-w-3xl text-xl font-extrabold leading-snug md:text-3xl">
-                {sl.title.split(' ').flatMap((w, wi) => [
-                  <span key={wi} className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block pb-1" style={{ animationDelay: `${150 + wi * 70}ms` }}>{w}</span></span>,
-                  ' ',
-                ])}
-              </h2>
-            )}
-            {sl.desc && <p className="hero-desc mt-3 max-w-2xl text-sm text-white/85 md:text-base">{sl.desc}</p>}
+    <section id="sec-hero" className="hero relative h-[380px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[540px]" aria-roledescription="carousel">
+      {slides.map((sl, k) => {
+        const on = k === i;
+        return (
+          <div key={k} aria-hidden={!on} className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${on ? 'hero-in opacity-100' : 'pointer-events-none opacity-0'}`}>
+            {/* zoom in while shown; the reset to normal size waits until the fade-out is over (no visible jump) */}
+            <div className={`absolute inset-0 will-change-transform ${on && ready ? 'scale-[1.08] transition-transform duration-[9000ms] ease-linear' : 'scale-100 transition-transform duration-0 delay-[1400ms]'}`}>
+              <FitImage src={sl.image} />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-transparent to-transparent rtl:bg-gradient-to-l" />
+            <div className="dots absolute inset-x-0 bottom-0 h-2/3" aria-hidden="true" />
+            <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-16 text-white md:px-12 md:pb-24">
+              <div className="hero-desc mb-4 h-1 w-14 rounded-full bg-accent" aria-hidden="true" />
+              {sl.title && (
+                <h2 className="max-w-3xl text-xl font-extrabold leading-snug md:text-3xl">
+                  {sl.title.split(' ').flatMap((w, wi) => [
+                    <span key={wi} className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block pb-1" style={{ animationDelay: `${150 + wi * 70}ms` }}>{w}</span></span>,
+                    ' ',
+                  ])}
+                </h2>
+              )}
+              {sl.desc && <p className="hero-desc mt-3 max-w-2xl text-sm text-white/85 md:text-base">{sl.desc}</p>}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
+      {/* slow floating light, behind the text */}
+      <div className="drift pointer-events-none absolute -start-24 top-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_38%,transparent),transparent_68%)]" aria-hidden="true" />
+      <div className="drift pointer-events-none absolute -end-20 bottom-10 h-96 w-96 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_48%,transparent),transparent_68%)] [animation-delay:-8s]" aria-hidden="true" />
       {many && (
-        <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-7xl gap-2 px-6 pb-4 md:px-12" role="tablist">
+        <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-7xl gap-2 px-6 pb-5 md:px-12" role="tablist">
           {slides.map((_, k) => (
             <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="h-5 flex-1 py-2">
-              <span className="block h-1 overflow-hidden rounded-full bg-white/30">
+              <span className="block h-1 overflow-hidden rounded-full bg-white/25">
                 {k < i && <span className="block h-full w-full bg-white" />}
-                {k === i && <span key={`${i}-${slides.length}`} onAnimationEnd={next} className="seg-fill block h-full bg-white" />}
+                {k === i && <span key={`${i}-${slides.length}`} onAnimationEnd={next} className="seg-fill block h-full bg-accent" />}
               </span>
             </button>
           ))}
@@ -136,9 +161,9 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
           className={`absolute inset-0 block transition-opacity duration-700 ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
         >
           <FitImage src={x.images[0]} alt={x.title} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-secondary/25 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 pb-10 text-white md:p-8 md:pb-12">
-            <span className="rounded bg-primary px-2 py-0.5 text-xs">{x.mainCategory}</span>
+            <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-secondary">{x.mainCategory}</span>
             <h3 className="mt-2 line-clamp-2 max-w-3xl text-lg font-bold leading-snug md:text-2xl">{x.title}</h3>
             {x.subject && <p className="mt-1 line-clamp-1 max-w-2xl text-xs text-gray-200 md:text-sm">{x.subject}</p>}
           </div>
@@ -227,7 +252,7 @@ export function ServicesGrid({ items }: { items: Card[] }) {
           {x.images[0] ? (
             <img src={fileUrl(x.images[0])} alt="" className="mx-auto mb-5 h-16 w-16 object-contain" />
           ) : (
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition duration-300 group-hover:rotate-6 group-hover:bg-primary group-hover:text-white" aria-hidden>
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-accent/25 text-primary transition duration-300 group-hover:rotate-6 group-hover:from-primary group-hover:to-primary group-hover:text-white" aria-hidden>
               <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
             </div>
           )}
@@ -278,7 +303,7 @@ export function Testimonials({ items }: { items: Card[] }) {
     <div className={`grid items-start gap-5 ${fb ? 'lg:grid-cols-3' : ''}`}>
       <div className={`grid content-start gap-5 sm:grid-cols-2 ${fb ? 'lg:col-span-2' : 'lg:grid-cols-3'}`}>
         {items.map((x) => (
-          <div key={x.id} className="relative rounded-2xl bg-white p-6 shadow-card ring-1 ring-line">
+          <div key={x.id} className="relative rounded-2xl bg-white p-6 text-ink shadow-card ring-1 ring-line">
             <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="absolute end-5 top-5 text-primary/15" aria-hidden="true"><path d="M7.2 4C4.9 4 3 5.9 3 8.2V20h8.4V11.6H7.2V8.2h4.2V4H7.2Zm9.6 0c-2.3 0-4.2 1.9-4.2 4.2V20H21V11.6h-4.2V8.2H21V4h-4.2Z" /></svg>
             <Stars value={x.rating} />
             <h4 className="mt-2 font-bold">{x.title}</h4>
@@ -331,8 +356,9 @@ export function Experts({ items }: { items: Card[] }) {
 export function StatsRow({ items }: { items: Card[] }) {
   if (!items.length) return null;
   return (
-    <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-6">
-      <Stagger className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-6">
+      <div className="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_50%,transparent),transparent_70%)]" aria-hidden="true" />
+      <Stagger className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((x) => (
           <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/10 px-4 py-7 text-center text-white ring-1 ring-white/15 backdrop-blur-sm">
             <CountUp value={x.excerpt || x.subject || ''} className="break-words font-display text-lg font-extrabold leading-tight md:text-xl" />

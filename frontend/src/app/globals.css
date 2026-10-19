@@ -4,21 +4,28 @@
 
 /* ---------- design tokens (primary / secondary are overridden from Settings at runtime) ---------- */
 :root {
-  --primary: #0b5ed7;
-  --secondary: #1f2937;
-  --ink: #0f1729;
-  --canvas: #f4f6fb;
-  --line: #e3e8f1;
-  --muted: #5a6477;
+  --primary: #2748e8; /* ultramarine */
+  --secondary: #0a1236; /* midnight navy */
+  --accent: #ff7a2f; /* warm orange, echoes the logo */
+  --ink: #0b1230;
+  --canvas: #f4f6ff;
+  --line: #dfe5f6;
+  --muted: #586080;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --shadow-card: 0 1px 2px rgb(15 23 41 / 0.05), 0 12px 28px -16px rgb(15 23 41 / 0.2);
-  --shadow-lift: 0 2px 4px rgb(15 23 41 / 0.06), 0 26px 44px -20px color-mix(in srgb, var(--primary) 55%, rgb(15 23 41 / 0.45));
+  --shadow-card: 0 1px 2px rgb(11 18 48 / 0.05), 0 14px 30px -16px rgb(11 18 48 / 0.22);
+  --shadow-lift: 0 2px 4px rgb(11 18 48 / 0.06), 0 28px 46px -20px color-mix(in srgb, var(--primary) 60%, rgb(11 18 48 / 0.4));
 }
 html { scroll-behavior: smooth; }
 body {
   font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
   color: var(--ink);
-  background: var(--canvas);
+  background-color: var(--canvas);
+  /* soft colour washes so the page never feels flat */
+  background-image:
+    radial-gradient(64rem 38rem at 92% -6%, color-mix(in srgb, var(--primary) 11%, transparent), transparent 70%),
+    radial-gradient(52rem 34rem at -8% 34%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
+    radial-gradient(60rem 40rem at 100% 78%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%);
+  background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; }
@@ -29,7 +36,7 @@ h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Se
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes word-up { from { transform: translateY(110%); } to { transform: none; } }
-@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
+@keyframes drift { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(36px, -26px, 0); } }
 @keyframes seg-fill { from { width: 0; } to { width: 100%; } }
 @keyframes bar-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
@@ -44,8 +51,9 @@ h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Se
 [data-stagger] > *:nth-child(4) { --n: 3; } [data-stagger] > *:nth-child(5) { --n: 4; } [data-stagger] > *:nth-child(n + 6) { --n: 5; }
 [data-in] .bar-draw { transform-origin: center; animation: bar-draw 0.8s var(--ease-out) 0.2s backwards; }
 
-/* hero: slow zoom on the picture, title words rise out of a mask, story-style progress bars */
-.kenburns { animation: kenburns 14s ease-out forwards; }
+/* hero: title words rise out of a mask, story-style progress bars (the slow zoom is a CSS transition on the slide) */
+.drift { animation: drift 16s ease-in-out infinite; will-change: transform; }
+.dots { background-image: radial-gradient(rgb(255 255 255 / 0.28) 1px, transparent 1.3px); background-size: 22px 22px; -webkit-mask-image: linear-gradient(to top, #000, transparent 75%); mask-image: linear-gradient(to top, #000, transparent 75%); }
 .hero-in .hero-word { animation: word-up 0.85s var(--ease-out) backwards; }
 .hero-in .hero-desc { animation: rise 0.8s var(--ease-out) 0.45s backwards; }
 .seg-fill { animation: seg-fill var(--hero-time, 6s) linear forwards; }

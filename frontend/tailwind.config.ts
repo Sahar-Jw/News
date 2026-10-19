@@ -8,6 +8,7 @@ const config: Config = {
         // brand colours come from Settings (CSS variables); <alpha-value> makes bg-primary/10, ring-primary/20 … work
         primary: 'color-mix(in srgb, var(--primary) calc(<alpha-value> * 100%), transparent)',
         secondary: 'color-mix(in srgb, var(--secondary) calc(<alpha-value> * 100%), transparent)',
+        accent: 'color-mix(in srgb, var(--accent) calc(<alpha-value> * 100%), transparent)',
         ink: 'color-mix(in srgb, var(--ink) calc(<alpha-value> * 100%), transparent)',
         canvas: 'var(--canvas)',
         line: 'var(--line)',

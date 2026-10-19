@@ -52,6 +52,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       const r = document.documentElement.style;
       if (a.primary_color) r.setProperty('--primary', a.primary_color);
       if (a.secondary_color) r.setProperty('--secondary', a.secondary_color);
+      if (a.accent_color) r.setProperty('--accent', a.accent_color);
       applyFavicon(fileUrl((st as Settings).branding?.favicon_url));
     });
     return () => {

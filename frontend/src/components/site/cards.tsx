@@ -105,10 +105,10 @@ export function NewsCard({ n }: { n: Card }) {
   const { href, lang, t } = useI18n();
   const link = href(`/news/view?id=${n.id}`);
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
       <Link href={link} className="relative block overflow-hidden">
         <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
-        <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-primary shadow-sm backdrop-blur">{n.mainCategory}</span>
+        <span className="absolute start-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur"><span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}</span>
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-5">
         <Link href={link}><h3 className="line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary">{n.title}</h3></Link>
