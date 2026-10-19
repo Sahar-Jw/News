@@ -1,9 +1,9 @@
 'use client';
 import { RequirePerm } from '@/components/admin/guard';
 import NewsForm from '@/components/admin/news-form';
-import { SECTIONS, createPermFor } from '@/lib/utils';
+import { anyNewsPerm } from '@/lib/utils';
 
 export default function EditNews() {
-  // creating needs the permission of the chosen section (the form checks which one); editing needs news.update
-  return <RequirePerm any={[createPermFor(), ...SECTIONS.map(createPermFor), 'news.update']}><NewsForm /></RequirePerm>;
+  // coarse gate: any create/update permission; the form then checks the exact one for the record's own section
+  return <RequirePerm any={[...anyNewsPerm('create'), ...anyNewsPerm('update')]}><NewsForm /></RequirePerm>;
 }

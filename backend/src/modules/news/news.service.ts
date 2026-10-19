@@ -10,6 +10,7 @@ import {
   SPECIAL_CATEGORY_CONFIG,
   SpecialCategory,
   createPermissionFor,
+  newsPerm,
 } from '../../common/constants';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
@@ -22,6 +23,8 @@ import { FileStorageService } from '../files/file-storage.service';
 import { CreateNewsDto, NewsAdminQueryDto, UpdateNewsDto } from './news.dto';
 import { onlyRegular } from './news.eligibility';
 
+type Action = 'read' | 'update' | 'delete';
+
 const LIST_COLUMNS = [
   'id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'images', 'rating', 'isFeatured',
   'publishAt', 'status', 'language', 'visibility', 'viewCount', 'createdAt', 'updatedAt', 'createdById',
@@ -29,6 +32,14 @@ const LIST_COLUMNS = [
 
 /** 'regular' for ordinary news, otherwise the section code. */
 const kindOf = (main: string) => (SPECIAL_CATEGORY_CODES.includes(main) ? main : 'regular');
+
+/** What kinds of content (regular and/or which sections) the user holds `action` for. */
+function allowedKinds(perms: Set<string>, action: 'read' | 'update' | 'delete') {
+  return {
+    regular: perms.has(newsPerm(action, 'regular')),
+    sections: SPECIAL_CATEGORY_CODES.filter((c) => perms.has(newsPerm(action, c))),
+  };
+}
 
 /** Sections whose records carry exactly one picture. */
 const SINGLE_IMAGE_SECTIONS: SpecialCategory[] = [SpecialCategory.TEAM, SpecialCategory.COMPANY_OVERVIEW];
@@ -71,8 +82,23 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ---------------------------------------------------------------- listing
-  private buildAdminQuery(q: NewsAdminQueryDto, withBody = false) {
+  private buildAdminQuery(q: NewsAdminQueryDto, actor: AuthUser, withBody = false) {
     const qb = this.repo.createQueryBuilder('n');
+    // Only rows of kinds the user may READ: regular news and/or the sections they hold news.read.<section> for.
+    const ok = allowedKinds(actor.permissions, 'read');
+    if (q.section) {
+      const wanted = q.section.toLowerCase() === 'regular' ? 'regular' : codeKey(q.section);
+      const allowed = wanted === 'regular' ? ok.regular : ok.sections.includes(wanted);
+      if (!allowed) throw new ForbiddenException('ليست لديك صلاحية عرض هذا النوع من المحتوى');
+    } else {
+      qb.andWhere(
+        new Brackets((b) => {
+          if (ok.regular) b.where(`n.mainCategory NOT IN (:...allSections)`, { allSections: SPECIAL_CATEGORY_CODES });
+          else b.where('1 = 0');
+          if (ok.sections.length) b.orWhere('n.mainCategory IN (:...okSections)', { okSections: ok.sections });
+        }),
+      );
+    }
     qb.select(LIST_COLUMNS.map((c) => `n.${c}`));
     if (withBody) qb.addSelect('n.body');
     if (q.language) qb.andWhere('n.language = :language', { language: q.language });
@@ -103,19 +129,33 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     return qb;
   }
 
-  async list(q: NewsAdminQueryDto) {
+  async list(q: NewsAdminQueryDto, actor: AuthUser) {
     const p = adminPage(q);
-    const [rows, total] = await this.buildAdminQuery(q).skip(p.skip).take(p.limit).getManyAndCount();
+    const [rows, total] = await this.buildAdminQuery(q, actor).skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows.map((r) => this.present(r)), total, p);
   }
 
-  listAllForExport(q: NewsAdminQueryDto) {
-    return this.buildAdminQuery(q).take(10000).getMany();
+  listAllForExport(q: NewsAdminQueryDto, actor: AuthUser) {
+    return this.buildAdminQuery(q, actor).take(10000).getMany();
   }
 
-  async get(id: number) {
+  /** Internal: no permission check (used right after create/update, whose own permission was already verified). */
+  private async load(id: number) {
     const n = await this.repo.findOne({ where: { id }, relations: { createdBy: true }, select: { createdBy: { id: true, fullName: true } } as any });
     if (!n) throw new NotFoundException('السجل غير موجود');
+    return n;
+  }
+
+  private assertMay(action: Action, main: string, perms: Set<string>) {
+    if (!perms.has(newsPerm(action, main))) {
+      const what = { read: 'عرض', update: 'تعديل', delete: 'حذف' }[action];
+      throw new ForbiddenException(`ليست لديك صلاحية ${what} هذا النوع من المحتوى`);
+    }
+  }
+
+  async get(id: number, actor: AuthUser) {
+    const n = await this.load(id);
+    this.assertMay('read', n.mainCategory, actor.permissions);
     return this.present(n);
   }
 
@@ -289,7 +329,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
         }),
       );
       await this.audit.log({ category: 'news', action: 'create', description: `إنشاء سجل: ${saved.title}`, actorId: actor.id, entityType: 'news', entityId: saved.id, details: { mainCategory: main, status: pub.status } });
-      return this.get(saved.id);
+      return this.present(await this.load(saved.id));
     } catch (e) {
       await this.storage.removeMany(imagePaths);
       throw e;
@@ -300,6 +340,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const n = await this.repo.findOne({ where: { id } });
     if (!n) throw new NotFoundException('السجل غير موجود');
     const perms = actor.permissions;
+    this.assertMay('update', n.mainCategory, perms); // update permission of the record's CURRENT kind
 
     const { main, sub } = await this.resolveCategories(dto, perms, n);
     // moving a record into another kind of content (regular ↔ a section, or section → section) counts as creating it there
@@ -340,7 +381,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     }
     await this.removeFilesIfUnreferenced(removed);
     await this.audit.log({ category: 'news', action: 'update', description: `تعديل سجل: ${n.title}`, actorId: actor.id, entityType: 'news', entityId: id, details: { status: n.status, removedImages: removed.length, addedImages: added.length } });
-    return this.get(id);
+    return this.present(await this.load(id));
   }
 
   /** Deletes files only when no remaining record references them (SRS 13.6 / 16). */
@@ -356,8 +397,10 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
   async removeMany(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, images: true } });
+    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, images: true, mainCategory: true } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض السجلات غير موجودة');
+    // every record must be of a kind the user may delete; otherwise nothing is deleted
+    for (const r of rows) this.assertMay('delete', r.mainCategory, actor.permissions);
     await this.repo.delete(unique);
     await this.removeFilesIfUnreferenced(rows.flatMap((r) => r.images ?? []));
     for (const r of rows) {

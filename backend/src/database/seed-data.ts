@@ -1,4 +1,4 @@
-import { Language, PERM, SpecialCategory, NEWS_CREATE_PERMISSIONS } from '../common/constants';
+import { Language, PERM, SpecialCategory, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../common/constants';
 import { SettingValueType } from '../modules/settings/site-setting.entity';
 
 export interface CitySeed {
@@ -36,8 +36,9 @@ export const ROLE_SEEDS: RoleSeed[] = [
     nameEn: 'Administrator',
     type: 'admin',
     permissions: [
-      PERM.NEWS_READ, PERM.NEWS_UPDATE, PERM.NEWS_DELETE, PERM.NEWS_EXPORT, PERM.NEWS_PUBLISH,
-      ...NEWS_CREATE_PERMISSIONS, // regular news + every section
+      PERM.NEWS_EXPORT, PERM.NEWS_PUBLISH,
+      // full CRUD on regular news and on every section
+      ...NEWS_READ_PERMISSIONS, ...NEWS_CREATE_PERMISSIONS, ...NEWS_UPDATE_PERMISSIONS, ...NEWS_DELETE_PERMISSIONS,
       PERM.NEWS_CATEGORY_CREATE, PERM.NEWS_CATEGORY_CHANGE,
       PERM.USERS_READ, PERM.USERS_UPDATE, PERM.USERS_ROLE_CHANGE, PERM.USERS_DELETE, PERM.USERS_ACTIVATE, PERM.USERS_EXPORT,
       PERM.SETTINGS_READ, PERM.SETTINGS_UPDATE,

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtNum, createPermFor } from '@/lib/utils';
+import { fmtDate, fmtNum, newsPerm } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { Button, Modal } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
@@ -19,6 +19,8 @@ export function NewsTable({ section }: { section: string }) {
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const special = section !== 'regular';
   const sp = special ? `&section=${section}` : '';
+  // each action is checked against THIS section only (regular news: news.<action>, a section: news.<action>.<section>)
+  const may = (a: 'create' | 'update' | 'delete') => can(newsPerm(a, special ? section : undefined));
   const statusBadge = (s: string) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${s === 'published' ? 'bg-emerald-100 text-emerald-700' : s === 'scheduled' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{t(`s.${s}`)}</span>;
   const removeNews = async () => {
     if (!deleteTarget) return;
@@ -58,13 +60,13 @@ export function NewsTable({ section }: { section: string }) {
         { key: 'language', label: t('f.language'), options: ['ar', 'en'].map((s) => ({ value: s, label: t(`l.${s}`) })) },
         { key: 'visibility', label: t('f.visibility'), options: ['public', 'members'].map((s) => ({ value: s, label: t(`v.${s}`) })) },
       ]}
-      bulkDelete={{ path: '/admin/news/bulk-delete', can: can('news.delete') }}
-      toolbar={can(createPermFor(special ? section : undefined)) && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
+      bulkDelete={{ path: '/admin/news/bulk-delete', can: may('delete') }}
+      toolbar={may('create') && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
       rowActions={(r, reload) => (
         <div className="flex gap-1">
-          {can('news.update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}
+          {may('update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}
           <Link href={href(`/news/view?id=${r.id}`)} target="_blank"><Button size="sm" variant="ghost">{t('app.view')}</Button></Link>
-          {can('news.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
+          {may('delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
         </div>
       )}
     />

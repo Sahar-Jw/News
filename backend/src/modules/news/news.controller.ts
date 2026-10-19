@@ -3,7 +3,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM, NEWS_CREATE_PERMISSIONS } from '../../common/constants';
+import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
@@ -38,29 +38,31 @@ const cols = (ar: boolean): ExportColumn[] => [
 export class NewsAdminController {
   constructor(private readonly service: NewsService) {}
 
+  // Route guards only check "holds ANY permission of this action"; the service then checks the exact kind
+  // (regular news / each special section), so one permission never opens another section.
   @Get()
-  @Permissions(PERM.NEWS_READ)
-  list(@Query() q: NewsAdminQueryDto) {
-    return this.service.list(q);
+  @Permissions(...NEWS_READ_PERMISSIONS)
+  list(@Query() q: NewsAdminQueryDto, @CurrentUser() u: AuthUser) {
+    return this.service.list(q, u);
   }
 
   @Get('categories')
-  @Permissions(PERM.NEWS_READ)
+  @Permissions(...NEWS_ANY_PERMISSIONS)
   categories() {
     return this.service.categories();
   }
 
   @Get('export')
   @Permissions(PERM.NEWS_EXPORT)
-  async export(@Query() q: NewsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: NewsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'news', columns, await this.service.listAllForExport(q), ar);
+    return sendExport(res, ex.format, 'news', columns, await this.service.listAllForExport(q, u), ar);
   }
 
   @Post('bulk-delete')
   @HttpCode(200)
-  @Permissions(PERM.NEWS_DELETE)
+  @Permissions(...NEWS_DELETE_PERMISSIONS)
   bulkDelete(@Body() dto: BulkDeleteDto, @CurrentUser() u: AuthUser) {
     return this.service.removeMany(dto.ids, u);
   }
@@ -75,20 +77,20 @@ export class NewsAdminController {
   }
 
   @Get(':id')
-  @Permissions(PERM.NEWS_READ)
-  get(@Param('id', ParseIntPipe) id: number) {
-    return this.service.get(id);
+  @Permissions(...NEWS_READ_PERMISSIONS)
+  get(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
+    return this.service.get(id, u);
   }
 
   @Patch(':id')
-  @Permissions(PERM.NEWS_UPDATE)
+  @Permissions(...NEWS_UPDATE_PERMISSIONS)
   @UseInterceptors(upload())
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateNewsDto, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() u: AuthUser) {
     return this.service.update(id, dto, files, u);
   }
 
   @Delete(':id')
-  @Permissions(PERM.NEWS_DELETE)
+  @Permissions(...NEWS_DELETE_PERMISSIONS)
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.removeMany([id], u);
   }

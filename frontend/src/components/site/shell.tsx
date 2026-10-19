@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { SECTION_ORDER_KEYS } from './sections-meta';
-import { SECTIONS } from '@/lib/utils';
+import { SECTIONS, newsPerm } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean };
@@ -159,8 +159,8 @@ export function Navbar() {
   // Extra dropdowns for logged-in users. Each item only appears if the user holds the permission
   // (UI hint only - the API still enforces every permission).
   const manageItems: NavItem[] = [
-    { label: t('adm.news'), to: '/admin/news', show: can('news.read') },
-    ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can('news.read') })),
+    { label: t('adm.news'), to: '/admin/news', show: can(newsPerm('read')) },
+    ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can(newsPerm('read', s)) })),
     { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
   ];
   const securityItems: NavItem[] = [

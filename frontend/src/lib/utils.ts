@@ -35,5 +35,12 @@ export function shareLinks(url: string, title: string) {
   };
 }
 
-/** Permission needed to create content of a section: `news.create.<section>`; regular news (no section) is `news.create`. */
-export const createPermFor = (section?: string) => (section ? `news.create.${section.toLowerCase()}` : 'news.create');
+export type NewsAction = 'read' | 'create' | 'update' | 'delete';
+/** CRUD permission of a content kind: `news.<action>.<section>`; regular news (no section) is `news.<action>`. */
+export const newsPerm = (action: NewsAction, section?: string) => {
+  const sec = section && section.toLowerCase() !== 'regular' ? section.toLowerCase() : '';
+  return sec ? `news.${action}.${sec}` : `news.${action}`;
+};
+/** Every permission of one action (regular + all sections): "can do this action on *something*". */
+export const anyNewsPerm = (action: NewsAction) => [newsPerm(action), ...SECTIONS.map((s) => newsPerm(action, s))];
+export const createPermFor = (section?: string) => newsPerm('create', section);

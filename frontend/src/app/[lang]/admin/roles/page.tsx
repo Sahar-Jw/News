@@ -93,7 +93,7 @@ export default function RolesPage() {
               <div className="space-y-4">
                 {modules.map((m) => (
                   <div key={m}>
-                    <div className="mb-1 text-xs font-bold uppercase text-gray-500">{m}</div>
+                    <div className="mb-1 text-xs font-bold uppercase text-gray-500">{m.startsWith('news.') ? t(`section.${m.slice(5).toUpperCase()}`) : m}</div>
                     <div className="grid gap-1 sm:grid-cols-2">
                       {perms.filter((p) => p.module === m).map((p) => {
                         // UI hint only: the server rejects granting permissions you don't hold

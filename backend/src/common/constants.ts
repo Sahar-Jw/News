@@ -51,6 +51,46 @@ export interface PermissionDef {
   nameEn: string;
 }
 
+
+export type NewsAction = 'read' | 'create' | 'update' | 'delete';
+export const NEWS_ACTIONS: NewsAction[] = ['read', 'create', 'update', 'delete'];
+
+/** Arabic / English label of each special section (used to name its permissions). */
+export const SECTION_LABELS: Record<SpecialCategory, { ar: string; en: string }> = {
+  [SpecialCategory.BREAKING]: { ar: 'الأخبار العاجلة', en: 'Breaking news' },
+  [SpecialCategory.SERVICES]: { ar: 'الخدمات', en: 'Services' },
+  [SpecialCategory.TEAM]: { ar: 'الفريق', en: 'Team' },
+  [SpecialCategory.TESTIMONIALS]: { ar: 'آراء العملاء', en: 'Testimonials' },
+  [SpecialCategory.PARTNERS]: { ar: 'الشركاء', en: 'Partners' },
+  [SpecialCategory.EXPERTS]: { ar: 'الخبراء', en: 'Experts' },
+  [SpecialCategory.STATISTICS]: { ar: 'الإحصائيات', en: 'Statistics' },
+  [SpecialCategory.COMPANY_OVERVIEW]: { ar: 'الشركات الشريكة', en: 'Partner companies' },
+};
+
+const ACTION_LABELS: Record<NewsAction, { ar: string; en: string }> = {
+  read: { ar: 'عرض', en: 'View' },
+  create: { ar: 'إضافة إلى', en: 'Create in' },
+  update: { ar: 'تعديل', en: 'Update' },
+  delete: { ar: 'حذف من', en: 'Delete from' },
+};
+
+/**
+ * CRUD per content kind. Regular news uses `news.<action>`; every special section has its own
+ * `news.<action>.<section>` (e.g. news.read.team, news.delete.partners). Holding one never opens another.
+ */
+export const newsPerm = (action: NewsAction, main: string): string =>
+  SPECIAL_CATEGORY_CODES.includes(main) ? `news.${action}.${main.toLowerCase()}` : `news.${action}`;
+
+/** The four CRUD permissions of every special section, generated so the list can't drift. */
+export const SECTION_PERMISSIONS: PermissionDef[] = (Object.values(SpecialCategory) as SpecialCategory[]).flatMap((sec) =>
+  NEWS_ACTIONS.map((a) => ({
+    code: newsPerm(a, sec),
+    module: `news.${sec.toLowerCase()}`,
+    nameAr: `${ACTION_LABELS[a].ar} ${SECTION_LABELS[sec].ar}`,
+    nameEn: `${ACTION_LABELS[a].en} ${SECTION_LABELS[sec].en}`,
+  })),
+);
+
 /**
  * SRS Annex B – every action is its own permission, so a role can be given exactly
  * "read only", "create only", "export only", etc.
@@ -59,19 +99,13 @@ export interface PermissionDef {
  */
 export const PERMISSIONS: PermissionDef[] = [
   // news / content
-  { code: 'news.read', module: 'news', nameAr: 'عرض المحتوى', nameEn: 'View content' },
+  { code: 'news.read', module: 'news', nameAr: 'عرض الأخبار العادية', nameEn: 'View regular news' },
   { code: 'news.create', module: 'news', nameAr: 'إنشاء الأخبار العادية', nameEn: 'Create regular news' },
-  { code: 'news.create.breaking', module: 'news', nameAr: 'إنشاء خبر عاجل', nameEn: 'Create breaking news' },
-  { code: 'news.create.services', module: 'news', nameAr: 'إضافة خدمة', nameEn: 'Create service' },
-  { code: 'news.create.team', module: 'news', nameAr: 'إضافة عضو فريق', nameEn: 'Add team member' },
-  { code: 'news.create.testimonials', module: 'news', nameAr: 'إضافة رأي عميل', nameEn: 'Add testimonial' },
-  { code: 'news.create.partners', module: 'news', nameAr: 'إضافة شريك', nameEn: 'Add partner' },
-  { code: 'news.create.experts', module: 'news', nameAr: 'إضافة خبير', nameEn: 'Add expert' },
-  { code: 'news.create.statistics', module: 'news', nameAr: 'إضافة إحصائية', nameEn: 'Add statistic' },
-  { code: 'news.create.company_overview', module: 'news', nameAr: 'إضافة شركة شريكة', nameEn: 'Add partner company' },
-  { code: 'news.update', module: 'news', nameAr: 'تعديل المحتوى', nameEn: 'Update content' },
-  { code: 'news.delete', module: 'news', nameAr: 'حذف المحتوى', nameEn: 'Delete content' },
-  { code: 'news.export', module: 'news', nameAr: 'تصدير المحتوى', nameEn: 'Export content' },
+  { code: 'news.update', module: 'news', nameAr: 'تعديل الأخبار العادية', nameEn: 'Update regular news' },
+  { code: 'news.delete', module: 'news', nameAr: 'حذف الأخبار العادية', nameEn: 'Delete regular news' },
+  // one block per special section: news.<action>.<section> (see SECTION_PERMISSIONS above)
+  ...SECTION_PERMISSIONS,
+  { code: 'news.export', module: 'news', nameAr: 'تصدير المحتوى', nameEn: 'Export content (only sections the user can read)' },
   { code: 'news.publish', module: 'news', nameAr: 'نشر/جدولة المحتوى', nameEn: 'Publish / schedule content' },
   { code: 'news.category.create', module: 'news', nameAr: 'إضافة فئة جديدة', nameEn: 'Create new category value' },
   { code: 'news.category.change', module: 'news', nameAr: 'تغيير الفئة الرئيسية', nameEn: 'Change main category' },
@@ -140,12 +174,16 @@ export const PERM = {
   MESSAGES_EXPORT: 'messages.export',
 } as const;
 
-/**
- * Creating content needs the permission of the section it goes into: `news.create` for regular news and
- * `news.create.<section>` (e.g. news.create.team) for each special section. One permission never opens all of them.
- */
-export const createPermissionFor = (main: string): string =>
-  SPECIAL_CATEGORY_CODES.includes(main) ? `news.create.${main.toLowerCase()}` : PERM.NEWS_CREATE;
+/** Backwards-compatible name used by the create flow. */
+export const createPermissionFor = (main: string): string => newsPerm('create', main);
 
-/** Every "create" permission (a route that only needs to know the user can create *something*). */
-export const NEWS_CREATE_PERMISSIONS: string[] = [PERM.NEWS_CREATE, ...SPECIAL_CATEGORY_CODES.map(createPermissionFor)];
+/** Every permission of one action across all kinds (regular + each section), e.g. "can read *something*". */
+export const newsPermsFor = (action: NewsAction): string[] => [PERM_BY_ACTION[action], ...SPECIAL_CATEGORY_CODES.map((c) => newsPerm(action, c))];
+const PERM_BY_ACTION: Record<NewsAction, string> = { read: PERM.NEWS_READ, create: PERM.NEWS_CREATE, update: PERM.NEWS_UPDATE, delete: PERM.NEWS_DELETE };
+
+export const NEWS_READ_PERMISSIONS = newsPermsFor('read');
+export const NEWS_CREATE_PERMISSIONS = newsPermsFor('create');
+export const NEWS_UPDATE_PERMISSIONS = newsPermsFor('update');
+export const NEWS_DELETE_PERMISSIONS = newsPermsFor('delete');
+/** Any news permission at all (e.g. loading the category lists the form needs). */
+export const NEWS_ANY_PERMISSIONS = [...NEWS_READ_PERMISSIONS, ...NEWS_CREATE_PERMISSIONS, ...NEWS_UPDATE_PERMISSIONS, ...NEWS_DELETE_PERMISSIONS];

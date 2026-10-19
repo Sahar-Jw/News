@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { SECTIONS, createPermFor, toLocalInput } from '@/lib/utils';
+import { SECTIONS, newsPerm, toLocalInput } from '@/lib/utils';
 import { Button, Center, Field, FilePicker, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RichEditor } from './rich-editor';
@@ -119,7 +119,9 @@ function Form() {
 
   if (loading) return <Center><Spinner /></Center>;
   // a new record needs the create permission of its own section (regular news: news.create)
-  if (!isEdit && !can(createPermFor(section))) return <Center>{t('adm.noAccess')}</Center>;
+  if (!isEdit && !can(newsPerm('create', section))) return <Center>{t('adm.noAccess')}</Center>;
+  // editing needs the update permission of the record's own section (regular news: news.update)
+  if (isEdit && !can(newsPerm('update', section))) return <Center>{t('adm.noAccess')}</Center>;
   return (
     <form onSubmit={submit} className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-center justify-between">
