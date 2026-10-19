@@ -45,7 +45,7 @@ JSON or `multipart/form-data` (field `images`, up to 20 files, 5 MB each, conten
 - Fields: `title, subject, mainCategory, subcategory, topics (array | JSON | comma list), body (HTML), rating (1-5, TESTIMONIALS only), isFeatured, publishAt, status, language, visibility`.
 - Special sections: send `section=SERVICES` (STATISTICS, BREAKING, SERVICES, PARTNERS, EXPERTS, TEAM, TESTIMONIALS, COMPANY_OVERVIEW). The category is pinned. Reserved codes are rejected in the regular form.
 - Update: `keepImages` = existing paths to keep (omit = keep all); everything else is removed after the save succeeds.
-- Permissions: `news.publish` to change status; `news.category.create` for a brand-new category value; `news.category.change` to change the main category.
+- Permissions: `news.publish` to change status or publish time (new items publish immediately by default); `news.category.create` for a brand-new category value; `news.category.change` to change the main category.
 - Body HTML is whitelist-sanitised server-side.
 
 ## Behaviour decisions (SRS section 26 proposals, implemented as written)

@@ -95,8 +95,10 @@ function Form() {
     fd.set('topics', f.topics);
     fd.set('body', f.body);
     fd.set('isFeatured', String(f.isFeatured));
-    fd.set('status', f.status);
-    fd.set('publishAt', f.publishAt ? new Date(f.publishAt).toISOString() : '');
+    if (mayPublish) {
+      fd.set('status', f.status);
+      fd.set('publishAt', f.publishAt ? new Date(f.publishAt).toISOString() : '');
+    }
     if (section === 'TESTIMONIALS' || f.mainCategory === 'TESTIMONIALS') fd.set('rating', f.rating);
     if (!isEdit) {
       if (sectionParam) fd.set('section', sectionParam);
@@ -190,7 +192,7 @@ function Form() {
           </select>
         </Field>
         <Field label={t('f.publishAt')}>
-          <input type="datetime-local" className={inputCls} value={f.publishAt} required={f.status === 'scheduled'} onChange={(e) => set('publishAt', e.target.value)} />
+          <input type="datetime-local" className={inputCls} value={f.publishAt} disabled={!mayPublish} required={f.status === 'scheduled'} onChange={(e) => set('publishAt', e.target.value)} />
         </Field>
         <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} />{t('f.featured')}</label>
       </div>

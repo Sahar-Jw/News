@@ -261,10 +261,17 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     let publishAt: Date | null = providedAt ? (dto.publishAt ? new Date(dto.publishAt) : null) : existing?.publishAt ?? null;
     if (publishAt && Number.isNaN(publishAt.getTime())) throw new BadRequestException('تاريخ النشر غير صالح');
 
-    const statusChanged = existing ? status !== existing.status : true;
-    if (statusChanged && !perms.has(PERM.NEWS_PUBLISH)) throw new ForbiddenException('ليست لديك صلاحية النشر أو الجدولة');
+    const statusChanged = existing ? status !== existing.status : status !== NewsStatus.PUBLISHED;
+    const publishAtChanged = providedAt && (
+      existing
+        ? (publishAt?.getTime() ?? null) !== (existing.publishAt?.getTime() ?? null)
+        : dto.publishAt != null
+    );
+    if ((statusChanged || publishAtChanged) && !perms.has(PERM.NEWS_PUBLISH)) {
+      throw new ForbiddenException('ليست لديك صلاحية النشر أو الجدولة');
+    }
 
-    if (providedAt || statusChanged) {
+    if (providedAt || statusChanged || (!existing && status === NewsStatus.PUBLISHED)) {
       if (status === NewsStatus.SCHEDULED) {
         if (!publishAt) throw new BadRequestException('وقت النشر مطلوب للحالة المجدولة');
         if (publishAt.getTime() <= now.getTime()) throw new BadRequestException('وقت الجدولة يجب أن يكون في المستقبل'); // SRS 26

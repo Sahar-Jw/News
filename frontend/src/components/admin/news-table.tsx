@@ -61,7 +61,7 @@ export function NewsTable({ section }: { section: string }) {
         { key: 'visibility', label: t('f.visibility'), options: ['public', 'members'].map((s) => ({ value: s, label: t(`v.${s}`) })) },
       ]}
       bulkDelete={{ path: '/admin/news/bulk-delete', can: may('delete') }}
-      toolbar={may('create') && can('news.publish') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
+      toolbar={may('create') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
       rowActions={(r, reload) => (
         <div className="flex gap-1">
           {may('update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}
