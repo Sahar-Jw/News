@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -12,23 +12,56 @@ import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean };
 
-/**
- * Hover/focus dropdown that closes as soon as an item is chosen (the menu would otherwise stay open because the
- * clicked link keeps focus and the pointer is still over it). It re-opens after the pointer leaves and comes back.
- */
-function Dropdown({ trigger, panelClass, children }: { trigger: React.ReactNode; panelClass: string; children: React.ReactNode }) {
-  const [shut, setShut] = useState(false);
-  const close = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('a, button')) {
-      (document.activeElement as HTMLElement | null)?.blur();
-      setShut(true);
-    }
-  };
+function NavTrigger({ children }: { children: React.ReactNode }) {
   return (
-    <div className="group relative" onMouseLeave={() => setShut(false)} onFocus={() => setShut(false)}>
-      {trigger}
-      <div onClick={close} className={`invisible absolute top-full z-50 mt-1 origin-top translate-y-2 scale-95 rounded-2xl bg-white p-1.5 opacity-0 shadow-lift ring-1 ring-line transition duration-200 ease-out group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 ${shut ? '!invisible !opacity-0' : ''} ${panelClass}`}>{children}</div>
-    </div>
+    <span className="flex cursor-default items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">
+      {children}
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-out group-hover:rotate-180 group-focus-within:rotate-180">
+        <path d="m3 6 5 5 5-5" />
+      </svg>
+    </span>
+  );
+}
+
+function Dropdown({ label, trigger, panelClass, children }: { label: string; trigger: React.ReactNode; panelClass: string; children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const panelId = useId();
+  const dismiss = () => {
+    setMobileOpen(false);
+    if (window.matchMedia('(min-width: 1280px)').matches) setDismissed(true);
+  };
+  const desktopOpenClasses = dismissed ? '' : 'group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:delay-[0ms] group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-focus-within:delay-[0ms]';
+  return (
+    <>
+      <div className="group relative hidden xl:block" onMouseLeave={() => setDismissed(false)} onBlurCapture={(event) => {
+        if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDismissed(false);
+      }}>
+        {trigger}
+        <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,250ms] ${desktopOpenClasses} ${panelClass}`}>
+          <div onClickCapture={dismiss} className="rounded-2xl bg-white p-1.5 shadow-lift ring-1 ring-line">{children}</div>
+        </div>
+      </div>
+      <div className="w-full xl:hidden">
+        <button
+          type="button"
+          aria-expanded={mobileOpen}
+          aria-controls={panelId}
+          onClick={() => setMobileOpen((open) => !open)}
+          className="flex w-full cursor-default items-center justify-between rounded-full px-3.5 py-2 text-start text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary"
+        >
+          <span>{label}</span>
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`transition-transform duration-300 ${mobileOpen ? 'rotate-180' : ''}`}>
+            <path d="m3 6 5 5 5-5" />
+          </svg>
+        </button>
+        <div id={panelId} data-open={mobileOpen} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
+          <div className="min-h-0 overflow-hidden xl:contents">
+            <div onClickCapture={dismiss} className="mt-1 w-full rounded-2xl border border-line bg-white p-1.5 shadow-card">{children}</div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -38,7 +71,8 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
   if (visible.length === 0) return null;
   return (
     <Dropdown
-      trigger={<button type="button" className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{label} ▾</button>}
+      label={label}
+      trigger={<NavTrigger>{label}</NavTrigger>}
       panelClass="start-0 min-w-52"
     >
       {visible.map((i) => (
@@ -102,8 +136,14 @@ export function Navbar() {
   const { me, can, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const avatar = me ? (
+    me.avatarUrl
+      ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />
+      : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>
+  ) : null;
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
+  const menuPanelId = useId();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 12);
@@ -185,16 +225,22 @@ export function Navbar() {
           </div>
         </Link>
 
-        <button className="ms-auto flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white md:hidden" onClick={() => setMenu(!menu)} aria-label="menu" aria-expanded={menu}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">{menu ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
-        </button>
+        <div className="ms-auto flex items-center gap-2 xl:hidden">
+          {me && <Link href={href('/profile')} aria-label={t('site.profile')} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">{avatar}</Link>}
+          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white" onClick={() => setMenu((open) => !open)} aria-label="menu" aria-expanded={menu} aria-controls={menuPanelId}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform duration-300 ${menu ? 'rotate-90' : ''}`}>{menu ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
+          </button>
+        </div>
 
-        <nav className={`${menu ? 'flex' : 'hidden'} w-full flex-col gap-1 md:ms-auto md:flex md:w-auto md:flex-row md:items-center md:gap-1`}>
-          <Link href={href('/')} className={`rounded-full px-3.5 py-2 text-sm font-medium transition hover:bg-primary/10 hover:text-primary ${isHome ? 'bg-primary/10 text-primary' : 'text-ink/80'}`}>{t('site.home')}</Link>
+        <div id={menuPanelId} data-open={menu} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
+          <div className="min-h-0 overflow-hidden xl:contents">
+        <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:flex-row xl:items-center xl:gap-1">
+          <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-medium transition hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
           {categories.main.length > 0 && (
             <Dropdown
-              trigger={<Link href={href('/news')} className="block rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.categories')} ▾</Link>}
+              label={t('site.categories')}
+              trigger={<NavTrigger>{t('site.categories')}</NavTrigger>}
               panelClass="start-0 min-w-48"
             >
               {categories.main.map((c) => (
@@ -205,7 +251,8 @@ export function Navbar() {
 
           {categories.sub.length > 0 && (
             <Dropdown
-              trigger={<span className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.subcategories')} ▾</span>}
+              label={t('site.subcategories')}
+              trigger={<NavTrigger>{t('site.subcategories')}</NavTrigger>}
               panelClass="start-0 min-w-48"
             >
               {categories.sub.map((c) => (
@@ -215,7 +262,8 @@ export function Navbar() {
           )}
 
           <Dropdown
-            trigger={<span className="block cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.sections')} ▾</span>}
+            label={t('site.sections')}
+            trigger={<NavTrigger>{t('site.sections')}</NavTrigger>}
             panelClass="start-0 min-w-48"
           >
             {secs.map((c) => (
@@ -225,8 +273,8 @@ export function Navbar() {
             ))}
           </Dropdown>
 
-          <form onSubmit={submit} role="search" className="relative">
-            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-40 rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:w-52 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 lg:w-48 lg:focus:w-64" />
+          <form onSubmit={submit} role="search" className="relative w-full xl:w-auto">
+            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-full rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 xl:w-48 xl:focus:w-64" />
             {q && (
               <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-10 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-gray-800">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -237,27 +285,43 @@ export function Navbar() {
             </button>
           </form>
 
-          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} className="rounded-full border border-line bg-white px-3.5 py-2 text-sm font-medium transition hover:border-primary hover:text-primary">
-            {t('site.language')}
-          </Link>
-
           {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
           {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
 
           {me && (
-            <Dropdown
-              trigger={
-                <button type="button" title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">
-                  {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm text-white">{me.fullName.slice(0, 1)}</span>}
-                </button>
-              }
-              panelClass="end-0 min-w-44"
-            >
-              <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{t('site.profile')}</Link>
-              <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{t('site.logout')}</button>
-            </Dropdown>
+            <div className="flex flex-col gap-1 xl:hidden">
+              <Link href={href('/profile')} onClick={() => setMenu(false)} className="rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">{t('site.profile')}</Link>
+              <button onClick={async () => { setMenu(false); await logout(); router.push(href('/')); }} className="w-full rounded-full px-3.5 py-2 text-start text-sm font-medium text-red-600 transition hover:bg-red-50">{t('site.logout')}</button>
+            </div>
           )}
+
+          {me && (
+            <div className="hidden xl:block">
+              <Dropdown
+                label={t('site.profile')}
+                trigger={
+                  <span title={me.fullName} aria-label={me.fullName} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">
+                    {avatar}
+                  </span>
+                }
+                panelClass="end-0 min-w-44"
+              >
+                <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{t('site.profile')}</Link>
+                <button onClick={async () => { await logout(); router.push(href('/')); }} className="block w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{t('site.logout')}</button>
+              </Dropdown>
+            </div>
+          )}
+
+          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} title={t('site.language')} aria-label={t('site.language')} className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-4 text-sm font-semibold text-primary shadow-sm transition hover:border-primary hover:from-primary hover:to-primary hover:text-white xl:w-auto">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 7h11M10 4v3c0 5-3 8-6 10M7 11c1 2 3 4 5 5M14 19l4-10 4 10M15.5 16h5" />
+            </svg>
+            <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
+          </Link>
+
         </nav>
+          </div>
+        </div>
       </div>
     </header>
   );

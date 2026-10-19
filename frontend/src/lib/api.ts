@@ -16,6 +16,26 @@ export class ApiError extends Error {
 }
 
 type Q = Record<string, string | number | boolean | null | undefined>;
+
+let activeApiRequests = 0;
+const apiRequestListeners = new Set<(active: number) => void>();
+
+function updateActiveApiRequests(change: number) {
+  activeApiRequests = Math.max(0, activeApiRequests + change);
+  apiRequestListeners.forEach((listener) => listener(activeApiRequests));
+}
+
+export function getActiveApiRequests() {
+  return activeApiRequests;
+}
+
+export function subscribeToApiRequests(listener: (active: number) => void) {
+  apiRequestListeners.add(listener);
+  return () => {
+    apiRequestListeners.delete(listener);
+  };
+}
+
 export function qs(params?: Q): string {
   if (!params) return '';
   const s = new URLSearchParams();
@@ -39,7 +59,7 @@ async function parse(res: Response) {
   return data;
 }
 
-export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData } = {}): Promise<T> {
+export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
   if (opts.form) body = opts.form;
@@ -47,8 +67,13 @@ export async function api<T = any>(path: string, opts: { method?: string; params
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(opts.body);
   }
-  const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include' });
-  return parse(res);
+  updateActiveApiRequests(1);
+  try {
+    const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache });
+    return await parse(res);
+  } finally {
+    updateActiveApiRequests(-1);
+  }
 }
 
 /** Download an export (csv/xlsx) – sends the same filters as the table. */

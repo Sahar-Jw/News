@@ -22,7 +22,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setHome(null);
-    api<Home>('/public/home', { params: { lang } }).then(setHome).catch((e) => setErr(e.message));
+    api<Home>('/public/home', { params: { lang }, cache: 'no-store' }).then(setHome).catch((e) => setErr(e.message));
   }, [lang]);
 
   // jump to #sec-x after the async content has rendered

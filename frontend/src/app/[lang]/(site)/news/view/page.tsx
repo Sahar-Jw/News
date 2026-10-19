@@ -8,6 +8,7 @@ import { SECTIONS, fmtDate, fmtNum } from '@/lib/utils';
 import { Center, Spinner, Stars } from '@/components/ui/ui';
 import { Card, NewsCard, ShareRow } from '@/components/site/cards';
 import { ReadingProgress } from '@/components/site/motion';
+import { NotFoundContent } from '@/components/site/not-found-content';
 
 type Detail = Card & { body: string | null; related: Card[] };
 
@@ -25,7 +26,7 @@ function View() {
   }, [id]);
 
   if (state === 'load') return <Center><Spinner /></Center>;
-  if (state === '404' || !n) return <Center>{t('site.notFound')}</Center>;
+  if (state === '404' || !n) return <NotFoundContent lang={lang} />;
 
   // a record in the other language keeps working; its own language is shown via lang attributes
   return (

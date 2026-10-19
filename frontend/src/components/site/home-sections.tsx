@@ -51,8 +51,8 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
 }
 
 /**
- * Home hero. The picture drifts in slowly (a CSS transition, so it never snaps back while it fades out), the title
- * rises word by word, and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
+ * Home hero. Slides crossfade without scaling the full-size images, the title rises word by word,
+ * and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
  */
 export function HeroSlider() {
   const { s, loc, img } = useSite();
@@ -60,19 +60,21 @@ export function HeroSlider() {
     .map((n) => ({ image: img('hero', `slide${n}_image`), title: loc('hero', `slide${n}_title`), desc: loc('hero', `slide${n}_description`), has: !!(s('hero', `slide${n}_image`) || s('hero', `slide${n}_title_ar`) || s('hero', `slide${n}_title_en`)) }))
     .filter((x) => x.has);
   const [i, setI] = useState(0);
-  const [ready, setReady] = useState(false); // lets the first slide start its zoom after mount
-  useEffect(() => { const id = requestAnimationFrame(() => setReady(true)); return () => cancelAnimationFrame(id); }, []);
-  if (!slides.length) return null;
+  const [paused, setPaused] = useState(false);
   const many = slides.length > 1;
-  const next = () => setI((v) => (v + 1) % slides.length);
+  useEffect(() => {
+    if (!many || paused) return;
+    const timer = window.setTimeout(() => setI((current) => (current + 1) % slides.length), 6000);
+    return () => window.clearTimeout(timer);
+  }, [i, many, paused, slides.length]);
+  if (!slides.length) return null;
   return (
-    <section id="sec-hero" className="hero relative h-[380px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[540px]" aria-roledescription="carousel">
+    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[380px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[540px]" aria-roledescription="carousel">
       {slides.map((sl, k) => {
         const on = k === i;
         return (
           <div key={k} aria-hidden={!on} className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${on ? 'hero-in opacity-100' : 'pointer-events-none opacity-0'}`}>
-            {/* zoom in while shown; the reset to normal size waits until the fade-out is over (no visible jump) */}
-            <div className={`absolute inset-0 will-change-transform ${on && ready ? 'scale-[1.08] transition-transform duration-[9000ms] ease-linear' : 'scale-100 transition-transform duration-0 delay-[1400ms]'}`}>
+            <div className="absolute inset-0">
               <FitImage src={sl.image} />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
@@ -102,7 +104,7 @@ export function HeroSlider() {
             <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="h-5 flex-1 py-2">
               <span className="block h-1 overflow-hidden rounded-full bg-white/25">
                 {k < i && <span className="block h-full w-full bg-white" />}
-                {k === i && <span key={`${i}-${slides.length}`} onAnimationEnd={next} className="seg-fill block h-full bg-accent" />}
+                {k === i && <span key={`${i}-${slides.length}`} className="seg-fill block h-full bg-accent" />}
               </span>
             </button>
           ))}
@@ -113,14 +115,17 @@ export function HeroSlider() {
 }
 
 /** Round carousel arrow on the physical left / right edge (an SVG, so the browser never mirrors it in RTL). */
-function Arrow({ side, onClick, label }: { side: 'left' | 'right'; onClick: () => void; label: string }) {
+function Arrow({ side, onClick, label, below = false, disabled = false }: { side: 'left' | 'right'; onClick: () => void; label: string; below?: boolean; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
-      className={`absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 ${side === 'left' ? 'left-3' : 'right-3'}`}
+      className={below
+        ? 'flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white shadow-card transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-40'
+        : `absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40 ${side === 'left' ? 'left-3' : 'right-3'}`}
     >
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d={side === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
@@ -189,53 +194,58 @@ export function RegularNews({ items }: { items: Card[] }) {
   return <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">{items.map((n) => <NewsCard key={n.id} n={n} />)}</Stagger>;
 }
 
-/** Team: up to six random members (picked by the API on every load). Small picture-only cards, sliding one at a time. */
+/** Team: up to six random members (picked by the API on every load), with three picture-only cards visible. */
 export function TeamSlider({ items }: { items: Card[] }) {
   const { dir, t } = useI18n();
-  const [small, setSmall] = useState(false);
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
+  const viewport = useRef<HTMLDivElement>(null);
+  const [viewW, setViewW] = useState(0);
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    const apply = () => setSmall(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
+    const element = viewport.current;
+    if (!element) return;
+    const measure = () => setViewW(element.getBoundingClientRect().width);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
-  const size = small ? 96 : 144; // card edge in px
   const gap = 16;
-  const perView = small ? 2 : 4;
+  const perView = 3;
   const n = items.length;
-  const max = Math.max(0, n - perView); // furthest position
-  const slides = max > 0;
-  useEffect(() => { if (i > max) setI(0); }, [i, max]);
+  const slides = n > perView;
+  const max = Math.max(0, n - perView);
+  useEffect(() => { if (i > max) setI(max); }, [i, max]);
   useEffect(() => {
-    if (!slides || paused) return;
-    const id = setInterval(() => setI((v) => (v >= max ? 0 : v + 1)), 3000);
+    if (!slides || paused || i >= max) return;
+    const id = setInterval(() => setI((v) => Math.min(v + 1, max)), 3000);
     return () => clearInterval(id);
-  }, [slides, paused, max]);
+  }, [slides, paused, i, max]);
   if (!n) return null;
   const rtl = dir === 'rtl';
-  const visible = Math.min(n, perView);
-  const viewW = visible * size + (visible - 1) * gap;
-  const pad = slides ? (small ? 48 : 56) : 0;
-  const go = (d: number) => setI((v) => (v + d > max ? 0 : v + d < 0 ? max : v + d));
+  const size = Math.min(120, Math.max(64, (viewW - (perView - 1) * gap) / perView));
+  const frameW = perView * size + (perView - 1) * gap;
+  const go = (d: number) => setI((v) => Math.max(0, Math.min(v + d, max)));
   return (
-    <div className="relative mx-auto max-w-full" style={{ width: viewW + pad * 2, paddingInline: pad }} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} role="region" aria-roledescription="carousel">
-      <div className="overflow-hidden py-1" style={{ width: viewW }}>
-        <div className="flex transition-transform duration-500 ease-in-out" style={{ gap, transform: `translateX(${(rtl ? 1 : -1) * i * (size + gap)}px)` }}>
-          {items.map((m) => (
-            <div key={m.id} title={m.title} style={{ width: size, height: size }} className="shrink-0 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-              {m.images[0] ? <Thumb src={m.images[0]} alt={m.title} className="h-full w-full" /> : <DefaultAvatar className="h-full w-full" />}
+    <div className="mx-auto w-full max-w-5xl" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} role="region" aria-roledescription="carousel">
+      <div ref={viewport} className="w-full py-1">
+        <div className="flex justify-center">
+          <div className="overflow-hidden" style={{ width: frameW }}>
+            <div className={`flex transition-transform duration-500 ease-in-out ${slides ? '' : 'justify-center'}`} style={{ gap, transform: `translateX(${(rtl ? 1 : -1) * i * (size + gap)}px)` }}>
+              {items.map((m) => (
+                <div key={m.id} title={m.title} style={{ width: size, height: size }} className="shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line">
+                  {m.images[0] ? <img src={fileUrl(m.images[0])} alt={m.title} loading="lazy" className="h-full w-full rounded-full object-cover" /> : <DefaultAvatar className="h-full w-full rounded-full" />}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
       {slides && (
-        <>
-          <Arrow side="left" onClick={() => go(rtl ? 1 : -1)} label={rtl ? t('app.next') : t('app.prev')} />
-          <Arrow side="right" onClick={() => go(rtl ? -1 : 1)} label={rtl ? t('app.prev') : t('app.next')} />
-        </>
+        <div dir="ltr" className="mt-5 flex justify-center gap-4">
+          <Arrow below side="left" disabled={rtl ? i === max : i === 0} onClick={() => go(rtl ? 1 : -1)} label={rtl ? t('app.next') : t('app.prev')} />
+          <Arrow below side="right" disabled={rtl ? i === 0 : i === max} onClick={() => go(rtl ? -1 : 1)} label={rtl ? t('app.prev') : t('app.next')} />
+        </div>
       )}
     </div>
   );
