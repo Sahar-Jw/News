@@ -7,6 +7,25 @@ export function fileUrl(p?: string | null): string {
   return API_URL + p.replace(/^\/api/, '');
 }
 
+/** Fired after any successful change made through /admin/*: the site shell (settings, categories) reloads itself. */
+export const SITE_CHANGED = 'site-data-changed';
+const SITE_CHANNEL = 'site-data';
+function announceSiteChange() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(SITE_CHANGED));
+  try { // other tabs of the same browser (e.g. the public site open next to the admin)
+    const bc = new BroadcastChannel(SITE_CHANNEL);
+    bc.postMessage('changed');
+    bc.close();
+  } catch { /* old browsers: the tab refreshes when it regains focus */ }
+}
+export function onSiteChange(cb: () => void) {
+  window.addEventListener(SITE_CHANGED, cb);
+  let bc: BroadcastChannel | null = null;
+  try { bc = new BroadcastChannel(SITE_CHANNEL); bc.onmessage = cb; } catch { /* unsupported */ }
+  return () => { window.removeEventListener(SITE_CHANGED, cb); bc?.close(); };
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -70,7 +89,9 @@ export async function api<T = any>(path: string, opts: { method?: string; params
   updateActiveApiRequests(1);
   try {
     const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache });
-    return await parse(res);
+    const out = await parse(res);
+    if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
+    return out;
   } finally {
     updateActiveApiRequests(-1);
   }

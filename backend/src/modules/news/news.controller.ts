@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
+import { MAX_FILES_PER_UPLOAD, MAX_PDF_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
@@ -14,11 +14,17 @@ import { renderSharePage } from './news-share';
 import { NewsService } from './news.service';
 import { SettingsService } from '../settings/settings.service';
 
+type Uploads = { images?: Express.Multer.File[]; pdf?: Express.Multer.File[] };
+
+/** Fields: "images" (up to 20) and "pdf" (1). The per-file limit is the PDF one; images are re-checked against their own 5 MB limit in FileStorageService. */
 const upload = () =>
-  FilesInterceptor('images', MAX_FILES_PER_UPLOAD, {
-    storage: memoryStorage(),
-    limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_FILES_PER_UPLOAD, fieldSize: 2 * 1024 * 1024 },
-  });
+  FileFieldsInterceptor(
+    [
+      { name: 'images', maxCount: MAX_FILES_PER_UPLOAD },
+      { name: 'pdf', maxCount: 1 },
+    ],
+    { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 } },
+  );
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'id', label: '#', value: (r) => r.id },
@@ -67,13 +73,13 @@ export class NewsAdminController {
     return this.service.removeMany(dto.ids, u);
   }
 
-  /** multipart/form-data (field "images", up to 20 files) or plain JSON. */
+  /** multipart/form-data (fields "images" up to 20 files, "pdf" one file) or plain JSON. */
   @Post()
   // any create permission gets in; the service then requires the one for the chosen section
   @Permissions(...NEWS_CREATE_PERMISSIONS)
   @UseInterceptors(upload())
-  create(@Body() dto: CreateNewsDto, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() u: AuthUser) {
-    return this.service.create(dto, files, u);
+  create(@Body() dto: CreateNewsDto, @UploadedFiles() files: Uploads, @CurrentUser() u: AuthUser) {
+    return this.service.create(dto, files?.images ?? [], u, files?.pdf?.[0]);
   }
 
   @Get(':id')
@@ -85,8 +91,8 @@ export class NewsAdminController {
   @Patch(':id')
   @Permissions(...NEWS_UPDATE_PERMISSIONS)
   @UseInterceptors(upload())
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateNewsDto, @UploadedFiles() files: Express.Multer.File[], @CurrentUser() u: AuthUser) {
-    return this.service.update(id, dto, files, u);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateNewsDto, @UploadedFiles() files: Uploads, @CurrentUser() u: AuthUser) {
+    return this.service.update(id, dto, files?.images ?? [], u, files?.pdf?.[0]);
   }
 
   @Delete(':id')

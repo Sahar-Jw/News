@@ -41,6 +41,7 @@ export enum Language {
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_DOC_BYTES = 10 * 1024 * 1024;
+export const MAX_PDF_BYTES = 25 * 1024 * 1024;
 export const MAX_FILES_PER_UPLOAD = 20;
 export const MAX_IMAGES_PER_RECORD = 100;
 

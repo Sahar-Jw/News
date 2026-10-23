@@ -2,12 +2,21 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
+import { useSite } from './site-context';
 import type { Card } from './cards';
 
 /** Scroll speed in pixels per second (same speed for 1 headline or 50). */
 const TICKER_SPEED = 60;
 /** Minimum empty space (px) kept between two headlines when the list has to be repeated to fill the bar. */
 const MIN_GAP = 160;
+
+/** Black or white text, whichever reads better on the given #hex background. */
+function readableOn(hex: string) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? '#111827' : '#ffffff';
+}
 
 /**
  * Breaking-news bar.
@@ -29,6 +38,9 @@ const MIN_GAP = 160;
 export function BreakingTicker({ items }: { items: Card[] }) {
   const { t, href, lang } = useI18n();
   const rtl = lang === 'ar';
+  const { s } = useSite();
+  // Settings → appearance → breaking_bg_color (empty = the built-in red gradient)
+  const bg = s('appearance', 'breaking_bg_color') as string | null;
   const viewRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [cell, setCell] = useState(0); // width in px of one half of the loop
@@ -63,9 +75,12 @@ export function BreakingTicker({ items }: { items: Card[] }) {
   );
 
   return (
-    <div className="no-print flex items-center overflow-hidden bg-gradient-to-r from-red-700 via-red-600 to-red-500 text-white">
-      <span className="z-10 flex shrink-0 items-center gap-2 bg-red-900 px-4 py-2 text-sm font-bold">
-        <span className="relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
+    <div
+      className={`no-print flex items-center overflow-hidden ${bg ? '' : 'bg-gradient-to-r from-red-700 via-red-600 to-red-500 text-white'}`}
+      style={bg ? { background: bg, color: readableOn(bg) } : undefined}
+    >
+      <span className={`z-10 flex shrink-0 items-center gap-2 px-4 py-2 text-sm font-bold ${bg ? 'bg-black/25' : 'bg-red-900'}`}>
+        <span className="relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-current" /></span>
         {t('site.breaking')}
       </span>
       <div ref={viewRef} dir="ltr" className="relative min-w-0 flex-1 overflow-hidden" style={{ WebkitMaskImage: fade, maskImage: fade }}>

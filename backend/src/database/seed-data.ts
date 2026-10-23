@@ -85,6 +85,9 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('branding', 'site_name_en', 'text', 'News Site'),
   s('branding', 'site_description_ar', 'text', ''),
   s('branding', 'site_description_en', 'text', ''),
+  // browser-tab title / SEO title per language (empty = the site name is used)
+  s('branding', 'meta_title_ar', 'text'),
+  s('branding', 'meta_title_en', 'text'),
   s('branding', 'logo', 'file'),
   s('branding', 'favicon', 'file'),
   s('branding', 'company_name_ar', 'text', ''),
@@ -137,6 +140,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
   // empty = the built-in glass header / navy footer
   s('appearance', 'header_background', 'color'),
   s('appearance', 'footer_background', 'color'),
+  // empty = the built-in red gradient of the breaking-news bar
+  s('appearance', 'breaking_bg_color', 'color'),
   s('appearance', 'default_service_icon', 'file'),
   s('appearance', 'default_person_image', 'file'),
   // labels

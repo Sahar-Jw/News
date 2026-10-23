@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { MAX_DOC_BYTES, MAX_IMAGE_BYTES } from '../../common/constants';
+import { MAX_DOC_BYTES, MAX_IMAGE_BYTES, MAX_PDF_BYTES } from '../../common/constants';
 
 type Detected = { mime: string; ext: string };
 
@@ -130,6 +130,14 @@ export class FileStorageService implements OnModuleInit {
     const det = this.detectDocument(file.buffer, file.originalname);
     if (!det) throw new BadRequestException('نوع المستند غير مدعوم (PDF, DOC, DOCX)');
     return this.writeNew(folder, det.ext, file.buffer);
+  }
+
+  /** News PDF: content must start with %PDF- (extension / client mime are never trusted). */
+  async savePdf(file: Express.Multer.File, folder: string): Promise<string> {
+    if (!file?.buffer?.length) throw new BadRequestException('ملف PDF فارغ');
+    if (file.size > MAX_PDF_BYTES) throw new BadRequestException('ملف PDF يتجاوز 25 ميغابايت');
+    if (file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new BadRequestException('الملف ليس PDF صالحاً');
+    return this.writeNew(folder, 'pdf', file.buffer);
   }
 
   // ---------- deletion ----------

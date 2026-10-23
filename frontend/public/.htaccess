@@ -2,9 +2,12 @@ Options -Indexes
 DirectoryIndex index.html
 ErrorDocument 404 /404.html
 
+# the PDF viewer's worker is an ES module: servers that do not know .mjs would refuse to run it
+AddType text/javascript .mjs
+
 # static assets are fingerprinted by Next.js
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|woff2?)$">
+  <FilesMatch "\.(m?js|css|woff2?)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   <FilesMatch "\.html$">

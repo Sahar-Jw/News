@@ -23,20 +23,34 @@ function NavTrigger({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Set when a dropdown link was clicked. The click often switches layout (site <-> admin), which remounts the navbar
+ * under a pointer that has not moved: without this the new dropdown would be hover-open again. Cleared when the
+ * pointer enters a dropdown again.
+ */
+let closedByClick = false;
+
 function Dropdown({ label, trigger, panelClass, children }: { label: string; trigger: React.ReactNode; panelClass: string; children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => closedByClick);
   const panelId = useId();
   const dismiss = () => {
     setMobileOpen(false);
-    if (window.matchMedia('(min-width: 1280px)').matches) setDismissed(true);
+    if (window.matchMedia('(min-width: 1280px)').matches) {
+      closedByClick = true;
+      setDismissed(true);
+      // the clicked link keeps keyboard focus, and :focus-within would keep the panel open after the pointer leaves
+      (document.activeElement as HTMLElement | null)?.blur?.();
+    }
   };
   const desktopOpenClasses = dismissed ? '' : 'group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto group-hover:delay-[0ms] group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-focus-within:pointer-events-auto group-focus-within:delay-[0ms]';
   return (
     <>
-      <div className="group relative hidden xl:block" onMouseLeave={() => setDismissed(false)} onBlurCapture={(event) => {
-        if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDismissed(false);
-      }}>
+      <div
+        className="group relative hidden xl:block"
+        onMouseEnter={() => { closedByClick = false; setDismissed(false); }}
+        onFocusCapture={(event) => { if ((event.target as HTMLElement).matches?.(':focus-visible')) { closedByClick = false; setDismissed(false); } }}
+      >
         {trigger}
         <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,250ms] ${desktopOpenClasses} ${panelClass}`}>
           <div onClickCapture={dismiss} className="rounded-2xl bg-white p-1.5 shadow-lift ring-1 ring-line">{children}</div>
@@ -216,16 +230,17 @@ export function Navbar() {
 
   return (
     <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: custom(settings.appearance?.header_background, ['#ffffff', '#fff']) }}>
-      <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 ${scrolled ? 'py-1' : 'py-2.5'}`}>
-        <Link href={href('/')} className="flex items-center gap-3">
-          {logo && <img src={logo} alt="" className={`w-auto transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
-          <div className="leading-tight">
-            <div className="font-display text-lg font-bold text-primary">{loc('branding', 'site_name')}</div>
+      <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 xl:flex-nowrap xl:gap-x-4 ${scrolled ? 'py-1' : 'py-2.5'}`}>
+        <Link href={href('/')} className="flex min-w-0 flex-1 items-center gap-3 xl:min-w-[9rem]">
+          {logo && <img src={logo} alt="" className={`w-auto shrink-0 transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
+          <div className="min-w-0">
+            {/* the name wraps (max two lines) beside the logo, so the menu never drops to a second row; longer name = smaller text */}
+            <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-primary" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>
             {loc('branding', 'site_description') && <div className="max-w-[16rem] truncate text-xs text-gray-500">{loc('branding', 'site_description')}</div>}
           </div>
         </Link>
 
-        <div className="ms-auto flex items-center gap-2 xl:hidden">
+        <div className="ms-auto flex shrink-0 items-center gap-2 xl:hidden">
           {me && <Link href={href('/profile')} aria-label={t('site.profile')} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">{avatar}</Link>}
           <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white" onClick={() => setMenu((open) => !open)} aria-label="menu" aria-expanded={menu} aria-controls={menuPanelId}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform duration-300 ${menu ? 'rotate-90' : ''}`}>{menu ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
@@ -234,7 +249,7 @@ export function Navbar() {
 
         <div id={menuPanelId} data-open={menu} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
           <div className="min-h-0 overflow-hidden xl:contents">
-        <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:flex-row xl:items-center xl:gap-1">
+        <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:shrink-0 xl:flex-row xl:items-center xl:gap-1">
           <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-medium transition hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
           {categories.main.length > 0 && (
@@ -277,7 +292,7 @@ export function Navbar() {
           </Dropdown>
 
           <form onSubmit={submit} role="search" className="relative w-full xl:w-auto">
-            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-full rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 xl:w-48 xl:focus:w-64" />
+            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-full rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 xl:w-40 xl:focus:w-56 2xl:w-48" />
             {q && (
               <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-10 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-gray-800">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>

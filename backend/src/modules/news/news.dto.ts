@@ -65,6 +65,8 @@ export class UpdateNewsDto {
   @IsOptional() @IsIn(Object.values(Visibility)) visibility?: Visibility;
   /** Existing image paths to keep; anything not listed is removed (undefined = keep all). */
   @IsOptional() @toList() @IsArray() @IsString({ each: true }) keepImages?: string[];
+  /** true = delete the current PDF (a newly uploaded PDF replaces it anyway). */
+  @IsOptional() @toBool() @IsBoolean() removePdf?: boolean;
 }
 
 export class NewsAdminQueryDto extends AdminListQueryDto {

@@ -41,7 +41,7 @@ export class NewsPublicService {
       publishAt: n.publishAt,
       language: n.language,
       viewCount: n.viewCount,
-      ...(withBody && { body: n.body }),
+      ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null }),
     };
   }
 

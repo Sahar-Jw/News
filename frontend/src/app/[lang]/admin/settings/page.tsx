@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { categoryLabel, keyLabel } from '@/lib/setting-labels';
 import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
@@ -17,7 +18,7 @@ const show = (r: Row) => {
 };
 
 export default function SettingsPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const [cats, setCats] = useState<{ category: string }[]>([]);
@@ -29,9 +30,9 @@ export default function SettingsPage() {
   const open = (r: Row) => { setEdit(r); setVal(r.valueType === 'json' ? (r.value ? JSON.stringify(r.value, null, 2) : '') : r.value ?? (r.valueType === 'boolean' ? false : '')); };
 
   const cols: Col<Row>[] = [
-    { key: 'category', label: t('s.category'), exportable: false },
-    { key: 'key', label: t('s.key'), exportable: false, render: (r) => <span dir="ltr" className="font-mono text-xs">{r.key}</span> },
-    { key: 'valueType', label: t('s.type'), exportable: false },
+    // Arabic labels are display-only; the per-column search box matches the stored English names, so it is off in Arabic
+    { key: 'category', label: t('s.category'), exportable: false, searchable: lang !== 'ar', render: (r) => <span>{categoryLabel(r.category, lang)}</span> },
+    { key: 'key', label: t('s.key'), exportable: false, searchable: lang !== 'ar', render: (r) => lang === 'ar' ? <span>{keyLabel(r.category, r.key, lang)}</span> : <span dir="ltr" className="font-mono text-xs">{r.key}</span> },
     { key: 'value', label: t('s.value'), exportable: false, render: (r) => r.valueType === 'color' && r.value ? <span className="flex items-center gap-2"><span className="inline-block h-4 w-4 rounded border" style={{ background: r.value }} />{r.value}</span> : r.valueType === 'file' && r.fileUrl ? <img src={fileUrl(r.fileUrl)} alt="" className="h-8 w-auto" /> : <span className="line-clamp-1">{show(r)}</span> },
   ];
 
@@ -56,14 +57,14 @@ export default function SettingsPage() {
       <h1 className="mb-4 text-2xl font-bold">{t('adm.settings')}</h1>
       <DataTable<Row>
         endpoint="/admin/settings" columns={cols} refreshKey={key} exportable={false}
-        filters={[{ key: 'category', label: t('s.category'), options: cats.map((c) => ({ value: c.category, label: c.category })) }]}
+        filters={[{ key: 'category', label: t('s.category'), options: cats.map((c) => ({ value: c.category, label: categoryLabel(c.category, lang) })) }]}
         rowActions={(r) => can('settings.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}
       />
-      <Modal open={!!edit} onClose={() => setEdit(null)} title={edit ? `${edit.category}.${edit.key}` : ''}>
+      <Modal open={!!edit} onClose={() => setEdit(null)} title={edit ? (lang === 'ar' ? `${categoryLabel(edit.category, lang)} — ${keyLabel(edit.category, edit.key, lang)}` : `${edit.category}.${edit.key}`) : ''}>
         {edit && (
           <form onSubmit={save} className="space-y-3">
             {edit.valueType === 'boolean' ? (
-              <label className="flex items-center gap-2"><input type="checkbox" checked={val === true || val === 'true'} onChange={(e) => setVal(e.target.checked)} />{edit.key}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={val === true || val === 'true'} onChange={(e) => setVal(e.target.checked)} />{keyLabel(edit.category, edit.key, lang)}</label>
             ) : edit.valueType === 'color' ? (
               <div className="flex gap-2"><input type="color" value={/^#[0-9a-f]{6}$/i.test(val) ? val : '#000000'} onChange={(e) => setVal(e.target.value)} className="h-10 w-14" /><input dir="ltr" className={inputCls} value={val ?? ''} onChange={(e) => setVal(e.target.value)} placeholder="#0b5ed7" /></div>
             ) : edit.valueType === 'file' ? (

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { API_URL, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useToast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { SECTIONS, fmtDate, fmtNum, newsPerm, shareLinks } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
@@ -20,6 +21,8 @@ export interface Card {
   publishAt: string | null;
   viewCount: number;
   body?: string | null;
+  /** attached PDF (detail page only) */
+  pdf?: string | null;
   language: string;
 }
 
@@ -75,10 +78,27 @@ export function FitImage({ src, alt = '' }: { src?: string | null; alt?: string 
  * (title, description, picture) that Facebook / WhatsApp / LinkedIn need, then sends visitors on to the article.
  */
 export function ShareRow({ id, title }: { id: number; title: string }) {
-  const { t } = useI18n();
+  const { t, href } = useI18n();
+  const toast = useToast();
   const url = `${API_URL}/public/news/${id}/share`;
   const l = shareLinks(url, title);
   const [native, setNative] = useState(false);
+  // plain link to the article itself (no preview page in between) – paste it anywhere
+  const copy = async () => {
+    const link = `${window.location.origin}${href(`/news/view?id=${id}`)}`;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      // http / old browsers: select-and-copy fallback
+      const ta = document.createElement('textarea');
+      ta.value = link;
+      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } finally { ta.remove(); }
+    }
+    toast(t('site.copied'));
+  };
   useEffect(() => setNative(typeof navigator !== 'undefined' && typeof navigator.share === 'function'), []);
   const items: [string, React.ReactNode, string][] = [
     ['facebook', <SocialIcon key="f" name="facebook_url" size={12} />, l.facebook],
@@ -98,6 +118,9 @@ export function ShareRow({ id, title }: { id: number; title: string }) {
       {items.map(([k, icon, h]) => (
         <a key={k} href={h} target="_blank" rel="noopener noreferrer" aria-label={`${t('site.share')} ${k}`} title={k} className={cls}>{icon}</a>
       ))}
+      <button type="button" aria-label={t('site.copyLink')} title={t('site.copyLink')} className={cls} onClick={copy}>
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+      </button>
     </div>
   );
 }
@@ -133,7 +156,7 @@ export function NewsCard({ n }: { n: Card }) {
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
-        <h3 className="line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
+        <h3 className="line-clamp-2 text-sm font-bold leading-[1.8] transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
         {n.subject && <p className="line-clamp-1 text-sm font-medium text-[color:var(--muted)]">{n.subject}</p>}
         {n.excerpt && <p className="line-clamp-2 text-sm leading-7 text-gray-600">{shortExcerpt(n.excerpt)}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">

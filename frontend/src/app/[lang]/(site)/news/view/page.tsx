@@ -9,6 +9,7 @@ import { SECTIONS, fmtDate, fmtNum, newsPerm } from '@/lib/utils';
 import { Center, Spinner, Stars } from '@/components/ui/ui';
 import { Card, NewsCard, ShareRow } from '@/components/site/cards';
 import { ReadingProgress } from '@/components/site/motion';
+import { PdfViewer } from '@/components/site/pdf-viewer';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
 type Detail = Card & { body: string | null; related: Card[] };
@@ -104,6 +105,9 @@ function View() {
 
         {/* body HTML is whitelist-sanitised by the API before it is stored */}
         {n.body && <div className="prose-news mt-6" dangerouslySetInnerHTML={{ __html: n.body }} />}
+
+        {/* the PDF is shown on its own, never inside the picture slider */}
+        {n.pdf && <PdfViewer src={n.pdf} title={n.title} />}
 
         {n.topics.length > 0 && (
           <div className="mt-6 flex flex-wrap items-center gap-2">

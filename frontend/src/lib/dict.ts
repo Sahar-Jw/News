@@ -51,6 +51,8 @@ const ar: Record<string, string> = {
   'r.code': 'الرمز', 'r.nameAr': 'الاسم بالعربية', 'r.nameEn': 'الاسم بالإنجليزية', 'r.users': 'المستخدمون', 'r.perms': 'الصلاحيات', 'r.pickRole': 'اختر دوراً', 'r.savePerms': 'حفظ الصلاحيات',
   // misc
   'm.read': 'مقروءة', 'm.unread': 'غير مقروءة', 'a.category': 'الفئة', 'a.action': 'الإجراء', 'a.desc': 'الوصف', 'a.actor': 'المنفّذ', 's.value': 'القيمة', 's.key': 'المفتاح', 's.type': 'النوع',
+  'f.files': 'الملفات', 'f.addFiles': 'إضافة ملفات (صور أو PDF)', 'f.filesHint': 'صور JPG/PNG/WEBP/GIF بحد أقصى 5MB للصورة، وملف PDF واحد بحد أقصى 25MB (يظهر منفصلاً عن الصور)', 'f.pdf': 'ملف PDF', 'f.addPdf': 'إضافة ملف PDF', 'f.pdfHint': 'PDF بحد أقصى 25MB — يظهر منفصلاً عن الصور في صفحة الخبر', 'f.removePdf': 'إزالة PDF', 'f.pdfNote': 'ملف PDF مرفق',
+  'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
 };
 
@@ -97,6 +99,8 @@ const en: Record<string, string> = {
   'u.currentPassword': 'Current password', 'u.newPassword': 'New password', 'u.addCity': 'Add city', 'u.cityCode': 'Code', 'u.cityAr': 'Arabic name', 'u.cityEn': 'English name', 'u.addCountry': 'Add country', 'u.countryAr': 'Arabic name', 'u.countryEn': 'English name', 'site.clearSearch': 'Clear search', 'app.showPassword': 'Show password', 'app.hidePassword': 'Hide password',
   'r.code': 'Code', 'r.nameAr': 'Arabic name', 'r.nameEn': 'English name', 'r.users': 'Users', 'r.perms': 'Permissions', 'r.pickRole': 'Select a role', 'r.savePerms': 'Save permissions',
   'm.read': 'Read', 'm.unread': 'Unread', 'a.category': 'Category', 'a.action': 'Action', 'a.desc': 'Description', 'a.actor': 'Actor', 's.value': 'Value', 's.key': 'Key', 's.type': 'Type',
+  'f.files': 'Files', 'f.addFiles': 'Add files (images or PDF)', 'f.filesHint': 'Images JPG/PNG/WEBP/GIF up to 5MB each, and one PDF up to 25MB (shown apart from the images)', 'f.pdf': 'PDF file', 'f.addPdf': 'Add a PDF', 'f.pdfHint': 'PDF up to 25MB — shown on its own, apart from the images, on the news page', 'f.removePdf': 'Remove PDF', 'f.pdfNote': 'Attached PDF',
+  'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
 };
 

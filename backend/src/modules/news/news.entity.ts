@@ -34,6 +34,10 @@ export class News extends TimestampedEntity {
   @Column({ type: 'json', nullable: true })
   images: string[] | null;
 
+  /** One optional PDF per record (relative storage path), shown on its own on the detail page. */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  pdf: string | null;
+
   @Column({ type: 'tinyint', unsigned: true, nullable: true })
   rating: number | null;
 
