@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Stars } from '@/components/ui/ui';
+import { Modal, Stars } from '@/components/ui/ui';
 import { Card, DefaultAvatar, FitImage, NewsCard, Thumb } from './cards';
 import { ContactIcon } from './icons';
 import { CountUp, Reveal, Stagger } from './motion';
@@ -29,11 +29,11 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
   return (
     <section
       id={`sec-${code}`}
-      className={`relative scroll-mt-20 ${band === 'tint' ? 'bg-gradient-to-b from-transparent via-primary/[0.07] to-transparent' : ''} ${dark ? 'my-8 overflow-hidden bg-gradient-to-br from-secondary via-secondary to-primary/60 text-white' : ''}`}
+      className={`relative scroll-mt-20 ${band === 'tint' ? 'bg-gradient-to-b from-transparent via-primary/[0.07] to-transparent' : ''} ${dark ? 'my-4 overflow-hidden bg-gradient-to-br from-secondary via-secondary to-primary/60 text-white' : ''}`}
     >
       {dark && <div className="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_40%,transparent),transparent_70%)]" aria-hidden="true" />}
-      <div className="relative mx-auto max-w-7xl px-4 py-14">
-        <Reveal className="mb-10 text-center">
+      <div className="relative mx-auto max-w-7xl px-4 py-8 md:py-10">
+        <Reveal className="mb-6 text-center">
           {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-primary/10 text-primary ring-1 ring-primary/15'}`}>{eyebrow}</span>}
           <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl`}>{title}</h2>
           <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
@@ -44,7 +44,7 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
           {subtitle && <p className={`mx-auto mt-3 max-w-2xl text-sm leading-7 ${dark ? 'text-white/70' : 'text-[color:var(--muted)]'}`}>{subtitle}</p>}
         </Reveal>
         {children}
-        {action && <div className="mt-8 text-center">{action}</div>}
+        {action && <div className="mt-5 text-center">{action}</div>}
       </div>
     </section>
   );
@@ -69,7 +69,7 @@ export function HeroSlider() {
   }, [i, many, paused, slides.length]);
   if (!slides.length) return null;
   return (
-    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[380px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[540px]" aria-roledescription="carousel">
+    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[260px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[400px]" aria-roledescription="carousel">
       {slides.map((sl, k) => {
         const on = k === i;
         return (
@@ -80,7 +80,7 @@ export function HeroSlider() {
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-transparent to-transparent rtl:bg-gradient-to-l" />
             <div className="dots absolute inset-x-0 bottom-0 h-2/3" aria-hidden="true" />
-            <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-16 text-white md:px-12 md:pb-24">
+            <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-12 text-white md:px-12 md:pb-16">
               <div className="hero-desc mb-4 h-1 w-14 rounded-full bg-accent" aria-hidden="true" />
               {sl.title && (
                 <h2 className="max-w-3xl text-xl font-extrabold leading-snug md:text-3xl">
@@ -151,7 +151,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
   const rtl = dir === 'rtl';
   return (
     <div
-      className="relative h-72 overflow-hidden rounded-3xl bg-secondary shadow-card md:h-[26rem]"
+      className="relative h-52 overflow-hidden rounded-3xl bg-secondary shadow-card md:h-80"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -366,11 +366,11 @@ export function Experts({ items }: { items: Card[] }) {
 export function StatsRow({ items }: { items: Card[] }) {
   if (!items.length) return null;
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-6">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-4">
       <div className="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_50%,transparent),transparent_70%)]" aria-hidden="true" />
       <Stagger className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((x) => (
-          <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/10 px-4 py-7 text-center text-white ring-1 ring-white/15 backdrop-blur-sm">
+          <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/10 px-4 py-4 text-center text-white ring-1 ring-white/15 backdrop-blur-sm">
             <CountUp value={x.excerpt || x.subject || ''} className="break-words font-display text-lg font-extrabold leading-tight md:text-xl" />
             <div className="mt-3 text-xs text-white/80 md:text-sm">{x.title}</div>
           </div>
@@ -408,6 +408,7 @@ export function Company({ items }: { items: Card[] }) {
 export function ContactSection() {
   const { t } = useI18n();
   const { s, loc } = useSite();
+  const [mapOpen, setMapOpen] = useState(false);
   // [label, value, icon, always left-to-right (phone / email)]
   const rows: [string, string | null, 'phone' | 'email' | 'address' | 'hours', boolean][] = [
     [t('site.phone'), s('contact', 'phone'), 'phone', true],
@@ -417,17 +418,28 @@ export function ContactSection() {
   ];
   const map = s('contact', 'map_url');
   return (
-    <div className="grid items-start gap-8 md:grid-cols-2">
-      <Stagger className="space-y-4">
-        {rows.filter(([, v]) => v).map(([k, v, icon, ltr]) => (
-          <div key={k} className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ContactIcon name={icon} size={18} /></span>
-            <div><div className="text-xs text-gray-500">{k}</div><div className="font-medium">{ltr ? <bdi dir="ltr">{v}</bdi> : v}</div></div>
-          </div>
-        ))}
-        {map && <iframe src={map} title="map" loading="lazy" className="h-56 w-full rounded-2xl border-0 shadow-card" />}
-      </Stagger>
-      <Reveal className="self-start rounded-2xl bg-white p-6 shadow-card ring-1 ring-line"><ContactForm /></Reveal>
+    <div className="grid items-start gap-5 md:grid-cols-2">
+      <Reveal className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
+        <ul className="divide-y divide-line">
+          {rows.filter(([, v]) => v).map(([k, v, icon, ltr]) => (
+            <li key={k} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ContactIcon name={icon} size={16} /></span>
+              <div className="min-w-0"><div className="text-xs text-gray-500">{k}</div><div className="break-words text-sm font-medium">{ltr ? <bdi dir="ltr">{v}</bdi> : v}</div></div>
+            </li>
+          ))}
+        </ul>
+        {map && (
+          <button type="button" onClick={() => setMapOpen(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 active:scale-[0.97]">
+            <ContactIcon name="address" size={16} />{t('site.showMap')}
+          </button>
+        )}
+      </Reveal>
+      <Reveal className="self-start rounded-2xl bg-white p-5 shadow-card ring-1 ring-line"><ContactForm /></Reveal>
+      {map && (
+        <Modal open={mapOpen} onClose={() => setMapOpen(false)} title={t('site.map')} wide>
+          <iframe src={map} title="map" loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />
+        </Modal>
+      )}
     </div>
   );
 }

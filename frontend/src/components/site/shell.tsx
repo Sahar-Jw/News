@@ -255,9 +255,12 @@ export function Navbar() {
               trigger={<NavTrigger>{t('site.subcategories')}</NavTrigger>}
               panelClass="start-0 min-w-48"
             >
-              {categories.sub.map((c) => (
-                <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
-              ))}
+              {/* 8 rows (each 2.15rem tall) are visible, the rest scroll */}
+              <div className="max-h-[17.2rem] overflow-y-auto overscroll-contain">
+                {categories.sub.map((c) => (
+                  <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
+                ))}
+              </div>
             </Dropdown>
           )}
 
@@ -335,14 +338,13 @@ export function Footer() {
     import('@/lib/api').then(({ api }) => api('/public/sections/SERVICES', { params: { lang } }).then((r: any) => setServices(r.slice(0, 6))).catch(() => {}));
   }, [lang]);
   const logo = img('branding', 'logo');
-  const map = s('contact', 'map_url');
   const bg = custom(settings.appearance?.footer_background, ['#111827']);
   return (
-    <footer className="no-print relative mt-20 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 94%, black)' }}>
+    <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 94%, black)' }}>
       <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
       <div className="pointer-events-none absolute -start-24 top-10 h-72 w-72 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_45%,transparent),transparent_70%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute -end-24 bottom-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_28%,transparent),transparent_70%)]" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
+      <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-4">
         <div>
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
           <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
@@ -369,10 +371,9 @@ export function Footer() {
             {loc('contact', 'address') && <li className="flex items-center gap-2"><ContactIcon name="address" />{loc('contact', 'address')}</li>}
             {loc('contact', 'working_hours') && <li className="flex items-center gap-2"><ContactIcon name="hours" />{loc('contact', 'working_hours')}</li>}
           </ul>
-          {map && <iframe src={map} title="map" loading="lazy" className="mt-3 h-28 w-full rounded border-0" />}
         </div>
       </div>
-      <div className="border-t border-white/10 py-4 text-center text-xs">
+      <div className="border-t border-white/10 py-3 text-center text-xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4">
           <span>© {new Date().getFullYear()} {loc('branding', 'site_name')} — {t('site.rights')}</span>
           <div className="flex gap-4">

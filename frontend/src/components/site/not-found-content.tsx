@@ -4,7 +4,7 @@ export function NotFoundContent({ lang }: { lang: 'ar' | 'en' }) {
   const isArabic = lang === 'ar';
 
   return (
-    <section className="relative isolate flex min-h-[60vh] items-center justify-center overflow-hidden px-4 py-16">
+    <section className="relative isolate flex min-h-[45vh] items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,color-mix(in_srgb,var(--primary)_12%,transparent),transparent_58%)]" />
       <div className="pointer-events-none absolute -start-16 top-1/3 -z-10 h-48 w-48 rounded-full bg-accent/10 blur-3xl" />
       <div className="w-full max-w-2xl rounded-[2rem] border border-line/80 bg-white/85 p-8 text-center shadow-lift backdrop-blur-sm sm:p-14">

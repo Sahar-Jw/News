@@ -11,7 +11,7 @@ export function PageContent({ name, titleKey }: { name: string; titleKey: string
   const v = s('pages', `${name}_${lang}`) as { title?: string; body?: string } | null;
   const paragraphs = (v?.body ?? '').split(/\n{1,}/).filter(Boolean);
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="mb-6 text-3xl font-bold">{v?.title || t(titleKey)}</h1>
       {paragraphs.length ? <div className="space-y-4 leading-8">{paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div> : <p className="text-gray-500">{t('site.pageEmpty')}</p>}
     </div>

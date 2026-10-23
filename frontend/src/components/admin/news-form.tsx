@@ -32,7 +32,7 @@ function Form() {
   const [cats, setCats] = useState<{ main: string[]; sub: string[] }>({ main: [], sub: [] });
   const [f, setF] = useState({
     title: '', subject: '', mainCategory: '', newMain: '', subcategory: '', newSub: '', topics: '', body: '', rating: '', isFeatured: false,
-    publishAt: '', status: 'published', language: lang as string, visibility: 'public',
+    publishAt: id ? '' : toLocalInput(new Date().toISOString()), status: 'published', language: lang as string, visibility: 'public',
   });
   const [existing, setExisting] = useState<string[]>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -229,7 +229,7 @@ function Form() {
       <div className="flex gap-3">
         <Button disabled={busy}>{busy ? t('app.loading') : t('app.save')}</Button>
         <Button type="button" variant="outline" onClick={() => setPreview(true)}>{t('f.preview')}</Button>
-        <Link href={back}><Button type="button" variant="ghost">{t('app.cancel')}</Button></Link>
+        <Link href={back}><Button type="button" variant="ghost">← {t('app.back')}</Button></Link>
       </div>
 
       <Modal open={!!zoom} onClose={() => setZoom('')} wide><img src={zoom} alt="" className="mx-auto max-h-[75vh] rounded" /></Modal>

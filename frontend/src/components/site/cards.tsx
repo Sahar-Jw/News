@@ -2,8 +2,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { API_URL, fileUrl } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtNum, shareLinks } from '@/lib/utils';
+import { SECTIONS, fmtDate, fmtNum, newsPerm, shareLinks } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
 export interface Card {
@@ -101,26 +102,49 @@ export function ShareRow({ id, title }: { id: number; title: string }) {
   );
 }
 
+/** Characters shown from the excerpt before the "…" (about two lines in a card; change to taste). */
+const EXCERPT_CHARS = 90;
+function shortExcerpt(text: string) {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= EXCERPT_CHARS) return clean;
+  return clean.slice(0, EXCERPT_CHARS).replace(/\s+\S*$/, '') + '…';
+}
+
+/**
+ * The whole card opens the news: the title link is stretched over the card (after:absolute inset-0),
+ * and the links that do something else (category, subcategory, share) sit above it with `relative z-10`.
+ */
 export function NewsCard({ n }: { n: Card }) {
   const { href, lang, t } = useI18n();
+  const { can } = useAuth();
   const link = href(`/news/view?id=${n.id}`);
+  const section = (SECTIONS as readonly string[]).includes(n.mainCategory) ? n.mainCategory : '';
+  const mayEdit = can(newsPerm('update', section));
+  const chip = 'z-10 transition hover:bg-primary hover:text-white';
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
-      <Link href={link} className="relative block overflow-hidden">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
+      <div className="relative block overflow-hidden">
         <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
-        <span className="absolute start-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur"><span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}</span>
-      </Link>
+        <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
+          <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}
+          </Link>
+          {mayEdit && <Link href={href(`/admin/news/edit?id=${n.id}${section ? `&section=${section}` : ''}`)} className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:brightness-110">{t('app.edit')}</Link>}
+        </div>
+      </div>
       <div className="flex flex-1 flex-col gap-2 p-5">
-        <Link href={link}><h3 className="line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary">{n.title}</h3></Link>
+        <h3 className="line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
         {n.subject && <p className="line-clamp-1 text-sm font-medium text-[color:var(--muted)]">{n.subject}</p>}
-        {n.excerpt && <p className="line-clamp-3 text-sm leading-7 text-gray-600">{n.excerpt}</p>}
+        {n.excerpt && <p className="line-clamp-2 text-sm leading-7 text-gray-600">{shortExcerpt(n.excerpt)}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">
           <span>{fmtDate(lang, n.publishAt)}</span>
           <span>👁 {fmtNum(lang, n.viewCount)} {t('site.views')}</span>
         </div>
-        <div className="flex items-center justify-between border-t border-line pt-3">
-          <Link href={link} className="text-sm font-semibold text-primary">{t('site.readMore')} <span aria-hidden className="inline-block transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">→</span></Link>
-          <ShareRow id={n.id} title={n.title} />
+        <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
+          {n.subcategory ? (
+            <Link href={href(`/news?subcategory=${encodeURIComponent(n.subcategory)}`)} className={`${chip} relative min-w-0 truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary`}>{n.subcategory}</Link>
+          ) : <span />}
+          <div className="relative z-10 shrink-0"><ShareRow id={n.id} title={n.title} /></div>
         </div>
       </div>
     </article>

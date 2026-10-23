@@ -18,6 +18,7 @@
 html { scroll-behavior: smooth; }
 body {
   font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 0.85rem;
   color: var(--ink);
   background-color: var(--canvas);
   /* soft colour washes so the page never feels flat */
@@ -66,15 +67,22 @@ h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Se
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 
-.prose-news { line-height: 1.95; font-size: 1.03rem; color: #1f2937; }
+.prose-news { line-height: 1.85; font-size: 0.9rem; color: #1f2937; }
 .prose-news h1, .prose-news h2, .prose-news h3, .prose-news h4 { font-weight: 700; margin: 1.2em 0 .5em; line-height: 1.4; }
-.prose-news h1 { font-size: 1.8rem } .prose-news h2 { font-size: 1.5rem } .prose-news h3 { font-size: 1.25rem }
+.prose-news h1 { font-size: 1.5rem } .prose-news h2 { font-size: 1.3rem } .prose-news h3 { font-size: 1.1rem }
 .prose-news p { margin: .8em 0 }
 .prose-news ul { list-style: disc; padding-inline-start: 1.6rem; margin: .8em 0 }
 .prose-news ol { list-style: decimal; padding-inline-start: 1.6rem; margin: .8em 0 }
 .prose-news a { color: var(--primary); text-decoration: underline }
 .prose-news blockquote { border-inline-start: 4px solid var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); padding: .6rem 1rem; border-radius: 0 .75rem .75rem 0; color: #374151; margin: 1.2em 0 }
 .prose-news img { border-radius: .75rem; margin: 1em 0; max-width: 100% }
+/* browser autofill / saved-value suggestions paint inputs yellow or blue: keep them white */
+input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink);
+}
 .editor:empty:before { content: attr(data-placeholder); color: #9ca3af; }
 
 @media print {

@@ -74,6 +74,24 @@ export function RichEditor({ value, onChange, dir, placeholder }: { value: strin
     return () => document.removeEventListener('selectionchange', refreshActive);
   }, []);
 
+  /** Pasted HTML keeps its structure but loses background colours / highlights (they showed up as yellow patches). */
+  const onPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const html = e.clipboardData.getData('text/html');
+    if (!html) return; // plain text: the browser handles it
+    e.preventDefault();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.body.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      el.style.removeProperty('background');
+      el.style.removeProperty('background-color');
+      el.style.removeProperty('background-image');
+      el.removeAttribute('bgcolor');
+      if (!el.getAttribute('style')?.trim()) el.removeAttribute('style');
+    });
+    doc.body.querySelectorAll('mark').forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
+    document.execCommand('insertHTML', false, doc.body.innerHTML);
+    changed();
+  };
+
   const saveSelection = () => {
     const current = window.getSelection();
     if (current?.rangeCount && ref.current?.contains(current.anchorNode)) selection.current = current.getRangeAt(0).cloneRange();
@@ -192,6 +210,7 @@ export function RichEditor({ value, onChange, dir, placeholder }: { value: strin
         suppressContentEditableWarning
         data-placeholder={placeholder}
         onInput={changed}
+        onPaste={onPaste}
         onKeyUp={saveSelection}
         onMouseUp={saveSelection}
         className="editor prose-news min-h-56 max-h-[28rem] overflow-auto p-3 outline-none"

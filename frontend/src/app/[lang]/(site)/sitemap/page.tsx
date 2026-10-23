@@ -36,7 +36,7 @@ export default function SitemapPage() {
   const sh = settings.sections_home ?? {};
   const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-6">
       <header className="mb-8 text-center">
         <h1 className="text-2xl font-extrabold">{t('site.sitemap')}</h1>
         <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
