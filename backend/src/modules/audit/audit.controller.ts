@@ -1,8 +1,9 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { PERM } from '../../common/constants';
-import { Permissions } from '../../common/decorators';
+import { CurrentUser, Permissions } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
+import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditListQueryDto } from './audit.dto';
 import { AuditService } from './audit.service';
@@ -29,9 +30,12 @@ export class AuditController {
 
   @Get('export')
   @Permissions(PERM.AUDIT_EXPORT)
-  async export(@Query() q: AuditListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: AuditListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'audit-logs', columns, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    // exporting the log is itself recorded (written after the rows were read, so it is not part of its own export)
+    await this.service.logExport(u, { category: 'audit', entityType: 'audit_logs', format: ex.format, rowCount: rows.length, columns: columns.map((c) => c.key) });
+    return sendExport(res, ex.format, 'audit-logs', columns, rows, ar);
   }
 }

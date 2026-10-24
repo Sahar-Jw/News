@@ -6,6 +6,7 @@ import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { CreateContactDto, MessageListQueryDto } from './contact.dto';
 import { ContactService } from './contact.service';
 
@@ -21,7 +22,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 
 @Controller()
 export class ContactController {
-  constructor(private readonly service: ContactService) {}
+  constructor(
+    private readonly service: ContactService,
+    private readonly audit: AuditService,
+  ) {}
 
   // 5 messages / minute / IP (SEC-NFR-007)
   @Public()
@@ -39,10 +43,12 @@ export class ContactController {
 
   @Get('admin/messages/export')
   @Permissions(PERM.MESSAGES_EXPORT)
-  async export(@Query() q: MessageListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: MessageListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'messages', columns, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'messages', entityType: 'contact_messages', format: ex.format, rowCount: rows.length, columns: columns.map((c) => c.key) });
+    return sendExport(res, ex.format, 'messages', columns, rows, ar);
   }
 
   @Get('admin/messages/:id')

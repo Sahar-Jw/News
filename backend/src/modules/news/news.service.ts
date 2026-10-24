@@ -69,11 +69,15 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     if (this.publishTimer) clearInterval(this.publishTimer);
   }
 
-  private publishDueNews() {
-    return this.repo.update(
-      { status: NewsStatus.SCHEDULED, publishAt: LessThanOrEqual(new Date()) },
-      { status: NewsStatus.PUBLISHED },
-    );
+  /** Runs by itself (no user): scheduled items whose time has come go live, and the audit log says which ones. */
+  private async publishDueNews() {
+    const due = await this.repo.find({ where: { status: NewsStatus.SCHEDULED, publishAt: LessThanOrEqual(new Date()) }, select: { id: true } });
+    if (!due.length) return;
+    const ids = due.map((n) => n.id);
+    const res = await this.repo.update({ id: In(ids), status: NewsStatus.SCHEDULED }, { status: NewsStatus.PUBLISHED });
+    if (res.affected) {
+      await this.audit.log({ category: 'news', action: 'auto_publish', description: `نشر تلقائي لـ ${res.affected} عنصر مجدول`, entityType: 'news', details: { ids } });
+    }
   }
 
   present(n: News) {

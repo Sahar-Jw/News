@@ -7,6 +7,7 @@ import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
 import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { OccasionsService } from './occasions.service';
@@ -23,7 +24,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 
 @Controller('admin/occasions')
 export class OccasionsAdminController {
-  constructor(private readonly service: OccasionsService) {}
+  constructor(
+    private readonly service: OccasionsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @Permissions(PERM.OCCASIONS_READ)
@@ -33,10 +37,11 @@ export class OccasionsAdminController {
 
   @Get('export')
   @Permissions(PERM.OCCASIONS_READ)
-  async export(@Query() q: OccasionsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: OccasionsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const picked = pickColumns(cols(ar), ex.columns);
     const all = await this.service.list({ ...q, limit: 'all' }, 'all');
+    await this.audit.logExport(u, { category: 'occasions', entityType: 'occasions', format: ex.format, rowCount: all.data.length, columns: picked.map((c) => c.key) });
     return sendExport(res, ex.format, 'occasions', picked, all.data, ar);
   }
 

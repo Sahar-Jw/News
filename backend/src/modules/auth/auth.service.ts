@@ -91,9 +91,22 @@ export class AuthService {
     const ar = lang === 'ar';
     const answer = { message: ar ? 'إذا كان البريد مسجّلاً لدينا فقد أرسلنا إليه رابط إعادة تعيين كلمة المرور.' : 'If this e-mail is registered, we sent it a link to reset the password.' };
     const user = await this.users.findOne({ where: { email }, select: { id: true, email: true, fullName: true, isActive: true } });
-    if (!user || !user.isActive) return answer; // pending accounts cannot sign in anyway
+    // The caller always gets the same answer, but the log keeps what really happened (it is only visible to auditors).
+    const ignored = (reason: 'unknown_email' | 'inactive_account' | 'cooldown', actorId?: number) =>
+      this.audit.log({ category: 'auth', action: 'password.reset.request.ignored', description: 'طلب إعادة تعيين كلمة المرور لم يُنفَّذ', actorId: actorId ?? null, details: { reason, ...(actorId ? {} : { email }) } });
+    if (!user) {
+      await ignored('unknown_email');
+      return answer;
+    }
+    if (!user.isActive) {
+      await ignored('inactive_account', user.id); // pending accounts cannot sign in anyway
+      return answer;
+    }
     const recent = await this.resets.findOne({ where: { userId: user.id, usedAt: IsNull() }, order: { id: 'DESC' } });
-    if (recent && Date.now() - recent.createdAt.getTime() < RESET_COOLDOWN_MS) return answer;
+    if (recent && Date.now() - recent.createdAt.getTime() < RESET_COOLDOWN_MS) {
+      await ignored('cooldown', user.id);
+      return answer;
+    }
 
     const token = randomBytes(32).toString('hex');
     await this.resets.delete({ userId: user.id, usedAt: IsNull() }); // only the newest link works
@@ -122,6 +135,10 @@ export class AuthService {
     await this.resets.delete({ userId: row.userId }); // every other open link of this account is void too
     await this.audit.log({ category: 'auth', action: 'password.reset', description: 'إعادة تعيين كلمة المرور عبر البريد', actorId: row.userId });
     return { message: 'تم تغيير كلمة المرور، يمكنك تسجيل الدخول الآن' };
+  }
+
+  async logout(userId: number) {
+    await this.audit.log({ category: 'auth', action: 'logout', description: 'تسجيل خروج', actorId: userId });
   }
 
   async me(userId: number) {

@@ -6,6 +6,7 @@ import { PERM } from '../../common/constants';
 import { Public } from '../../common/decorators';
 import { AuthRequest } from '../../common/types';
 import { User } from '../users/user.entity';
+import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from './file-storage.service';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -13,6 +14,7 @@ import { UnauthorizedException } from '@nestjs/common';
 export class FilesController {
   constructor(
     private readonly storage: FileStorageService,
+    private readonly audit: AuditService,
     @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
 
@@ -30,6 +32,8 @@ export class FilesController {
       const mayRead = req.user.permissions.has(PERM.USERS_READ);
       const owner = await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
+      // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive
+      await this.audit.log({ category: 'files', action: 'private.download', description: 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
     }
 
     res.setHeader('X-Content-Type-Options', 'nosniff');

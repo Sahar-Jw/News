@@ -19,6 +19,8 @@ export class ContactService {
 
   async create(dto: CreateContactDto) {
     const m = await this.repo.save(this.repo.create({ ...dto, isRead: false }));
+    // public form: no actor; the message itself (name, e-mail, text) stays in contact_messages, not in the log
+    await this.audit.log({ category: 'messages', action: 'create', description: 'رسالة تواصل جديدة من الموقع', entityType: 'contact_messages', entityId: m.id });
     return { id: m.id, message: 'تم إرسال رسالتك بنجاح' };
   }
 

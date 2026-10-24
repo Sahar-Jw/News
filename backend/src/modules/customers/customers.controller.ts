@@ -5,6 +5,7 @@ import { CurrentUser, Permissions } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
 import { CreateCustomerDto, CustomersQueryDto, UpdateCustomerDto } from './customers.dto';
 import { CustomersService } from './customers.service';
@@ -21,7 +22,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 
 @Controller('admin/customers')
 export class CustomersController {
-  constructor(private readonly service: CustomersService) {}
+  constructor(
+    private readonly service: CustomersService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @Permissions(PERM.CUSTOMERS_READ)
@@ -31,10 +35,12 @@ export class CustomersController {
 
   @Get('export')
   @Permissions(PERM.CUSTOMERS_EXPORT)
-  async export(@Query() q: CustomersQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: CustomersQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const picked = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'customers', picked, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'customers', entityType: 'customers', format: ex.format, rowCount: rows.length, columns: picked.map((c) => c.key) });
+    return sendExport(res, ex.format, 'customers', picked, rows, ar);
   }
 
   // feeds the customer select of the Dates form, so whoever manages dates does not need to read the customers table

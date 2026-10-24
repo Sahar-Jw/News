@@ -7,6 +7,7 @@ import { CurrentUser, Permissions } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { ActivateUserDto, BulkIdsDto, ChangePasswordDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
 import { UsersService } from './users.service';
 
@@ -22,7 +23,10 @@ const userCols = (ar: boolean): ExportColumn[] => [
 
 @Controller('admin/users')
 export class UsersController {
-  constructor(private readonly service: UsersService) {}
+  constructor(
+    private readonly service: UsersService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @Permissions(PERM.USERS_READ)
@@ -32,10 +36,12 @@ export class UsersController {
 
   @Get('export')
   @Permissions(PERM.USERS_EXPORT)
-  async export(@Query() q: UserListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: UserListQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(userCols(ar), ex.columns);
-    return sendExport(res, ex.format, 'users', columns, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'users', entityType: 'users', format: ex.format, rowCount: rows.length, columns: columns.map((c) => c.key) });
+    return sendExport(res, ex.format, 'users', columns, rows, ar);
   }
 
   @Post('bulk-delete')

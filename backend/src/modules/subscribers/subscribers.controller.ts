@@ -6,6 +6,7 @@ import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
 import { SetActiveDto, SubscribeDto, SubscribersQueryDto, TokenDto } from './subscribers.dto';
 import { SubscribersService } from './subscribers.service';
@@ -23,7 +24,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 
 @Controller()
 export class SubscribersController {
-  constructor(private readonly service: SubscribersService) {}
+  constructor(
+    private readonly service: SubscribersService,
+    private readonly audit: AuditService,
+  ) {}
 
   // 5 requests / minute / IP, like the contact form
   @Public()
@@ -58,10 +62,12 @@ export class SubscribersController {
 
   @Get('admin/subscribers/export')
   @Permissions(PERM.SUBSCRIBERS_EXPORT)
-  async export(@Query() q: SubscribersQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: SubscribersQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const picked = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'subscribers', picked, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'subscribers', entityType: 'subscribers', format: ex.format, rowCount: rows.length, columns: picked.map((c) => c.key) });
+    return sendExport(res, ex.format, 'subscribers', picked, rows, ar);
   }
 
   @Post('admin/subscribers/bulk-delete')

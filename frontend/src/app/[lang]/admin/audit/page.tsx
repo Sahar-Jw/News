@@ -6,7 +6,8 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 interface Row { id: number; category: string; action: string; description: string; createdAt: string; actor: { fullName: string } | null }
-const CATS = ['auth', 'news', 'users', 'permissions', 'settings', 'cities', 'messages', 'security'];
+// every category the backend writes (keep in sync with AuditService callers); "system" = the safety net, should stay empty
+const CATS = ['auth', 'security', 'news', 'users', 'permissions', 'settings', 'cities', 'messages', 'subscribers', 'ads', 'gallery', 'occasions', 'customers', 'appointments', 'files', 'audit', 'system'];
 
 /** Read-only: no add / edit / delete controls exist for audit logs. */
 export default function AuditPage() {

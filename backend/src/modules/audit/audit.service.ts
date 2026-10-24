@@ -7,6 +7,8 @@ import { scrubSecrets, escapeLike } from '../../common/utils/text';
 import { AuditListQueryDto } from './audit.dto';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
+import { AuthUser } from '../../common/types';
+import { auditRequestContext } from './audit-context';
 
 export interface AuditEntry {
   category: string;
@@ -37,9 +39,24 @@ export class AuditService {
           entityId: e.entityId ?? null,
         }),
       );
+      const state = auditRequestContext.getStore();
+      if (state) state.logged = true; // tells the coverage interceptor this request is already on record
     } catch (err) {
       this.logger.error(`Failed to write audit log: ${(err as Error).message}`);
     }
+  }
+
+  /** Data leaving the system (CSV / Excel) is always recorded: who, what, how many rows, which columns. */
+  async logExport(actor: AuthUser | undefined, o: { category: string; entityType: string; format?: string; rowCount: number; columns: string[] }): Promise<void> {
+    const format = o.format === 'xlsx' ? 'xlsx' : 'csv'; // same default as sendExport()
+    await this.log({
+      category: o.category,
+      action: 'export',
+      description: `تصدير ${o.rowCount} سجل (${format})`,
+      actorId: actor?.id ?? null,
+      entityType: o.entityType,
+      details: { format, rowCount: o.rowCount, columns: o.columns },
+    });
   }
 
   private buildQuery(q: AuditListQueryDto) {

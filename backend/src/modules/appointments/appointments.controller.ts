@@ -5,6 +5,7 @@ import { CurrentUser, Permissions } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
+import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
 import { AppointmentsQueryDto, CreateAppointmentDto, DashboardQueryDto, UpdateAppointmentDto } from './appointments.dto';
 import { AppointmentsService } from './appointments.service';
@@ -21,7 +22,10 @@ const cols = (ar: boolean, label: (code: string) => string): ExportColumn[] => [
 
 @Controller('admin/appointments')
 export class AppointmentsController {
-  constructor(private readonly service: AppointmentsService) {}
+  constructor(
+    private readonly service: AppointmentsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @Permissions(PERM.APPOINTMENTS_READ)
@@ -44,12 +48,14 @@ export class AppointmentsController {
 
   @Get('export')
   @Permissions(PERM.APPOINTMENTS_EXPORT)
-  async export(@Query() q: AppointmentsQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response) {
+  async export(@Query() q: AppointmentsQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const statuses = await this.service.statuses();
     const label = (code: string) => { const s = statuses.find((x) => x.code === code); return s ? (ar ? s.ar : s.en) : code; };
     const picked = pickColumns(cols(ar, label), ex.columns);
-    return sendExport(res, ex.format, 'dates', picked, await this.service.listAll(q), ar);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'appointments', entityType: 'appointments', format: ex.format, rowCount: rows.length, columns: picked.map((c) => c.key) });
+    return sendExport(res, ex.format, 'dates', picked, rows, ar);
   }
 
   @Post()

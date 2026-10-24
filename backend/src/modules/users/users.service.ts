@@ -202,6 +202,7 @@ export class UsersService {
       throw e;
     }
     await this.storage.remove(old); // old file removed only after the new reference is saved
+    await this.audit.log({ category: 'users', action: 'profile.avatar', description: 'تغيير الصورة الشخصية', actorId: userId, entityType: 'users', entityId: userId });
     return { avatarUrl: this.storage.url(rel) };
   }
 
@@ -218,6 +219,7 @@ export class UsersService {
       throw e;
     }
     await this.storage.remove(old);
+    await this.audit.log({ category: 'users', action: 'profile.cv', description: 'رفع السيرة الذاتية', actorId: userId, entityType: 'users', entityId: userId });
     return { hasCv: true, cvUrl: this.storage.url(rel) };
   }
 }

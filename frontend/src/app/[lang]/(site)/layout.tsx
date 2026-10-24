@@ -9,8 +9,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <TopBar />
       <Navbar />
       <AdBanner placement="golden" />
-      <div className="xl:flex xl:items-start">
-        <main className="min-h-[60vh] min-w-0 flex-1">{children}</main>
+      {/* <main> always takes the full width; the bronze ads sit in the side margin (or in a strip below) instead of beside it */}
+      <div className="relative">
+        <main className="min-h-[60vh] min-w-0">{children}</main>
         <AdSide />
       </div>
       <AdBanner placement="silver" />

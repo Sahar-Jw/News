@@ -12,6 +12,7 @@ import { BulkDeleteDto, CreateNewsDto, LangQueryDto, NewsAdminQueryDto, PublicNe
 import { NewsPublicService } from './news-public.service';
 import { renderSharePage } from './news-share';
 import { NewsService } from './news.service';
+import { AuditService } from '../audit/audit.service';
 import { SettingsService } from '../settings/settings.service';
 
 type Uploads = { images?: Express.Multer.File[]; pdf?: Express.Multer.File[] };
@@ -42,7 +43,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 
 @Controller('admin/news')
 export class NewsAdminController {
-  constructor(private readonly service: NewsService) {}
+  constructor(
+    private readonly service: NewsService,
+    private readonly audit: AuditService,
+  ) {}
 
   // Route guards only check "holds ANY permission of this action"; the service then checks the exact kind
   // (regular news / each special section), so one permission never opens another section.
@@ -63,7 +67,9 @@ export class NewsAdminController {
   async export(@Query() q: NewsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const columns = pickColumns(cols(ar), ex.columns);
-    return sendExport(res, ex.format, 'news', columns, await this.service.listAllForExport(q, u), ar);
+    const rows = await this.service.listAllForExport(q, u);
+    await this.audit.logExport(u, { category: 'news', entityType: 'news', format: ex.format, rowCount: rows.length, columns: columns.map((c) => c.key) });
+    return sendExport(res, ex.format, 'news', columns, rows, ar);
   }
 
   @Post('bulk-delete')

@@ -42,15 +42,23 @@ export class SubscribersService {
   /** Always answers the same way, so nobody can use the form to find out who is subscribed. */
   async subscribe(email: string, lang: 'ar' | 'en' = 'ar') {
     let s = await this.repo.findOne({ where: { email } });
+    let action: string;
     if (!s) {
       s = await this.repo.save(this.repo.create({ email, isVerified: false, isActive: false, verifiedAt: null, rememberToken: randomBytes(24).toString('hex') }));
       await this.sendConfirmation(s, lang);
+      action = 'subscribe';
     } else if (!s.isVerified) {
       await this.sendConfirmation(s, lang); // not confirmed yet: send the link again
+      action = 'subscribe.resend';
     } else if (!s.isActive) {
       s.isActive = true; // a confirmed subscriber who unsubscribed and comes back
       await this.repo.save(s);
+      action = 'resubscribe';
+    } else {
+      action = 'subscribe.existing'; // already subscribed: nothing changes, the visitor gets the same answer
     }
+    // public form: no actor, and no e-mail address in the log (the subscriber row has it)
+    await this.audit.log({ category: 'subscribers', action, description: 'طلب اشتراك في النشرة من الموقع', entityType: 'subscribers', entityId: s.id });
     return { message: OK_MESSAGE[lang] };
   }
 
@@ -68,6 +76,7 @@ export class SubscribersService {
     }
     s.isActive = true;
     await this.repo.save(s);
+    await this.audit.log({ category: 'subscribers', action: 'verify', description: 'تأكيد اشتراك في النشرة عبر الرابط', entityType: 'subscribers', entityId: s.id });
     return { verified: true };
   }
 
@@ -75,6 +84,7 @@ export class SubscribersService {
     const s = await this.byToken(token);
     s.isActive = false;
     await this.repo.save(s);
+    await this.audit.log({ category: 'subscribers', action: 'unsubscribe', description: 'إلغاء اشتراك في النشرة عبر الرابط', entityType: 'subscribers', entityId: s.id });
     return { unsubscribed: true };
   }
 
