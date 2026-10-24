@@ -16,7 +16,7 @@ try {
   sharp = null;
 }
 
-export const PUBLIC_FOLDERS = ['news', 'users', 'site', 'team', 'documents'] as const;
+export const PUBLIC_FOLDERS = ['news', 'users', 'site', 'team', 'documents', 'occasions', 'gallery'] as const;
 export const PRIVATE_PREFIX = 'private/';
 
 @Injectable()

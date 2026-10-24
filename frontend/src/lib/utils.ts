@@ -8,6 +8,13 @@ export function fmtDate(lang: string, iso?: string | null, withTime = false) {
     year: 'numeric', month: 'short', day: 'numeric', ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
   }).format(d);
 }
+/** A calendar date (YYYY-MM-DD) shown as written, in every time zone (never shifted to the viewer's local day). */
+export function fmtDay(lang: string, ymd?: string | null) {
+  if (!ymd) return '';
+  const d = new Date(`${ymd.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(d);
+}
 export const fmtNum = (lang: string, n: number) => new Intl.NumberFormat(lang === 'ar' ? 'ar' : 'en-US').format(n);
 
 /** ISO -> value for <input type="datetime-local"> in local time */

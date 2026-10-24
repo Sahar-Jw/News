@@ -177,6 +177,19 @@ export function Navbar() {
     ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can(newsPerm('read', s)) })),
     { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
   ];
+  // Tools: each item shows only for users holding its own permission (technical_admin holds all); the dropdown hides when none applies.
+  const toolsItems: NavItem[] = [
+    { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
+    { label: t('adm.occasionsUpcoming'), to: '/admin/occasions/upcoming', show: can('occasions.upcoming.read', 'occasions.read') },
+    { label: t('adm.occasionsPrevious'), to: '/admin/occasions/previous', show: can('occasions.previous.read', 'occasions.read') },
+    { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
+  ];
+  // Services: public pages, visible to everyone.
+  const servicesItems: NavItem[] = [
+    { label: t('pub.upcoming'), to: '/occasions/upcoming', show: true },
+    { label: t('pub.previous'), to: '/occasions/previous', show: true },
+    { label: t('pub.gallery'), to: '/gallery', show: true },
+  ];
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
     { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
@@ -291,6 +304,8 @@ export function Navbar() {
             ))}
           </Dropdown>
 
+          <NavDropdown label={t('site.services')} items={servicesItems} href={href} />
+
           <form onSubmit={submit} role="search" className="relative w-full xl:w-auto">
             <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-full rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 xl:w-40 xl:focus:w-56 2xl:w-48" />
             {q && (
@@ -304,6 +319,7 @@ export function Navbar() {
           </form>
 
           {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
+          {me && <NavDropdown label={t('adm.tools')} items={toolsItems} href={href} />}
           {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
 
           {me && (

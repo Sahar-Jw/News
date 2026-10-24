@@ -139,6 +139,18 @@ export const PERMISSIONS: PermissionDef[] = [
   // contact messages
   { code: 'messages.read', module: 'messages', nameAr: 'قراءة رسائل التواصل', nameEn: 'Read contact messages' },
   { code: 'messages.export', module: 'messages', nameAr: 'تصدير رسائل التواصل', nameEn: 'Export contact messages' },
+  // tools: occasions (the upcoming / previous lists have their own read permission)
+  { code: 'occasions.read', module: 'occasions', nameAr: 'عرض جدول المناسبات', nameEn: 'View occasions table' },
+  { code: 'occasions.create', module: 'occasions', nameAr: 'إضافة مناسبة', nameEn: 'Create occasions' },
+  { code: 'occasions.update', module: 'occasions', nameAr: 'تعديل مناسبة', nameEn: 'Update occasions' },
+  { code: 'occasions.delete', module: 'occasions', nameAr: 'حذف مناسبة', nameEn: 'Delete occasions' },
+  { code: 'occasions.upcoming.read', module: 'occasions', nameAr: 'عرض المناسبات القادمة', nameEn: 'View upcoming occasions' },
+  { code: 'occasions.previous.read', module: 'occasions', nameAr: 'عرض المناسبات السابقة', nameEn: 'View previous occasions' },
+  // tools: image gallery
+  { code: 'gallery.read', module: 'gallery', nameAr: 'عرض معرض الصور', nameEn: 'View image gallery' },
+  { code: 'gallery.create', module: 'gallery', nameAr: 'إضافة معرض صور', nameEn: 'Create galleries' },
+  { code: 'gallery.update', module: 'gallery', nameAr: 'تعديل معرض صور', nameEn: 'Update galleries' },
+  { code: 'gallery.delete', module: 'gallery', nameAr: 'حذف معرض صور', nameEn: 'Delete galleries' },
 ];
 
 export const PERM = {
@@ -173,6 +185,16 @@ export const PERM = {
   AUDIT_EXPORT: 'audit.export',
   MESSAGES_READ: 'messages.read',
   MESSAGES_EXPORT: 'messages.export',
+  OCCASIONS_READ: 'occasions.read',
+  OCCASIONS_CREATE: 'occasions.create',
+  OCCASIONS_UPDATE: 'occasions.update',
+  OCCASIONS_DELETE: 'occasions.delete',
+  OCCASIONS_UPCOMING_READ: 'occasions.upcoming.read',
+  OCCASIONS_PREVIOUS_READ: 'occasions.previous.read',
+  GALLERY_READ: 'gallery.read',
+  GALLERY_CREATE: 'gallery.create',
+  GALLERY_UPDATE: 'gallery.update',
+  GALLERY_DELETE: 'gallery.delete',
 } as const;
 
 /** Backwards-compatible name used by the create flow. */

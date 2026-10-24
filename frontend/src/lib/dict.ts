@@ -54,6 +54,15 @@ const ar: Record<string, string> = {
   'f.files': 'الملفات', 'f.addFiles': 'إضافة ملفات (صور أو PDF)', 'f.filesHint': 'صور JPG/PNG/WEBP/GIF بحد أقصى 5MB للصورة، وملف PDF واحد بحد أقصى 25MB (يظهر منفصلاً عن الصور)', 'f.pdf': 'ملف PDF', 'f.addPdf': 'إضافة ملف PDF', 'f.pdfHint': 'PDF بحد أقصى 25MB — يظهر منفصلاً عن الصور في صفحة الخبر', 'f.removePdf': 'إزالة PDF', 'f.pdfNote': 'ملف PDF مرفق',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+  // tools: occasions + image gallery (admin)
+  'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.occasionsUpcoming': 'المناسبات القادمة', 'adm.occasionsPrevious': 'المناسبات السابقة', 'adm.gallery': 'معرض الصور',
+  'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'التاريخ', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
+  'oc.imageCount': 'عدد الصور', 'oc.addOccasion': 'إضافة مناسبة', 'oc.editOccasion': 'تعديل مناسبة', 'oc.addGallery': 'إضافة معرض صور', 'oc.editGallery': 'تعديل معرض صور',
+  'oc.images': 'الصور', 'oc.addImages': 'إضافة صور', 'oc.imagesHint': 'JPG أو PNG أو WEBP أو GIF، بحد أقصى 5MB للصورة و20 صورة', 'oc.imagesRequired': 'أضف صورة واحدة على الأقل', 'oc.tooMany': 'الحد الأقصى 20 صورة',
+  'oc.removeImage': 'إزالة الصورة', 'oc.created': 'تاريخ الإضافة', 'oc.noImages': 'بلا صور',
+  // public: services menu
+  'pub.upcoming': 'المناسبات القادمة', 'pub.previous': 'المناسبات السابقة', 'pub.gallery': 'معرض الصور', 'pub.noOccasions': 'لا توجد مناسبات', 'pub.noGalleries': 'لا توجد معارض صور',
+  'pub.photos': 'صورة', 'pub.backGallery': 'كل المعارض',
 };
 
 const en: Record<string, string> = {
@@ -102,6 +111,15 @@ const en: Record<string, string> = {
   'f.files': 'Files', 'f.addFiles': 'Add files (images or PDF)', 'f.filesHint': 'Images JPG/PNG/WEBP/GIF up to 5MB each, and one PDF up to 25MB (shown apart from the images)', 'f.pdf': 'PDF file', 'f.addPdf': 'Add a PDF', 'f.pdfHint': 'PDF up to 25MB — shown on its own, apart from the images, on the news page', 'f.removePdf': 'Remove PDF', 'f.pdfNote': 'Attached PDF',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+  // tools: occasions + image gallery (admin)
+  'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.occasionsUpcoming': 'Upcoming occasions', 'adm.occasionsPrevious': 'Previous occasions', 'adm.gallery': 'Image gallery',
+  'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Date', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
+  'oc.imageCount': 'Images', 'oc.addOccasion': 'Add occasion', 'oc.editOccasion': 'Edit occasion', 'oc.addGallery': 'Add gallery', 'oc.editGallery': 'Edit gallery',
+  'oc.images': 'Images', 'oc.addImages': 'Add images', 'oc.imagesHint': 'JPG, PNG, WEBP or GIF, up to 5MB each and 20 images', 'oc.imagesRequired': 'Add at least one image', 'oc.tooMany': 'Up to 20 images',
+  'oc.removeImage': 'Remove image', 'oc.created': 'Added on', 'oc.noImages': 'No images',
+  // public: services menu
+  'pub.upcoming': 'Upcoming occasions', 'pub.previous': 'Previous occasions', 'pub.gallery': 'Image gallery', 'pub.noOccasions': 'No occasions found', 'pub.noGalleries': 'No galleries found',
+  'pub.photos': 'photos', 'pub.backGallery': 'All galleries',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };
