@@ -17,6 +17,10 @@ export class User extends TimestampedEntity {
   @Column({ name: 'password_hash', length: 255, select: false })
   passwordHash: string;
 
+  /** Set when the password is reset by e-mail: sessions issued before this moment stop working. */
+  @Column({ name: 'password_changed_at', type: 'datetime', nullable: true, select: false })
+  passwordChangedAt: Date | null;
+
   @Column({ name: 'role_id', type: 'bigint', unsigned: true })
   roleId: number;
 

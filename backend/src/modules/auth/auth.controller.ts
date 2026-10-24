@@ -5,7 +5,7 @@ import { Response } from 'express';
 import { CurrentUser, Public } from '../../common/decorators';
 import { AUTH_COOKIE } from '../../common/guards/jwt-auth.guard';
 import { AuthUser } from '../../common/types';
-import { LoginDto, RegisterDto } from './auth.dto';
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './auth.dto';
 import { AuthService } from './auth.service';
 
 function ttlToMs(v: string): number {
@@ -44,6 +44,23 @@ export class AuthController {
       path: '/',
     });
     return result;
+  }
+
+  // password reset by e-mail: 5 requests / minute / IP, always the same answer
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('forgot-password')
+  forgot(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email, dto.lang === 'en' ? 'en' : 'ar');
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('reset-password')
+  reset(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.password);
   }
 
   @Get('me')

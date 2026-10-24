@@ -16,6 +16,7 @@ import { CitiesModule } from './modules/cities/cities.module';
 import { CountriesModule } from './modules/countries/countries.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { FilesModule } from './modules/files/files.module';
+import { MailModule } from './modules/mail/mail.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
@@ -55,6 +56,7 @@ import { UsersModule } from './modules/users/users.module';
     NewsModule,
     OccasionsModule,
     GalleryModule,
+    MailModule,
     SubscribersModule,
     AdsModule,
   ],

@@ -35,6 +35,7 @@ export default function LoginPage() {
         {err && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{err}</div>}
         <Field label={t('auth.email')}><input type="email" required dir="ltr" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></Field>
         <Field label={t('auth.password')}><PasswordInput required dir="ltr" className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" /></Field>
+        <div className="text-end text-sm"><Link href={href('/forgot-password')} className="text-primary">{t('auth.forgot')}</Link></div>
         <Button disabled={busy} className="w-full">{t('auth.login')}</Button>
         <p className="text-center text-sm text-gray-600">{t('auth.noAccount')} <Link href={href('/register')} className="text-primary">{t('auth.register')}</Link></p>
       </form>

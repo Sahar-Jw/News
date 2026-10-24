@@ -42,8 +42,10 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) return fail('يلزم تسجيل الدخول');
 
     let sub: number;
+    let iat = 0;
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: number | string }>(token);
+      const payload = await this.jwt.verifyAsync<{ sub: number | string; iat?: number }>(token);
+      iat = Number(payload.iat) || 0;
       sub = Number(payload.sub);
       if (!Number.isFinite(sub)) throw new Error('bad sub');
     } catch {
@@ -52,9 +54,11 @@ export class JwtAuthGuard implements CanActivate {
 
     const user = await this.users.findOne({
       where: { id: sub },
-      select: { id: true, email: true, fullName: true, roleId: true, isActive: true },
+      select: { id: true, email: true, fullName: true, roleId: true, isActive: true, passwordChangedAt: true },
     });
     if (!user || !user.isActive) return fail('الحساب غير مفعّل أو غير موجود');
+    // the password was reset after this session started (iat is in seconds)
+    if (user.passwordChangedAt && iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) return fail('انتهت صلاحية الجلسة، سجّل الدخول من جديد');
 
     req.user = {
       id: user.id,

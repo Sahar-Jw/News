@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 const lower = () => Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value));
 const trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -15,4 +15,14 @@ export class RegisterDto {
 export class LoginDto {
   @lower() @IsEmail() @MaxLength(190) email: string;
   @IsString() @MinLength(1) @MaxLength(72) password: string;
+}
+
+export class ForgotPasswordDto {
+  @lower() @IsEmail() @MaxLength(190) email: string;
+  @IsOptional() @IsIn(['ar', 'en']) lang?: string;
+}
+
+export class ResetPasswordDto {
+  @IsString() @Matches(/^[a-f0-9]{64}$/, { message: 'الرابط غير صالح' }) token: string;
+  @IsString() @MinLength(8, { message: 'كلمة المرور 8 أحرف على الأقل' }) @MaxLength(72) password: string;
 }

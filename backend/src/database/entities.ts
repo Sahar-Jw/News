@@ -5,6 +5,7 @@ import { AuditLog } from '../modules/audit/audit-log.entity';
 import { City } from '../modules/cities/city.entity';
 import { Country } from '../modules/countries/country.entity';
 import { ContactMessage } from '../modules/contact/contact-message.entity';
+import { PasswordReset } from '../modules/auth/password-reset.entity';
 import { Ad } from '../modules/ads/ad.entity';
 import { Subscriber } from '../modules/subscribers/subscriber.entity';
 import { Gallery } from '../modules/gallery/gallery.entity';
@@ -14,4 +15,4 @@ import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset];

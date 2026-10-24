@@ -4,12 +4,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from '../access/role.entity';
 import { User } from '../users/user.entity';
+import { PasswordReset } from './password-reset.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role]),
+    TypeOrmModule.forFeature([User, Role, PasswordReset]),
     JwtModule.registerAsync({
       global: true, // the global JwtAuthGuard needs JwtService
       inject: [ConfigService],

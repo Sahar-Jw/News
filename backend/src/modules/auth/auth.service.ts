@@ -1,15 +1,22 @@
-import { ConflictException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Repository } from 'typeorm';
+import { createHash, randomBytes } from 'crypto';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { Role } from '../access/role.entity';
 import { User } from '../users/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { PermissionsService } from '../access/permissions.service';
 import { FileStorageService } from '../files/file-storage.service';
+import { MailService } from '../mail/mail.service';
+import { PasswordReset } from './password-reset.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
+
+const RESET_TTL_MS = 60 * 60 * 1000; // a reset link works for one hour
+const RESET_COOLDOWN_MS = 60 * 1000; // at most one e-mail per minute per account
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
 // Used to equalise timing when the e-mail does not exist.
 const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 12);
@@ -19,6 +26,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Role) private readonly roles: Repository<Role>,
+    @InjectRepository(PasswordReset) private readonly resets: Repository<PasswordReset>,
+    private readonly mail: MailService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
@@ -71,6 +80,48 @@ export class AuthService {
     const accessToken = await this.jwt.signAsync({ sub: user.id });
     await this.audit.log({ category: 'auth', action: 'login', description: 'تسجيل دخول', actorId: user.id });
     return { accessToken, expiresIn, user: await this.toMe(user) };
+  }
+
+  private front() {
+    return (process.env.FRONTEND_URL || (process.env.CORS_ORIGINS ?? '').split(',')[0] || '').trim().replace(/\/+$/, '');
+  }
+
+  /** Always answers the same way, so the form cannot be used to find out which e-mails have an account. */
+  async forgotPassword(email: string, lang: 'ar' | 'en') {
+    const ar = lang === 'ar';
+    const answer = { message: ar ? 'إذا كان البريد مسجّلاً لدينا فقد أرسلنا إليه رابط إعادة تعيين كلمة المرور.' : 'If this e-mail is registered, we sent it a link to reset the password.' };
+    const user = await this.users.findOne({ where: { email }, select: { id: true, email: true, fullName: true, isActive: true } });
+    if (!user || !user.isActive) return answer; // pending accounts cannot sign in anyway
+    const recent = await this.resets.findOne({ where: { userId: user.id, usedAt: IsNull() }, order: { id: 'DESC' } });
+    if (recent && Date.now() - recent.createdAt.getTime() < RESET_COOLDOWN_MS) return answer;
+
+    const token = randomBytes(32).toString('hex');
+    await this.resets.delete({ userId: user.id, usedAt: IsNull() }); // only the newest link works
+    await this.resets.save(this.resets.create({ userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + RESET_TTL_MS), usedAt: null }));
+    const link = `${this.front()}/${lang}/reset-password/?token=${token}`;
+    const html = `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1f2937;max-width:520px;margin:auto">
+      <p>${ar ? 'مرحباً،' : 'Hello,'}</p>
+      <p>${ar ? 'وصلنا طلب لإعادة تعيين كلمة المرور لحسابك. اضغط الزر أدناه لاختيار كلمة مرور جديدة (الرابط صالح لمدة ساعة واحدة):' : 'We received a request to reset the password of your account. Press the button below to choose a new one (the link is valid for one hour):'}</p>
+      <p style="text-align:center;margin:28px 0"><a href="${link}" style="background:#2748e8;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;display:inline-block">${ar ? 'إعادة تعيين كلمة المرور' : 'Reset password'}</a></p>
+      <p style="color:#6b7280;font-size:13px">${ar ? 'إذا لم يعمل الزر، انسخ هذا الرابط إلى المتصفح:' : 'If the button does not work, copy this link into your browser:'}<br><a href="${link}">${link}</a></p>
+      <p style="color:#9ca3af;font-size:12px">${ar ? 'إذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغيّر شيء في حسابك.' : 'If you did not ask for this, ignore this message: nothing changes in your account.'}</p></div>`;
+    await this.mail.send(user.email, ar ? 'إعادة تعيين كلمة المرور' : 'Reset your password', html);
+    await this.audit.log({ category: 'auth', action: 'password.reset.request', description: 'طلب إعادة تعيين كلمة المرور', actorId: user.id });
+    return answer;
+  }
+
+  async resetPassword(token: string, password: string) {
+    const bad = new BadRequestException('الرابط غير صالح أو منتهي، اطلب رابطاً جديداً');
+    const row = await this.resets.findOne({ where: { tokenHash: sha256(token), usedAt: IsNull(), expiresAt: MoreThan(new Date()) } });
+    if (!row) throw bad;
+    // claim the link first: two requests with the same link cannot both succeed
+    const claimed = await this.resets.update({ id: row.id, usedAt: IsNull() }, { usedAt: new Date() });
+    if (!claimed.affected) throw bad;
+    const now = new Date();
+    await this.users.update({ id: row.userId }, { passwordHash: await bcrypt.hash(password, 12), passwordChangedAt: now });
+    await this.resets.delete({ userId: row.userId }); // every other open link of this account is void too
+    await this.audit.log({ category: 'auth', action: 'password.reset', description: 'إعادة تعيين كلمة المرور عبر البريد', actorId: row.userId });
+    return { message: 'تم تغيير كلمة المرور، يمكنك تسجيل الدخول الآن' };
   }
 
   async me(userId: number) {

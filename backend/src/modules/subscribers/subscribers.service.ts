@@ -7,7 +7,7 @@ import { adminPage, paged } from '../../common/utils/pagination';
 import { applyColumnFilters } from '../../common/utils/column-filters';
 import { escapeLike } from '../../common/utils/text';
 import { AuditService } from '../audit/audit.service';
-import { MailService } from './mail.service';
+import { MailService } from '../mail/mail.service';
 import { Subscriber } from './subscriber.entity';
 import { SubscribersQueryDto } from './subscribers.dto';
 
@@ -29,11 +29,12 @@ export class SubscribersService {
     const link = `${this.front()}/${lang}/subscribe/verify/?token=${s.rememberToken}`;
     const unsub = `${this.front()}/${lang}/subscribe/unsubscribe/?token=${s.rememberToken}`;
     const ar = lang === 'ar';
-    const html = `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:Tahoma,Arial,sans-serif;line-height:1.8">
+    const html = `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1f2937;max-width:520px;margin:auto">
       <p>${ar ? 'مرحباً،' : 'Hello,'}</p>
-      <p>${ar ? 'اضغط على الرابط التالي لتأكيد اشتراكك في نشرتنا:' : 'Click the link below to confirm your subscription to our newsletter:'}</p>
-      <p><a href="${link}">${link}</a></p>
-      <p style="color:#777;font-size:12px">${ar ? 'إذا لم تطلب هذا الاشتراك فتجاهل الرسالة، أو ألغِ الاشتراك من هنا:' : 'If you did not ask for this, ignore this message or unsubscribe here:'} <a href="${unsub}">${unsub}</a></p></div>`;
+      <p>${ar ? 'شكراً لاشتراكك في نشرتنا. اضغط الزر أدناه لتأكيد بريدك الإلكتروني وتفعيل الاشتراك:' : 'Thank you for subscribing to our newsletter. Press the button below to confirm your e-mail and activate the subscription:'}</p>
+      <p style="text-align:center;margin:28px 0"><a href="${link}" style="background:#2748e8;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;display:inline-block">${ar ? 'تأكيد الاشتراك' : 'Confirm subscription'}</a></p>
+      <p style="color:#6b7280;font-size:13px">${ar ? 'إذا لم يعمل الزر، انسخ هذا الرابط إلى المتصفح:' : 'If the button does not work, copy this link into your browser:'}<br><a href="${link}">${link}</a></p>
+      <p style="color:#9ca3af;font-size:12px">${ar ? 'إذا لم تطلب هذا الاشتراك فتجاهل الرسالة، أو' : 'If you did not ask for this, ignore this message, or'} <a href="${unsub}">${ar ? 'ألغِ الاشتراك' : 'unsubscribe'}</a>.</p></div>`;
     await this.mail.send(s.email, ar ? 'تأكيد الاشتراك في النشرة' : 'Confirm your newsletter subscription', html);
   }
 
@@ -42,7 +43,7 @@ export class SubscribersService {
   async subscribe(email: string, lang: 'ar' | 'en' = 'ar') {
     let s = await this.repo.findOne({ where: { email } });
     if (!s) {
-      s = await this.repo.save(this.repo.create({ email, isVerified: false, isActive: true, verifiedAt: null, rememberToken: randomBytes(24).toString('hex') }));
+      s = await this.repo.save(this.repo.create({ email, isVerified: false, isActive: false, verifiedAt: null, rememberToken: randomBytes(24).toString('hex') }));
       await this.sendConfirmation(s, lang);
     } else if (!s.isVerified) {
       await this.sendConfirmation(s, lang); // not confirmed yet: send the link again

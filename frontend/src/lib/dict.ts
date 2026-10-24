@@ -72,6 +72,10 @@ const ar: Record<string, string> = {
   'ad.owner': 'الشركة المالكة', 'ad.link': 'الرابط', 'ad.placement': 'مكان العرض', 'ad.golden': 'ذهبي (أعلى الصفحة)', 'ad.bronze': 'برونزي (جانب الصفحة)', 'ad.silver': 'فضي (أسفل الصفحة)',
   'ad.active': 'نشط', 'ad.start': 'تاريخ البداية', 'ad.end': 'تاريخ النهاية', 'ad.status': 'الحالة', 'ad.running': 'يعمل الآن', 'ad.scheduled': 'مجدول', 'ad.expired': 'منتهٍ', 'ad.off': 'متوقف',
   'ad.add': 'إضافة إعلان', 'ad.edit': 'تعديل إعلان', 'ad.imagesHint': 'صورة واحدة تظهر ثابتة، وأكثر من صورة تتحرك تلقائياً', 'ad.badDates': 'تاريخ النهاية يجب أن يكون بعد البداية', 'ad.label': 'إعلان',
+  // forgot / reset password
+  'auth.forgot': 'نسيت كلمة المرور؟', 'auth.forgotTitle': 'استعادة كلمة المرور', 'auth.forgotHint': 'أدخل بريدك الإلكتروني وسنرسل إليك رابطاً لإعادة تعيين كلمة المرور.', 'auth.sendLink': 'إرسال الرابط',
+  'auth.backToLogin': 'العودة إلى تسجيل الدخول', 'auth.resetTitle': 'كلمة مرور جديدة', 'auth.newPassword': 'كلمة المرور الجديدة', 'auth.confirmPassword': 'تأكيد كلمة المرور', 'auth.resetButton': 'تغيير كلمة المرور',
+  'auth.passwordShort': 'كلمة المرور 8 أحرف على الأقل', 'auth.passwordMismatch': 'كلمتا المرور غير متطابقتين', 'auth.resetOk': 'تم تغيير كلمة المرور. يمكنك تسجيل الدخول الآن.', 'auth.resetBad': 'الرابط غير صالح أو منتهي. اطلب رابطاً جديداً.',
 };
 
 const en: Record<string, string> = {
@@ -138,6 +142,10 @@ const en: Record<string, string> = {
   'ad.owner': 'Owner company', 'ad.link': 'Link', 'ad.placement': 'Placement', 'ad.golden': 'Golden (top of the page)', 'ad.bronze': 'Bronze (side of the page)', 'ad.silver': 'Silver (bottom of the page)',
   'ad.active': 'Active', 'ad.start': 'Start date', 'ad.end': 'End date', 'ad.status': 'Status', 'ad.running': 'Running', 'ad.scheduled': 'Scheduled', 'ad.expired': 'Expired', 'ad.off': 'Off',
   'ad.add': 'Add ad', 'ad.edit': 'Edit ad', 'ad.imagesHint': 'One picture is shown still; several pictures move on their own', 'ad.badDates': 'End date must be on or after the start date', 'ad.label': 'Ad',
+  // forgot / reset password
+  'auth.forgot': 'Forgot password?', 'auth.forgotTitle': 'Reset your password', 'auth.forgotHint': 'Enter your e-mail and we will send you a link to reset your password.', 'auth.sendLink': 'Send link',
+  'auth.backToLogin': 'Back to login', 'auth.resetTitle': 'New password', 'auth.newPassword': 'New password', 'auth.confirmPassword': 'Confirm password', 'auth.resetButton': 'Change password',
+  'auth.passwordShort': 'Password must be at least 8 characters', 'auth.passwordMismatch': 'The two passwords do not match', 'auth.resetOk': 'Your password was changed. You can sign in now.', 'auth.resetBad': 'This link is invalid or has expired. Ask for a new one.',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

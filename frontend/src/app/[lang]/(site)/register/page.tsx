@@ -34,6 +34,7 @@ export default function RegisterPage() {
         <Field label={t('auth.password')} hint="8+"><PasswordInput required minLength={8} maxLength={72} dir="ltr" className={inputCls} value={f.password} onChange={set('password')} autoComplete="new-password" /></Field>
         <Button disabled={busy} className="w-full">{t('auth.register')}</Button>
         <p className="text-center text-sm text-gray-600">{t('auth.haveAccount')} <Link href={href('/login')} className="text-primary">{t('auth.login')}</Link></p>
+        <p className="text-center text-sm"><Link href={href('/forgot-password')} className="text-primary">{t('auth.forgot')}</Link></p>
       </form>
     </div>
   );
