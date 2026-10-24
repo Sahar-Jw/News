@@ -9,7 +9,7 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { BulkDeleteDto } from '../news/news.dto';
 import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
-import { OccasionScope, OccasionsService } from './occasions.service';
+import { OccasionsService } from './occasions.service';
 
 const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
 
@@ -25,23 +25,10 @@ const cols = (ar: boolean): ExportColumn[] => [
 export class OccasionsAdminController {
   constructor(private readonly service: OccasionsService) {}
 
-  // The upcoming / previous lists have their own permission; holding the full-table permission also opens them.
   @Get()
   @Permissions(PERM.OCCASIONS_READ)
   list(@Query() q: OccasionsAdminQueryDto) {
     return this.service.list(q, 'all');
-  }
-
-  @Get('upcoming')
-  @Permissions(PERM.OCCASIONS_UPCOMING_READ, PERM.OCCASIONS_READ)
-  upcoming(@Query() q: OccasionsAdminQueryDto) {
-    return this.service.list(q, 'upcoming');
-  }
-
-  @Get('previous')
-  @Permissions(PERM.OCCASIONS_PREVIOUS_READ, PERM.OCCASIONS_READ)
-  previous(@Query() q: OccasionsAdminQueryDto) {
-    return this.service.list(q, 'previous');
   }
 
   @Get('export')

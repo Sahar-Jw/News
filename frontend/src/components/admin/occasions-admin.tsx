@@ -10,18 +10,11 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, releaseImages } from '@/components/admin/image-set-field';
 
-type Scope = 'all' | 'upcoming' | 'previous';
 interface Row { id: number; titleAr: string; titleEn: string; eventDate: string; isUpcoming: boolean; images: string[]; imageUrls: string[]; imageCount: number }
 interface Draft { id?: number; titleAr: string; titleEn: string; eventDate: string; imgs: ImageSet }
 
-const READ: Record<Scope, string[]> = {
-  all: ['occasions.read'],
-  upcoming: ['occasions.upcoming.read', 'occasions.read'],
-  previous: ['occasions.previous.read', 'occasions.read'],
-};
-
-/** One table for all occasions, the upcoming ones (date today or later) or the previous ones (date passed). */
-export function OccasionsAdmin({ scope }: { scope: Scope }) {
+/** All occasions; the status filter shows only the upcoming ones (date today or later) or only the previous ones. */
+export function OccasionsAdmin() {
   const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -29,8 +22,6 @@ export function OccasionsAdmin({ scope }: { scope: Scope }) {
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
-  const endpoint = scope === 'all' ? '/admin/occasions' : `/admin/occasions/${scope}`;
-  const title = t(scope === 'all' ? 'adm.occasions' : scope === 'upcoming' ? 'adm.occasionsUpcoming' : 'adm.occasionsPrevious');
 
   const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
   const open = (r?: Row) => setDraft(r
@@ -41,11 +32,11 @@ export function OccasionsAdmin({ scope }: { scope: Scope }) {
     { key: 'titleAr', label: t('oc.titleAr') },
     { key: 'titleEn', label: t('oc.titleEn') },
     { key: 'eventDate', type: 'date', label: t('oc.date'), render: (r) => fmtDay(lang, r.eventDate), text: (r) => r.eventDate.slice(0, 10) },
-    ...(scope === 'all' ? [{
+    {
       key: 'status', searchable: false, exportable: false, label: t('oc.status'),
       render: (r) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${r.isUpcoming ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(r.isUpcoming ? 'oc.upcoming' : 'oc.previous')}</span>,
       text: (r) => t(r.isUpcoming ? 'oc.upcoming' : 'oc.previous'),
-    } as Col<Row>] : []),
+    },
     {
       key: 'imageCount', searchable: false, label: t('oc.imageCount'),
       render: (r) => r.imageUrls.length ? (
@@ -86,16 +77,16 @@ export function OccasionsAdmin({ scope }: { scope: Scope }) {
   };
 
   return (
-    <RequirePerm any={READ[scope]}>
-      <h1 className="mb-4 text-2xl font-bold">{title}</h1>
+    <RequirePerm any={['occasions.read']}>
+      <h1 className="mb-4 text-2xl font-bold">{t('adm.occasions')}</h1>
       <DataTable<Row>
-        endpoint={endpoint}
+        endpoint="/admin/occasions"
         columns={cols}
         dateFilter
         refreshKey={key}
-        exportable={scope === 'all' && can('occasions.read')}
+        exportable={can('occasions.read')}
         exportName="occasions"
-        filters={scope === 'all' ? [{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'previous', label: t('oc.previous') }] }] : []}
+        filters={[{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'previous', label: t('oc.previous') }] }]}
         bulkDelete={{ path: '/admin/occasions/bulk-delete', can: can('occasions.delete') }}
         toolbar={can('occasions.create') && <Button onClick={() => open()}>＋ {t('oc.addOccasion')}</Button>}
         rowActions={(r, reload) => (

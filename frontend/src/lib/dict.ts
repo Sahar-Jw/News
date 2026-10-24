@@ -55,7 +55,7 @@ const ar: Record<string, string> = {
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
   // tools: occasions + image gallery (admin)
-  'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.occasionsUpcoming': 'المناسبات القادمة', 'adm.occasionsPrevious': 'المناسبات السابقة', 'adm.gallery': 'معرض الصور',
+  'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.gallery': 'معرض الصور',
   'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'التاريخ', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
   'oc.imageCount': 'عدد الصور', 'oc.addOccasion': 'إضافة مناسبة', 'oc.editOccasion': 'تعديل مناسبة', 'oc.addGallery': 'إضافة معرض صور', 'oc.editGallery': 'تعديل معرض صور',
   'oc.images': 'الصور', 'oc.addImages': 'إضافة صور', 'oc.imagesHint': 'JPG أو PNG أو WEBP أو GIF، بحد أقصى 5MB للصورة و20 صورة', 'oc.imagesRequired': 'أضف صورة واحدة على الأقل', 'oc.tooMany': 'الحد الأقصى 20 صورة',
@@ -63,6 +63,15 @@ const ar: Record<string, string> = {
   // public: services menu
   'pub.upcoming': 'المناسبات القادمة', 'pub.previous': 'المناسبات السابقة', 'pub.gallery': 'معرض الصور', 'pub.noOccasions': 'لا توجد مناسبات', 'pub.noGalleries': 'لا توجد معارض صور',
   'pub.photos': 'صورة', 'pub.backGallery': 'كل المعارض',
+  // newsletter + ads
+  'adm.subscribers': 'المشتركون', 'adm.ads': 'الإعلانات', 'sec.subscribe': 'اشترك في نشرتنا',
+  'sub.email': 'البريد الإلكتروني', 'sub.verified': 'موثّق', 'sub.active': 'نشط', 'sub.verifiedAt': 'تاريخ التوثيق', 'sub.token': 'رمز التذكر', 'sub.createdAt': 'تاريخ الاشتراك',
+  'sub.yes': 'نعم', 'sub.no': 'لا', 'sub.activate': 'تفعيل', 'sub.deactivate': 'تعطيل', 'sub.copy': 'نسخ',
+  'sub.placeholder': 'بريدك الإلكتروني', 'sub.button': 'اشترك', 'sub.invalid': 'أدخل بريداً إلكترونياً صحيحاً', 'sub.sending': 'جارٍ الإرسال…',
+  'sub.verifying': 'جارٍ تأكيد الاشتراك…', 'sub.verifiedOk': 'تم تأكيد اشتراكك بنجاح. شكراً لك!', 'sub.unsubOk': 'تم إلغاء اشتراكك.', 'sub.linkInvalid': 'الرابط غير صالح أو منتهي.', 'sub.home': 'العودة إلى الرئيسية',
+  'ad.owner': 'الشركة المالكة', 'ad.link': 'الرابط', 'ad.placement': 'مكان العرض', 'ad.golden': 'ذهبي (أعلى الصفحة)', 'ad.bronze': 'برونزي (جانب الصفحة)', 'ad.silver': 'فضي (أسفل الصفحة)',
+  'ad.active': 'نشط', 'ad.start': 'تاريخ البداية', 'ad.end': 'تاريخ النهاية', 'ad.status': 'الحالة', 'ad.running': 'يعمل الآن', 'ad.scheduled': 'مجدول', 'ad.expired': 'منتهٍ', 'ad.off': 'متوقف',
+  'ad.add': 'إضافة إعلان', 'ad.edit': 'تعديل إعلان', 'ad.imagesHint': 'صورة واحدة تظهر ثابتة، وأكثر من صورة تتحرك تلقائياً', 'ad.badDates': 'تاريخ النهاية يجب أن يكون بعد البداية', 'ad.label': 'إعلان',
 };
 
 const en: Record<string, string> = {
@@ -112,7 +121,7 @@ const en: Record<string, string> = {
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
   // tools: occasions + image gallery (admin)
-  'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.occasionsUpcoming': 'Upcoming occasions', 'adm.occasionsPrevious': 'Previous occasions', 'adm.gallery': 'Image gallery',
+  'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.gallery': 'Image gallery',
   'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Date', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
   'oc.imageCount': 'Images', 'oc.addOccasion': 'Add occasion', 'oc.editOccasion': 'Edit occasion', 'oc.addGallery': 'Add gallery', 'oc.editGallery': 'Edit gallery',
   'oc.images': 'Images', 'oc.addImages': 'Add images', 'oc.imagesHint': 'JPG, PNG, WEBP or GIF, up to 5MB each and 20 images', 'oc.imagesRequired': 'Add at least one image', 'oc.tooMany': 'Up to 20 images',
@@ -120,6 +129,15 @@ const en: Record<string, string> = {
   // public: services menu
   'pub.upcoming': 'Upcoming occasions', 'pub.previous': 'Previous occasions', 'pub.gallery': 'Image gallery', 'pub.noOccasions': 'No occasions found', 'pub.noGalleries': 'No galleries found',
   'pub.photos': 'photos', 'pub.backGallery': 'All galleries',
+  // newsletter + ads
+  'adm.subscribers': 'Subscribers', 'adm.ads': 'Ads', 'sec.subscribe': 'Subscribe to our newsletter',
+  'sub.email': 'E-mail', 'sub.verified': 'Verified', 'sub.active': 'Active', 'sub.verifiedAt': 'Verified at', 'sub.token': 'Remember token', 'sub.createdAt': 'Subscribed at',
+  'sub.yes': 'Yes', 'sub.no': 'No', 'sub.activate': 'Activate', 'sub.deactivate': 'Deactivate', 'sub.copy': 'Copy',
+  'sub.placeholder': 'Your e-mail', 'sub.button': 'Subscribe', 'sub.invalid': 'Enter a valid e-mail address', 'sub.sending': 'Sending…',
+  'sub.verifying': 'Confirming your subscription…', 'sub.verifiedOk': 'Your subscription is confirmed. Thank you!', 'sub.unsubOk': 'You have been unsubscribed.', 'sub.linkInvalid': 'This link is invalid or has expired.', 'sub.home': 'Back to home',
+  'ad.owner': 'Owner company', 'ad.link': 'Link', 'ad.placement': 'Placement', 'ad.golden': 'Golden (top of the page)', 'ad.bronze': 'Bronze (side of the page)', 'ad.silver': 'Silver (bottom of the page)',
+  'ad.active': 'Active', 'ad.start': 'Start date', 'ad.end': 'End date', 'ad.status': 'Status', 'ad.running': 'Running', 'ad.scheduled': 'Scheduled', 'ad.expired': 'Expired', 'ad.off': 'Off',
+  'ad.add': 'Add ad', 'ad.edit': 'Edit ad', 'ad.imagesHint': 'One picture is shown still; several pictures move on their own', 'ad.badDates': 'End date must be on or after the start date', 'ad.label': 'Ad',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

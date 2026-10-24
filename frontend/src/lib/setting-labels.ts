@@ -52,6 +52,7 @@ const BASE_AR: Record<string, string> = {
 
 const HOME_SECTION_AR: Record<string, string> = {
   hero: 'الرئيسية',
+  subscribe: 'الاشتراك في النشرة',
   featured: 'الأخبار المميزة',
   news: 'آخر الأخبار',
   team: 'فريقنا',

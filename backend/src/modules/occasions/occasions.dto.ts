@@ -18,7 +18,7 @@ export class UpdateOccasionDto {
 }
 
 export class OccasionsAdminQueryDto extends AdminListQueryDto {
-  /** all | upcoming | previous: the route decides; this is only an optional extra filter on the "all" table */
+  /** optional filter of the occasions table: only upcoming (date today or later) or only previous */
   @IsOptional() @IsIn(['upcoming', 'previous']) status?: string;
 }
 

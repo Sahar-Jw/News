@@ -11,6 +11,7 @@ import { ContactForm } from './contact-form';
 import { useSite } from './site-context';
 
 export { BreakingTicker } from './breaking-ticker';
+export { SubscribeSection } from './subscribe-section';
 
 /** Background band per section, so the page has rhythm instead of one flat sheet. */
 const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', contact: 'tint', testimonials: 'dark' };

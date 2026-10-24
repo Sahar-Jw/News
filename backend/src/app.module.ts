@@ -16,6 +16,8 @@ import { CitiesModule } from './modules/cities/cities.module';
 import { CountriesModule } from './modules/countries/countries.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { FilesModule } from './modules/files/files.module';
+import { AdsModule } from './modules/ads/ads.module';
+import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
@@ -53,6 +55,8 @@ import { UsersModule } from './modules/users/users.module';
     NewsModule,
     OccasionsModule,
     GalleryModule,
+    SubscribersModule,
+    AdsModule,
   ],
   providers: [
     // order matters: rate-limit -> authenticate -> authorize

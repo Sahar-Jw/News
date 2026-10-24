@@ -139,18 +139,26 @@ export const PERMISSIONS: PermissionDef[] = [
   // contact messages
   { code: 'messages.read', module: 'messages', nameAr: 'قراءة رسائل التواصل', nameEn: 'Read contact messages' },
   { code: 'messages.export', module: 'messages', nameAr: 'تصدير رسائل التواصل', nameEn: 'Export contact messages' },
-  // tools: occasions (the upcoming / previous lists have their own read permission)
+  // tools: occasions
   { code: 'occasions.read', module: 'occasions', nameAr: 'عرض جدول المناسبات', nameEn: 'View occasions table' },
   { code: 'occasions.create', module: 'occasions', nameAr: 'إضافة مناسبة', nameEn: 'Create occasions' },
   { code: 'occasions.update', module: 'occasions', nameAr: 'تعديل مناسبة', nameEn: 'Update occasions' },
   { code: 'occasions.delete', module: 'occasions', nameAr: 'حذف مناسبة', nameEn: 'Delete occasions' },
-  { code: 'occasions.upcoming.read', module: 'occasions', nameAr: 'عرض المناسبات القادمة', nameEn: 'View upcoming occasions' },
-  { code: 'occasions.previous.read', module: 'occasions', nameAr: 'عرض المناسبات السابقة', nameEn: 'View previous occasions' },
   // tools: image gallery
   { code: 'gallery.read', module: 'gallery', nameAr: 'عرض معرض الصور', nameEn: 'View image gallery' },
   { code: 'gallery.create', module: 'gallery', nameAr: 'إضافة معرض صور', nameEn: 'Create galleries' },
   { code: 'gallery.update', module: 'gallery', nameAr: 'تعديل معرض صور', nameEn: 'Update galleries' },
   { code: 'gallery.delete', module: 'gallery', nameAr: 'حذف معرض صور', nameEn: 'Delete galleries' },
+  // tools: newsletter subscribers
+  { code: 'subscribers.read', module: 'subscribers', nameAr: 'عرض المشتركين', nameEn: 'View subscribers' },
+  { code: 'subscribers.update', module: 'subscribers', nameAr: 'تفعيل / تعطيل مشترك', nameEn: 'Activate / deactivate subscribers' },
+  { code: 'subscribers.delete', module: 'subscribers', nameAr: 'حذف مشترك', nameEn: 'Delete subscribers' },
+  { code: 'subscribers.export', module: 'subscribers', nameAr: 'تصدير المشتركين', nameEn: 'Export subscribers' },
+  // tools: ads
+  { code: 'ads.read', module: 'ads', nameAr: 'عرض الإعلانات', nameEn: 'View ads' },
+  { code: 'ads.create', module: 'ads', nameAr: 'إضافة إعلان', nameEn: 'Create ads' },
+  { code: 'ads.update', module: 'ads', nameAr: 'تعديل إعلان', nameEn: 'Update ads' },
+  { code: 'ads.delete', module: 'ads', nameAr: 'حذف إعلان', nameEn: 'Delete ads' },
 ];
 
 export const PERM = {
@@ -189,13 +197,22 @@ export const PERM = {
   OCCASIONS_CREATE: 'occasions.create',
   OCCASIONS_UPDATE: 'occasions.update',
   OCCASIONS_DELETE: 'occasions.delete',
-  OCCASIONS_UPCOMING_READ: 'occasions.upcoming.read',
-  OCCASIONS_PREVIOUS_READ: 'occasions.previous.read',
   GALLERY_READ: 'gallery.read',
   GALLERY_CREATE: 'gallery.create',
   GALLERY_UPDATE: 'gallery.update',
   GALLERY_DELETE: 'gallery.delete',
+  SUBSCRIBERS_READ: 'subscribers.read',
+  SUBSCRIBERS_UPDATE: 'subscribers.update',
+  SUBSCRIBERS_DELETE: 'subscribers.delete',
+  SUBSCRIBERS_EXPORT: 'subscribers.export',
+  ADS_READ: 'ads.read',
+  ADS_CREATE: 'ads.create',
+  ADS_UPDATE: 'ads.update',
+  ADS_DELETE: 'ads.delete',
 } as const;
+
+export const AD_PLACEMENTS = ['golden', 'bronze', 'silver'] as const; // golden = top of the page, bronze = side, silver = bottom
+export type AdPlacement = (typeof AD_PLACEMENTS)[number];
 
 /** Backwards-compatible name used by the create flow. */
 export const createPermissionFor = (main: string): string => newsPerm('create', main);

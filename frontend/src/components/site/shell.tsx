@@ -180,9 +180,9 @@ export function Navbar() {
   // Tools: each item shows only for users holding its own permission (technical_admin holds all); the dropdown hides when none applies.
   const toolsItems: NavItem[] = [
     { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
-    { label: t('adm.occasionsUpcoming'), to: '/admin/occasions/upcoming', show: can('occasions.upcoming.read', 'occasions.read') },
-    { label: t('adm.occasionsPrevious'), to: '/admin/occasions/previous', show: can('occasions.previous.read', 'occasions.read') },
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
+    { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
+    { label: t('adm.ads'), to: '/admin/ads', show: can('ads.read') },
   ];
   // Services: public pages, visible to everyone.
   const servicesItems: NavItem[] = [

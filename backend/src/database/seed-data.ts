@@ -76,6 +76,7 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'experts', titleAr: 'خبراؤنا', titleEn: 'Our Experts' },
   { code: 'statistics', titleAr: 'إحصائياتنا', titleEn: 'Our Statistics' },
   { code: 'company', titleAr: 'الشركات الشريكة', titleEn: 'Partner Companies' },
+  { code: 'subscribe', titleAr: 'اشترك في نشرتنا', titleEn: 'Subscribe to our newsletter' },
   { code: 'contact', titleAr: 'تواصل معنا', titleEn: 'Contact Us' },
 ];
 

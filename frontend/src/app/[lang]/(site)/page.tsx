@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { Card } from '@/components/site/cards';
-import { BreakingTicker, Company, ContactSection, Experts, FeaturedCarousel, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, StatsRow, TeamSlider, Testimonials } from '@/components/site/home-sections';
+import { BreakingTicker, Company, ContactSection, Experts, FeaturedCarousel, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
 import { SECTION_ORDER_KEYS } from '@/components/site/sections-meta';
 import { useSite } from '@/components/site/site-context';
 
@@ -49,6 +49,7 @@ export default function HomePage() {
       case 'experts': return home.experts.length ? <SectionWrap key={k} code={k} title={title(k)}><Experts items={home.experts} /></SectionWrap> : null;
       case 'statistics': return home.statistics.length ? <SectionWrap key={k} code={k} title={title(k)}><StatsRow items={home.statistics} /></SectionWrap> : null;
       case 'company': return home.company.length ? <SectionWrap key={k} code={k} title={title(k)}><Company items={home.company} /></SectionWrap> : null;
+      case 'subscribe': return <SectionWrap key={k} code={k} title={title(k)}><SubscribeSection /></SectionWrap>;
       case 'contact': return <SectionWrap key={k} code={k} title={title(k)}><ContactSection /></SectionWrap>;
       default: return null;
     }
