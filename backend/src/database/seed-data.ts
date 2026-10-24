@@ -1,3 +1,4 @@
+import { DEFAULT_APPOINTMENT_STATUSES } from '../modules/appointments/appointment-statuses';
 import { Language, PERM, SpecialCategory, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../common/constants';
 import { SettingValueType } from '../modules/settings/site-setting.entity';
 
@@ -134,6 +135,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
           s('sections_home', `${sec.code}_subtitle_en`, 'text'),
         ]),
   ]),
+  // dates (appointments): the statuses the Dates form offers, editable from Settings
+  s('appointments', 'statuses', 'json', JSON.stringify(DEFAULT_APPOINTMENT_STATUSES)),
   // appearance
   s('appearance', 'primary_color', 'color', '#2748e8'),
   s('appearance', 'secondary_color', 'color', '#0a1236'),

@@ -78,6 +78,7 @@ export default function SettingsPage() {
               <input type={edit.valueType === 'number' ? 'number' : 'url'} step="any" dir="ltr" className={inputCls} value={val ?? ''} onChange={(e) => setVal(e.target.value)} />
             )}
             {edit.valueType === 'json' && edit.category === 'pages' && <p className="text-xs text-gray-500">{`{"title": "...", "body": "..."}`}</p>}
+            {edit.valueType === 'json' && edit.category === 'appointments' && <p className="text-xs text-gray-500" dir="ltr">{`[{"code": "scheduled", "ar": "مجدول", "en": "Scheduled", "color": "#2563eb"}, ...]`}</p>}
             <p className="text-xs text-gray-500">{t('s.hidden')}</p>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.close')}</Button>

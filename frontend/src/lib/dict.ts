@@ -76,6 +76,11 @@ const ar: Record<string, string> = {
   'auth.forgot': 'نسيت كلمة المرور؟', 'auth.forgotTitle': 'استعادة كلمة المرور', 'auth.forgotHint': 'أدخل بريدك الإلكتروني وسنرسل إليك رابطاً لإعادة تعيين كلمة المرور.', 'auth.sendLink': 'إرسال الرابط',
   'auth.backToLogin': 'العودة إلى تسجيل الدخول', 'auth.resetTitle': 'كلمة مرور جديدة', 'auth.newPassword': 'كلمة المرور الجديدة', 'auth.confirmPassword': 'تأكيد كلمة المرور', 'auth.resetButton': 'تغيير كلمة المرور',
   'auth.passwordShort': 'كلمة المرور 8 أحرف على الأقل', 'auth.passwordMismatch': 'كلمتا المرور غير متطابقتين', 'auth.resetOk': 'تم تغيير كلمة المرور. يمكنك تسجيل الدخول الآن.', 'auth.resetBad': 'الرابط غير صالح أو منتهي. اطلب رابطاً جديداً.',
+  // customers + dates
+  'adm.customers': 'العملاء', 'adm.dates': 'المواعيد', 'adm.datesDashboard': 'لوحة المواعيد',
+  'cu.name': 'الاسم', 'cu.phone': 'رقم الهاتف', 'cu.age': 'العمر', 'cu.procedures': 'الإجراءات', 'cu.add': 'إضافة عميل', 'cu.edit': 'تعديل عميل',
+  'ap.customer': 'العميل', 'ap.hour': 'الساعة', 'ap.add': 'إضافة موعد', 'ap.edit': 'تعديل موعد',
+  'dd.refresh': 'تحديث', 'dd.total': 'كل المواعيد', 'dd.today': 'مواعيد اليوم', 'dd.next7': 'مواعيد الأيام السبعة القادمة', 'dd.perDay': 'عدد المواعيد في كل يوم', 'dd.noneToday': 'لا مواعيد اليوم', 'dd.noneNext': 'لا مواعيد قادمة',
 };
 
 const en: Record<string, string> = {
@@ -146,6 +151,11 @@ const en: Record<string, string> = {
   'auth.forgot': 'Forgot password?', 'auth.forgotTitle': 'Reset your password', 'auth.forgotHint': 'Enter your e-mail and we will send you a link to reset your password.', 'auth.sendLink': 'Send link',
   'auth.backToLogin': 'Back to login', 'auth.resetTitle': 'New password', 'auth.newPassword': 'New password', 'auth.confirmPassword': 'Confirm password', 'auth.resetButton': 'Change password',
   'auth.passwordShort': 'Password must be at least 8 characters', 'auth.passwordMismatch': 'The two passwords do not match', 'auth.resetOk': 'Your password was changed. You can sign in now.', 'auth.resetBad': 'This link is invalid or has expired. Ask for a new one.',
+  // customers + dates
+  'adm.customers': 'Customers', 'adm.dates': 'Dates', 'adm.datesDashboard': 'Dates dashboard',
+  'cu.name': 'Name', 'cu.phone': 'Phone number', 'cu.age': 'Age', 'cu.procedures': 'Procedures', 'cu.add': 'Add customer', 'cu.edit': 'Edit customer',
+  'ap.customer': 'Customer', 'ap.hour': 'Hour', 'ap.add': 'Add date', 'ap.edit': 'Edit date',
+  'dd.refresh': 'Refresh', 'dd.total': 'All dates', 'dd.today': 'Today', 'dd.next7': 'Next 7 days', 'dd.perDay': 'Dates per day', 'dd.noneToday': 'No dates today', 'dd.noneNext': 'No upcoming dates',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

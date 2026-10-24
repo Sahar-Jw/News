@@ -159,6 +159,19 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'ads.create', module: 'ads', nameAr: 'إضافة إعلان', nameEn: 'Create ads' },
   { code: 'ads.update', module: 'ads', nameAr: 'تعديل إعلان', nameEn: 'Update ads' },
   { code: 'ads.delete', module: 'ads', nameAr: 'حذف إعلان', nameEn: 'Delete ads' },
+  // tools: customers
+  { code: 'customers.read', module: 'customers', nameAr: 'عرض العملاء', nameEn: 'View customers' },
+  { code: 'customers.create', module: 'customers', nameAr: 'إضافة عميل', nameEn: 'Create customers' },
+  { code: 'customers.update', module: 'customers', nameAr: 'تعديل عميل', nameEn: 'Update customers' },
+  { code: 'customers.delete', module: 'customers', nameAr: 'حذف عميل', nameEn: 'Delete customers' },
+  { code: 'customers.export', module: 'customers', nameAr: 'تصدير العملاء', nameEn: 'Export customers' },
+  // tools: dates (appointments)
+  { code: 'appointments.read', module: 'appointments', nameAr: 'عرض المواعيد', nameEn: 'View dates' },
+  { code: 'appointments.create', module: 'appointments', nameAr: 'إضافة موعد', nameEn: 'Create dates' },
+  { code: 'appointments.update', module: 'appointments', nameAr: 'تعديل موعد', nameEn: 'Update dates' },
+  { code: 'appointments.delete', module: 'appointments', nameAr: 'حذف موعد', nameEn: 'Delete dates' },
+  { code: 'appointments.export', module: 'appointments', nameAr: 'تصدير المواعيد', nameEn: 'Export dates' },
+  { code: 'appointments.dashboard', module: 'appointments', nameAr: 'لوحة المواعيد', nameEn: 'Dates dashboard' },
 ];
 
 export const PERM = {
@@ -209,6 +222,17 @@ export const PERM = {
   ADS_CREATE: 'ads.create',
   ADS_UPDATE: 'ads.update',
   ADS_DELETE: 'ads.delete',
+  CUSTOMERS_READ: 'customers.read',
+  CUSTOMERS_CREATE: 'customers.create',
+  CUSTOMERS_UPDATE: 'customers.update',
+  CUSTOMERS_DELETE: 'customers.delete',
+  CUSTOMERS_EXPORT: 'customers.export',
+  APPOINTMENTS_READ: 'appointments.read',
+  APPOINTMENTS_CREATE: 'appointments.create',
+  APPOINTMENTS_UPDATE: 'appointments.update',
+  APPOINTMENTS_DELETE: 'appointments.delete',
+  APPOINTMENTS_EXPORT: 'appointments.export',
+  APPOINTMENTS_DASHBOARD: 'appointments.dashboard',
 } as const;
 
 export const AD_PLACEMENTS = ['golden', 'bronze', 'silver'] as const; // golden = top of the page, bronze = side, silver = bottom

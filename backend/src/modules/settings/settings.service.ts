@@ -155,6 +155,7 @@ export class SettingsService {
     const rows = await this.repo.find();
     const out: Record<string, Record<string, any>> = {};
     for (const r of rows) {
+      if (r.category === 'appointments') continue; // internal (date statuses), never sent to visitors
       (out[r.category] ??= {})[r.key] = this.typed(r);
       if (r.valueType === 'file') out[r.category][`${r.key}_url`] = this.storage.url(r.value);
     }

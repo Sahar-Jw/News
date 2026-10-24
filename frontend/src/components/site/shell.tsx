@@ -183,6 +183,9 @@ export function Navbar() {
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
     { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
     { label: t('adm.ads'), to: '/admin/ads', show: can('ads.read') },
+    { label: t('adm.customers'), to: '/admin/customers', show: can('customers.read') },
+    { label: t('adm.dates'), to: '/admin/dates', show: can('appointments.read') },
+    { label: t('adm.datesDashboard'), to: '/admin/dates-dashboard', show: can('appointments.dashboard') },
   ];
   // Services: public pages, visible to everyone.
   const servicesItems: NavItem[] = [

@@ -8,6 +8,7 @@ const CATEGORY_AR: Record<string, string> = {
   appearance: 'المظهر',
   labels: 'النصوص',
   pages: 'الصفحات',
+  appointments: 'المواعيد',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -45,6 +46,8 @@ const BASE_AR: Record<string, string> = {
   // labels
   read_more: 'نص «اقرأ المزيد»',
   breaking: 'نص «عاجل»',
+  // dates (appointments)
+  statuses: 'حالات المواعيد',
   // pages
   privacy: 'سياسة الخصوصية',
   terms: 'الشروط والأحكام',

@@ -17,6 +17,8 @@ import { CountriesModule } from './modules/countries/countries.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { FilesModule } from './modules/files/files.module';
 import { MailModule } from './modules/mail/mail.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
@@ -59,6 +61,8 @@ import { UsersModule } from './modules/users/users.module';
     MailModule,
     SubscribersModule,
     AdsModule,
+    CustomersModule,
+    AppointmentsModule,
   ],
   providers: [
     // order matters: rate-limit -> authenticate -> authorize
