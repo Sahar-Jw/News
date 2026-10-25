@@ -68,7 +68,7 @@ export class AdsService {
     try {
       const saved = await this.repo.save(
         this.repo.create({
-          ownerCompany: dto.ownerCompany, linkUrl: dto.linkUrl, placement: dto.placement, isActive: dto.isActive ?? true,
+          ownerCompany: dto.ownerCompany, linkUrl: dto.linkUrl, placement: dto.placement, isActive: dto.isActive,
           startDate: dto.startDate, endDate: dto.endDate, images: paths, createdById: actor.id,
         }),
       );

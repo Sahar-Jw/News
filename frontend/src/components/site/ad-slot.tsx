@@ -1,26 +1,64 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { FitImage } from './cards';
 
 export type AdPlacement = 'golden' | 'bronze' | 'silver';
 interface PublicAd { id: number; placement: AdPlacement; owner: string; link: string; images: string[] }
 
-// one request for all placements, shared by every slot on the page (refreshed after a minute)
-let cache: { at: number; p: Promise<PublicAd[]> } | null = null;
-function loadAds() {
-  if (!cache || Date.now() - cache.at > 60_000) cache = { at: Date.now(), p: api<PublicAd[]>('/public/ads').catch(() => [] as PublicAd[]) };
-  return cache.p;
+// ---- live ad store -------------------------------------------------------------------------------------------------
+// One request serves every slot on the page. It is re-run (not cached) whenever something changes:
+//  - right after an admin add / edit / delete / switch (this tab, or another tab of the same browser)
+//  - when the tab regains focus
+//  - every 30 s, so another device's change (or an ad that just started / expired by date) shows up on its own
+let current: PublicAd[] | null = null;
+let loadedAt = 0;
+let running: Promise<void> | null = null;
+let again = false;
+const subscribers = new Set<() => void>();
+
+function refreshAds(): Promise<void> {
+  if (running) { again = true; return running; } // a change arrived while loading: load once more afterwards
+  running = api<PublicAd[]>('/public/ads', { cache: 'no-store' })
+    .then((all) => { current = all; })
+    .catch(() => { if (current === null) current = []; })
+    .finally(() => {
+      loadedAt = Date.now();
+      running = null;
+      subscribers.forEach((f) => f());
+      if (again) { again = false; void refreshAds(); }
+    });
+  return running;
 }
+
+function startWatching() {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const soon = () => { clearTimeout(timer); timer = setTimeout(() => void refreshAds(), 150); };
+  const onVisible = () => { if (document.visibilityState === 'visible') soon(); };
+  const off = onSiteChange(soon);
+  const poll = setInterval(() => { if (document.visibilityState === 'visible') void refreshAds(); }, 30_000);
+  window.addEventListener('focus', soon);
+  document.addEventListener('visibilitychange', onVisible);
+  return () => { clearTimeout(timer); clearInterval(poll); off(); window.removeEventListener('focus', soon); document.removeEventListener('visibilitychange', onVisible); };
+}
+
+let stopWatching: (() => void) | null = null;
+
 function useAds(placement: AdPlacement) {
-  const [ads, setAds] = useState<PublicAd[]>([]);
+  const [all, setAll] = useState<PublicAd[]>(current ?? []);
   useEffect(() => {
-    let live = true;
-    loadAds().then((all) => { if (live) setAds(all.filter((a) => a.placement === placement && a.images.length > 0)); });
-    return () => { live = false; };
-  }, [placement]);
-  return ads;
+    const sync = () => setAll(current ?? []);
+    subscribers.add(sync);
+    if (subscribers.size === 1) stopWatching = startWatching(); // watchers run once, however many slots are on the page
+    if (!running && (current === null || Date.now() - loadedAt > 5_000)) void refreshAds();
+    else sync();
+    return () => {
+      subscribers.delete(sync);
+      if (subscribers.size === 0) { stopWatching?.(); stopWatching = null; }
+    };
+  }, []);
+  return all.filter((a) => a.placement === placement && a.images.length > 0);
 }
 
 /** Several pictures: they cross-fade by themselves (no arrows). One picture: shown still. */
@@ -47,7 +85,7 @@ function AdCarousel({ images, alt }: { images: string[]; alt: string }) {
 const SIZE: Record<AdPlacement, string> = {
   golden: 'h-24 sm:h-32 md:h-40', // top banner
   silver: 'h-20 sm:h-28 md:h-32', // bottom banner
-  bronze: 'aspect-[3/5] w-full', // side column
+  bronze: 'aspect-[4/3] w-full', // middle-of-the-page card
 };
 
 function AdBox({ ad, placement }: { ad: PublicAd; placement: AdPlacement }) {
@@ -55,7 +93,7 @@ function AdBox({ ad, placement }: { ad: PublicAd; placement: AdPlacement }) {
   if (!/^https?:\/\//i.test(ad.link)) return null; // the API only stores http(s) links; this is a second guard
   const label = `${t('ad.label')}: ${ad.owner}`;
 
-  // Side (bronze) ads are small "cards": a white frame, soft shadow, a lift on hover, the sponsor under the picture.
+  // Middle (bronze) ads are cards: a white frame, soft shadow, a lift on hover, the sponsor under the picture.
   if (placement === 'bronze') {
     return (
       <a href={ad.link} target="_blank" rel="noopener noreferrer sponsored" aria-label={label} className="group block rounded-2xl bg-white p-1.5 shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
@@ -87,38 +125,27 @@ export function AdBanner({ placement }: { placement: 'golden' | 'silver' }) {
 }
 
 /**
- * Side (bronze) ads. Render inside a `relative` wrapper that also holds <main> (see the site layout).
- *
- * - Wide screens (2xl, 1536px+): the ads float in the empty margin beside the page, snug against the content column
- *   (80rem = max-w-7xl, the width every page uses). They are taken out of the layout flow, so <main> keeps its full width and
- *   its centred content stays lined up with the navbar and footer (a column that sat beside <main> used to squeeze it and
- *   push everything off-centre). The width follows the free margin, 116px to 176px. `50%` = half the wrapper's width.
- * - Narrower screens: no room beside the page, so the ads become a tidy centred strip above the footer.
+ * Middle (bronze) ads: a centred strip of cards. The home page places it between its sections, halfway down the page.
+ * Renders nothing when no bronze ad is running.
  */
-export function AdSide() {
+export function AdMiddle() {
   const { t } = useI18n();
   const ads = useAds('bronze');
   if (!ads.length) return null;
   return (
-    <>
-      <aside aria-label={t('ad.label')} className="pointer-events-none absolute inset-y-0 end-[max(0.25rem,calc(50%_-_40rem_-_var(--ad-w)_-_0.75rem))] hidden w-[var(--ad-w)] [--ad-w:clamp(7.25rem,calc(50%_-_40rem_-_1rem),11rem)] 2xl:block">
-        <div className="pointer-events-auto sticky top-24 space-y-4 py-6">
-          {ads.map((a) => <AdBox key={a.id} ad={a} placement="bronze" />)}
-        </div>
-      </aside>
-      <section aria-label={t('ad.label')} className="mx-auto max-w-7xl px-4 py-6 2xl:hidden">
-        <div className="mb-3 flex items-center gap-3 text-[11px] font-medium text-[color:var(--muted)]">
-          <span>{t('ad.label')}</span>
-          <span className="h-px flex-1 bg-line" aria-hidden="true" />
-        </div>
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
-          {ads.map((a) => (
-            <div key={a.id} className="w-[calc(50%-0.375rem)] sm:w-40">
-              <AdBox ad={a} placement="bronze" />
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+    <section aria-label={t('ad.label')} className="mx-auto max-w-7xl px-4 py-6 md:py-8">
+      <div className="mb-3 flex items-center gap-3 text-[11px] font-medium text-[color:var(--muted)]">
+        <span className="h-px flex-1 bg-line" aria-hidden="true" />
+        <span>{t('ad.label')}</span>
+        <span className="h-px flex-1 bg-line" aria-hidden="true" />
+      </div>
+      <div className="flex flex-wrap justify-center gap-4">
+        {ads.map((a) => (
+          <div key={a.id} className="w-full max-w-xs sm:max-w-sm">
+            <AdBox ad={a} placement="bronze" />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

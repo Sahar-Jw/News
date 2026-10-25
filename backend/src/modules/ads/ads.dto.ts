@@ -13,7 +13,7 @@ export class CreateAdDto {
   @trim() @IsString() @MinLength(1) @MaxLength(255) ownerCompany: string;
   @trim() @IsUrl(URL_OPTS, { message: 'الرابط يجب أن يبدأ بـ http:// أو https://' }) @MaxLength(500) linkUrl: string;
   @IsIn(AD_PLACEMENTS as unknown as string[]) placement: string;
-  @IsOptional() @toBool() @IsBoolean() isActive?: boolean;
+  @toBool() @IsBoolean({ message: 'حالة التفعيل مطلوبة' }) isActive: boolean;
   @Matches(/^\d{4}-\d{2}-\d{2}$/, DATE) startDate: string;
   @Matches(/^\d{4}-\d{2}-\d{2}$/, DATE) endDate: string;
 }

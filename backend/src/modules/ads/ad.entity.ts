@@ -15,7 +15,7 @@ export class Ad extends TimestampedEntity {
   @Column({ name: 'link_url', length: 500 })
   linkUrl: string;
 
-  /** golden = top of the page, bronze = side, silver = bottom */
+  /** golden = top of the page, bronze = middle of the page, silver = bottom */
   @Column({ type: 'enum', enum: AD_PLACEMENTS })
   placement: string;
 

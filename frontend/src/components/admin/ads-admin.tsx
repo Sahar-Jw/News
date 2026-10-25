@@ -13,7 +13,7 @@ import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, image
 type Placement = 'golden' | 'bronze' | 'silver';
 type State = 'running' | 'scheduled' | 'expired' | 'off';
 interface Row { id: number; ownerCompany: string; linkUrl: string; placement: Placement; isActive: boolean; startDate: string; endDate: string; state: State; images: string[]; imageUrls: string[]; imageCount: number }
-interface Draft { id?: number; ownerCompany: string; linkUrl: string; placement: Placement; isActive: boolean; startDate: string; endDate: string; imgs: ImageSet }
+interface Draft { id?: number; ownerCompany: string; linkUrl: string; placement: Placement | ''; isActive: boolean; startDate: string; endDate: string; imgs: ImageSet }
 
 const PLACEMENT_BADGE: Record<Placement, string> = { golden: 'bg-amber-100 text-amber-800', bronze: 'bg-orange-100 text-orange-800', silver: 'bg-slate-200 text-slate-700' };
 const STATE_BADGE: Record<State, string> = { running: 'bg-emerald-100 text-emerald-700', scheduled: 'bg-sky-100 text-sky-700', expired: 'bg-gray-100 text-gray-600', off: 'bg-red-100 text-red-700' };
@@ -32,7 +32,7 @@ export function AdsAdmin() {
   const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
   const open = (r?: Row) => setDraft(r
     ? { id: r.id, ownerCompany: r.ownerCompany, linkUrl: r.linkUrl, placement: r.placement, isActive: r.isActive, startDate: r.startDate.slice(0, 10), endDate: r.endDate.slice(0, 10), imgs: imageSetOf(r.images, r.imageUrls) }
-    : { ownerCompany: '', linkUrl: '', placement: 'golden', isActive: true, startDate: '', endDate: '', imgs: emptyImageSet() });
+    : { ownerCompany: '', linkUrl: '', placement: '', isActive: true, startDate: '', endDate: '', imgs: emptyImageSet() });
 
   const cols: Col<Row>[] = [
     {
@@ -62,6 +62,7 @@ export function AdsAdmin() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft) return;
+    if (!draft.placement) return toast(t('ad.placement'), 'err');
     if (draft.endDate < draft.startDate) return toast(t('ad.badDates'), 'err');
     if (imageTotal(draft.imgs) < 1) return toast(t('oc.imagesRequired'), 'err');
     const fd = new FormData();
@@ -130,7 +131,8 @@ export function AdsAdmin() {
               <Field label={t('ad.owner')}><input required maxLength={255} className={inputCls} value={draft.ownerCompany} onChange={(e) => setDraft({ ...draft, ownerCompany: e.target.value })} /></Field>
               <Field label={t('ad.link')}><input required type="url" dir="ltr" maxLength={500} placeholder="https://" className={inputCls} value={draft.linkUrl} onChange={(e) => setDraft({ ...draft, linkUrl: e.target.value })} /></Field>
               <Field label={t('ad.placement')}>
-                <select className={inputCls} value={draft.placement} onChange={(e) => setDraft({ ...draft, placement: e.target.value as Placement })}>
+                <select required className={inputCls} value={draft.placement} onChange={(e) => setDraft({ ...draft, placement: e.target.value as Placement })}>
+                  <option value="" disabled>—</option>
                   {PLACEMENTS.map((p) => <option key={p} value={p}>{t(`ad.${p}`)}</option>)}
                 </select>
               </Field>

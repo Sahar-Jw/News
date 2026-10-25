@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay, fmtNum } from '@/lib/utils';
 import { Button, Center, Spinner } from '@/components/ui/ui';
@@ -60,6 +60,7 @@ export function DatesDashboard() {
     finally { setBusy(false); }
   }, [toast]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => onSiteChange(() => { void load(); }), [load]); // a date added / changed elsewhere updates the numbers
 
   const max = Math.max(1, ...(data?.perDay.map((d) => d.count) ?? [1]));
 

@@ -40,7 +40,7 @@ export function CustomersAdmin() {
     if (!draft) return;
     const body = {
       name: draft.name.trim(), phone: draft.phone.trim(),
-      age: draft.age === '' ? null : Number(draft.age), gender: draft.gender || null, procedures: draft.procedures.trim() || null,
+      age: Number(draft.age), gender: draft.gender, procedures: draft.procedures.trim() || null,
     };
     setBusy(true);
     try {
@@ -88,10 +88,10 @@ export function CustomersAdmin() {
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('cu.name')}><input required maxLength={150} className={inputCls} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
               <Field label={t('cu.phone')}><input required type="tel" dir="ltr" maxLength={30} className={inputCls} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></Field>
-              <Field label={t('cu.age')}><input type="number" min={0} max={130} step={1} className={inputCls} value={draft.age} onChange={(e) => setDraft({ ...draft, age: e.target.value })} /></Field>
+              <Field label={t('cu.age')}><input required type="number" min={0} max={130} step={1} className={inputCls} value={draft.age} onChange={(e) => setDraft({ ...draft, age: e.target.value })} /></Field>
               <Field label={t('u.gender')}>
-                <select className={inputCls} value={draft.gender} onChange={(e) => setDraft({ ...draft, gender: e.target.value })}>
-                  <option value="">—</option><option value="male">{t('u.male')}</option><option value="female">{t('u.female')}</option>
+                <select required className={inputCls} value={draft.gender} onChange={(e) => setDraft({ ...draft, gender: e.target.value })}>
+                  <option value="" disabled>—</option><option value="male">{t('u.male')}</option><option value="female">{t('u.female')}</option>
                 </select>
               </Field>
             </div>

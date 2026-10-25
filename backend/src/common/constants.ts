@@ -243,7 +243,7 @@ export const PERM = {
   APPOINTMENTS_DASHBOARD: 'appointments.dashboard',
 } as const;
 
-export const AD_PLACEMENTS = ['golden', 'bronze', 'silver'] as const; // golden = top of the page, bronze = side, silver = bottom
+export const AD_PLACEMENTS = ['golden', 'bronze', 'silver'] as const; // golden = top of the page, bronze = middle of the page, silver = bottom
 export type AdPlacement = (typeof AD_PLACEMENTS)[number];
 
 /** Backwards-compatible name used by the create flow. */

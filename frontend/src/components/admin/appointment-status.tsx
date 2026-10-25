@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 export interface Status { code: string; ar: string; en: string; color?: string }
@@ -13,7 +13,11 @@ const full = (c?: string) => (c && /^#[0-9a-fA-F]{3}$/.test(c) ? `#${c[1]}${c[1]
 export function useStatuses() {
   const { lang } = useI18n();
   const [list, setList] = useState<Status[]>([]);
-  useEffect(() => { api<Status[]>('/admin/appointments/statuses').then(setList).catch(() => {}); }, []);
+  useEffect(() => {
+    const load = () => { api<Status[]>('/admin/appointments/statuses').then(setList).catch(() => {}); };
+    load();
+    return onSiteChange(load); // statuses edited in Settings show up without a refresh
+  }, []);
   const find = (code: string) => list.find((s) => s.code === code);
   return {
     list,

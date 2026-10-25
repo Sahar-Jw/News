@@ -88,7 +88,7 @@ export async function api<T = any>(path: string, opts: { method?: string; params
   }
   updateActiveApiRequests(1);
   try {
-    const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache });
+    const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache ?? 'no-store' }); // never serve a stale list after an add / edit
     const out = await parse(res);
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;
