@@ -81,6 +81,13 @@ export class UsersService {
     }
   }
 
+  /** Throws 403 (and records a security event) unless the actor holds `code`. */
+  private async requirePermission(actor: AuthUser, code: string, targetId: number, auditText: string, message: string) {
+    if (actor.permissions.has(code)) return;
+    await this.audit.log({ category: 'security', action: 'permission_denied', description: auditText, actorId: actor.id, entityType: 'users', entityId: targetId, details: { required: [code] } });
+    throw new ForbiddenException(message);
+  }
+
   private async assertCanManage(target: User, actor: AuthUser) {
     if (target.id === actor.id) throw new ForbiddenException('لا يمكنك تعديل حسابك من جدول المستخدمين، استخدم الملف الشخصي');
     const codes = await this.permissions.getRoleCodes(target.roleId);
@@ -118,6 +125,8 @@ export class UsersService {
       u.roleId = dto.roleId;
     }
     if (dto.isActive !== undefined && dto.isActive !== u.isActive) {
+      // activating / deactivating is its own permission; users.update alone must not be a way around it
+      await this.requirePermission(actor, PERM.USERS_ACTIVATE, id, 'محاولة تفعيل/تعطيل مستخدم دون صلاحية', 'ليست لديك صلاحية تفعيل أو تعطيل المستخدمين');
       if (!dto.isActive) await this.assertNotLastAssigner([u]);
       changes.isActive = dto.isActive;
       u.isActive = dto.isActive;
@@ -130,6 +139,7 @@ export class UsersService {
     if (dto.fullName !== undefined) u.fullName = dto.fullName;
     if (dto.phone !== undefined) u.phone = dto.phone;
     if (dto.password) {
+      await this.requirePermission(actor, PERM.USERS_PASSWORD_RESET, id, 'محاولة تغيير كلمة مرور مستخدم دون صلاحية', 'ليست لديك صلاحية تغيير كلمة مرور المستخدم');
       u.passwordHash = await bcrypt.hash(dto.password, 12);
       changes.passwordChanged = true;
     }

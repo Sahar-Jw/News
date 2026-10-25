@@ -36,7 +36,7 @@ export class OccasionsAdminController {
   }
 
   @Get('export')
-  @Permissions(PERM.OCCASIONS_READ)
+  @Permissions(PERM.OCCASIONS_EXPORT)
   async export(@Query() q: OccasionsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const picked = pickColumns(cols(ar), ex.columns);

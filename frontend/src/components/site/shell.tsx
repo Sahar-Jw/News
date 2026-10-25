@@ -349,8 +349,8 @@ export function Navbar() {
             </div>
           )}
 
-          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} title={t('site.language')} aria-label={t('site.language')} className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-4 text-sm font-semibold text-primary shadow-sm transition hover:border-primary hover:from-primary hover:to-primary hover:text-white xl:w-auto">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <Link href={otherLangHref(pathname)} onClick={() => localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar')} title={t('site.language')} aria-label={t('site.language')} className="flex h-8 w-fit items-center justify-center gap-1.5 rounded-full border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-2.5 text-xs font-semibold text-primary shadow-sm transition hover:border-primary hover:from-primary hover:to-primary hover:text-white">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 7h11M10 4v3c0 5-3 8-6 10M7 11c1 2 3 4 5 5M14 19l4-10 4 10M15.5 16h5" />
             </svg>
             <span>{lang === 'ar' ? 'EN' : 'AR'}</span>

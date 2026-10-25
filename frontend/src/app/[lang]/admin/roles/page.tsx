@@ -64,6 +64,23 @@ export default function RolesPage() {
   const canAssign = can('permissions.assign');
   const dirty = checked.size !== orig.size || [...checked].some((c) => !orig.has(c));
   const name = (x: { nameAr: string; nameEn: string }) => (lang === 'ar' ? x.nameAr : x.nameEn);
+  const moduleLabel = (m: string) => {
+    if (m.startsWith('news.')) return t(`section.${m.slice(5).toUpperCase()}`);
+    const l = t(`mod.${m}`);
+    return l === `mod.${m}` ? m : l;
+  };
+  // UI hint only: the server rejects granting permissions you don't hold; removing is always allowed
+  const grantable = (code: string) => canAssign && !!me?.permissions.includes(code);
+  const toggleModule = (m: string) => {
+    const codes = perms.filter((p) => p.module === m).map((p) => p.code);
+    const allOn = codes.every((c) => checked.has(c) || !grantable(c));
+    const n = new Set(checked);
+    for (const c of codes) {
+      if (allOn) n.delete(c);
+      else if (grantable(c)) n.add(c);
+    }
+    setChecked(n);
+  };
 
   return (
     <RequirePerm any={['roles.read', 'permissions.read', 'permissions.assign']}>
@@ -93,7 +110,14 @@ export default function RolesPage() {
               <div className="space-y-4">
                 {modules.map((m) => (
                   <div key={m}>
-                    <div className="mb-1 text-xs font-bold uppercase text-gray-500">{m.startsWith('news.') ? t(`section.${m.slice(5).toUpperCase()}`) : m}</div>
+                    <div className="mb-1 flex items-center justify-between border-b pb-1">
+                      <div className="text-xs font-bold uppercase text-gray-500">{moduleLabel(m)}</div>
+                      {canAssign && (() => {
+                        const codes = perms.filter((p) => p.module === m).map((p) => p.code);
+                        const allOn = codes.every((c) => checked.has(c) || !grantable(c));
+                        return <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleModule(m)}>{allOn ? t('r.clearAll') : t('r.selectAll')}</button>;
+                      })()}
+                    </div>
                     <div className="grid gap-1 sm:grid-cols-2">
                       {perms.filter((p) => p.module === m).map((p) => {
                         // UI hint only: the server rejects granting permissions you don't hold

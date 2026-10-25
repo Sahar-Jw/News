@@ -29,7 +29,7 @@ export class FilesController {
     const isPrivate = this.storage.isPrivate(rel);
     if (isPrivate) {
       if (!req.user) throw new UnauthorizedException('يلزم تسجيل الدخول');
-      const mayRead = req.user.permissions.has(PERM.USERS_READ);
+      const mayRead = req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
       const owner = await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
       // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive

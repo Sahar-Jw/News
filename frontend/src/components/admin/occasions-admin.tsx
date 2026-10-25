@@ -84,7 +84,7 @@ export function OccasionsAdmin() {
         columns={cols}
         dateFilter
         refreshKey={key}
-        exportable={can('occasions.read')}
+        exportable={can('occasions.export')}
         exportName="occasions"
         filters={[{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'previous', label: t('oc.previous') }] }]}
         bulkDelete={{ path: '/admin/occasions/bulk-delete', can: can('occasions.delete') }}

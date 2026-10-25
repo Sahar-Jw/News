@@ -52,6 +52,7 @@ function Form() {
   const mayChangeCategory = !isEdit || can('news.category.change');
   const mayCreateCategory = can('news.category.create');
   const mayPublish = can('news.publish');
+  const mayFeature = can('news.feature');
 
   useEffect(() => {
     api<{ main: string[]; sub: string[] }>('/admin/news/categories').then(setCats).catch(() => {});
@@ -113,7 +114,7 @@ function Form() {
     fd.set('visibility', f.visibility);
     fd.set('topics', f.topics);
     fd.set('body', f.body);
-    fd.set('isFeatured', String(f.isFeatured));
+    if (mayFeature) fd.set('isFeatured', String(f.isFeatured));
     if (mayPublish) {
       fd.set('status', f.status);
       fd.set('publishAt', f.publishAt ? new Date(f.publishAt).toISOString() : '');
@@ -217,7 +218,7 @@ function Form() {
         <Field label={t('f.publishAt')}>
           <input type="datetime-local" className={inputCls} value={f.publishAt} disabled={!mayPublish} required={f.status === 'scheduled'} onChange={(e) => set('publishAt', e.target.value)} />
         </Field>
-        <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} />{t('f.featured')}</label>
+        {mayFeature && <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} />{t('f.featured')}</label>}
       </div>
 
       <div className="rounded-xl border bg-white p-5">

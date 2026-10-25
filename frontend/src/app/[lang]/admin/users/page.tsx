@@ -37,7 +37,7 @@ export default function UsersPage() {
     if (!edit) return;
     try {
       if (!edit.id) return; // users are never created from here (public registration only)
-      await api(`/admin/users/${edit.id}`, { method: 'PATCH', body: { fullName: edit.fullName, email: edit.email, phone: edit.phone ?? '', ...(can('users.role.change') ? { roleId: edit.roleId } : {}), ...(edit.password ? { password: edit.password } : {}) } });
+      await api(`/admin/users/${edit.id}`, { method: 'PATCH', body: { fullName: edit.fullName, email: edit.email, phone: edit.phone ?? '', ...(can('users.role.change') ? { roleId: edit.roleId } : {}), ...(can('users.password.reset') && edit.password ? { password: edit.password } : {}) } });
       toast(t('app.saved')); setEdit(null); setKey((k) => k + 1);
     } catch (err: any) { toast(err.message, 'err'); }
   };
@@ -80,7 +80,7 @@ export default function UsersPage() {
             <Field label={t('u.role')}>
               <select disabled={!can('users.role.change')} className={inputCls} value={edit.roleId} onChange={(e) => setEdit({ ...edit, roleId: Number(e.target.value) })}>{roles.map((r) => <option key={r.id} value={r.id}>{roleName(r)}</option>)}</select>
             </Field>
-            <Field label={t('u.password')} hint="—"><PasswordInput dir="ltr" minLength={8} maxLength={72} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>
+            {can('users.password.reset') && <Field label={t('u.password')} hint="—"><PasswordInput dir="ltr" minLength={8} maxLength={72} className={inputCls} value={edit.password ?? ''} onChange={(e) => setEdit({ ...edit, password: e.target.value })} autoComplete="new-password" /></Field>}
             <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" onClick={() => setEdit(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
           </form>
         )}

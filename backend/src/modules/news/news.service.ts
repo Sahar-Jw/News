@@ -317,6 +317,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     this.assertMayCreate(main, perms);
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     const pub = this.resolvePublishing(dto, undefined, perms);
+    if (dto.isFeatured && !perms.has(PERM.NEWS_FEATURE)) throw new ForbiddenException('ليست لديك صلاحية تمييز الأخبار');
     const rating = this.resolveRating(main, dto.rating);
 
     if (pdfFile && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
@@ -367,6 +368,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     // moving a record into another kind of content (regular ↔ a section, or section → section) counts as creating it there
     if (kindOf(main) !== kindOf(n.mainCategory)) this.assertMayCreate(main, perms);
     const pub = this.resolvePublishing(dto, n, perms);
+    // re-sending the current value is harmless; only an actual change needs the permission
+    if (dto.isFeatured !== undefined && dto.isFeatured !== n.isFeatured && !perms.has(PERM.NEWS_FEATURE)) throw new ForbiddenException('ليست لديك صلاحية تمييز الأخبار');
     const rating = this.resolveRating(main, dto.rating, n);
 
     // image reconciliation: keep ∖ existing is rejected, existing ∖ keep is removed AFTER the save succeeds

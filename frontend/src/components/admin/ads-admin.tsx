@@ -44,6 +44,18 @@ export function AdsAdmin() {
     { key: 'placement', exportable: false, searchable: false, label: t('ad.placement'), render: (r) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${PLACEMENT_BADGE[r.placement]}`}>{t(`ad.${r.placement}`)}</span> },
     { key: 'startDate', exportable: false, type: 'date', label: t('ad.start'), render: (r) => fmtDay(lang, r.startDate) },
     { key: 'endDate', exportable: false, type: 'date', label: t('ad.end'), render: (r) => fmtDay(lang, r.endDate) },
+    {
+      key: 'isActive', exportable: false, searchable: false, label: t('ad.active'),
+      text: (r) => t(r.isActive ? 'ad.active' : 'ad.off'),
+      render: (r) => {
+        const pill = `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${r.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`;
+        const dot = <span className={`h-2 w-2 rounded-full ${r.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />;
+        const label = t(r.isActive ? 'ad.active' : 'ad.off');
+        return can('ads.update')
+          ? <button type="button" role="switch" aria-checked={r.isActive} title={t(r.isActive ? 'sub.deactivate' : 'sub.activate')} onClick={() => toggle(r)} className={`${pill} hover:brightness-95`}>{dot}{label}</button>
+          : <span className={pill}>{dot}{label}</span>;
+      },
+    },
     { key: 'state', exportable: false, searchable: false, label: t('ad.status'), render: (r) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${STATE_BADGE[r.state]}`}>{t(`ad.${r.state}`)}</span> },
   ];
 
@@ -68,6 +80,15 @@ export function AdsAdmin() {
       setKey((k) => k + 1);
     } catch (err: any) { toast(err.message, 'err'); }
     finally { setBusy(false); }
+  };
+
+  // one click on the pill in the table switches the ad on / off (needs ads.update; read-only users just see the state)
+  const toggle = async (r: Row) => {
+    try {
+      await api(`/admin/ads/${r.id}`, { method: 'PATCH', body: { isActive: !r.isActive } });
+      toast(t('app.saved'));
+      setKey((k) => k + 1);
+    } catch (err: any) { toast(err.message, 'err'); }
   };
 
   const remove = async () => {
