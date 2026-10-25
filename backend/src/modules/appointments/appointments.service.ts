@@ -10,7 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { Customer } from '../customers/customer.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
 import { Appointment } from './appointment.entity';
-import { AppointmentStatus, normalizeStatuses } from './appointment-statuses';
+import { AppointmentStatus, statusesFromSettings } from './appointment-statuses';
 import { AppointmentsQueryDto, CreateAppointmentDto, UpdateAppointmentDto } from './appointments.dto';
 
 const addDays = (ymd: string, n: number) => {
@@ -29,16 +29,10 @@ export class AppointmentsService {
     private readonly audit: AuditService,
   ) {}
 
-  /** The statuses typed in Settings (category "appointments", key "statuses"). */
+  /** The statuses set in Settings (category "appointments": status_<code>_ar / _en / _color). */
   async statuses(): Promise<AppointmentStatus[]> {
-    const row = await this.settings.findOne({ where: { category: 'appointments', key: 'statuses' } });
-    let raw: unknown = null;
-    try {
-      raw = row?.value ? JSON.parse(row.value) : null;
-    } catch {
-      raw = null;
-    }
-    return normalizeStatuses(raw);
+    const rows = await this.settings.find({ where: { category: 'appointments' }, order: { id: 'ASC' } });
+    return statusesFromSettings(rows);
   }
 
   private async assertStatus(code: string) {

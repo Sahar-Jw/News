@@ -24,3 +24,48 @@ export function normalizeStatuses(raw: unknown): AppointmentStatus[] {
   }
   return out.length ? out : DEFAULT_APPOINTMENT_STATUSES;
 }
+
+/**
+ * Each status is stored as three ordinary Settings rows (category "appointments"), edited like any other setting:
+ *   status_<code>_ar     Arabic name   (text)
+ *   status_<code>_en     English name  (text)
+ *   status_<code>_color  badge colour  (color)
+ * The order of the rows is the order of the statuses in the Dates form.
+ */
+export const STATUS_KEY = /^status_([A-Za-z0-9_-]{1,50})_(ar|en|color)$/;
+
+export const statusKey = (code: string, part: 'ar' | 'en' | 'color') => `status_${code}_${part}`;
+
+/** [key, value type, value] of the settings that describe the given statuses. */
+export function statusSettingRows(list: AppointmentStatus[]): [string, 'text' | 'color', string | null][] {
+  return list.flatMap((s) => [
+    [statusKey(s.code, 'ar'), 'text', s.ar],
+    [statusKey(s.code, 'en'), 'text', s.en],
+    [statusKey(s.code, 'color'), 'color', s.color ?? null],
+  ] as [string, 'text' | 'color', string | null][]);
+}
+
+/**
+ * Builds the status list from the rows of the "appointments" settings category (in row order).
+ * Falls back to the old single JSON row (key "statuses") until the migration has converted it.
+ */
+export function statusesFromSettings(rows: { key: string; value: string | null }[]): AppointmentStatus[] {
+  const byCode = new Map<string, { code: string; ar?: string; en?: string; color?: string }>();
+  for (const r of rows) {
+    const m = STATUS_KEY.exec(r.key);
+    if (!m) continue;
+    const entry = byCode.get(m[1]) ?? { code: m[1] };
+    (entry as any)[m[2]] = r.value ?? '';
+    byCode.set(m[1], entry);
+  }
+  if (byCode.size) return normalizeStatuses([...byCode.values()]);
+  const legacy = rows.find((r) => r.key === 'statuses');
+  if (legacy?.value) {
+    try {
+      return normalizeStatuses(JSON.parse(legacy.value));
+    } catch {
+      /* fall through to the defaults */
+    }
+  }
+  return DEFAULT_APPOINTMENT_STATUSES;
+}

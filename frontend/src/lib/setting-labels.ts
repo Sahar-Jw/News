@@ -46,8 +46,6 @@ const BASE_AR: Record<string, string> = {
   // labels
   read_more: 'نص «اقرأ المزيد»',
   breaking: 'نص «عاجل»',
-  // dates (appointments)
-  statuses: 'حالات المواعيد',
   // pages
   privacy: 'سياسة الخصوصية',
   terms: 'الشروط والأحكام',
@@ -73,8 +71,15 @@ const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عن�
 
 export const categoryLabel = (category: string, lang: string) => (lang === 'ar' ? CATEGORY_AR[category] ?? category : category);
 
+const STATUS_AR: Record<string, string> = { scheduled: 'مجدول', confirmed: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي' };
+const STATUS_PART_AR: Record<string, string> = { ar: 'الاسم بالعربية', en: 'الاسم بالإنجليزية', color: 'اللون' };
+
 export function keyLabel(category: string, key: string, lang: string): string {
   if (lang !== 'ar') return key;
+  if (category === 'appointments') {
+    const st = /^status_(.+)_(ar|en|color)$/.exec(key); // date statuses: status_<code>_ar / _en / _color
+    if (st) return `حالة الموعد «${STATUS_AR[st[1]] ?? st[1]}» — ${STATUS_PART_AR[st[2]]}`;
+  }
   const m = /^(.*)_(ar|en)$/.exec(key);
   const base = m ? m[1] : key;
   const suffix = m ? (m[2] === 'ar' ? ' (عربي)' : ' (إنجليزي)') : '';
