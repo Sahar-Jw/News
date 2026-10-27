@@ -1,11 +1,32 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { Readable } from 'stream';
 import { MAX_DOC_BYTES, MAX_IMAGE_BYTES, MAX_PDF_BYTES } from '../../common/constants';
 
 type Detected = { mime: string; ext: string };
+
+/** A file streamed out of the S3 bucket (see FileStorageService.openS3). */
+export interface S3File {
+  notModified: boolean; // true = the browser's cached copy is still current (no body)
+  body: Readable | null;
+  contentType: string;
+  contentLength?: number;
+  etag?: string;
+  lastModified?: Date;
+}
+
+const MIME_BY_EXT: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', ico: 'image/x-icon',
+  pdf: 'application/pdf', doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+const mimeFor = (name: string) => MIME_BY_EXT[path.extname(name).slice(1).toLowerCase()] || 'application/octet-stream';
+const SAFE_KEY = /^[A-Za-z0-9_\-./]+$/; // same rule resolveSafe() applies to every served path
+const SEED_MARKER = '.seeded';
 
 let sharp: any = null;
 try {
@@ -23,14 +44,155 @@ export const PRIVATE_PREFIX = 'private/';
 export class FileStorageService implements OnModuleInit {
   private readonly logger = new Logger(FileStorageService.name);
   readonly root: string;
+  /** 'local' = files on disk / a mounted volume (STORAGE_DIR). 's3' = S3-compatible bucket (S3_* variables). */
+  readonly driver: 'local' | 's3';
+  private readonly s3: S3Client | null = null;
+  private readonly bucket: string = '';
+  private readonly seedDir: string;
+  private readonly seedEnabled: boolean;
 
   constructor(config: ConfigService) {
     this.root = path.resolve(config.get<string>('STORAGE_DIR') || './storage');
+    this.seedDir = path.resolve(config.get<string>('SEED_DIR') || './storage-seed');
+    this.seedEnabled = config.get<string>('S3_SEED') !== 'false';
+
+    const bucket = (config.get<string>('S3_BUCKET') || '').trim();
+    const wanted = (config.get<string>('STORAGE_DRIVER') || (bucket ? 's3' : 'local')).trim().toLowerCase();
+    this.driver = wanted === 's3' ? 's3' : 'local';
+    if (this.driver === 's3') {
+      const accessKeyId = (config.get<string>('S3_ACCESS_KEY_ID') || config.get<string>('S3_ACCESS_KEY') || '').trim();
+      const secretAccessKey = (config.get<string>('S3_SECRET_ACCESS_KEY') || config.get<string>('S3_SECRET_KEY') || '').trim();
+      if (!bucket || !accessKeyId || !secretAccessKey) {
+        throw new Error('S3 storage needs S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY (S3_ENDPOINT / S3_REGION are optional)');
+      }
+      let endpoint = (config.get<string>('S3_ENDPOINT') || '').trim();
+      if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `https://${endpoint}`;
+      this.bucket = bucket;
+      this.s3 = new S3Client({
+        region: (config.get<string>('S3_REGION') || '').trim() || 'us-east-1',
+        endpoint: endpoint || undefined,
+        forcePathStyle: config.get<string>('S3_FORCE_PATH_STYLE') !== 'false', // most S3-compatible providers need path-style
+        credentials: { accessKeyId, secretAccessKey },
+        // newer SDKs add CRC32 checksums to every request, which many S3-compatible providers reject
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
+      });
+    }
   }
 
   async onModuleInit() {
-    for (const f of [...PUBLIC_FOLDERS, 'private/cv', 'tmp']) await fs.mkdir(path.join(this.root, f), { recursive: true });
+    if (this.driver === 's3') await this.initS3();
+    else for (const f of [...PUBLIC_FOLDERS, 'private/cv', 'tmp']) await fs.mkdir(path.join(this.root, f), { recursive: true });
     if (!sharp) this.logger.warn('"sharp" is not installed: images will be validated but NOT resized/compressed.');
+  }
+
+  // ---------- S3 ----------
+  private errText(e: any) {
+    return `${e?.name ?? 'Error'}${e?.$metadata?.httpStatusCode ? ` (HTTP ${e.$metadata.httpStatusCode})` : ''}: ${e?.message ?? e}`;
+  }
+
+  private async initS3() {
+    try {
+      await this.s3!.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      this.logger.log(`S3 storage ready: bucket "${this.bucket}"`);
+    } catch (e) {
+      // not fatal: the API still starts, and the seed below / every upload will show the precise error
+      this.logger.error(`S3 bucket "${this.bucket}" check failed - ${this.errText(e)}`);
+    }
+    if (this.seedEnabled) await this.seedBucket();
+  }
+
+  private async listSeedFiles(dir: string, prefix = ''): Promise<string[]> {
+    const out: string[] = [];
+    for (const d of await fs.readdir(dir, { withFileTypes: true })) {
+      if (d.name.startsWith('.')) continue; // .gitkeep etc.
+      const rel = prefix ? `${prefix}/${d.name}` : d.name;
+      if (d.isDirectory()) out.push(...(await this.listSeedFiles(path.join(dir, d.name), rel)));
+      else if (d.isFile()) out.push(rel);
+    }
+    return out;
+  }
+
+  /**
+   * Uploads the files shipped with the app (storage-seed/, the images committed in the repo) into the bucket ONCE,
+   * so a new bucket is not empty. A ".seeded" marker object is written only after every file arrived; after that
+   * nothing is copied again, so images deleted later from the admin panel never come back.
+   */
+  private async seedBucket() {
+    try {
+      await this.s3!.send(new HeadObjectCommand({ Bucket: this.bucket, Key: SEED_MARKER }));
+      this.logger.log('S3 bucket already seeded - skipping');
+      return;
+    } catch {
+      /* marker missing (or not readable) -> seed */
+    }
+    let files: string[];
+    try {
+      files = await this.listSeedFiles(this.seedDir);
+    } catch {
+      this.logger.log(`S3 seed folder not found (${this.seedDir}) - nothing to upload`);
+      return;
+    }
+    const keys = files.filter((k) => SAFE_KEY.test(k) && !k.split('/').some((seg) => seg === '..' || seg === ''));
+    const skipped = files.length - keys.length;
+    this.logger.log(`S3 seeding: uploading ${keys.length} files from ${this.seedDir}${skipped ? ` (${skipped} skipped: unsupported file names)` : ''}`);
+    let done = 0;
+    let failed = 0;
+    const BATCH = 8;
+    for (let i = 0; i < keys.length; i += BATCH) {
+      await Promise.all(
+        keys.slice(i, i + BATCH).map(async (key) => {
+          try {
+            await this.s3!.send(
+              new PutObjectCommand({
+                Bucket: this.bucket,
+                Key: key,
+                Body: await fs.readFile(path.join(this.seedDir, key)),
+                ContentType: mimeFor(key),
+                CacheControl: key.startsWith(PRIVATE_PREFIX) ? 'private, no-store' : 'public, max-age=604800',
+              }),
+            );
+            done++;
+          } catch (e) {
+            failed++;
+            if (failed <= 5) this.logger.error(`S3 seed failed for "${key}" - ${this.errText(e)}`);
+          }
+        }),
+      );
+    }
+    if (failed === 0) {
+      try {
+        await this.s3!.send(new PutObjectCommand({ Bucket: this.bucket, Key: SEED_MARKER, Body: new Date().toISOString(), ContentType: 'text/plain' }));
+      } catch (e) {
+        this.logger.error(`S3 seed marker could not be written - ${this.errText(e)}`);
+        return;
+      }
+      this.logger.log(`S3 seeding complete: ${done} files uploaded`);
+    } else {
+      this.logger.error(`S3 seeding INCOMPLETE: ${done} uploaded, ${failed} failed (will retry on next start)`);
+    }
+  }
+
+  /** Streams one stored file from the bucket (null = not found). Honors If-None-Match so browsers can revalidate cheaply. */
+  async openS3(rel: string, ifNoneMatch?: string): Promise<S3File | null> {
+    if (this.driver !== 's3' || !this.resolveSafe(rel) || rel.split('/').some((seg) => seg.startsWith('.'))) return null;
+    try {
+      const out = await this.s3!.send(new GetObjectCommand({ Bucket: this.bucket, Key: rel, IfNoneMatch: ifNoneMatch || undefined }));
+      return {
+        notModified: false,
+        body: out.Body as Readable,
+        contentType: mimeFor(rel) !== 'application/octet-stream' ? mimeFor(rel) : out.ContentType || 'application/octet-stream',
+        contentLength: out.ContentLength,
+        etag: out.ETag,
+        lastModified: out.LastModified,
+      };
+    } catch (e: any) {
+      const status = e?.$metadata?.httpStatusCode;
+      if (status === 304) return { notModified: true, body: null, contentType: '', etag: ifNoneMatch };
+      if (status === 404 || e?.name === 'NoSuchKey' || e?.name === 'NotFound') return null;
+      this.logger.error(`S3 read failed for "${rel}" - ${this.errText(e)}`);
+      return null;
+    }
   }
 
   // ---------- type detection (by content, never by extension) ----------
@@ -88,6 +250,18 @@ export class FileStorageService implements OnModuleInit {
 
   private async writeNew(folder: string, ext: string, buffer: Buffer): Promise<string> {
     const rel = `${folder}/${randomUUID()}.${ext}`; // random names: no collisions, no guessing
+    if (this.driver === 's3') {
+      await this.s3!.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: rel,
+          Body: buffer,
+          ContentType: mimeFor(rel),
+          CacheControl: rel.startsWith(PRIVATE_PREFIX) ? 'private, no-store' : 'public, max-age=604800',
+        }),
+      );
+      return rel;
+    }
     const abs = path.join(this.root, rel);
     await fs.mkdir(path.dirname(abs), { recursive: true });
     await fs.writeFile(abs, buffer, { flag: 'wx' });
@@ -146,6 +320,10 @@ export class FileStorageService implements OnModuleInit {
     const abs = this.resolveSafe(rel);
     if (!abs) return false;
     try {
+      if (this.driver === 's3') {
+        await this.s3!.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: rel })); // deleting a missing key is not an error
+        return true;
+      }
       await fs.unlink(abs);
       return true;
     } catch (e: any) {

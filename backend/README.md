@@ -25,6 +25,26 @@ The seed is idempotent and additive: it creates permissions, roles, default sett
 - Keep `STORAGE_DIR` outside the public web root. Files are served only through `GET /api/files/*`.
 - Passwords use `bcryptjs` (pure JS, no native build).
 
+## File storage: local disk or S3
+
+Uploaded files are stored either on disk (`STORAGE_DIR`, e.g. a mounted volume) or in an S3-compatible bucket.
+The driver is `s3` as soon as `S3_BUCKET` is set (or `STORAGE_DRIVER=s3`), otherwise `local`.
+URLs never change: files are always served through `GET /api/files/*`, so private files (CVs) keep their permission check.
+
+```dotenv
+STORAGE_DRIVER=s3                 # optional: s3 | local (default: s3 when S3_BUCKET is set)
+S3_ENDPOINT=https://<provider endpoint>
+S3_BUCKET=<generated bucket id>   # the real bucket name/ID, not the friendly label
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+S3_REGION=us-east-1               # optional
+# S3_FORCE_PATH_STYLE=true        # default true (needed by most S3-compatible providers)
+# S3_SEED=false                   # disable the one-time upload of storage-seed/ (the images committed in the repo)
+```
+
+On the first start with an empty bucket, the images shipped in `storage-seed/` (Docker image) are uploaded once and a
+`.seeded` marker object is written; later starts skip it, so images deleted from the admin panel never come back.
+
 ## Conventions
 - Prefix `/api`. Errors: `{statusCode, error, message, timestamp}`. Lists: `{data, meta:{page,limit,total,totalPages,from,to}}`.
 - Auth: `Authorization: Bearer <jwt>` or the `access_token` HttpOnly cookie set by `/auth/login`.

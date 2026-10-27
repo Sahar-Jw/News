@@ -1,6 +1,7 @@
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Req, Res } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Response } from 'express';
+import { Readable } from 'stream';
 import { Repository } from 'typeorm';
 import { PERM } from '../../common/constants';
 import { Public } from '../../common/decorators';
@@ -34,6 +35,29 @@ export class FilesController {
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
       // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive
       await this.audit.log({ category: 'files', action: 'private.download', description: 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
+    }
+
+    if (this.storage.driver === 's3') {
+      // look the file up BEFORE setting cache headers, so a 404 is never cached for a week
+      const f = await this.storage.openS3(rel, req.headers['if-none-match']);
+      if (!f) throw new NotFoundException('الملف غير موجود');
+      const cache = isPrivate ? 'private, no-store' : 'public, max-age=604800';
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', cache);
+      if (f.etag) res.setHeader('ETag', f.etag);
+      if (f.notModified) {
+        res.status(304).end();
+        return;
+      }
+      res.setHeader('Content-Type', f.contentType);
+      if (f.contentLength != null) res.setHeader('Content-Length', String(f.contentLength));
+      if (f.lastModified) res.setHeader('Last-Modified', f.lastModified.toUTCString());
+      if (isPrivate) res.setHeader('Content-Disposition', 'attachment');
+      const body = f.body as Readable;
+      res.on('close', () => body.destroy()); // client went away: stop reading from the bucket
+      body.on('error', () => res.destroy());
+      body.pipe(res);
+      return;
     }
 
     res.setHeader('X-Content-Type-Options', 'nosniff');
