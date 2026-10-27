@@ -15,4 +15,6 @@ RUN mkdir -p storage
 # keep a copy of the committed images; copied into the mounted volume on start (never overwrites)
 COPY --from=build /app/storage ./storage-seed
 EXPOSE 3001
-CMD ["sh", "-c", "S=\"${STORAGE_DIR:-./storage}\"; mkdir -p \"$S\" && cp -rn storage-seed/. \"$S\"/ ; exec node dist/main.js"]
+COPY docker-entrypoint.sh ./
+# ENTRYPOINT (not CMD) so a start command set in the hosting panel cannot skip the copy step
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
