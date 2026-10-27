@@ -10,8 +10,8 @@ coverage/
 !.env.example
 
 # Uploaded and user-provided files
-storage/**
-!storage/.gitkeep
+# storage/**
+# !storage/.gitkeep
 
 # Logs and local diagnostics
 logs/
