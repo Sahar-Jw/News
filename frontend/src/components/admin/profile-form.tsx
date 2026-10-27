@@ -102,9 +102,9 @@ export function ProfileForm() {
       <h1 className="text-2xl font-bold">{t('site.profile')}</h1>
       <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-white p-5">
         {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-20 w-20 rounded-full object-cover" /> : <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-3xl text-white">{me.fullName.slice(0, 1)}</div>}
-        <div className="space-y-2">
-          <div className="font-bold">{me.fullName} <span className="text-sm font-normal text-gray-500">({lang === 'ar' ? me.role?.nameAr : me.role?.nameEn})</span></div>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="min-w-0 max-w-full space-y-2">
+          <div className="break-words font-bold">{me.fullName} <span className="text-sm font-normal text-gray-500">({lang === 'ar' ? me.role?.nameAr : me.role?.nameEn})</span></div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <FilePicker label={t('u.avatar')} hint="JPG, PNG or WEBP" accept="image/*" onChange={(files) => up('/profile/avatar', files?.[0])} />
             <FilePicker label={`${t('u.cv')}${me.hasCv ? ' ✓' : ''}`} hint="PDF, DOC or DOCX" accept=".pdf,.doc,.docx" onChange={(files) => up('/profile/cv', files?.[0])} />
           </div>
