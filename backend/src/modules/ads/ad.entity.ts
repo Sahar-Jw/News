@@ -6,7 +6,7 @@ import { User } from '../users/user.entity';
 @Entity('ads')
 @Index('idx_ads_show', ['placement', 'isActive', 'startDate', 'endDate'])
 export class Ad extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ name: 'owner_company', length: 255 })
@@ -29,10 +29,10 @@ export class Ad extends TimestampedEntity {
   endDate: string;
 
   /** one picture = a still banner, several = a carousel that moves on its own */
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
 
-  @Column({ name: 'created_by', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

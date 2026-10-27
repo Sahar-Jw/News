@@ -5,7 +5,7 @@ import { Role } from '../access/role.entity';
 
 @Entity('users')
 export class User extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ name: 'full_name', length: 150 })
@@ -18,10 +18,10 @@ export class User extends TimestampedEntity {
   passwordHash: string;
 
   /** Set when the password is reset by e-mail: sessions issued before this moment stop working. */
-  @Column({ name: 'password_changed_at', type: 'datetime', nullable: true, select: false })
+  @Column({ name: 'password_changed_at', type: 'timestamptz', nullable: true, select: false })
   passwordChangedAt: Date | null;
 
-  @Column({ name: 'role_id', type: 'bigint', unsigned: true })
+  @Column({ name: 'role_id', type: 'bigint' })
   roleId: number;
 
   @ManyToOne(() => Role, { nullable: false, onDelete: 'RESTRICT' })
@@ -37,7 +37,7 @@ export class User extends TimestampedEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   country: string | null;
 
-  @Column({ name: 'city_id', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'city_id', type: 'bigint', nullable: true })
   cityId: number | null;
 
   @ManyToOne(() => City, { nullable: true, onDelete: 'SET NULL' })

@@ -73,11 +73,11 @@ export class AuditService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(
         new Brackets((b) =>
-          b.where('a.description LIKE :like', { like }).orWhere('a.action LIKE :like', { like }).orWhere('u.fullName LIKE :like', { like }),
+          b.where('a.description ILIKE :like', { like }).orWhere('a.action ILIKE :like', { like }).orWhere('u.fullName ILIKE :like', { like }),
         ),
       );
     }
-    applyColumnFilters(qb, q.cf, { createdAt: 'CAST(a.createdAt AS CHAR)', category: 'a.category', action: 'a.action', description: 'a.description', actor: ['u.fullName', 'u.email'] });
+    applyColumnFilters(qb, q.cf, { createdAt: 'CAST(a.createdAt AS TEXT)', category: 'a.category', action: 'a.action', description: 'a.description', actor: ['u.fullName', 'u.email'] });
     qb.orderBy('a.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('a.id', 'DESC');
     return qb;
   }

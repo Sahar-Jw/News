@@ -27,7 +27,7 @@ export function applyColumnFilters<T extends ObjectLiteral>(qb: SelectQueryBuild
     const p = `cf${i++}`;
     const like = `%${escapeLike(v)}%`;
     const list = Array.isArray(exprs) ? exprs : [exprs];
-    qb.andWhere(new Brackets((b) => list.forEach((e, n) => (n === 0 ? b.where(`${e} LIKE :${p}`, { [p]: like }) : b.orWhere(`${e} LIKE :${p}`, { [p]: like })))));
+    qb.andWhere(new Brackets((b) => list.forEach((e, n) => (n === 0 ? b.where(`${e} ILIKE :${p}`, { [p]: like }) : b.orWhere(`${e} ILIKE :${p}`, { [p]: like })))));
   }
   return qb;
 }

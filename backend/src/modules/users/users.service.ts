@@ -43,9 +43,9 @@ export class UsersService {
     if (q.to) qb.andWhere('u.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('u.fullName LIKE :like', { like }).orWhere('u.email LIKE :like', { like }).orWhere('u.phone LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('u.fullName ILIKE :like', { like }).orWhere('u.email ILIKE :like', { like }).orWhere('u.phone ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { fullName: 'u.fullName', email: 'u.email', phone: 'u.phone', role: ['role.nameAr', 'role.nameEn', 'role.code'], createdAt: 'CAST(u.createdAt AS CHAR)' });
+    applyColumnFilters(qb, q.cf, { fullName: 'u.fullName', email: 'u.email', phone: 'u.phone', role: ['role.nameAr', 'role.nameEn', 'role.code'], createdAt: 'CAST(u.createdAt AS TEXT)' });
     qb.orderBy('u.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     return qb;
   }

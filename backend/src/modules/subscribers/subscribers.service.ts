@@ -97,9 +97,9 @@ export class SubscribersService {
     if (q.to) qb.andWhere('s.createdAt <= :to', { to: new Date(q.to.length === 10 ? `${q.to}T23:59:59.999Z` : q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('s.email LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('s.email ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { email: 's.email', rememberToken: 's.rememberToken', verifiedAt: 'CAST(s.verifiedAt AS CHAR)', createdAt: 'CAST(s.createdAt AS CHAR)' });
+    applyColumnFilters(qb, q.cf, { email: 's.email', rememberToken: 's.rememberToken', verifiedAt: 'CAST(s.verifiedAt AS TEXT)', createdAt: 'CAST(s.createdAt AS TEXT)' });
     qb.orderBy('s.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('s.id', 'DESC');
     return qb;
   }

@@ -2,10 +2,10 @@ import { BeforeInsert, BeforeUpdate, Column } from 'typeorm';
 
 /** Timestamps are set in the app (UTC) so they never depend on the DB server timezone. */
 export abstract class TimestampedEntity {
-  @Column({ name: 'created_at', type: 'datetime' })
+  @Column({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @Column({ name: 'updated_at', type: 'datetime' })
+  @Column({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
   @BeforeInsert()

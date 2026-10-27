@@ -6,7 +6,7 @@ export type SettingValueType = 'text' | 'number' | 'boolean' | 'url' | 'color' |
 @Entity('site_settings')
 @Index('uq_settings_category_key', ['category', 'key'], { unique: true })
 export class SiteSetting {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 50 })
@@ -21,7 +21,7 @@ export class SiteSetting {
   @Column({ name: 'value_type', type: 'enum', enum: ['text', 'number', 'boolean', 'url', 'color', 'file', 'json'], default: 'text' })
   valueType: SettingValueType;
 
-  @Column({ name: 'updated_at', type: 'datetime' })
+  @Column({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
   @BeforeInsert()

@@ -10,7 +10,7 @@ import { User } from '../users/user.entity';
 @Index('idx_news_subcategory', ['language', 'status', 'visibility', 'subcategory'])
 @Index('idx_news_featured', ['isFeatured', 'publishAt'])
 export class News extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 255 })
@@ -25,26 +25,26 @@ export class News extends TimestampedEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   subcategory: string | null;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   topics: string[] | null;
 
-  @Column({ type: 'mediumtext', nullable: true })
+  @Column({ type: 'text', nullable: true })
   body: string | null;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
 
   /** One optional PDF per record (relative storage path), shown on its own on the detail page. */
   @Column({ type: 'varchar', length: 255, nullable: true })
   pdf: string | null;
 
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  @Column({ type: 'smallint', nullable: true })
   rating: number | null;
 
   @Column({ name: 'is_featured', type: 'boolean', default: false })
   isFeatured: boolean;
 
-  @Column({ name: 'publish_at', type: 'datetime', nullable: true })
+  @Column({ name: 'publish_at', type: 'timestamptz', nullable: true })
   publishAt: Date | null;
 
   @Column({ type: 'enum', enum: NewsStatus, default: NewsStatus.PUBLISHED })
@@ -56,10 +56,10 @@ export class News extends TimestampedEntity {
   @Column({ type: 'enum', enum: Visibility, default: Visibility.PUBLIC })
   visibility: Visibility;
 
-  @Column({ name: 'view_count', type: 'int', unsigned: true, default: 0 })
+  @Column({ name: 'view_count', type: 'int', default: 0 })
   viewCount: number;
 
-  @Column({ name: 'created_by', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

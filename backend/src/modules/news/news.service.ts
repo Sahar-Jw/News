@@ -117,18 +117,18 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     }
     if (q.mainCategory) qb.andWhere('n.mainCategory = :mc', { mc: normalizeLabel(q.mainCategory) });
     if (q.subcategory) qb.andWhere('n.subcategory = :sc', { sc: normalizeLabel(q.subcategory) });
-    if (q.topic) qb.andWhere('CAST(n.topics AS CHAR) LIKE :topic', { topic: `%${escapeLike(JSON.stringify(normalizeLabel(q.topic)))}%` });
+    if (q.topic) qb.andWhere('CAST(n.topics AS TEXT) ILIKE :topic', { topic: `%${escapeLike(JSON.stringify(normalizeLabel(q.topic)))}%` });
     if (q.from) qb.andWhere('COALESCE(n.publishAt, n.createdAt) >= :from', { from: dayStart(q.from) });
     if (q.to) qb.andWhere('COALESCE(n.publishAt, n.createdAt) <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(
         new Brackets((b) =>
-          b.where('n.title LIKE :like', { like }).orWhere('n.subject LIKE :like', { like }).orWhere('n.mainCategory LIKE :like', { like }).orWhere('n.subcategory LIKE :like', { like }),
+          b.where('n.title ILIKE :like', { like }).orWhere('n.subject ILIKE :like', { like }).orWhere('n.mainCategory ILIKE :like', { like }).orWhere('n.subcategory ILIKE :like', { like }),
         ),
       );
     }
-    applyColumnFilters(qb, q.cf, { title: 'n.title', subject: 'n.subject', mainCategory: 'n.mainCategory', subcategory: 'n.subcategory', topics: 'CAST(n.topics AS CHAR)', publishAt: 'CAST(n.publishAt AS CHAR)', viewCount: 'CAST(n.viewCount AS CHAR)' });
+    applyColumnFilters(qb, q.cf, { title: 'n.title', subject: 'n.subject', mainCategory: 'n.mainCategory', subcategory: 'n.subcategory', topics: 'CAST(n.topics AS TEXT)', publishAt: 'CAST(n.publishAt AS TEXT)', viewCount: 'CAST(n.viewCount AS TEXT)' });
     qb.orderBy('n.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     return qb;
   }
@@ -425,7 +425,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     for (const p of paths) {
       const refs = await this.repo
         .createQueryBuilder('n')
-        .where('CAST(n.images AS CHAR) LIKE :p', { p: `%${escapeLike(JSON.stringify(p))}%` })
+        .where('CAST(n.images AS TEXT) ILIKE :p', { p: `%${escapeLike(JSON.stringify(p))}%` })
         .getCount();
       if (refs === 0) await this.storage.remove(p);
     }

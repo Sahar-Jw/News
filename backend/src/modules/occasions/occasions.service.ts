@@ -52,7 +52,7 @@ export class OccasionsService {
     const qb = this.repo.createQueryBuilder('o');
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('o.titleAr LIKE :like', { like }).orWhere('o.titleEn LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('o.titleAr ILIKE :like', { like }).orWhere('o.titleEn ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { titleAr: 'o.titleAr', titleEn: 'o.titleEn', eventDate: 'o.eventDate' });
     if (q.from) qb.andWhere('o.eventDate >= :from', { from: q.from.slice(0, 10) });

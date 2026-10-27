@@ -30,7 +30,7 @@ export class GalleryService {
     const qb = this.repo.createQueryBuilder('g');
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('g.titleAr LIKE :like', { like }).orWhere('g.titleEn LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('g.titleAr ILIKE :like', { like }).orWhere('g.titleEn ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { titleAr: 'g.titleAr', titleEn: 'g.titleEn' });
     qb.orderBy('g.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');

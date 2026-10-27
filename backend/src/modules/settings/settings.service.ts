@@ -109,7 +109,7 @@ export class SettingsService {
     if (q.category) qb.andWhere('s.category = :c', { c: q.category });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('s.key LIKE :like', { like }).orWhere('s.value LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('s.key ILIKE :like', { like }).orWhere('s.value ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { category: 's.category', key: 's.key', valueType: 's.valueType', value: 's.value' });
     qb.orderBy('s.category', 'ASC').addOrderBy('s.id', 'ASC');

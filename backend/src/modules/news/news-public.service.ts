@@ -66,7 +66,7 @@ export class NewsPublicService {
         const params: Record<string, string> = {};
         const conds = list.map((t, i) => {
           params[`tp${i}`] = `%${escapeLike(JSON.stringify(t))}%`;
-          return `CAST(n.topics AS CHAR) LIKE :tp${i}`;
+          return `CAST(n.topics AS TEXT) ILIKE :tp${i}`;
         });
         qb.andWhere(`(${conds.join(' OR ')})`, params);
       }
@@ -79,7 +79,7 @@ export class NewsPublicService {
   private applyTextSearch(qb: ReturnType<NewsPublicService['base']>, raw: string) {
     const like = `%${escapeLike(normalizeLabel(raw))}%`;
     // title + category + subcategory only – never the rich body (SRS FR-SEARCH-001/003)
-    qb.andWhere('(n.title LIKE :like OR n.mainCategory LIKE :like OR n.subcategory LIKE :like)', { like });
+    qb.andWhere('(n.title ILIKE :like OR n.mainCategory ILIKE :like OR n.subcategory ILIKE :like)', { like });
   }
 
   async search(q: PublicNewsQueryDto, v: Viewer) {
@@ -155,7 +155,7 @@ export class NewsPublicService {
     const [settings, specials, featured, regular] = await Promise.all([
       this.settings.publicMap(),
       this.order(this.base(L, v)).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
-      this.order(onlyRegular(this.base(L, v), 'n')).andWhere('n.isFeatured = 1').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
+      this.order(onlyRegular(this.base(L, v), 'n')).andWhere('n.isFeatured = true').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
       this.order(onlyRegular(this.base(L, v), 'n')).take(4).getMany(),
     ]);
     const by = (c: SpecialCategory) => specials.filter((s) => s.mainCategory === c);

@@ -26,7 +26,7 @@ export class CitiesService {
     const qb = this.repo.createQueryBuilder('c');
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.nameAr LIKE :like', { like }).orWhere('c.nameEn LIKE :like', { like }).orWhere('c.code LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('c.nameAr ILIKE :like', { like }).orWhere('c.nameEn ILIKE :like', { like }).orWhere('c.code ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { code: 'c.code', nameAr: 'c.nameAr', nameEn: 'c.nameEn' });
     qb.orderBy('c.id', q.sortDir?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC');

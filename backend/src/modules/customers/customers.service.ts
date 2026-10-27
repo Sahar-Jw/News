@@ -23,9 +23,9 @@ export class CustomersService {
     if (q.gender) qb.andWhere('c.gender = :g', { g: q.gender });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.name LIKE :like', { like }).orWhere('c.phone LIKE :like', { like }).orWhere('c.procedures LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('c.name ILIKE :like', { like }).orWhere('c.phone ILIKE :like', { like }).orWhere('c.procedures ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { id: 'CAST(c.id AS CHAR)', name: 'c.name', phone: 'c.phone', age: 'CAST(c.age AS CHAR)', procedures: 'c.procedures' });
+    applyColumnFilters(qb, q.cf, { id: 'CAST(c.id AS TEXT)', name: 'c.name', phone: 'c.phone', age: 'CAST(c.age AS TEXT)', procedures: 'c.procedures' });
     qb.orderBy('c.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     return qb;
   }

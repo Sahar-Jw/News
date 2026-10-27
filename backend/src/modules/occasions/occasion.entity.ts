@@ -5,7 +5,7 @@ import { User } from '../users/user.entity';
 @Entity('occasions')
 @Index('idx_occasions_date', ['eventDate'])
 export class Occasion extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ name: 'title_ar', length: 255 })
@@ -19,10 +19,10 @@ export class Occasion extends TimestampedEntity {
   eventDate: string;
 
   /** relative storage paths */
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
 
-  @Column({ name: 'created_by', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

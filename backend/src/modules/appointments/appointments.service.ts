@@ -62,11 +62,11 @@ export class AppointmentsService {
     if (q.to) qb.andWhere('a.appointmentDate <= :to', { to: q.to.slice(0, 10) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.name LIKE :like', { like }).orWhere('c.phone LIKE :like', { like }).orWhere('a.procedures LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('c.name ILIKE :like', { like }).orWhere('c.phone ILIKE :like', { like }).orWhere('a.procedures ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, {
-      id: 'CAST(a.id AS CHAR)', customerName: 'c.name', customerPhone: 'c.phone', appointmentDate: 'CAST(a.appointmentDate AS CHAR)',
-      appointmentTime: 'CAST(a.appointmentTime AS CHAR)', procedures: 'a.procedures',
+      id: 'CAST(a.id AS TEXT)', customerName: 'c.name', customerPhone: 'c.phone', appointmentDate: 'CAST(a.appointmentDate AS TEXT)',
+      appointmentTime: 'CAST(a.appointmentTime AS TEXT)', procedures: 'a.procedures',
     });
     const dir = q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
     qb.orderBy('a.appointmentDate', dir).addOrderBy('a.appointmentTime', dir).addOrderBy('a.id', dir);

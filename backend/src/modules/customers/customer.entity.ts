@@ -4,7 +4,7 @@ import { User } from '../users/user.entity';
 
 @Entity('customers')
 export class Customer extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 150 })
@@ -13,7 +13,7 @@ export class Customer extends TimestampedEntity {
   @Column({ length: 30 })
   phone: string;
 
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  @Column({ type: 'smallint', nullable: true })
   age: number | null;
 
   @Column({ type: 'enum', enum: ['male', 'female'], nullable: true })
@@ -23,7 +23,7 @@ export class Customer extends TimestampedEntity {
   @Column({ type: 'text', nullable: true })
   procedures: string | null;
 
-  @Column({ name: 'created_by', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

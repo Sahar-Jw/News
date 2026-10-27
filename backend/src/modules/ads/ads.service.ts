@@ -47,7 +47,7 @@ export class AdsService {
     if (q.to) qb.andWhere('a.startDate <= :to', { to: q.to.slice(0, 10) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('a.ownerCompany LIKE :like', { like }).orWhere('a.linkUrl LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('a.ownerCompany ILIKE :like', { like }).orWhere('a.linkUrl ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { ownerCompany: 'a.ownerCompany', linkUrl: 'a.linkUrl', startDate: 'a.startDate', endDate: 'a.endDate' });
     qb.orderBy('a.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');

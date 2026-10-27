@@ -27,10 +27,10 @@ export class RolesService {
 
   async list() {
     const rows = await this.ds.query(
-      `SELECT r.id, r.code, r.name_ar AS nameAr, r.name_en AS nameEn, r.numeric_value AS numericValue,
-              r.string_value AS stringValue, r.type,
-              (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS usersCount,
-              (SELECT COUNT(*) FROM role_permissions x WHERE x.role_id = r.id) AS permissionsCount
+      `SELECT r.id, r.code, r.name_ar AS "nameAr", r.name_en AS "nameEn", r.numeric_value AS "numericValue",
+              r.string_value AS "stringValue", r.type,
+              (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS "usersCount",
+              (SELECT COUNT(*) FROM role_permissions x WHERE x.role_id = r.id) AS "permissionsCount"
          FROM roles r ORDER BY r.id`,
     );
     return rows.map((r: any) => ({ ...r, id: Number(r.id), usersCount: Number(r.usersCount), permissionsCount: Number(r.permissionsCount) }));
@@ -97,10 +97,10 @@ export class RolesService {
     const rows = await this.ds.query(
       `SELECT COUNT(*) AS c FROM users u
          JOIN roles r ON r.id = u.role_id
-        WHERE u.is_active = 1 ${excludeRoleId ? 'AND u.role_id <> ?' : ''}
-          AND (r.code = ? OR EXISTS (
+        WHERE u.is_active = true ${excludeRoleId ? 'AND u.role_id <> $1' : ''}
+          AND (r.code = $${excludeRoleId ? 2 : 1} OR EXISTS (
                 SELECT 1 FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
-                 WHERE rp.role_id = u.role_id AND p.code = ?))`,
+                 WHERE rp.role_id = u.role_id AND p.code = $${excludeRoleId ? 3 : 2}))`,
       excludeRoleId ? [excludeRoleId, TECHNICAL_ADMIN_ROLE, PERM.PERMISSIONS_ASSIGN] : [TECHNICAL_ADMIN_ROLE, PERM.PERMISSIONS_ASSIGN],
     );
     return Number(rows[0].c);

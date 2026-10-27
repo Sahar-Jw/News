@@ -6,18 +6,18 @@ import { TimestampedEntity } from '../../common/entities/base.entity';
 @Index('uq_password_resets_token', ['tokenHash'], { unique: true })
 @Index('idx_password_resets_user', ['userId'])
 export class PasswordReset extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ name: 'user_id', type: 'bigint', unsigned: true })
+  @Column({ name: 'user_id', type: 'bigint' })
   userId: number;
 
   @Column({ name: 'token_hash', length: 64 })
   tokenHash: string;
 
-  @Column({ name: 'expires_at', type: 'datetime' })
+  @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt: Date;
 
-  @Column({ name: 'used_at', type: 'datetime', nullable: true })
+  @Column({ name: 'used_at', type: 'timestamptz', nullable: true })
   usedAt: Date | null;
 }

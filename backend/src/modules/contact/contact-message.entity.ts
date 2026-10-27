@@ -3,7 +3,7 @@ import { BeforeInsert, Column, Entity, Index, PrimaryGeneratedColumn } from 'typ
 @Entity('contact_messages')
 @Index('idx_contact_read_created', ['isRead', 'createdAt'])
 export class ContactMessage {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 150 })
@@ -21,10 +21,10 @@ export class ContactMessage {
   @Column({ name: 'is_read', type: 'boolean', default: false })
   isRead: boolean;
 
-  @Column({ name: 'read_at', type: 'datetime', nullable: true })
+  @Column({ name: 'read_at', type: 'timestamptz', nullable: true })
   readAt: Date | null;
 
-  @Column({ name: 'created_at', type: 'datetime' })
+  @Column({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @BeforeInsert()

@@ -14,7 +14,7 @@ export class PermissionsService {
   async getRoleCodes(roleId: number): Promise<Set<string>> {
     const hit = this.cache.get(roleId);
     if (hit && Date.now() - hit.at < TTL_MS) return hit.codes;
-    const [role]: { code: string }[] = await this.ds.query(`SELECT code FROM roles WHERE id = ?`, [roleId]);
+    const [role]: { code: string }[] = await this.ds.query(`SELECT code FROM roles WHERE id = $1`, [roleId]);
     let codes: Set<string>;
     if (role?.code === TECHNICAL_ADMIN_ROLE) {
       // technical_admin always holds every permission: the ones in the DB plus every code defined in the app,
@@ -23,7 +23,7 @@ export class PermissionsService {
       codes = new Set([...rows.map((r) => r.code), ...PERMISSIONS.map((p) => p.code)]);
     } else {
       const rows: { code: string }[] = await this.ds.query(
-        `SELECT p.code FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = ?`,
+        `SELECT p.code FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id WHERE rp.role_id = $1`,
         [roleId],
       );
       codes = new Set(rows.map((r) => r.code));

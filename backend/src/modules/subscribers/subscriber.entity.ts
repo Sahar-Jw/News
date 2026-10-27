@@ -6,7 +6,7 @@ import { TimestampedEntity } from '../../common/entities/base.entity';
 @Index('uq_subscribers_email', ['email'], { unique: true })
 @Index('uq_subscribers_token', ['rememberToken'], { unique: true })
 export class Subscriber extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 190 })
@@ -18,7 +18,7 @@ export class Subscriber extends TimestampedEntity {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  @Column({ name: 'verified_at', type: 'datetime', nullable: true })
+  @Column({ name: 'verified_at', type: 'timestamptz', nullable: true })
   verifiedAt: Date | null;
 
   @Column({ name: 'remember_token', length: 64 })

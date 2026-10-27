@@ -31,9 +31,9 @@ export class ContactService {
     if (q.to) qb.andWhere('m.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('m.name LIKE :like', { like }).orWhere('m.email LIKE :like', { like }).orWhere('m.subject LIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('m.name ILIKE :like', { like }).orWhere('m.email ILIKE :like', { like }).orWhere('m.subject ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { name: 'm.name', email: 'm.email', subject: 'm.subject', createdAt: 'CAST(m.createdAt AS CHAR)' });
+    applyColumnFilters(qb, q.cf, { name: 'm.name', email: 'm.email', subject: 'm.subject', createdAt: 'CAST(m.createdAt AS TEXT)' });
     qb.orderBy('m.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('m.id', 'DESC');
     return qb;
   }

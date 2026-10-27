@@ -4,7 +4,7 @@ import { User } from '../users/user.entity';
 
 @Entity('galleries')
 export class Gallery extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ name: 'title_ar', length: 255 })
@@ -14,10 +14,10 @@ export class Gallery extends TimestampedEntity {
   titleEn: string;
 
   /** relative storage paths (at least one) */
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
 
-  @Column({ name: 'created_by', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

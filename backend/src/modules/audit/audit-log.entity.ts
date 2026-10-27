@@ -4,7 +4,7 @@ import { User } from '../users/user.entity';
 @Entity('audit_logs')
 @Index('idx_audit_created_category', ['createdAt', 'category'])
 export class AuditLog {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 50 })
@@ -16,10 +16,10 @@ export class AuditLog {
   @Column({ length: 500 })
   description: string;
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   details: Record<string, any> | null;
 
-  @Column({ name: 'actor_id', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'actor_id', type: 'bigint', nullable: true })
   actorId: number | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
@@ -30,10 +30,10 @@ export class AuditLog {
   @Column({ name: 'entity_type', type: 'varchar', length: 50, nullable: true })
   entityType: string | null;
 
-  @Column({ name: 'entity_id', type: 'bigint', unsigned: true, nullable: true })
+  @Column({ name: 'entity_id', type: 'bigint', nullable: true })
   entityId: number | null;
 
-  @Column({ name: 'created_at', type: 'datetime' })
+  @Column({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
   @BeforeInsert()

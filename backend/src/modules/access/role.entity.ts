@@ -3,7 +3,7 @@ import { TimestampedEntity } from '../../common/entities/base.entity';
 
 @Entity('roles')
 export class Role extends TimestampedEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
   @Column({ length: 50, unique: true })

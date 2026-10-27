@@ -1,7 +1,7 @@
 {
   "name": "news-cms-backend",
   "version": "1.0.0",
-  "description": "Bilingual news & content management backend (NestJS + TypeORM + MySQL) — implements SRS v1.0",
+  "description": "Bilingual news & content management backend (NestJS + TypeORM + PostgreSQL) — implements SRS v1.0",
   "private": true,
   "license": "UNLICENSED",
   "engines": {
@@ -36,8 +36,8 @@
     "dotenv": "^18.0.7",
     "exceljs": "^4.4.0",
     "helmet": "^8.0.0",
-    "mysql2": "^3.11.0",
     "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sanitize-html": "^2.13.0",

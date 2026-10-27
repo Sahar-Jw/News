@@ -29,7 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = tooBig ? HttpStatus.PAYLOAD_TOO_LARGE : HttpStatus.BAD_REQUEST;
       message = tooBig ? 'حجم الملف يتجاوز الحد المسموح' : 'ملف مرفوع غير صالح أو عدد الملفات يتجاوز الحد';
       error = tooBig ? 'Payload Too Large' : 'Bad Request';
-    } else if (exception instanceof QueryFailedError && (exception as any).code === 'ER_DUP_ENTRY') {
+    } else if (exception instanceof QueryFailedError && (exception as any).code === '23505') {
       status = HttpStatus.CONFLICT;
       message = 'القيمة موجودة مسبقاً';
       error = 'Conflict';

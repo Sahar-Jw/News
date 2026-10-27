@@ -1,4 +1,4 @@
-# News CMS Backend (NestJS + TypeORM + MySQL)
+# News CMS Backend (NestJS + TypeORM + PostgreSQL)
 
 Implements the SRS "نظام إدارة الموقع الإخباري والمحتوى الرقمي" v1.0: 9 tables, one unified `news` table, JWT + DB-backed RBAC, key-value site settings, file storage on disk.
 
@@ -11,6 +11,8 @@ npm run migration:run:prod  # creates the 9 tables
 npm run seed:prod           # permissions, roles, default settings, first admin
 npm run start:prod          # http://localhost:3001/api
 ```
+> **PostgreSQL:** create an empty database first (`createdb nn`). The files in `src/database/migrations/` were written for MySQL, so generate a fresh PostgreSQL initial migration (`npm run typeorm -- migration:generate src/database/migrations/InitialSchema`) before running `migration:run`.
+
 Dev: `npm run start:dev`, `npm run migration:run`, `npm run seed` (ts-node).
 Checks: `npm run typecheck`, `npm run build`.
 
