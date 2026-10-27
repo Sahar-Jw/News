@@ -258,7 +258,7 @@ export function Navbar() {
 
         <div className="ms-auto flex shrink-0 items-center gap-2 xl:hidden">
           {me && <Link href={href('/profile')} aria-label={t('site.profile')} className="flex items-center rounded-full border border-line bg-white p-1 transition hover:border-primary">{avatar}</Link>}
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white" onClick={() => setMenu((open) => !open)} aria-label="menu" aria-expanded={menu} aria-controls={menuPanelId}>
+          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white" onClick={() => setMenu((open) => !open)} aria-label={t('app.menu')} aria-expanded={menu} aria-controls={menuPanelId}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`transition-transform duration-300 ${menu ? 'rotate-90' : ''}`}>{menu ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg>
           </button>
         </div>

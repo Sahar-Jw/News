@@ -1,6 +1,8 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { QueryFailedError } from 'typeorm';
+import { localizeAny } from '../i18n/messages';
+import { requestLang } from '../i18n/request-lang';
 
 /** Unified error body; never leaks internals or filesystem paths (SRS 21). */
 @Catch()
@@ -42,6 +44,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (status === 429) message = 'تم تجاوز عدد المحاولات المسموح، حاول لاحقاً';
+
+    // every message above is written in Arabic; English clients (X-Lang: en) get the English text
+    message = localizeAny(message, requestLang(req));
 
     res.status(status).json({ statusCode: status, error, message, timestamp: new Date().toISOString() });
   }

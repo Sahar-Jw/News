@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { getActiveApiRequests, subscribeToApiRequests } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type PendingNavigation = { target: string; arrived: boolean };
 
@@ -15,6 +16,7 @@ function locationKey(pathname: string, search: string) {
 }
 
 export function NavigationLoader() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -63,7 +65,7 @@ export function NavigationLoader() {
 
   if (!pending) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 backdrop-blur-sm" role="status" aria-label="Loading page">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 backdrop-blur-sm" role="status" aria-label={t('app.loadingPage')}>
       <span className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" aria-hidden="true" />
     </div>
   );

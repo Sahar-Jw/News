@@ -26,6 +26,13 @@ export function onSiteChange(cb: () => void) {
   return () => { window.removeEventListener(SITE_CHANGED, cb); bc?.close(); };
 }
 
+/** Language of the page the request comes from (/ar/... or /en/...); the API answers its messages in it. */
+export function currentLang(): 'ar' | 'en' {
+  if (typeof window === 'undefined') return 'ar';
+  const m = /^\/(ar|en)(\/|$)/.exec(window.location.pathname);
+  return m ? (m[1] as 'ar' | 'en') : document.documentElement.lang === 'en' ? 'en' : 'ar';
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -79,7 +86,7 @@ async function parse(res: Response) {
 }
 
 export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache } = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { 'X-Lang': currentLang() };
   let body: BodyInit | undefined;
   if (opts.form) body = opts.form;
   else if (opts.body !== undefined) {
@@ -99,7 +106,7 @@ export async function api<T = any>(path: string, opts: { method?: string; params
 
 /** Download an export (csv/xlsx) – sends the same filters as the table. */
 export async function download(path: string, params: Q, fallbackName: string) {
-  const res = await fetch(API_URL + path + qs(params), { credentials: 'include' });
+  const res = await fetch(API_URL + path + qs(params), { credentials: 'include', headers: { 'X-Lang': currentLang() } });
   if (!res.ok) await parse(res);
   const blob = await res.blob();
   const cd = res.headers.get('Content-Disposition') ?? '';

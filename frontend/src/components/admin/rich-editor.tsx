@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Modal, inputCls } from '@/components/ui/ui';
+import { useI18n } from '@/lib/i18n';
 
 /** Small stroke icons (24x24 grid) so every toolbar button is readable without extra dependencies. */
 const ICONS: Record<string, React.ReactNode> = {
@@ -36,6 +37,7 @@ const OFF = 'hover:bg-gray-200';
 
 /** WYSIWYG editor for news content. The server sanitises HTML on save. */
 export function RichEditor({ value, onChange, dir, placeholder }: { value: string; onChange: (html: string) => void; dir: 'rtl' | 'ltr'; placeholder?: string }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const init = useRef(false);
   const selection = useRef<Range | null>(null);
@@ -168,40 +170,40 @@ export function RichEditor({ value, onChange, dir, placeholder }: { value: strin
   return (
     <div className="overflow-hidden rounded-lg border bg-white focus-within:border-primary">
       <div className="flex flex-wrap items-center gap-1 border-b bg-gray-50 p-2" dir="ltr">
-        {btn('undo', <Icon name="undo" />, 'Undo', () => run('undo'))}
-        {btn('redo', <Icon name="redo" />, 'Redo', () => run('redo'))}
+        {btn('undo', <Icon name="undo" />, t('ed.undo'), () => run('undo'))}
+        {btn('redo', <Icon name="redo" />, t('ed.redo'), () => run('redo'))}
         {sep('s1')}
-        {block('h2', 'H2', 'Heading 2', 'h2')}
-        {block('h3', 'H3', 'Heading 3', 'h3')}
-        {btn('p', '¶', 'Paragraph', () => run('formatBlock', 'p'))}
+        {block('h2', 'H2', t('ed.h2'), 'h2')}
+        {block('h3', 'H3', t('ed.h3'), 'h3')}
+        {btn('p', '¶', t('ed.paragraph'), () => run('formatBlock', 'p'))}
         {sep('s2')}
-        {cmd('bold', <Icon name="bold" />, 'Bold', 'bold')}
-        {cmd('italic', <Icon name="italic" />, 'Italic', 'italic')}
-        {cmd('underline', <Icon name="underline" />, 'Underline', 'underline')}
-        {cmd('strike', <Icon name="strike" />, 'Strikethrough', 'strikeThrough')}
-        {cmd('sub', 'x₂', 'Subscript', 'subscript')}
-        {cmd('sup', 'x²', 'Superscript', 'superscript')}
+        {cmd('bold', <Icon name="bold" />, t('ed.bold'), 'bold')}
+        {cmd('italic', <Icon name="italic" />, t('ed.italic'), 'italic')}
+        {cmd('underline', <Icon name="underline" />, t('ed.underline'), 'underline')}
+        {cmd('strike', <Icon name="strike" />, t('ed.strike'), 'strikeThrough')}
+        {cmd('sub', 'x₂', t('ed.sub'), 'subscript')}
+        {cmd('sup', 'x²', t('ed.sup'), 'superscript')}
         {sep('s3')}
-        {cmd('ul', <Icon name="ul" />, 'Bulleted list', 'insertUnorderedList')}
-        {cmd('ol', <Icon name="ol" />, 'Numbered list', 'insertOrderedList')}
-        {btn('outdent', <Icon name="outdent" />, 'Decrease indent', () => run('outdent'))}
-        {btn('indent', <Icon name="indent" />, 'Increase indent', () => run('indent'))}
+        {cmd('ul', <Icon name="ul" />, t('ed.ul'), 'insertUnorderedList')}
+        {cmd('ol', <Icon name="ol" />, t('ed.ol'), 'insertOrderedList')}
+        {btn('outdent', <Icon name="outdent" />, t('ed.outdent'), () => run('outdent'))}
+        {btn('indent', <Icon name="indent" />, t('ed.indent'), () => run('indent'))}
         {sep('s4')}
-        {cmd('left', <Icon name="left" />, 'Align left', 'justifyLeft')}
-        {cmd('center', <Icon name="center" />, 'Align center', 'justifyCenter')}
-        {cmd('right', <Icon name="right" />, 'Align right', 'justifyRight')}
-        {block('quote', <Icon name="quote" />, 'Quote', 'blockquote')}
-        {btn('hr', <Icon name="hr" />, 'Horizontal rule', () => run('insertHorizontalRule'))}
-        <select aria-label="Font size" title="Font size" defaultValue="3" onMouseDown={saveSelection} onChange={(e) => run('fontSize', e.target.value)} className="h-8 rounded border border-gray-300 bg-white px-1 text-xs">
-          <option value="2">Small</option><option value="3">Normal</option><option value="4">Large</option><option value="5">Extra large</option>
+        {cmd('left', <Icon name="left" />, t('ed.alignLeft'), 'justifyLeft')}
+        {cmd('center', <Icon name="center" />, t('ed.alignCenter'), 'justifyCenter')}
+        {cmd('right', <Icon name="right" />, t('ed.alignRight'), 'justifyRight')}
+        {block('quote', <Icon name="quote" />, t('ed.quote'), 'blockquote')}
+        {btn('hr', <Icon name="hr" />, t('ed.hr'), () => run('insertHorizontalRule'))}
+        <select aria-label={t('ed.fontSize')} title={t('ed.fontSize')} defaultValue="3" onMouseDown={saveSelection} onChange={(e) => run('fontSize', e.target.value)} className="h-8 rounded border border-gray-300 bg-white px-1 text-xs">
+          <option value="2">{t('ed.small')}</option><option value="3">{t('ed.normal')}</option><option value="4">{t('ed.large')}</option><option value="5">{t('ed.xlarge')}</option>
         </select>
-        <label title="Text color" className="flex h-8 cursor-pointer items-center gap-1 rounded px-1 text-xs hover:bg-gray-200">A<input aria-label="Text color" type="color" defaultValue="#111827" onMouseDown={saveSelection} onChange={(e) => run('foreColor', e.target.value)} className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0" /></label>
-        <label title="Highlight color" className="flex h-8 cursor-pointer items-center gap-1 rounded px-1 text-xs hover:bg-gray-200">▰<input aria-label="Highlight color" type="color" defaultValue="#fff176" onMouseDown={saveSelection} onChange={(e) => run('hiliteColor', e.target.value)} className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0" /></label>
+        <label title={t('ed.textColor')} className="flex h-8 cursor-pointer items-center gap-1 rounded px-1 text-xs hover:bg-gray-200">A<input aria-label={t('ed.textColor')} type="color" defaultValue="#111827" onMouseDown={saveSelection} onChange={(e) => run('foreColor', e.target.value)} className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0" /></label>
+        <label title={t('ed.highlight')} className="flex h-8 cursor-pointer items-center gap-1 rounded px-1 text-xs hover:bg-gray-200">▰<input aria-label={t('ed.highlight')} type="color" defaultValue="#fff176" onMouseDown={saveSelection} onChange={(e) => run('hiliteColor', e.target.value)} className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0" /></label>
         {sep('s5')}
-        {btn('link', <Icon name="link" />, 'Insert or edit link', openLink, inLink)}
-        {btn('unlink', <Icon name="unlink" />, 'Remove link', () => run('unlink'), false, !inLink)}
-        {btn('clear', <Icon name="eraser" />, 'Clear formatting', clearFormatting)}
-        {btn('clearAll', <Icon name="trash" />, 'Clear all content', clearAll)}
+        {btn('link', <Icon name="link" />, t('ed.link'), openLink, inLink)}
+        {btn('unlink', <Icon name="unlink" />, t('ed.unlink'), () => run('unlink'), false, !inLink)}
+        {btn('clear', <Icon name="eraser" />, t('ed.clearFormat'), clearFormatting)}
+        {btn('clearAll', <Icon name="trash" />, t('ed.clearAll'), clearAll)}
       </div>
       <div
         ref={ref}
@@ -215,10 +217,10 @@ export function RichEditor({ value, onChange, dir, placeholder }: { value: strin
         onMouseUp={saveSelection}
         className="editor prose-news min-h-56 max-h-[28rem] overflow-auto p-3 outline-none"
       />
-      <Modal open={linkOpen} onClose={() => setLinkOpen(false)} title="Insert or edit link">
+      <Modal open={linkOpen} onClose={() => setLinkOpen(false)} title={t('ed.link')}>
         <div className="space-y-4">
-          <label className="block space-y-1 text-sm font-medium">URL<input autoFocus required type="url" dir="ltr" className={inputCls} placeholder="https://example.com" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} /></label>
-          <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setLinkOpen(false)}>Cancel</Button><Button type="button" onClick={applyLink}>Apply link</Button></div>
+          <label className="block space-y-1 text-sm font-medium">{t('ed.url')}<input autoFocus required type="url" dir="ltr" className={inputCls} placeholder="https://example.com" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} /></label>
+          <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setLinkOpen(false)}>{t('app.cancel')}</Button><Button type="button" onClick={applyLink}>{t('ed.applyLink')}</Button></div>
         </div>
       </Modal>
     </div>

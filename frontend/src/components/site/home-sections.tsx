@@ -278,6 +278,7 @@ export function ServicesGrid({ items }: { items: Card[] }) {
 
 /** Facebook page plugin sized to its container (the plugin itself allows 180-500px) and clipped to the same radius as the cards. */
 function FacebookCard({ pageUrl }: { pageUrl: string }) {
+  const { t } = useI18n();
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -295,7 +296,7 @@ function FacebookCard({ pageUrl }: { pageUrl: string }) {
       {w > 0 && (
         <iframe
           key={width}
-          title="facebook"
+          title={t('site.facebookPage')}
           className="mx-auto block h-full border-0"
           style={{ width }}
           loading="lazy"
@@ -438,7 +439,7 @@ export function ContactSection() {
       <Reveal className="self-start rounded-2xl bg-white p-5 shadow-card ring-1 ring-line"><ContactForm /></Reveal>
       {map && (
         <Modal open={mapOpen} onClose={() => setMapOpen(false)} title={t('site.map')} wide>
-          <iframe src={map} title="map" loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />
+          <iframe src={map} title={t('site.map')} loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />
         </Modal>
       )}
     </div>

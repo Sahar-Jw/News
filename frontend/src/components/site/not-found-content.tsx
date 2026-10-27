@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import { DICT } from '@/lib/dict';
 
 export function NotFoundContent({ lang }: { lang: 'ar' | 'en' }) {
-  const isArabic = lang === 'ar';
+  const t = (k: string) => DICT[lang][k] ?? k; // rendered outside any provider (global 404), so read the dictionary directly
 
   return (
     <section className="relative isolate flex min-h-[45vh] items-center justify-center overflow-hidden px-4 py-10">
@@ -16,19 +17,17 @@ export function NotFoundContent({ lang }: { lang: 'ar' | 'en' }) {
         </div>
         <p className="mb-2 font-display text-7xl font-extrabold tracking-tight text-primary sm:text-8xl">404</p>
         <h1 className="mb-3 font-display text-2xl font-bold text-secondary sm:text-3xl">
-          {isArabic ? 'عذراً، الصفحة غير موجودة' : 'Sorry, this page could not be found'}
+          {t('nf.title')}
         </h1>
         <p className="mx-auto mb-8 max-w-md leading-7 text-muted">
-          {isArabic
-            ? 'قد يكون الرابط قديماً أو أن الصفحة نُقلت. يمكنك العودة إلى الصفحة الرئيسية ومتابعة التصفح.'
-            : 'The link may be outdated or the page may have moved. Head back to the homepage to continue browsing.'}
+          {t('nf.body')}
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link href={`/${lang}/`} className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:brightness-110">
-            {isArabic ? 'الرئيسية' : 'Home'}
+            {t('site.home')}
           </Link>
           <Link href={`/${lang}/news/`} className="rounded-full border border-primary/20 bg-primary/5 px-6 py-3 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary/10">
-            {isArabic ? 'كل الأخبار' : 'All news'}
+            {t('site.allNews')}
           </Link>
         </div>
       </div>

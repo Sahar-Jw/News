@@ -85,6 +85,21 @@ const ar: Record<string, string> = {
   'cu.name': 'الاسم', 'cu.phone': 'رقم الهاتف', 'cu.age': 'العمر', 'cu.procedures': 'الإجراءات', 'cu.add': 'إضافة عميل', 'cu.edit': 'تعديل عميل',
   'ap.customer': 'العميل', 'ap.hour': 'الساعة', 'ap.add': 'إضافة موعد', 'ap.edit': 'تعديل موعد',
   'dd.refresh': 'تحديث', 'dd.total': 'كل المواعيد', 'dd.today': 'مواعيد اليوم', 'dd.next7': 'مواعيد الأيام السبعة القادمة', 'dd.perDay': 'عدد المواعيد في كل يوم', 'dd.noneToday': 'لا مواعيد اليوم', 'dd.noneNext': 'لا مواعيد قادمة',
+  // hardcoded UI text moved here
+  'app.loadingPage': 'جارٍ تحميل الصفحة', 'app.dialog': 'نافذة', 'app.menu': 'القائمة',
+  'site.facebookPage': 'صفحة فيسبوك', 's.currentFile': 'الملف الحالي', 's.imageHint': 'PNG أو JPG أو WEBP أو GIF',
+  'nf.title': 'عذراً، الصفحة غير موجودة', 'nf.body': 'قد يكون الرابط قديماً أو أن الصفحة نُقلت. يمكنك العودة إلى الصفحة الرئيسية ومتابعة التصفح.', 'ed.undo': 'تراجع',
+  'ed.redo': 'إعادة', 'ed.h2': 'عنوان 2', 'ed.h3': 'عنوان 3',
+  'ed.paragraph': 'فقرة', 'ed.bold': 'غامق', 'ed.italic': 'مائل',
+  'ed.underline': 'تسطير', 'ed.strike': 'يتوسطه خط', 'ed.sub': 'منخفض',
+  'ed.sup': 'مرتفع', 'ed.ul': 'قائمة نقطية', 'ed.ol': 'قائمة مرقمة',
+  'ed.outdent': 'تقليل المسافة البادئة', 'ed.indent': 'زيادة المسافة البادئة', 'ed.alignLeft': 'محاذاة لليسار',
+  'ed.alignCenter': 'توسيط', 'ed.alignRight': 'محاذاة لليمين', 'ed.quote': 'اقتباس',
+  'ed.hr': 'خط أفقي', 'ed.fontSize': 'حجم الخط', 'ed.small': 'صغير',
+  'ed.normal': 'عادي', 'ed.large': 'كبير', 'ed.xlarge': 'كبير جداً',
+  'ed.textColor': 'لون النص', 'ed.highlight': 'لون التمييز', 'ed.link': 'إدراج رابط أو تعديله',
+  'ed.unlink': 'إزالة الرابط', 'ed.clearFormat': 'مسح التنسيق', 'ed.clearAll': 'مسح كل المحتوى',
+  'ed.url': 'الرابط', 'ed.applyLink': 'تطبيق الرابط',
 };
 
 const en: Record<string, string> = {
@@ -164,6 +179,22 @@ const en: Record<string, string> = {
   'cu.name': 'Name', 'cu.phone': 'Phone number', 'cu.age': 'Age', 'cu.procedures': 'Procedures', 'cu.add': 'Add customer', 'cu.edit': 'Edit customer',
   'ap.customer': 'Customer', 'ap.hour': 'Hour', 'ap.add': 'Add date', 'ap.edit': 'Edit date',
   'dd.refresh': 'Refresh', 'dd.total': 'All dates', 'dd.today': 'Today', 'dd.next7': 'Next 7 days', 'dd.perDay': 'Dates per day', 'dd.noneToday': 'No dates today', 'dd.noneNext': 'No upcoming dates',
+  // hardcoded UI text moved here
+  'app.loadingPage': 'Loading page',
+  'app.dialog': 'Dialog', 'app.menu': 'Menu', 'site.facebookPage': 'Facebook page',
+  's.currentFile': 'Current file', 's.imageHint': 'PNG, JPG, WEBP or GIF', 'nf.title': 'Sorry, this page could not be found',
+  'nf.body': 'The link may be outdated or the page may have moved. Head back to the homepage to continue browsing.', 'ed.undo': 'Undo', 'ed.redo': 'Redo',
+  'ed.h2': 'Heading 2', 'ed.h3': 'Heading 3', 'ed.paragraph': 'Paragraph',
+  'ed.bold': 'Bold', 'ed.italic': 'Italic', 'ed.underline': 'Underline',
+  'ed.strike': 'Strikethrough', 'ed.sub': 'Subscript', 'ed.sup': 'Superscript',
+  'ed.ul': 'Bulleted list', 'ed.ol': 'Numbered list', 'ed.outdent': 'Decrease indent',
+  'ed.indent': 'Increase indent', 'ed.alignLeft': 'Align left', 'ed.alignCenter': 'Align center',
+  'ed.alignRight': 'Align right', 'ed.quote': 'Quote', 'ed.hr': 'Horizontal rule',
+  'ed.fontSize': 'Font size', 'ed.small': 'Small', 'ed.normal': 'Normal',
+  'ed.large': 'Large', 'ed.xlarge': 'Extra large', 'ed.textColor': 'Text color',
+  'ed.highlight': 'Highlight color', 'ed.link': 'Insert or edit link', 'ed.unlink': 'Remove link',
+  'ed.clearFormat': 'Clear formatting', 'ed.clearAll': 'Clear all content', 'ed.url': 'URL',
+  'ed.applyLink': 'Apply link',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

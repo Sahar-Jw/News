@@ -69,8 +69,8 @@ export default function SettingsPage() {
               <div className="flex gap-2"><input type="color" value={/^#[0-9a-f]{6}$/i.test(val) ? val : '#000000'} onChange={(e) => setVal(e.target.value)} className="h-10 w-14" /><input dir="ltr" className={inputCls} value={val ?? ''} onChange={(e) => setVal(e.target.value)} placeholder="#0b5ed7" /></div>
             ) : edit.valueType === 'file' ? (
               <div className="space-y-2">
-                {edit.fileUrl && <img src={fileUrl(edit.fileUrl)} alt="Current setting file" className="max-h-40 rounded-lg border bg-gray-50 p-1" />}
-                <FilePicker label={t('s.upload')} hint="PNG, JPG, WEBP or GIF" accept="image/*" onChange={(files) => upload(files?.[0])} />
+                {edit.fileUrl && <img src={fileUrl(edit.fileUrl)} alt={t('s.currentFile')} className="max-h-40 rounded-lg border bg-gray-50 p-1" />}
+                <FilePicker label={t('s.upload')} hint={t('s.imageHint')} accept="image/*" onChange={(files) => upload(files?.[0])} />
               </div>
             ) : edit.valueType === 'json' || edit.valueType === 'text' ? (
               <textarea rows={edit.valueType === 'json' ? 10 : 4} dir={edit.valueType === 'json' ? 'ltr' : undefined} className={`${inputCls} ${edit.valueType === 'json' ? 'font-mono text-xs' : ''}`} value={val ?? ''} onChange={(e) => setVal(e.target.value)} />

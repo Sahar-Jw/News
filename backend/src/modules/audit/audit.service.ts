@@ -9,6 +9,8 @@ import { adminPage, paged } from '../../common/utils/pagination';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { auditRequestContext } from './audit-context';
+import { localize } from '../../common/i18n/messages';
+import { ApiLang } from '../../common/i18n/request-lang';
 
 export interface AuditEntry {
   category: string;
@@ -82,13 +84,18 @@ export class AuditService {
     return qb;
   }
 
-  async list(q: AuditListQueryDto) {
-    const p = adminPage(q);
-    const [rows, total] = await this.buildQuery(q).skip(p.skip).take(p.limit).getManyAndCount();
-    return paged(rows, total, p);
+  /** Descriptions are stored in Arabic; English readers get the English text (the stored row is untouched). */
+  private localized<T extends { description: string }>(rows: T[], lang: ApiLang): T[] {
+    return lang === 'en' ? rows.map((r) => Object.assign(r, { description: localize(r.description, lang) })) : rows;
   }
 
-  async listAll(q: AuditListQueryDto) {
-    return this.buildQuery(q).take(10000).getMany();
+  async list(q: AuditListQueryDto, lang: ApiLang = 'ar') {
+    const p = adminPage(q);
+    const [rows, total] = await this.buildQuery(q).skip(p.skip).take(p.limit).getManyAndCount();
+    return paged(this.localized(rows, lang), total, p);
+  }
+
+  async listAll(q: AuditListQueryDto, lang: ApiLang = 'ar') {
+    return this.localized(await this.buildQuery(q).take(10000).getMany(), lang);
   }
 }

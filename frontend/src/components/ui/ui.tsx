@@ -4,7 +4,8 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export function Spinner({ className }: { className?: string }) {
-  return <div className={cn('h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary', className)} aria-label="loading" />;
+  const t = useI18n()?.t ?? ((k: string) => k);
+  return <div className={cn('h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary', className)} role="status" aria-label={t('app.loading')} />;
 }
 
 export function Center({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,7 @@ export function Field({ label, children, hint, error }: { label?: string; childr
 }
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title?: string; children: React.ReactNode; wide?: boolean }) {
+  const { t } = useI18n();
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const close = useRef(onClose);
@@ -71,10 +73,10 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : 'Dialog'} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-xl bg-white p-5 shadow-2xl outline-none', wide ? 'max-w-3xl' : 'max-w-lg')}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : t('app.dialog')} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-xl bg-white p-5 shadow-2xl outline-none', wide ? 'max-w-3xl' : 'max-w-lg')}>
         <div className="mb-4 flex items-center justify-between">
           {title ? <h3 id={titleId} className="text-lg font-bold">{title}</h3> : <span />}
-          <button type="button" onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="close">✕</button>
+          <button type="button" onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label={t('app.close')}>✕</button>
         </div>
         {children}
       </div>

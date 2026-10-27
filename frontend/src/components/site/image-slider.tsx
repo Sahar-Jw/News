@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { fileUrl } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Picture slider: moves on its own, stops while the pointer is over it (or a thumbnail is focused).
  * Thumbnails never scroll sideways: up to 6 sit in one row, more are split over two rows.
  */
 export function ImageSlider({ images, title }: { images: string[]; title: string }) {
+  const { t } = useI18n();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const n = images.length;
@@ -26,8 +28,8 @@ export function ImageSlider({ images, title }: { images: string[]; title: string
         ))}
         {n > 1 && (
           <>
-            <button type="button" onClick={() => go(-1)} aria-label="previous" className="absolute start-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60 rtl:rotate-180">‹</button>
-            <button type="button" onClick={() => go(1)} aria-label="next" className="absolute end-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60 rtl:rotate-180">›</button>
+            <button type="button" onClick={() => go(-1)} aria-label={t('app.prev')} className="absolute start-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60 rtl:rotate-180">‹</button>
+            <button type="button" onClick={() => go(1)} aria-label={t('app.next')} className="absolute end-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/60 rtl:rotate-180">›</button>
           </>
         )}
       </div>
