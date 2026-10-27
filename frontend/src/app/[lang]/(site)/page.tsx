@@ -68,7 +68,7 @@ export default function HomePage() {
       case 'experts': return home.experts.length ? <SectionWrap key={k} code={k} title={title(k)}><Experts items={home.experts} /></SectionWrap> : null;
       case 'statistics': return home.statistics.length ? <SectionWrap key={k} code={k} title={title(k)}><StatsRow items={home.statistics} /></SectionWrap> : null;
       case 'company': return home.company.length ? <SectionWrap key={k} code={k} title={title(k)}><Company items={home.company} /></SectionWrap> : null;
-      case 'subscribe': return <SectionWrap key={k} code={k} title={title(k)}><SubscribeSection /></SectionWrap>;
+      case 'subscribe': return <SectionWrap key={k} code={k} title={title(k)} compact><SubscribeSection /></SectionWrap>;
       case 'contact': return <SectionWrap key={k} code={k} title={title(k)}><ContactSection /></SectionWrap>;
       default: return null;
     }

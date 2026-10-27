@@ -21,7 +21,7 @@ const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', 
  * Eyebrow and subtitle come from Settings (sections_home → <section>_eyebrow / <section>_subtitle, per language)
  * and are simply not shown while empty.
  */
-export function SectionWrap({ code, title, children, action }: { code: string; title: string; children: React.ReactNode; action?: React.ReactNode }) {
+export function SectionWrap({ code, title, children, action, compact }: { code: string; title: string; children: React.ReactNode; action?: React.ReactNode; compact?: boolean }) {
   const { loc } = useSite();
   const eyebrow = loc('sections_home', `${code}_eyebrow`);
   const subtitle = loc('sections_home', `${code}_subtitle`);
@@ -33,7 +33,7 @@ export function SectionWrap({ code, title, children, action }: { code: string; t
       className={`relative scroll-mt-20 ${band === 'tint' ? 'bg-gradient-to-b from-transparent via-primary/[0.07] to-transparent' : ''} ${dark ? 'my-4 overflow-hidden bg-gradient-to-br from-secondary via-secondary to-primary/60 text-white' : ''}`}
     >
       {dark && <div className="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_40%,transparent),transparent_70%)]" aria-hidden="true" />}
-      <div className="relative mx-auto max-w-7xl px-4 py-8 md:py-10">
+      <div className={`relative mx-auto max-w-7xl px-4 ${compact ? 'pb-1 pt-8 md:pb-2 md:pt-10' : 'py-8 md:py-10'}`}>
         <Reveal className="mb-6 text-center">
           {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-primary/10 text-primary ring-1 ring-primary/15'}`}>{eyebrow}</span>}
           <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl`}>{title}</h2>

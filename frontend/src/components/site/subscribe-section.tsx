@@ -39,7 +39,7 @@ export function SubscribeSection() {
           {state === 'busy' ? t('sub.sending') : t('sub.button')}
         </button>
       </form>
-      <p role="status" aria-live="polite" className={`mt-3 min-h-6 text-center text-sm ${state === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>{state === 'done' || state === 'error' ? msg : ''}</p>
+      <p role="status" aria-live="polite" className={`text-center text-sm ${msg && (state === 'done' || state === 'error') ? 'mt-3' : ''} ${state === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>{state === 'done' || state === 'error' ? msg : ''}</p>
     </Reveal>
   );
 }
