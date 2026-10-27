@@ -4,5 +4,4 @@ out
 .next
 .env*
 !.env.example
-storage
 .git
