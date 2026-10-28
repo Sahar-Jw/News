@@ -9,6 +9,7 @@ import { Appointment } from '../appointments/appointment.entity';
 import { AuditService } from '../audit/audit.service';
 import { Customer } from './customer.entity';
 import { CreateCustomerDto, CustomersQueryDto, UpdateCustomerDto } from './customers.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
 export class CustomersService {
@@ -68,11 +69,11 @@ export class CustomersService {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true } });
+    const rows = await this.repo.find({ where: { id: In(unique) } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض العملاء غير موجودين');
     if (await this.dates.count({ where: { customerId: In(unique) } })) throw new ConflictException('لا يمكن حذف عميل لديه مواعيد، احذف مواعيده أولاً');
     await this.repo.delete({ id: In(unique) });
-    await this.audit.log({ category: 'customers', action: 'delete', description: `حذف ${rows.length} عميل`, actorId: actor.id, entityType: 'customers', details: { ids: unique } });
+    await this.audit.log({ category: 'customers', action: 'delete', description: `حذف ${rows.length} عميل`, actorId: actor.id, entityType: 'customers', details: { ids: unique }, changes: removedChanges('customers', rows) });
     return { deleted: rows.length };
   }
 }

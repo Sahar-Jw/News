@@ -8,7 +8,7 @@ import { AuditListQueryDto } from './audit.dto';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
-import { auditRequestContext } from './audit-context';
+import { AuditChange, AuditRequestState, auditRequestContext } from './audit-context';
 import { localize } from '../../common/i18n/messages';
 import { ApiLang } from '../../common/i18n/request-lang';
 
@@ -20,16 +20,43 @@ export interface AuditEntry {
   details?: Record<string, any> | null;
   entityType?: string | null;
   entityId?: number | null;
+  /** Explicit row changes (needed for repo.delete(), which fires no TypeORM event). Normally picked up automatically. */
+  changes?: AuditChange[] | null;
+  /** Pass the request when logging outside the request context (guards run before the interceptor). */
+  req?: any;
 }
+
+const MAX_CHANGES_JSON = 16_000;
+const cleanIp = (ip?: string | null) => (ip ? ip.replace(/^::ffff:/, '').slice(0, 64) : null);
 
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
   constructor(@InjectRepository(AuditLog) private readonly repo: Repository<AuditLog>) {}
 
+  /** Takes the row changes captured for this entity during the request (each is used once). */
+  private takeChanges(e: AuditEntry, state: AuditRequestState | undefined): AuditChange[] | null {
+    let list: AuditChange[] | null = null;
+    if (e.changes?.length) list = e.changes;
+    else if (state?.changes?.length && e.entityType) {
+      const mine = state.changes.filter((c) => c.table === e.entityType && (e.entityId == null || String(c.id) === String(e.entityId)));
+      if (mine.length) {
+        state.changes = state.changes.filter((c) => !mine.includes(c));
+        list = mine;
+      }
+    }
+    if (!list) return null;
+    list = list.slice(0, 20);
+    while (list.length > 1 && JSON.stringify(list).length > MAX_CHANGES_JSON) list = list.slice(0, Math.ceil(list.length / 2));
+    return scrubSecrets(list);
+  }
+
   /** Never throws: auditing must not break the business operation. */
   async log(e: AuditEntry): Promise<void> {
     try {
+      const state = auditRequestContext.getStore();
+      const req = e.req ?? state?.req;
+      const route = req ? String(req.route?.path ?? req.path ?? '').slice(0, 200) || null : null;
       await this.repo.save(
         this.repo.create({
           category: e.category.slice(0, 50),
@@ -39,9 +66,13 @@ export class AuditService {
           details: e.details ? scrubSecrets(e.details) : null,
           entityType: e.entityType ?? null,
           entityId: e.entityId ?? null,
+          changes: this.takeChanges(e, state),
+          ip: cleanIp(e.req?.ip ?? state?.ip),
+          userAgent: String(e.req?.headers?.['user-agent'] ?? state?.userAgent ?? '').slice(0, 255) || null,
+          method: String(e.req?.method ?? state?.method ?? '').slice(0, 10) || null,
+          route,
         }),
       );
-      const state = auditRequestContext.getStore();
       if (state) state.logged = true; // tells the coverage interceptor this request is already on record
     } catch (err) {
       this.logger.error(`Failed to write audit log: ${(err as Error).message}`);

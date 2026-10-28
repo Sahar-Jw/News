@@ -54,7 +54,7 @@ const ar: Record<string, string> = {
   'mod.audit': 'سجل التدقيق', 'mod.messages': 'رسائل التواصل', 'mod.occasions': 'المناسبات', 'mod.gallery': 'معرض الصور', 'mod.subscribers': 'المشتركون',
   'mod.ads': 'الإعلانات', 'mod.customers': 'العملاء', 'mod.appointments': 'المواعيد',
   // misc
-  'm.read': 'مقروءة', 'm.unread': 'غير مقروءة', 'a.category': 'الفئة', 'a.action': 'الإجراء', 'a.desc': 'الوصف', 'a.actor': 'المنفّذ', 's.value': 'القيمة', 's.key': 'المفتاح', 's.type': 'النوع',
+  'm.read': 'مقروءة', 'm.unread': 'غير مقروءة', 'a.category': 'الفئة', 'a.action': 'الإجراء', 'a.desc': 'الوصف', 'a.actor': 'المنفّذ', 'a.ip': 'عنوان IP', 'a.entity': 'السجل المتأثر', 'a.request': 'الطلب', 'a.agent': 'المتصفح / الجهاز', 'a.changes': 'التغييرات', 'a.field': 'الحقل', 'a.before': 'قبل', 'a.after': 'بعد', 'a.noChanges': 'لا توجد قيم مسجلة لهذا الإجراء', 'a.extra': 'تفاصيل إضافية', 'a.op.insert': 'إضافة', 'a.op.update': 'تعديل', 'a.op.remove': 'حذف', 's.value': 'القيمة', 's.key': 'المفتاح', 's.type': 'النوع',
   'f.files': 'الملفات', 'f.addFiles': 'إضافة ملفات (صور أو PDF)', 'f.filesHint': 'صور JPG/PNG/WEBP/GIF بحد أقصى 5MB للصورة، وملف PDF واحد بحد أقصى 25MB (يظهر منفصلاً عن الصور)', 'f.pdf': 'ملف PDF', 'f.addPdf': 'إضافة ملف PDF', 'f.pdfHint': 'PDF بحد أقصى 25MB — يظهر منفصلاً عن الصور في صفحة الخبر', 'f.removePdf': 'إزالة PDF', 'f.pdfNote': 'ملف PDF مرفق',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
@@ -148,7 +148,7 @@ const en: Record<string, string> = {
   'mod.news': 'News & publishing', 'mod.users': 'Users', 'mod.roles': 'Roles & permissions', 'mod.settings': 'Site settings', 'mod.cities': 'Cities & countries',
   'mod.audit': 'Audit log', 'mod.messages': 'Contact messages', 'mod.occasions': 'Occasions', 'mod.gallery': 'Image gallery', 'mod.subscribers': 'Subscribers',
   'mod.ads': 'Ads', 'mod.customers': 'Customers', 'mod.appointments': 'Dates',
-  'm.read': 'Read', 'm.unread': 'Unread', 'a.category': 'Category', 'a.action': 'Action', 'a.desc': 'Description', 'a.actor': 'Actor', 's.value': 'Value', 's.key': 'Key', 's.type': 'Type',
+  'm.read': 'Read', 'm.unread': 'Unread', 'a.category': 'Category', 'a.action': 'Action', 'a.desc': 'Description', 'a.actor': 'Actor', 'a.ip': 'IP address', 'a.entity': 'Affected record', 'a.request': 'Request', 'a.agent': 'Browser / device', 'a.changes': 'Changes', 'a.field': 'Field', 'a.before': 'Before', 'a.after': 'After', 'a.noChanges': 'No values were recorded for this action', 'a.extra': 'Extra details', 'a.op.insert': 'Created', 'a.op.update': 'Updated', 'a.op.remove': 'Deleted', 's.value': 'Value', 's.key': 'Key', 's.type': 'Type',
   'f.files': 'Files', 'f.addFiles': 'Add files (images or PDF)', 'f.filesHint': 'Images JPG/PNG/WEBP/GIF up to 5MB each, and one PDF up to 25MB (shown apart from the images)', 'f.pdf': 'PDF file', 'f.addPdf': 'Add a PDF', 'f.pdfHint': 'PDF up to 25MB — shown on its own, apart from the images, on the news page', 'f.removePdf': 'Remove PDF', 'f.pdfNote': 'Attached PDF',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',

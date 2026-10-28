@@ -10,6 +10,17 @@ import { AuthRequest } from '../types';
 
 export const AUTH_COOKIE = 'access_token';
 
+type SessionUser = Pick<User, 'id' | 'email' | 'fullName' | 'roleId' | 'isActive' | 'passwordChangedAt'>;
+const USER_TTL_MS = 10_000; // a deactivated / re-roled account is cut off within this many seconds (SRS allows 60)
+const USER_CACHE_MAX = 5_000;
+const userCache = new Map<number, { at: number; user: SessionUser | null }>();
+
+/** Called when an account changes (deactivate, delete, password reset ...) so the change applies on the next request. */
+export function invalidateSessionUser(id?: number) {
+  if (id == null) userCache.clear();
+  else userCache.delete(id);
+}
+
 export function extractToken(req: AuthRequest): string | null {
   const h = req.headers.authorization;
   if (h && h.startsWith('Bearer ')) return h.slice(7).trim() || null;
@@ -44,7 +55,7 @@ export class JwtAuthGuard implements CanActivate {
     let sub: number;
     let iat = 0;
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: number | string; iat?: number }>(token);
+      const payload = await this.jwt.verifyAsync<{ sub: number | string; iat?: number }>(token, { algorithms: ['HS256'] });
       iat = Number(payload.iat) || 0;
       sub = Number(payload.sub);
       if (!Number.isFinite(sub)) throw new Error('bad sub');
@@ -52,10 +63,18 @@ export class JwtAuthGuard implements CanActivate {
       return fail('انتهت صلاحية الجلسة أو الرمز غير صالح');
     }
 
-    const user = await this.users.findOne({
-      where: { id: sub },
-      select: { id: true, email: true, fullName: true, roleId: true, isActive: true, passwordChangedAt: true },
-    });
+    // one DB lookup per user per few seconds instead of one per request
+    let cached = userCache.get(sub);
+    if (!cached || Date.now() - cached.at > USER_TTL_MS) {
+      const row = await this.users.findOne({
+        where: { id: sub },
+        select: { id: true, email: true, fullName: true, roleId: true, isActive: true, passwordChangedAt: true },
+      });
+      if (userCache.size >= USER_CACHE_MAX) userCache.clear();
+      cached = { at: Date.now(), user: row };
+      userCache.set(sub, cached);
+    }
+    const user = cached.user;
     if (!user || !user.isActive) return fail('الحساب غير مفعّل أو غير موجود');
     // the password was reset after this session started (iat is in seconds)
     if (user.passwordChangedAt && iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) return fail('انتهت صلاحية الجلسة، سجّل الدخول من جديد');

@@ -11,6 +11,7 @@ import { User } from '../users/user.entity';
 import { AuditService } from '../audit/audit.service';
 import { CreateRoleDto, SetRolePermissionsDto, UpdateRoleDto } from './access.dto';
 import { PermissionsService } from './permissions.service';
+import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
 export class RolesService {
@@ -79,7 +80,7 @@ export class RolesService {
     }
     await this.roles.delete(id);
     this.permissions.invalidate(id);
-    await this.audit.log({ category: 'permissions', action: 'role.delete', description: `حذف الدور ${role.code}`, actorId: actor.id, entityType: 'roles', entityId: id });
+    await this.audit.log({ category: 'permissions', action: 'role.delete', description: `حذف الدور ${role.code}`, actorId: actor.id, entityType: 'roles', entityId: id, changes: removedChanges('roles', [role]) });
     return { deleted: true };
   }
 

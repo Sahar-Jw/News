@@ -1,8 +1,11 @@
 import { BeforeInsert, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../users/user.entity';
+import { AuditChange } from './audit-context';
 
 @Entity('audit_logs')
 @Index('idx_audit_created_category', ['createdAt', 'category'])
+@Index('idx_audit_entity', ['entityType', 'entityId'])
+@Index('idx_audit_actor_created', ['actorId', 'createdAt'])
 export class AuditLog {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
@@ -32,6 +35,24 @@ export class AuditLog {
 
   @Column({ name: 'entity_id', type: 'bigint', nullable: true })
   entityId: number | null;
+
+  /** What the action changed: full row on create, changed fields (old -> new) on update, full row on delete. */
+  @Column({ type: 'jsonb', nullable: true })
+  changes: AuditChange[] | null;
+
+  /** Where the request came from. */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  ip: string | null;
+
+  @Column({ name: 'user_agent', type: 'varchar', length: 255, nullable: true })
+  userAgent: string | null;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  method: string | null;
+
+  /** Route pattern (/admin/ads/:id), never the real URL: no ids, tokens or query strings. */
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  route: string | null;
 
   @Column({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

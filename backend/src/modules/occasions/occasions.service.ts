@@ -11,6 +11,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { Occasion } from './occasion.entity';
 import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 export type OccasionScope = 'all' | 'upcoming' | 'previous';
 
@@ -119,7 +120,7 @@ export class OccasionsService {
     if (rows.length !== unique.length) throw new NotFoundException('بعض المناسبات غير موجودة'); // nothing is deleted
     await this.repo.delete({ id: In(unique) });
     await this.storage.removeMany(rows.flatMap((r) => r.images ?? []));
-    await this.audit.log({ category: 'occasions', action: 'delete', description: `حذف ${rows.length} مناسبة`, actorId: actor.id, entityType: 'occasions', details: { ids: unique } });
+    await this.audit.log({ category: 'occasions', action: 'delete', description: `حذف ${rows.length} مناسبة`, actorId: actor.id, entityType: 'occasions', details: { ids: unique }, changes: removedChanges('occasions', rows) });
     return { deleted: rows.length };
   }
 

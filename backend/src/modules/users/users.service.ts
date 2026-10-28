@@ -16,6 +16,8 @@ import { RolesService } from '../access/roles.service';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { ChangePasswordDto, UpdateProfileDto, UpdateUserDto, UserListQueryDto } from './users.dto';
+import { removedChanges } from '../audit/audit-snapshot';
+import { invalidateSessionUser } from '../../common/guards/jwt-auth.guard';
 
 @Injectable()
 export class UsersService {
@@ -144,6 +146,7 @@ export class UsersService {
       changes.passwordChanged = true;
     }
     await this.users.save(u);
+    invalidateSessionUser(id);
     await this.audit.log({ category: 'users', action: 'update', description: `تعديل المستخدم ${u.email}`, actorId: actor.id, entityType: 'users', entityId: id, details: changes });
     return this.get(id);
   }
@@ -154,6 +157,7 @@ export class UsersService {
     if (!active) await this.assertNotLastAssigner([u]);
     u.isActive = active;
     await this.users.save(u);
+    invalidateSessionUser(id);
     await this.audit.log({ category: 'users', action: active ? 'activate' : 'deactivate', description: `${active ? 'تفعيل' : 'تعطيل'} المستخدم ${u.email}`, actorId: actor.id, entityType: 'users', entityId: id });
     return this.get(id);
   }
@@ -166,9 +170,10 @@ export class UsersService {
     await this.assertNotLastAssigner(targets);
     const withFiles = await this.users.find({ where: { id: In(ids) }, select: { id: true, avatarPath: true, cvPath: true } });
     await this.users.delete(ids);
+    ids.forEach((i) => invalidateSessionUser(i));
     await this.storage.removeMany(withFiles.flatMap((x) => [x.avatarPath, x.cvPath]));
     for (const t of targets) {
-      await this.audit.log({ category: 'users', action: 'delete', description: `حذف المستخدم ${t.email}`, actorId: actor.id, entityType: 'users', entityId: t.id });
+      await this.audit.log({ category: 'users', action: 'delete', description: `حذف المستخدم ${t.email}`, actorId: actor.id, entityType: 'users', entityId: t.id, changes: removedChanges('users', [t], ['passwordHash', 'passwordChangedAt']) });
     }
     return { deleted: targets.length };
   }
@@ -195,6 +200,7 @@ export class UsersService {
     if (!u || !(await bcrypt.compare(dto.currentPassword, u.passwordHash))) throw new UnauthorizedException('كلمة المرور الحالية غير صحيحة');
     u.passwordHash = await bcrypt.hash(dto.newPassword, 12);
     await this.users.save(u);
+    invalidateSessionUser(userId);
     await this.audit.log({ category: 'auth', action: 'password.change', description: 'تغيير كلمة المرور', actorId: userId });
     return { message: 'تم تغيير كلمة المرور' };
   }

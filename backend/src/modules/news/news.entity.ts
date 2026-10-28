@@ -1,6 +1,7 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Language, NewsStatus, Visibility } from '../../common/constants';
 import { TimestampedEntity } from '../../common/entities/base.entity';
+import { excerpt as makeExcerpt } from '../../common/utils/text';
 import { User } from '../users/user.entity';
 
 /** The single unified content table (SRS 13 / 17.5). */
@@ -9,6 +10,7 @@ import { User } from '../users/user.entity';
 @Index('idx_news_listing', ['language', 'status', 'visibility', 'mainCategory'])
 @Index('idx_news_subcategory', ['language', 'status', 'visibility', 'subcategory'])
 @Index('idx_news_featured', ['isFeatured', 'publishAt'])
+@Index('idx_news_public_order', ['language', 'publishAt', 'id'])
 export class News extends TimestampedEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
@@ -30,6 +32,10 @@ export class News extends TimestampedEntity {
 
   @Column({ type: 'text', nullable: true })
   body: string | null;
+
+  /** Plain-text summary of `body`, kept in sync on every save so lists never have to load the (large) body. */
+  @Column({ type: 'varchar', length: 400, nullable: true })
+  excerpt: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
@@ -65,4 +71,10 @@ export class News extends TimestampedEntity {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by' })
   createdBy: User | null;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  protected syncExcerpt() {
+    if (this.body !== undefined) this.excerpt = makeExcerpt(this.body, 300) || null;
+  }
 }

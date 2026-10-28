@@ -9,6 +9,7 @@ import { City } from './city.entity';
 import { AuditService } from '../audit/audit.service';
 import { applyColumnFilters } from '../../common/utils/column-filters';
 import { CreateCityDto, UpdateCityDto } from './cities.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
 export class CitiesService {
@@ -68,7 +69,7 @@ export class CitiesService {
     const c = await this.repo.findOne({ where: { id } });
     if (!c) throw new NotFoundException('المدينة غير موجودة');
     await this.repo.delete(id); // users.city_id is ON DELETE SET NULL
-    await this.audit.log({ category: 'cities', action: 'delete', description: `حذف المدينة ${c.nameAr}`, actorId: actor.id, entityType: 'cities', entityId: id });
+    await this.audit.log({ category: 'cities', action: 'delete', description: `حذف المدينة ${c.nameAr}`, actorId: actor.id, entityType: 'cities', entityId: id, changes: removedChanges('cities', [c]) });
     return { deleted: true };
   }
 }

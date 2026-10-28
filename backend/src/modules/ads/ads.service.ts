@@ -11,6 +11,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { Ad } from './ad.entity';
 import { AdsAdminQueryDto, CreateAdDto, PublicAdsQueryDto, UpdateAdDto } from './ads.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
 export class AdsService {
@@ -115,7 +116,7 @@ export class AdsService {
     if (rows.length !== unique.length) throw new NotFoundException('بعض الإعلانات غير موجودة');
     await this.repo.delete({ id: In(unique) });
     await this.storage.removeMany(rows.flatMap((r) => r.images ?? []));
-    await this.audit.log({ category: 'ads', action: 'delete', description: `حذف ${rows.length} إعلان`, actorId: actor.id, entityType: 'ads', details: { ids: unique } });
+    await this.audit.log({ category: 'ads', action: 'delete', description: `حذف ${rows.length} إعلان`, actorId: actor.id, entityType: 'ads', details: { ids: unique }, changes: removedChanges('ads', rows) });
     return { deleted: rows.length };
   }
 

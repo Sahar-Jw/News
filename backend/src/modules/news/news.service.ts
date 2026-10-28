@@ -22,6 +22,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { CreateNewsDto, NewsAdminQueryDto, UpdateNewsDto } from './news.dto';
 import { onlyRegular } from './news.eligibility';
+import { removedChanges } from '../audit/audit-snapshot';
 
 type Action = 'read' | 'update' | 'delete';
 
@@ -433,7 +434,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
   async removeMany(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, images: true, pdf: true, mainCategory: true } });
+    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, subject: true, images: true, pdf: true, mainCategory: true, subcategory: true, status: true, language: true, visibility: true, publishAt: true } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض السجلات غير موجودة');
     // every record must be of a kind the user may delete; otherwise nothing is deleted
     for (const r of rows) this.assertMay('delete', r.mainCategory, actor.permissions);
@@ -441,7 +442,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     await this.removeFilesIfUnreferenced(rows.flatMap((r) => r.images ?? []));
     await this.storage.removeMany(rows.map((r) => r.pdf)); // a PDF belongs to exactly one record
     for (const r of rows) {
-      await this.audit.log({ category: 'news', action: 'delete', description: `حذف سجل: ${r.title}`, actorId: actor.id, entityType: 'news', entityId: r.id });
+      await this.audit.log({ category: 'news', action: 'delete', description: `حذف سجل: ${r.title}`, actorId: actor.id, entityType: 'news', entityId: r.id, changes: removedChanges('news', [r]) });
     }
     return { deleted: rows.length };
   }

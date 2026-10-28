@@ -13,6 +13,7 @@ import { FileStorageService } from '../files/file-storage.service';
 import { MailService } from '../mail/mail.service';
 import { PasswordReset } from './password-reset.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
+import { invalidateSessionUser } from '../../common/guards/jwt-auth.guard';
 
 const RESET_TTL_MS = 60 * 60 * 1000; // a reset link works for one hour
 const RESET_COOLDOWN_MS = 60 * 1000; // at most one e-mail per minute per account
@@ -132,6 +133,7 @@ export class AuthService {
     if (!claimed.affected) throw bad;
     const now = new Date();
     await this.users.update({ id: row.userId }, { passwordHash: await bcrypt.hash(password, 12), passwordChangedAt: now });
+    invalidateSessionUser(row.userId); // every open session of this account ends on the next request
     await this.resets.delete({ userId: row.userId }); // every other open link of this account is void too
     await this.audit.log({ category: 'auth', action: 'password.reset', description: 'إعادة تعيين كلمة المرور عبر البريد', actorId: row.userId });
     return { message: 'تم تغيير كلمة المرور، يمكنك تسجيل الدخول الآن' };

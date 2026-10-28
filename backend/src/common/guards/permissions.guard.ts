@@ -26,6 +26,7 @@ export class PermissionsGuard implements CanActivate {
       description: 'محاولة وصول مرفوضة لعدم وجود الصلاحية',
       actorId: req.user.id,
       details: { method: req.method, path: req.originalUrl?.split('?')[0], required },
+      req,
     });
     throw new ForbiddenException('ليست لديك صلاحية لتنفيذ هذا الإجراء');
   }

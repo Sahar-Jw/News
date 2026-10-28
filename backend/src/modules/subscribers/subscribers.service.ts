@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
 import { Subscriber } from './subscriber.entity';
 import { SubscribersQueryDto } from './subscribers.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 const OK_MESSAGE = { ar: 'شكراً لك! أرسلنا إليك رسالة لتأكيد بريدك الإلكتروني.', en: 'Thank you! We sent you an e-mail to confirm your address.' };
 
@@ -125,10 +126,10 @@ export class SubscribersService {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true } });
+    const rows = await this.repo.find({ where: { id: In(unique) } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض المشتركين غير موجودين');
     await this.repo.delete({ id: In(unique) });
-    await this.audit.log({ category: 'subscribers', action: 'delete', description: `حذف ${rows.length} مشترك`, actorId: actor.id, entityType: 'subscribers', details: { ids: unique } });
+    await this.audit.log({ category: 'subscribers', action: 'delete', description: `حذف ${rows.length} مشترك`, actorId: actor.id, entityType: 'subscribers', details: { ids: unique }, changes: removedChanges('subscribers', rows) });
     return { deleted: rows.length };
   }
 }

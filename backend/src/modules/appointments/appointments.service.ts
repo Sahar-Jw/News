@@ -12,6 +12,7 @@ import { SiteSetting } from '../settings/site-setting.entity';
 import { Appointment } from './appointment.entity';
 import { AppointmentStatus, statusesFromSettings } from './appointment-statuses';
 import { AppointmentsQueryDto, CreateAppointmentDto, UpdateAppointmentDto } from './appointments.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 const addDays = (ymd: string, n: number) => {
   const d = new Date(`${ymd}T00:00:00Z`);
@@ -127,10 +128,10 @@ export class AppointmentsService {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: unique.map((id) => ({ id })), select: { id: true } });
+    const rows = await this.repo.find({ where: unique.map((id) => ({ id })) });
     if (rows.length !== unique.length) throw new NotFoundException('بعض المواعيد غير موجودة');
     await this.repo.delete(unique);
-    await this.audit.log({ category: 'appointments', action: 'delete', description: `حذف ${rows.length} موعد`, actorId: actor.id, entityType: 'appointments', details: { ids: unique } });
+    await this.audit.log({ category: 'appointments', action: 'delete', description: `حذف ${rows.length} موعد`, actorId: actor.id, entityType: 'appointments', details: { ids: unique }, changes: removedChanges('appointments', rows) });
     return { deleted: rows.length };
   }
 

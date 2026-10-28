@@ -10,6 +10,10 @@ import { SettingsService } from '../settings/settings.service';
 import { PublicNewsQueryDto } from './news.dto';
 import { applyEligibility, onlyRegular } from './news.eligibility';
 import { ViewCounterService } from './view-counter.service';
+import { ttlCache } from '../../common/utils/ttl-cache';
+
+const CARD_COLUMNS = ['id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'excerpt', 'images', 'rating', 'isFeatured', 'publishAt', 'language', 'viewCount'];
+const homeCache = ttlCache<{ settings: any; specials: News[]; featured: News[]; regular: News[] }>(Number(process.env.PUBLIC_CACHE_TTL_MS ?? 15_000));
 
 export interface Viewer {
   authenticated: boolean;
@@ -34,7 +38,7 @@ export class NewsPublicService {
       mainCategory: n.mainCategory,
       subcategory: n.subcategory,
       topics: n.topics ?? [],
-      excerpt: excerpt(n.body) || n.subject || '',
+      excerpt: n.excerpt || excerpt(n.body) || n.subject || '',
       images: images.map((p) => this.storage.url(p)),
       rating: n.rating,
       isFeatured: n.isFeatured,
@@ -51,13 +55,18 @@ export class NewsPublicService {
     return qb;
   }
 
+  /** Lists and sections only need the card fields: never load the rich-text body (can be tens of KB per row). */
+  private slim(qb: ReturnType<NewsPublicService['base']>, extra: string[] = []) {
+    return qb.select([...CARD_COLUMNS, ...extra].map((c) => `n.${c}`));
+  }
+
   private order(qb: ReturnType<NewsPublicService['base']>) {
     return qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC');
   }
 
   async list(q: PublicNewsQueryDto, v: Viewer) {
     const p = publicPage(q);
-    const qb = onlyRegular(this.base(q.lang ?? Language.AR, v), 'n');
+    const qb = this.slim(onlyRegular(this.base(q.lang ?? Language.AR, v), 'n'));
     if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: normalizeLabel(q.category) });
     if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
     if (q.topics) {
@@ -115,7 +124,7 @@ export class NewsPublicService {
   private async related(n: News, v: Viewer) {
     const mine = (n.topics ?? []).map((t) => t.toLowerCase());
     if (!mine.length) return [];
-    const candidates = await this.order(this.base(n.language, v))
+    const candidates = await this.order(this.slim(this.base(n.language, v)))
       .andWhere('n.mainCategory = :mc', { mc: n.mainCategory })
       .andWhere('n.id <> :id', { id: n.id })
       .take(200)
@@ -145,19 +154,23 @@ export class NewsPublicService {
   async section(code: string, lang: Language | undefined, v: Viewer) {
     const sec = codeKey(code);
     if (!SPECIAL_CATEGORY_CODES.includes(sec)) throw new NotFoundException('القسم غير موجود');
-    const rows = await this.order(this.base(lang ?? Language.AR, v)).andWhere('n.mainCategory = :sec', { sec }).take(100).getMany();
+    const rows = await this.order(this.slim(this.base(lang ?? Language.AR, v), sec === SpecialCategory.COMPANY_OVERVIEW ? ['body', 'pdf'] : [])).andWhere('n.mainCategory = :sec', { sec }).take(100).getMany();
     return rows.map((r) => this.card(r, sec === SpecialCategory.COMPANY_OVERVIEW));
   }
 
   /** One round-trip set for the whole home page; section order/visibility come from `sections_home` settings. */
   async home(lang: Language | undefined, v: Viewer) {
     const L = lang ?? Language.AR;
-    const [settings, specials, featured, regular] = await Promise.all([
-      this.settings.publicMap(),
-      this.order(this.base(L, v)).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
-      this.order(onlyRegular(this.base(L, v), 'n')).andWhere('n.isFeatured = true').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
-      this.order(onlyRegular(this.base(L, v), 'n')).take(4).getMany(),
-    ]);
+    // the four queries are shared by every visitor for a few seconds; shuffling below still happens on every request
+    const { settings, specials, featured, regular } = await homeCache(`${L}|${v.authenticated}`, async () => {
+      const [settings, specials, featured, regular] = await Promise.all([
+        this.settings.publicMap(),
+        this.order(this.slim(this.base(L, v))).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
+        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).andWhere('n.isFeatured = true').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
+        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).take(4).getMany(),
+      ]);
+      return { settings, specials, featured, regular };
+    });
     const by = (c: SpecialCategory) => specials.filter((s) => s.mainCategory === c);
     const card = (n: News) => this.card(n);
 

@@ -44,6 +44,8 @@ import { UsersModule } from './modules/users/users.module';
           DB_SSL: c.get('DB_SSL'),
           DB_SSL_REJECT_UNAUTHORIZED: c.get('DB_SSL_REJECT_UNAUTHORIZED'),
           DB_LOGGING: c.get('DB_LOGGING'),
+          DB_POOL_MAX: c.get('DB_POOL_MAX'),
+          DB_STATEMENT_TIMEOUT_MS: c.get('DB_STATEMENT_TIMEOUT_MS'),
         }),
         migrationsRun: c.get('RUN_MIGRATIONS_ON_START') === 'true',
       }),

@@ -6,6 +6,7 @@ import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditListQueryDto } from './audit.dto';
+import { AuditLog } from './audit-log.entity';
 import { AuditService } from './audit.service';
 import { requestLang } from '../../common/i18n/request-lang';
 
@@ -16,7 +17,22 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'action', label: ar ? 'الإجراء' : 'Action', value: (r) => r.action },
   { key: 'description', label: ar ? 'الوصف' : 'Description', value: (r) => r.description },
   { key: 'actor', label: ar ? 'المنفّذ' : 'Actor', value: (r) => r.actor?.fullName ?? '' },
+  { key: 'entity', label: ar ? 'السجل المتأثر' : 'Record', value: (r) => (r.entityType ? `${r.entityType}${r.entityId ? ` #${r.entityId}` : ''}` : '') },
+  { key: 'changes', label: ar ? 'التغييرات (قبل ← بعد)' : 'Changes (before → after)', value: (r) => changesText(r.changes) },
 ];
+
+const show = (v: any) => (v === null || v === undefined ? '∅' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+
+/** One line per changed field, e.g. "update #5: title: Old → New; status: draft → published". */
+function changesText(changes: AuditLog['changes']): string {
+  if (!changes?.length) return '';
+  return changes
+    .map((c) => {
+      if (c.op === 'update') return `${c.op} #${c.id}: ` + Object.keys(c.after ?? {}).map((k) => `${k}: ${show(c.before?.[k])} → ${show(c.after?.[k])}`).join('; ');
+      return `${c.op} #${c.id}: ` + Object.entries((c.op === 'insert' ? c.after : c.before) ?? {}).map(([k, v]) => `${k}=${show(v)}`).join('; ');
+    })
+    .join(' | ');
+}
 
 /** Read-only: there is intentionally no create/update/delete route (SRS FR-LOG-002). */
 @Controller('admin/audit-logs')

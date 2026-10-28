@@ -9,6 +9,7 @@ const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const isExport = (req: AuthRequest) => req.method === 'GET' && /\/export\/?$/.test(req.path);
 
 /**
+ * Opens the per-request audit context for every HTTP request (see audit-context.ts) and acts as a safety net.
  * Safety net, not the main mechanism: every service writes its own, descriptive audit entry.
  * If a request that changes data (POST / PUT / PATCH / DELETE) or exports it finishes successfully and NOTHING was
  * written to the audit log while serving it, one `system / unlogged_request` entry is added, so the action can never
@@ -23,9 +24,17 @@ export class AuditCoverageInterceptor implements NestInterceptor {
     if (context.getType() !== 'http') return next.handle();
     const http = context.switchToHttp();
     const req = http.getRequest<AuthRequest>();
-    if (!WRITE_METHODS.has(req.method) && !isExport(req)) return next.handle();
+    const mustBeLogged = WRITE_METHODS.has(req.method) || isExport(req);
 
-    const state: AuditRequestState = { logged: false };
+    // every request gets a context (who / where from / row changes); only writes and exports are checked for a log entry
+    const state: AuditRequestState = {
+      logged: false,
+      ip: req.ip ?? null,
+      userAgent: String(req.headers['user-agent'] ?? '').slice(0, 255) || null,
+      method: req.method,
+      req,
+      changes: [],
+    };
     // The handler must START inside run(), otherwise the async context does not follow it into the services.
     return new Observable((subscriber) => {
       const sub = auditRequestContext.run(state, () =>
@@ -33,6 +42,7 @@ export class AuditCoverageInterceptor implements NestInterceptor {
           next: (v) => subscriber.next(v),
           error: (e) => subscriber.error(e), // failed request: nothing changed, nothing to add
           complete: () => {
+            if (!mustBeLogged) return subscriber.complete();
             this.ensureLogged(req, http.getResponse<Response>(), state).finally(() => subscriber.complete());
           },
         }),

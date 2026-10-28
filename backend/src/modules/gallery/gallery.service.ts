@@ -11,6 +11,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { Gallery } from './gallery.entity';
 import { CreateGalleryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
+import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
 export class GalleryService {
@@ -82,7 +83,7 @@ export class GalleryService {
     if (rows.length !== unique.length) throw new NotFoundException('بعض المعارض غير موجودة');
     await this.repo.delete({ id: In(unique) });
     await this.storage.removeMany(rows.flatMap((r) => r.images ?? []));
-    await this.audit.log({ category: 'gallery', action: 'delete', description: `حذف ${rows.length} معرض صور`, actorId: actor.id, entityType: 'galleries', details: { ids: unique } });
+    await this.audit.log({ category: 'gallery', action: 'delete', description: `حذف ${rows.length} معرض صور`, actorId: actor.id, entityType: 'galleries', details: { ids: unique }, changes: removedChanges('galleries', rows) });
     return { deleted: rows.length };
   }
 
