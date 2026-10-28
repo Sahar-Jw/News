@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { SECTION_ORDER_KEYS } from './sections-meta';
-import { SECTIONS, newsPerm } from '@/lib/utils';
+import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean };
@@ -98,7 +98,7 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
 
 function SocialLinks() {
   const { s } = useSite();
-  const keys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url'];
+  const keys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'];
   return (
     <div className="flex items-center gap-2">
       {keys.map((k) => {
@@ -127,15 +127,19 @@ export function TopBar() {
     setNow(new Intl.DateTimeFormat(loc2, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()));
   }, [lang]);
   const phone = s('contact', 'phone');
+  const mobile = s('contact', 'mobile');
   const email = s('contact', 'email');
+  const website = s('contact', 'website_url');
   const addr = loc('contact', 'address');
   return (
     <div className="no-print bg-gradient-to-r from-secondary via-secondary to-primary/70 text-xs text-white/90">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5">
         <div className="flex flex-wrap items-center gap-4">
           {now && <span className="flex items-center gap-1.5"><ContactIcon name="date" />{now}</span>}
-          {phone && <a href={`tel:${phone}`} className="flex items-center gap-1.5"><ContactIcon name="phone" /><bdi dir="ltr">{phone}</bdi></a>}
+          {phone && <a href={telHref(phone)} className="flex items-center gap-1.5"><ContactIcon name="phone" /><bdi dir="ltr">{phone}</bdi></a>}
+          {mobile && <a href={telHref(mobile)} className="flex items-center gap-1.5"><ContactIcon name="mobile" /><bdi dir="ltr">{mobile}</bdi></a>}
           {email && <a href={`mailto:${email}`} className="flex items-center gap-1.5"><ContactIcon name="email" /><bdi dir="ltr">{email}</bdi></a>}
+          {website && <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5"><ContactIcon name="website" /><bdi dir="ltr">{prettyUrl(website)}</bdi></a>}
           {addr && <span className="flex items-center gap-1.5"><ContactIcon name="address" />{addr}</span>}
         </div>
         <SocialLinks />
@@ -400,8 +404,11 @@ export function Footer() {
         <div>
           <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
           <ul className="space-y-2 text-sm">
-            {s('contact', 'phone') && <li className="flex items-center gap-2"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></li>}
-            {s('contact', 'email') && <li className="flex items-center gap-2"><ContactIcon name="email" /><bdi dir="ltr">{s('contact', 'email')}</bdi></li>}
+            {s('contact', 'phone') && <li><a href={telHref(s('contact', 'phone'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></a></li>}
+            {s('contact', 'mobile') && <li><a href={telHref(s('contact', 'mobile'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="mobile" /><bdi dir="ltr">{s('contact', 'mobile')}</bdi></a></li>}
+            {s('contact', 'fax') && <li className="flex items-center gap-2"><ContactIcon name="fax" /><bdi dir="ltr">{s('contact', 'fax')}</bdi></li>}
+            {s('contact', 'email') && <li><a href={`mailto:${s('contact', 'email')}`} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="email" /><bdi dir="ltr">{s('contact', 'email')}</bdi></a></li>}
+            {s('contact', 'website_url') && <li><a href={s('contact', 'website_url')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="website" /><bdi dir="ltr">{prettyUrl(s('contact', 'website_url'))}</bdi></a></li>}
             {loc('contact', 'address') && <li className="flex items-center gap-2"><ContactIcon name="address" />{loc('contact', 'address')}</li>}
             {loc('contact', 'working_hours') && <li className="flex items-center gap-2"><ContactIcon name="hours" />{loc('contact', 'working_hours')}</li>}
           </ul>

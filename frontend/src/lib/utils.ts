@@ -51,3 +51,8 @@ export const newsPerm = (action: NewsAction, section?: string) => {
 /** Every permission of one action (regular + all sections): "can do this action on *something*". */
 export const anyNewsPerm = (action: NewsAction) => [newsPerm(action), ...SECTIONS.map((s) => newsPerm(action, s))];
 export const createPermFor = (section?: string) => newsPerm('create', section);
+
+/** `tel:` link for a phone / mobile number typed in Settings (spaces and dashes are dropped). */
+export const telHref = (n: string) => `tel:${n.replace(/[\s\-().]/g, '')}`;
+/** https://www.example.com/ -> www.example.com (for showing a website link as text). */
+export const prettyUrl = (u: string) => u.replace(/^https?:\/\//i, '').replace(/\/$/, '');

@@ -22,6 +22,9 @@ const BASE_AR: Record<string, string> = {
   founded_date: 'تاريخ التأسيس',
   // contact
   phone: 'الهاتف',
+  mobile: 'الجوال',
+  fax: 'الفاكس',
+  website_url: 'الموقع الإلكتروني',
   email: 'البريد الإلكتروني',
   address: 'العنوان',
   working_hours: 'ساعات العمل',
@@ -33,6 +36,7 @@ const BASE_AR: Record<string, string> = {
   linkedin_url: 'لينكدإن',
   youtube_url: 'يوتيوب',
   whatsapp_url: 'واتساب',
+  telegram_url: 'تيليغرام',
   facebook_page_url: 'صفحة فيسبوك',
   // appearance
   primary_color: 'اللون الأساسي',
@@ -40,7 +44,8 @@ const BASE_AR: Record<string, string> = {
   accent_color: 'لون التمييز',
   header_background: 'خلفية الهيدر',
   footer_background: 'خلفية الفوتر',
-  breaking_bg_color: 'لون خلفية شريط الأخبار العاجلة',
+  breaking_bg_color: 'لون خلفية شريط الأخبار العاجلة (الشريط المتحرك)',
+  breaking_label_bg_color: 'لون خلفية كلمة «عاجل» (بداية الشريط)',
   default_service_icon: 'أيقونة الخدمة الافتراضية',
   default_person_image: 'صورة الشخص الافتراضية',
   // labels

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { prettyUrl, telHref } from '@/lib/utils';
 import { Modal, Stars } from '@/components/ui/ui';
 import { Card, DefaultAvatar, FitImage, NewsCard, Thumb } from './cards';
 import { ContactIcon } from './icons';
@@ -411,24 +412,40 @@ export function ContactSection() {
   const { t } = useI18n();
   const { s, loc } = useSite();
   const [mapOpen, setMapOpen] = useState(false);
-  // [label, value, icon, always left-to-right (phone / email)]
-  const rows: [string, string | null, 'phone' | 'email' | 'address' | 'hours', boolean][] = [
-    [t('site.phone'), s('contact', 'phone'), 'phone', true],
-    [t('site.email'), s('contact', 'email'), 'email', true],
-    [t('site.address'), loc('contact', 'address'), 'address', false],
-    [t('site.hours'), loc('contact', 'working_hours'), 'hours', false],
+  // label, text, icon, always left-to-right (numbers / email / url), optional link
+  type Row = { label: string; value: string | null; icon: 'phone' | 'mobile' | 'fax' | 'email' | 'website' | 'address' | 'hours'; ltr: boolean; link?: string; external?: boolean };
+  const phone = s('contact', 'phone');
+  const mobile = s('contact', 'mobile');
+  const email = s('contact', 'email');
+  const website = s('contact', 'website_url');
+  const rows: Row[] = [
+    { label: t('site.phone'), value: phone, icon: 'phone', ltr: true, link: phone ? telHref(phone) : undefined },
+    { label: t('site.mobile'), value: s('contact', 'mobile'), icon: 'mobile', ltr: true, link: mobile ? telHref(mobile) : undefined },
+    { label: t('site.fax'), value: s('contact', 'fax'), icon: 'fax', ltr: true },
+    { label: t('site.email'), value: email, icon: 'email', ltr: true, link: email ? `mailto:${email}` : undefined },
+    { label: t('site.website'), value: website ? prettyUrl(website) : null, icon: 'website', ltr: true, link: website || undefined, external: true },
+    { label: t('site.address'), value: loc('contact', 'address'), icon: 'address', ltr: false },
+    { label: t('site.hours'), value: loc('contact', 'working_hours'), icon: 'hours', ltr: false },
   ];
   const map = s('contact', 'map_url');
   return (
     <div className="grid items-start gap-5 md:grid-cols-2">
       <Reveal className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
         <ul className="divide-y divide-line">
-          {rows.filter(([, v]) => v).map(([k, v, icon, ltr]) => (
-            <li key={k} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ContactIcon name={icon} size={16} /></span>
-              <div className="min-w-0"><div className="text-xs text-gray-500">{k}</div><div className="break-words text-sm font-medium">{ltr ? <bdi dir="ltr">{v}</bdi> : v}</div></div>
-            </li>
-          ))}
+          {rows.filter((r) => r.value).map((r) => {
+            const text = r.ltr ? <bdi dir="ltr">{r.value}</bdi> : r.value;
+            return (
+              <li key={r.label} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ContactIcon name={r.icon} size={16} /></span>
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-500">{r.label}</div>
+                  <div className="break-words text-sm font-medium">
+                    {r.link ? <a href={r.link} {...(r.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className="hover:text-primary hover:underline">{text}</a> : text}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
         {map && (
           <button type="button" onClick={() => setMapOpen(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 active:scale-[0.97]">

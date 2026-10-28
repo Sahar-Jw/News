@@ -97,7 +97,10 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('branding', 'founded_date', 'text'),
   // contact (optional items are hidden when empty)
   s('contact', 'phone', 'text'),
+  s('contact', 'mobile', 'text'),
+  s('contact', 'fax', 'text'),
   s('contact', 'email', 'text'),
+  s('contact', 'website_url', 'url'),
   s('contact', 'address_ar', 'text'),
   s('contact', 'address_en', 'text'),
   s('contact', 'working_hours_ar', 'text'),
@@ -110,6 +113,7 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('social', 'linkedin_url', 'url'),
   s('social', 'youtube_url', 'url'),
   s('social', 'whatsapp_url', 'url'),
+  s('social', 'telegram_url', 'url'),
   s('social', 'facebook_page_url', 'url'),
   // hero slider: 3 slides
   ...[1, 2, 3].flatMap((n) => [
@@ -144,8 +148,9 @@ export const SETTING_SEEDS: SettingSeed[] = [
   // empty = the built-in glass header / navy footer
   s('appearance', 'header_background', 'color'),
   s('appearance', 'footer_background', 'color'),
-  // empty = the built-in red gradient of the breaking-news bar
-  s('appearance', 'breaking_bg_color', 'color'),
+  // breaking-news bar: two independent colours. Empty = the built-in look (red gradient bar / dark label).
+  s('appearance', 'breaking_bg_color', 'color'), // the scrolling bar
+  s('appearance', 'breaking_label_bg_color', 'color'), // the «Breaking» label block at the start of the bar
   s('appearance', 'default_service_icon', 'file'),
   s('appearance', 'default_person_image', 'file'),
   // labels

@@ -39,8 +39,11 @@ export function BreakingTicker({ items }: { items: Card[] }) {
   const { t, href, lang } = useI18n();
   const rtl = lang === 'ar';
   const { s } = useSite();
-  // Settings → appearance → breaking_bg_color (empty = the built-in red gradient)
+  // Two independent colours (Settings → appearance); an empty one keeps the built-in look:
+  //   breaking_bg_color        -> the scrolling bar   (default: red gradient)
+  //   breaking_label_bg_color  -> the «Breaking» label at the start of the bar (default: dark red / dark overlay)
   const bg = s('appearance', 'breaking_bg_color') as string | null;
+  const labelBg = s('appearance', 'breaking_label_bg_color') as string | null;
   const viewRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [cell, setCell] = useState(0); // width in px of one half of the loop
@@ -79,7 +82,10 @@ export function BreakingTicker({ items }: { items: Card[] }) {
       className={`no-print flex items-center overflow-hidden ${bg ? '' : 'bg-gradient-to-r from-red-700 via-red-600 to-red-500 text-white'}`}
       style={bg ? { background: bg, color: readableOn(bg) } : undefined}
     >
-      <span className={`z-10 flex shrink-0 items-center gap-2 px-4 py-2 text-sm font-bold ${bg ? 'bg-black/25' : 'bg-red-900'}`}>
+      <span
+        className={`z-10 flex shrink-0 items-center gap-2 px-4 py-2 text-sm font-bold ${labelBg ? '' : bg ? 'bg-black/25' : 'bg-red-900 text-white'}`}
+        style={labelBg ? { background: labelBg, color: readableOn(labelBg) } : undefined}
+      >
         <span className="relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-current" /></span>
         {t('site.breaking')}
       </span>
