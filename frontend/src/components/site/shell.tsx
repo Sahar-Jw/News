@@ -380,6 +380,9 @@ export function Footer() {
   return (
     <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 94%, black)' }}>
       <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
+      <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+      <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />
+      <div className="sheen" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-4">
         <div>
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}

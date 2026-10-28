@@ -33,7 +33,7 @@ export function SectionWrap({ code, title, children, action, compact }: { code: 
       id={`sec-${code}`}
       className={`relative scroll-mt-20 ${band === 'tint' ? 'bg-gradient-to-b from-transparent via-primary/[0.07] to-transparent' : ''} ${dark ? 'my-4 overflow-hidden bg-gradient-to-br from-secondary via-secondary to-primary/60 text-white' : ''}`}
     >
-      {dark && <div className="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_40%,transparent),transparent_70%)]" aria-hidden="true" />}
+      {dark && <><div className="grid-lines pointer-events-none absolute inset-0" aria-hidden="true" /><div className="sheen" aria-hidden="true" /><div className="edge-glow pointer-events-none absolute inset-x-0 top-0" aria-hidden="true" /></>}
       <div className={`relative mx-auto max-w-7xl px-4 ${compact ? 'pb-1 pt-8 md:pb-2 md:pt-10' : 'py-8 md:py-10'}`}>
         <Reveal className="mb-6 text-center">
           {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-primary/10 text-primary ring-1 ring-primary/15'}`}>{eyebrow}</span>}
@@ -81,6 +81,7 @@ export function HeroSlider() {
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-transparent to-transparent rtl:bg-gradient-to-l" />
+            <div className="corner-light absolute inset-0 rtl:-scale-x-100" aria-hidden="true" />
             <div className="dots absolute inset-x-0 bottom-0 h-2/3" aria-hidden="true" />
             <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-12 text-white md:px-12 md:pb-16">
               <div className="hero-desc mb-4 h-1 w-14 rounded-full bg-accent" aria-hidden="true" />
@@ -97,6 +98,8 @@ export function HeroSlider() {
           </div>
         );
       })}
+      <div className="sheen" aria-hidden="true" />
+      <div className="edge-glow pointer-events-none absolute inset-x-0 bottom-0" aria-hidden="true" />
       {many && (
         <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-7xl gap-2 px-6 pb-5 md:px-12" role="tablist">
           {slides.map((_, k) => (
@@ -150,7 +153,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
   const rtl = dir === 'rtl';
   return (
     <div
-      className="relative h-60 overflow-hidden rounded-3xl bg-secondary shadow-card md:h-80"
+      className="relative h-60 overflow-hidden rounded-3xl bg-secondary shadow-lift ring-1 ring-primary/20 md:h-80"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -367,7 +370,8 @@ export function StatsRow({ items }: { items: Card[] }) {
   if (!items.length) return null;
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-4">
-      <div className="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_50%,transparent),transparent_70%)]" aria-hidden="true" />
+      <div className="grid-lines pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="sheen" aria-hidden="true" />
       <Stagger className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((x) => (
           <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/10 px-4 py-4 text-center text-white ring-1 ring-white/15 backdrop-blur-sm">

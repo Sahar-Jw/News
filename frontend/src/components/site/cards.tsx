@@ -145,7 +145,7 @@ export function NewsCard({ n }: { n: Card }) {
   const mayEdit = can(newsPerm('update', section));
   const chip = 'z-10 transition hover:bg-primary hover:text-white';
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
+    <article className="card-accent group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
       <div className="relative block overflow-hidden">
         <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
         <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
