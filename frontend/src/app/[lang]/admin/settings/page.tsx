@@ -33,8 +33,12 @@ export default function SettingsPage() {
     // Arabic labels are display-only; the per-column search box matches the stored English names, so it is off in Arabic
     { key: 'category', label: t('s.category'), exportable: false, searchable: lang !== 'ar', render: (r) => <span>{categoryLabel(r.category, lang)}</span> },
     { key: 'key', label: t('s.key'), exportable: false, searchable: lang !== 'ar', render: (r) => lang === 'ar' ? <span>{keyLabel(r.category, r.key, lang)}</span> : <span dir="ltr" className="font-mono text-xs">{r.key}</span> },
-    { key: 'value', label: t('s.value'), exportable: false, render: (r) => r.valueType === 'color' && r.value ? <span className="flex items-center gap-2"><span className="inline-block h-4 w-4 rounded border" style={{ background: r.value }} />{r.value}</span> : r.valueType === 'file' && r.fileUrl ? <img src={fileUrl(r.fileUrl)} alt="" className="h-8 w-auto" /> : <span className="line-clamp-1">{show(r)}</span> },
+    { key: 'value', label: t('s.value'), exportable: false, render: (r) => r.valueType === 'boolean' ? <input type="checkbox" checked={r.value === true || r.value === 'true'} disabled={!can('settings.update')} onChange={(e) => toggle(r, e.target.checked)} aria-label={keyLabel(r.category, r.key, lang)} className="h-5 w-5 cursor-pointer accent-primary disabled:cursor-default" /> : r.valueType === 'color' && r.value ? <span className="flex items-center gap-2"><span className="inline-block h-4 w-4 rounded border" style={{ background: r.value }} />{r.value}</span> : r.valueType === 'file' && r.fileUrl ? <img src={fileUrl(r.fileUrl)} alt="" className="h-8 w-auto" /> : <span className="line-clamp-1">{show(r)}</span> },
   ];
+
+  const toggle = async (r: Row, checked: boolean) => {
+    try { await api(`/admin/settings/${r.id}`, { method: 'PATCH', body: { value: checked } }); toast(t('app.saved')); setKey((k) => k + 1); } catch (err: any) { toast(err.message, 'err'); }
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();

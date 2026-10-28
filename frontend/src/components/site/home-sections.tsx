@@ -97,9 +97,6 @@ export function HeroSlider() {
           </div>
         );
       })}
-      {/* slow floating light, behind the text */}
-      <div className="drift pointer-events-none absolute -start-24 top-6 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_38%,transparent),transparent_68%)]" aria-hidden="true" />
-      <div className="drift pointer-events-none absolute -end-20 bottom-10 h-96 w-96 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--primary)_48%,transparent),transparent_68%)] [animation-delay:-8s]" aria-hidden="true" />
       {many && (
         <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-7xl gap-2 px-6 pb-5 md:px-12" role="tablist">
           {slides.map((_, k) => (
@@ -153,7 +150,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
   const rtl = dir === 'rtl';
   return (
     <div
-      className="relative h-52 overflow-hidden rounded-3xl bg-secondary shadow-card md:h-80"
+      className="relative h-60 overflow-hidden rounded-3xl bg-secondary shadow-card md:h-80"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -171,7 +168,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
           <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-secondary/25 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-5 pb-10 text-white md:p-8 md:pb-12">
             <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-secondary">{x.mainCategory}</span>
-            <h3 className="mt-2 line-clamp-2 max-w-3xl text-lg font-bold leading-snug md:text-2xl">{x.title}</h3>
+            <h3 className="mt-2 line-clamp-2 max-w-3xl pb-1.5 text-lg font-bold leading-[1.7] md:text-2xl md:leading-[1.6]">{x.title}</h3>
             {x.subject && <p className="mt-1 line-clamp-1 max-w-2xl text-xs text-gray-200 md:text-sm">{x.subject}</p>}
           </div>
         </Link>
