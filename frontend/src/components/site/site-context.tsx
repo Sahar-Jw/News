@@ -2,6 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { api, fileUrl, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { applyTheme, themeReady } from '@/lib/theme';
 
 /** Two independent lists: a subcategory does not belong to any main category. */
 export interface Categories { main: string[]; sub: string[] }
@@ -67,17 +68,12 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       if (!alive.current) return;
       if (st) {
         setSettings(st);
-        const a = st.appearance ?? {};
-        const r = document.documentElement.style;
-        // an emptied colour goes back to the stylesheet default (no refresh needed)
-        for (const [key, cssVar] of [['primary_color', '--primary'], ['secondary_color', '--secondary'], ['accent_color', '--accent']] as const) {
-          if (a[key]) r.setProperty(cssVar, a[key]);
-          else r.removeProperty(cssVar);
-        }
+        applyTheme(st.appearance); // sets the colours and remembers them for the next visit's first paint
         applyFavicon(fileUrl(st.branding?.favicon_url));
         applyMeta(st, lang);
       }
       if (cats) setCategories(cats);
+      themeReady(); // also when the API did not answer: never leave the first-visit page blank
       setReady(true);
     });
   }, [lang]);

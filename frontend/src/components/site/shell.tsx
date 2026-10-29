@@ -113,11 +113,6 @@ function SocialLinks() {
   );
 }
 
-/** A colour chosen in Settings, or undefined while it is empty / still the old default (so the new look applies). */
-function custom(v: string | undefined, oldDefaults: string[]) {
-  return v && !oldDefaults.includes(v.toLowerCase()) ? v : undefined;
-}
-
 export function TopBar() {
   const { lang, t } = useI18n();
   const { s, loc } = useSite();
@@ -249,7 +244,7 @@ export function Navbar() {
   };
 
   return (
-    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: custom(settings.appearance?.header_background, ['#ffffff', '#fff']) }}>
+    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: 'var(--header-bg, rgb(255 255 255 / 0.8))' }}>
       <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 xl:flex-nowrap xl:gap-x-4 ${scrolled ? 'py-1' : 'py-2.5'}`}>
         <Link href={href('/')} className="flex min-w-0 flex-1 items-center gap-3 xl:min-w-[9rem]">
           {logo && <img src={logo} alt="" className={`w-auto shrink-0 transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
@@ -370,15 +365,14 @@ export function Navbar() {
 
 export function Footer() {
   const { lang, t, href } = useI18n();
-  const { s, loc, img, settings } = useSite();
+  const { s, loc, img } = useSite();
   const [services, setServices] = useState<{ id: number; title: string }[]>([]);
   useEffect(() => {
     import('@/lib/api').then(({ api }) => api('/public/sections/SERVICES', { params: { lang } }).then((r: any) => setServices(r.slice(0, 6))).catch(() => {}));
   }, [lang]);
   const logo = img('branding', 'logo');
-  const bg = custom(settings.appearance?.footer_background, ['#111827']);
   return (
-    <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: bg || 'color-mix(in srgb, var(--secondary) 94%, black)' }}>
+    <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: 'var(--footer-bg, color-mix(in srgb, var(--secondary) 94%, black))' }}>
       <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />

@@ -88,6 +88,7 @@ const ar: Record<string, string> = {
   // hardcoded UI text moved here
   'app.loadingPage': 'جارٍ تحميل الصفحة', 'app.dialog': 'نافذة', 'app.menu': 'القائمة',
   'site.facebookPage': 'صفحة فيسبوك', 's.currentFile': 'الملف الحالي', 's.imageHint': 'PNG أو JPG أو WEBP أو GIF',
+  's.fileType': 'نوع الملف غير مدعوم. المسموح: PNG أو JPG أو WEBP أو GIF', 's.fileTypeIco': 'نوع الملف غير مدعوم. المسموح: ICO أو PNG أو JPG أو WEBP أو GIF', 's.fileTooBig': 'حجم الملف يتجاوز 5 ميغابايت', 's.fileEmpty': 'الملف فارغ', 's.removedNote': 'سيُحذف الملف عند الحفظ', 's.newFile': 'ملف جديد (لم يُحفظ بعد)', 's.noFile': 'لا يوجد ملف',
   'nf.title': 'عذراً، الصفحة غير موجودة', 'nf.body': 'قد يكون الرابط قديماً أو أن الصفحة نُقلت. يمكنك العودة إلى الصفحة الرئيسية ومتابعة التصفح.', 'ed.undo': 'تراجع',
   'ed.redo': 'إعادة', 'ed.h2': 'عنوان 2', 'ed.h3': 'عنوان 3',
   'ed.paragraph': 'فقرة', 'ed.bold': 'غامق', 'ed.italic': 'مائل',
@@ -183,6 +184,7 @@ const en: Record<string, string> = {
   'app.loadingPage': 'Loading page',
   'app.dialog': 'Dialog', 'app.menu': 'Menu', 'site.facebookPage': 'Facebook page',
   's.currentFile': 'Current file', 's.imageHint': 'PNG, JPG, WEBP or GIF', 'nf.title': 'Sorry, this page could not be found',
+  's.fileType': 'Unsupported file type. Allowed: PNG, JPG, WEBP or GIF', 's.fileTypeIco': 'Unsupported file type. Allowed: ICO, PNG, JPG, WEBP or GIF', 's.fileTooBig': 'The file is larger than 5 MB', 's.fileEmpty': 'The file is empty', 's.removedNote': 'The file will be deleted when you save', 's.newFile': 'New file (not saved yet)', 's.noFile': 'No file',
   'nf.body': 'The link may be outdated or the page may have moved. Head back to the homepage to continue browsing.', 'ed.undo': 'Undo', 'ed.redo': 'Redo',
   'ed.h2': 'Heading 2', 'ed.h3': 'Heading 3', 'ed.paragraph': 'Paragraph',
   'ed.bold': 'Bold', 'ed.italic': 'Italic', 'ed.underline': 'Underline',

@@ -10,6 +10,8 @@ import { I18nProvider } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/utils';
 import { ToastProvider } from '@/components/ui/toast';
 import { NavigationLoader } from '@/components/site/navigation-loader';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
+import { PageSkeletonOverlay } from '@/components/ui/page-skeleton';
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -21,8 +23,15 @@ export default async function LangLayout({ children, params }: { children: React
   if (!LANGS.includes(lang as Lang)) notFound();
   const l = lang as Lang;
   return (
-    <html lang={l} dir={l === 'ar' ? 'rtl' : 'ltr'}>
+    // suppressHydrationWarning: the boot script below adds the remembered colours to <html style> before React starts
+    <html lang={l} dir={l === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
+      <head>
+        {/* applies the last saved brand colours before the first paint, so the default colours never flash */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body>
+        {/* first visit ever only: shown (by CSS) while the colours are still unknown, so nobody sees an empty page */}
+        <div id="boot-skeleton" aria-hidden="true"><PageSkeletonOverlay /></div>
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>

@@ -80,7 +80,12 @@ async function parse(res: Response) {
   }
   if (!res.ok) {
     const m = data?.message;
-    throw new ApiError(res.status, Array.isArray(m) ? m.join(' • ') : m || res.statusText || 'Error');
+    // not a JSON answer from the API: the web server / proxy in front of it refused the request (e.g. 413 = file too big for the server)
+    const fromProxy = typeof data === 'string' || data === null;
+    const generic = res.status === 413 ? (currentLang() === 'ar' ? 'حجم الملف أكبر مما يسمح به الخادم' : 'The file is larger than the server allows')
+      : fromProxy && res.status >= 500 ? (currentLang() === 'ar' ? 'تعذّر الوصول إلى الخادم، حاول لاحقاً' : 'The server could not be reached, try again later')
+      : '';
+    throw new ApiError(res.status, Array.isArray(m) ? m.join(' • ') : (fromProxy && generic) || m || res.statusText || 'Error');
   }
   return data;
 }
@@ -99,6 +104,9 @@ export async function api<T = any>(path: string, opts: { method?: string; params
     const out = await parse(res);
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;
+  } catch (e) {
+    if (e instanceof TypeError) throw new ApiError(0, currentLang() === 'ar' ? 'تعذّر الاتصال بالخادم، تحقق من الاتصال أو من حجم الملف' : 'Could not reach the server - check the connection or the file size');
+    throw e;
   } finally {
     updateActiveApiRequests(-1);
   }

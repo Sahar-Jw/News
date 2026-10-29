@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { getActiveApiRequests, subscribeToApiRequests } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { PageSkeletonOverlay } from '@/components/ui/page-skeleton';
 
 type PendingNavigation = { target: string; arrived: boolean };
 
@@ -27,10 +28,13 @@ function locationKey(pathname: string, search: string) {
 }
 
 /**
- * One loader for the whole app (public site and admin). It shows a full-screen spinner when the visitor did
- * something and the result takes a while:
- *  - clicking a link to another page, until the new page has arrived and its data has loaded;
- *  - clicking a button, submitting a form or changing a filter, while the request it started is still running.
+ * One loader for the whole app (public site and admin). It only appears when the visitor did something and the
+ * result takes a while, and it comes in two sizes:
+ *  - PAGE SKELETON (full screen, blocks the page): clicking a link to another page, until the new page has arrived and
+ *    its data has loaded. Same as the route-level loading.tsx.
+ *  - SMALL (a thin bar + a small badge at the top, never blocks anything): clicking a button, submitting a form or
+ *    changing a filter / file while the request it started is still running. Dialogs, buttons and the success / error
+ *    messages (toasts) stay usable and visible.
  * Requests that nobody asked for (background refreshes of settings, etc.) never trigger it.
  */
 export function NavigationLoader() {
@@ -158,9 +162,21 @@ export function NavigationLoader() {
   }, [visible]);
 
   if (!visible) return null;
+
+  // moving to another page: a skeleton of the page (same one as the route-level loading.tsx)
+  if (pending !== null) return <PageSkeletonOverlay label={t('app.loadingPage')} />;
+
+  // an action on the current page (save, delete, upload, filter ...): small, and the page stays usable.
+  // pointer-events-none = clicks go straight through; z-[90] = below the messages (toasts are z-[300]).
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/80 backdrop-blur-sm" role="status" aria-live="polite" aria-busy="true" aria-label={t('app.loadingPage')}>
-      <span className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" aria-hidden="true" />
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90]" role="status" aria-live="polite" aria-busy="true" aria-label={t('app.loading')}>
+      <div dir="ltr" className="h-1 w-full overflow-hidden bg-primary/15">
+        <div className="loader-bar h-full w-1/3 rounded-full bg-primary" />
+      </div>
+      <div className="mx-auto mt-2 flex w-fit items-center gap-2 rounded-full border border-line bg-white/95 px-3 py-1.5 text-xs text-gray-600 shadow-card">
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/25 border-t-primary" aria-hidden="true" />
+        {t('app.loading')}
+      </div>
     </div>
   );
 }
