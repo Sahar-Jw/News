@@ -1,7 +1,7 @@
 # Dependencies and generated output
 node_modules/
 .next/
-# out/
+out/
 build/
 coverage/
 next-env.d.ts
