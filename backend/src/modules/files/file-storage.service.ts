@@ -50,6 +50,7 @@ export class FileStorageService implements OnModuleInit {
   private readonly bucket: string = '';
   /** optional folder inside the bucket (S3_PREFIX=storage -> objects live at "storage/users/x.jpg"); DB paths never contain it */
   private readonly prefix: string = '';
+  private cfgInfo = '';
   private readonly seedDir: string;
   private readonly seedEnabled: boolean;
 
@@ -59,13 +60,19 @@ export class FileStorageService implements OnModuleInit {
     this.seedEnabled = config.get<string>('S3_SEED') !== 'false';
 
     // first non-empty variable wins; the AWS_* names are what S3 providers hand out in their ".env" snippet
+    const used: Record<string, string> = {}; // which variable each value came from (shown in the startup log)
     const pick = (...names: string[]) => {
       for (const n of names) {
-        const v = (config.get<string>(n) || '').trim();
-        if (v) return v;
+        // trims spaces and surrounding quotes (a value pasted as "abc" or 'abc' into a hosting panel keeps the quotes)
+        const v = (config.get<string>(n) || '').trim().replace(/^(["'])(.*)\1$/, '$2').trim();
+        if (v) {
+          used[names[0]] = n;
+          return v;
+        }
       }
       return '';
     };
+    const mask = (v: string) => (v.length > 10 ? `${v.slice(0, 4)}…${v.slice(-4)}` : v ? '****' : '(empty)');
     const bucket = pick('S3_BUCKET', 'AWS_S3_BUCKET', 'AWS_BUCKET');
     const wanted = (config.get<string>('STORAGE_DRIVER') || (bucket ? 's3' : 'local')).trim().toLowerCase();
     this.driver = wanted === 's3' ? 's3' : 'local';
@@ -80,6 +87,7 @@ export class FileStorageService implements OnModuleInit {
       let endpoint = pick('S3_ENDPOINT', 'AWS_ENDPOINT_URL_S3', 'AWS_ENDPOINT_URL', 'AWS_ENDPOINT');
       if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `https://${endpoint}`;
       this.bucket = bucket;
+      this.cfgInfo = `bucket=${bucket} endpoint=${endpoint || '(AWS default)'} region=${pick('S3_REGION', 'AWS_REGION', 'AWS_DEFAULT_REGION') || 'us-east-1'} keyId=${mask(accessKeyId)} (${accessKeyId.length} chars, from ${used['S3_ACCESS_KEY_ID'] ?? '?'}) secret=${secretAccessKey.length} chars (from ${used['S3_SECRET_ACCESS_KEY'] ?? '?'})`;
       const pre = pick('S3_PREFIX', 'S3_KEY_PREFIX').replace(/^\/+|\/+$/g, '');
       this.prefix = pre ? `${pre}/` : '';
       this.s3 = new S3Client({
@@ -111,6 +119,7 @@ export class FileStorageService implements OnModuleInit {
   }
 
   private async initS3() {
+    this.logger.log(`S3 config: ${this.cfgInfo} prefix="${this.prefix}"`);
     try {
       await this.s3!.send(new HeadBucketCommand({ Bucket: this.bucket }));
       this.logger.log(`S3 storage ready: bucket "${this.bucket}"`);
