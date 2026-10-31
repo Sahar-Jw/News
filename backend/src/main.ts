@@ -25,10 +25,8 @@ async function bootstrap() {
     if (req.headers.authorization || req.cookies?.access_token) res.setHeader('Cache-Control', 'private, no-store');
     next();
   });
-  app.use(createPublicCache());
-  app.useBodyParser('json', { limit: '2mb' });
-  app.useBodyParser('urlencoded', { limit: '100kb', extended: false });
-
+  // CORS must run BEFORE the public micro-cache: a cache hit answers right away, and when CORS came after it those
+  // answers had no Access-Control-Allow-Origin header, so the browser blocked every repeated public request.
   const origins = (process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   app.enableCors({
     origin: origins.length ? origins : false, // SRS 21: CORS limited to the frontend origin
@@ -37,6 +35,11 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Lang'],
     maxAge: 600,
   });
+
+  app.use(createPublicCache());
+  app.useBodyParser('json', { limit: '2mb' });
+  app.useBodyParser('urlencoded', { limit: '100kb', extended: false });
+
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
