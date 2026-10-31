@@ -44,6 +44,10 @@ export class News extends TimestampedEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   pdf: string | null;
 
+  /** Optional YouTube video (canonical watch URL), embedded on the detail page of regular news. */
+  @Column({ name: 'youtube_url', type: 'varchar', length: 255, nullable: true })
+  youtubeUrl: string | null;
+
   @Column({ type: 'smallint', nullable: true })
   rating: number | null;
 

@@ -133,6 +133,8 @@ const EXACT: Record<string, string> = {
   'هذا القسم يقبل صورة واحدة فقط': 'This section accepts a single image only',
   'ليست لديك صلاحية تمييز الأخبار': 'You do not have permission to mark news as featured',
   'ملف PDF متاح للأخبار العادية فقط': 'A PDF file is available for regular news only',
+  'رابط يوتيوب غير صالح': 'The YouTube link is invalid',
+  'فيديو يوتيوب متاح للأخبار العادية فقط': 'A YouTube video is available for regular news only',
   'بعض السجلات غير موجودة': 'Some records do not exist',
   // occasions
   'التاريخ يجب أن يكون بصيغة YYYY-MM-DD': 'The date must be in YYYY-MM-DD format',

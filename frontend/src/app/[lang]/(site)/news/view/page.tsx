@@ -11,9 +11,10 @@ import { Card, NewsCard, ShareRow } from '@/components/site/cards';
 import { ImageSlider } from '@/components/site/image-slider';
 import { ReadingProgress } from '@/components/site/motion';
 import { PdfViewer } from '@/components/site/pdf-viewer';
+import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-type Detail = Card & { body: string | null; related: Card[] };
+type Detail = Card & { body: string | null; youtubeId?: string | null; related: Card[] };
 
 function View() {
   const { lang, t, href } = useI18n();
@@ -61,6 +62,8 @@ function View() {
         </div>
 
         {n.images.length > 0 && <ImageSlider images={n.images} title={n.title} />}
+
+        {n.youtubeId && <YoutubeEmbed id={n.youtubeId} title={n.title} />}
 
         {/* body HTML is whitelist-sanitised by the API before it is stored */}
         {n.body && <div className="prose-news mt-6" dangerouslySetInnerHTML={{ __html: n.body }} />}

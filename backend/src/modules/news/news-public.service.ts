@@ -11,6 +11,7 @@ import { PublicNewsQueryDto } from './news.dto';
 import { applyEligibility, onlyRegular } from './news.eligibility';
 import { ViewCounterService } from './view-counter.service';
 import { ttlCache } from '../../common/utils/ttl-cache';
+import { parseYoutubeId } from '../../common/utils/youtube';
 
 const CARD_COLUMNS = ['id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'excerpt', 'images', 'rating', 'isFeatured', 'publishAt', 'language', 'viewCount'];
 const homeCache = ttlCache<{ settings: any; specials: News[]; featured: News[]; regular: News[] }>(Number(process.env.PUBLIC_CACHE_TTL_MS ?? 15_000));
@@ -45,7 +46,7 @@ export class NewsPublicService {
       publishAt: n.publishAt,
       language: n.language,
       viewCount: n.viewCount,
-      ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null }),
+      ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null, youtubeId: parseYoutubeId(n.youtubeUrl) }),
     };
   }
 

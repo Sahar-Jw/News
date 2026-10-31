@@ -8,11 +8,13 @@ import { useI18n } from '@/lib/i18n';
 import { SECTIONS, newsPerm, toLocalInput } from '@/lib/utils';
 import { Button, Center, Field, FilePicker, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { parseYoutubeId } from '@/lib/youtube';
+import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { RichEditor } from './rich-editor';
 
 interface Existing {
   id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[] | null; body: string | null;
-  images: string[] | null; imageUrls: string[]; pdf: string | null; rating: number | null; isFeatured: boolean; publishAt: string | null; status: string; language: string; visibility: string;
+  images: string[] | null; imageUrls: string[]; pdf: string | null; youtubeUrl: string | null; rating: number | null; isFeatured: boolean; publishAt: string | null; status: string; language: string; visibility: string;
 }
 interface NewImg { file: File; url: string }
 const NEW = '__new__';
@@ -31,7 +33,7 @@ function Form() {
   const [busy, setBusy] = useState(false);
   const [cats, setCats] = useState<{ main: string[]; sub: string[] }>({ main: [], sub: [] });
   const [f, setF] = useState({
-    title: '', subject: '', mainCategory: '', newMain: '', subcategory: '', newSub: '', topics: '', body: '', rating: '', isFeatured: false,
+    title: '', subject: '', mainCategory: '', newMain: '', subcategory: '', newSub: '', topics: '', body: '', youtubeUrl: '', rating: '', isFeatured: false,
     publishAt: id ? '' : toLocalInput(new Date().toISOString()), status: 'published', language: lang as string, visibility: 'public',
   });
   const [existing, setExisting] = useState<string[]>([]);
@@ -62,7 +64,7 @@ function Form() {
     api<Existing>(`/admin/news/${id}`).then((n) => {
       setF({
         title: n.title, subject: n.subject ?? '', mainCategory: n.mainCategory, newMain: '', subcategory: n.subcategory ?? '', newSub: '', topics: (n.topics ?? []).join(', '),
-        body: n.body ?? '', rating: n.rating ? String(n.rating) : '', isFeatured: n.isFeatured, publishAt: toLocalInput(n.publishAt), status: n.status, language: n.language, visibility: n.visibility,
+        body: n.body ?? '', youtubeUrl: n.youtubeUrl ?? '', rating: n.rating ? String(n.rating) : '', isFeatured: n.isFeatured, publishAt: toLocalInput(n.publishAt), status: n.status, language: n.language, visibility: n.visibility,
       });
       setExisting(n.images ?? []);
       setPdfOld(n.pdf ?? null);
@@ -102,8 +104,12 @@ function Form() {
     setPdfGone(false);
   };
 
+  const ytId = parseYoutubeId(f.youtubeUrl);
+  const ytBad = !!f.youtubeUrl.trim() && !ytId;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!special && ytBad) return toast(t('f.youtubeInvalid'), 'err');
     if (f.status === 'scheduled' && !f.publishAt) return toast(t('f.publishAt'), 'err');
     const main = f.mainCategory === NEW ? f.newMain.trim() : f.mainCategory;
     const sub = f.subcategory === NEW ? f.newSub.trim() : f.subcategory;
@@ -114,6 +120,7 @@ function Form() {
     fd.set('visibility', f.visibility);
     fd.set('topics', f.topics);
     fd.set('body', f.body);
+    if (!special) fd.set('youtubeUrl', f.youtubeUrl.trim());
     if (mayFeature) fd.set('isFeatured', String(f.isFeatured));
     if (mayPublish) {
       fd.set('status', f.status);
@@ -226,6 +233,15 @@ function Form() {
         <RichEditor key={editorKey} value={f.body} onChange={(h) => set('body', h)} dir={f.language === 'ar' ? 'rtl' : 'ltr'} />
       </div>
 
+      {!special && (
+        <div className="rounded-xl border bg-white p-5">
+          <Field label={t('f.youtube')} hint={t('f.youtubeHint')} error={ytBad ? t('f.youtubeInvalid') : undefined}>
+            <input type="url" dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={f.youtubeUrl} onChange={(e) => set('youtubeUrl', e.target.value)} />
+          </Field>
+          {ytId && <div className="mx-auto max-w-xl"><YoutubeEmbed id={ytId} title={f.title} /></div>}
+        </div>
+      )}
+
       <div className="rounded-xl border bg-white p-5">
         <div className="mb-3 text-sm font-medium">{special ? t('f.images') : t('f.files')}</div>
         <FilePicker label={special ? t('f.addImages') : t('f.addFiles')} hint={special ? t('f.imageHint') : t('f.filesHint')} accept={special ? 'image/jpeg,image/png,image/webp,image/gif' : 'image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf'} multiple={!single} onChange={addFiles} />
@@ -279,7 +295,8 @@ function Form() {
         <div dir={f.language === 'ar' ? 'rtl' : 'ltr'}>
           {f.subject && <p className="mb-3 text-gray-600">{f.subject}</p>}
           <div className="mb-3 flex flex-wrap gap-2">{[...existing.filter((p) => !removed.has(p)).map(urlOf), ...fresh.map((i) => i.url)].map((u) => <img key={u} src={u} alt="" className="h-24 w-32 rounded object-cover" />)}</div>
-          <div className="prose-news" dangerouslySetInnerHTML={{ __html: f.body }} />
+          {!special && ytId && <YoutubeEmbed id={ytId} title={f.title} />}
+          <div className="prose-news mt-4" dangerouslySetInnerHTML={{ __html: f.body }} />
         </div>
       </Modal>
     </form>

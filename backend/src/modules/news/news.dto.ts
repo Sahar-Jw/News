@@ -39,6 +39,8 @@ export class CreateNewsDto {
 
   @IsOptional() @toList() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(100, { each: true }) topics?: string[];
   @IsOptional() @emptyToNull() @IsString() @MaxLength(1_000_000) body?: string | null;
+  /** Any YouTube link; validated and normalised in the service. Empty = no video. */
+  @IsOptional() @emptyToNull() @IsString() @MaxLength(255) youtubeUrl?: string | null;
 
   @IsOptional() @emptyToNull() @Type(() => Number) @IsInt() @Min(1) @Max(5) rating?: number | null;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
@@ -57,6 +59,8 @@ export class UpdateNewsDto {
   @IsOptional() @emptyToNull() @IsString() @MaxLength(100) subcategory?: string | null;
   @IsOptional() @toList() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(100, { each: true }) topics?: string[];
   @IsOptional() @emptyToNull() @IsString() @MaxLength(1_000_000) body?: string | null;
+  /** Any YouTube link; validated and normalised in the service. Empty = no video. */
+  @IsOptional() @emptyToNull() @IsString() @MaxLength(255) youtubeUrl?: string | null;
   @IsOptional() @emptyToNull() @Type(() => Number) @IsInt() @Min(1) @Max(5) rating?: number | null;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @emptyToNull() @IsDateString() publishAt?: string | null;

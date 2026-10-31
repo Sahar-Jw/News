@@ -23,6 +23,7 @@ import { FileStorageService } from '../files/file-storage.service';
 import { CreateNewsDto, NewsAdminQueryDto, UpdateNewsDto } from './news.dto';
 import { onlyRegular } from './news.eligibility';
 import { removedChanges } from '../audit/audit-snapshot';
+import { parseYoutubeId, youtubeWatchUrl } from '../../common/utils/youtube';
 
 type Action = 'read' | 'update' | 'delete';
 
@@ -310,6 +311,16 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     return given !== undefined ? given : existing?.rating ?? null;
   }
 
+  /** undefined = untouched, null = no video, string = the normalised watch URL. Videos belong to regular news only. */
+  private resolveYoutube(given: string | null | undefined, main: string): string | null | undefined {
+    if (given === undefined) return undefined;
+    if (given === null || !given.trim()) return null;
+    if (SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('فيديو يوتيوب متاح للأخبار العادية فقط');
+    const id = parseYoutubeId(given);
+    if (!id) throw new BadRequestException('رابط يوتيوب غير صالح');
+    return youtubeWatchUrl(id);
+  }
+
   // ---------------------------------------------------------------- create / update / delete
   async create(dto: CreateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFile?: Express.Multer.File) {
     const perms = actor.permissions;
@@ -320,6 +331,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const pub = this.resolvePublishing(dto, undefined, perms);
     if (dto.isFeatured && !perms.has(PERM.NEWS_FEATURE)) throw new ForbiddenException('ليست لديك صلاحية تمييز الأخبار');
     const rating = this.resolveRating(main, dto.rating);
+    const youtubeUrl = this.resolveYoutube(dto.youtubeUrl, main) ?? null;
 
     if (pdfFile && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
 
@@ -342,6 +354,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
           body: sanitizeRichText(dto.body),
           images: imagePaths,
           pdf: pdfPath,
+          youtubeUrl,
           rating,
           isFeatured: dto.isFeatured ?? false,
           publishAt: pub.publishAt,
@@ -372,6 +385,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     // re-sending the current value is harmless; only an actual change needs the permission
     if (dto.isFeatured !== undefined && dto.isFeatured !== n.isFeatured && !perms.has(PERM.NEWS_FEATURE)) throw new ForbiddenException('ليست لديك صلاحية تمييز الأخبار');
     const rating = this.resolveRating(main, dto.rating, n);
+    const youtube = this.resolveYoutube(dto.youtubeUrl, main);
 
     // image reconciliation: keep ∖ existing is rejected, existing ∖ keep is removed AFTER the save succeeds
     const existingImgs = n.images ?? [];
@@ -409,6 +423,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
         publishAt: pub.publishAt,
         images: [...keep, ...added],
         pdf: nextPdf,
+        youtubeUrl: SPECIAL_CATEGORY_CODES.includes(main) ? null : youtube !== undefined ? youtube : n.youtubeUrl,
       });
       await this.repo.save(n);
     } catch (e) {
