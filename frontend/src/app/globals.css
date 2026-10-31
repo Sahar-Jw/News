@@ -7,10 +7,11 @@
   --primary: #2748e8; /* ultramarine */
   --secondary: #0a1236; /* midnight navy */
   --accent: #ff7a2f; /* warm orange, echoes the logo */
-  --ink: #0b1230;
-  --canvas: #f4f6ff;
-  --line: #dfe5f6;
-  --muted: #586080;
+  /* page background, borders and text tones are tints of the Settings colours (no fixed blue left over) */
+  --canvas: color-mix(in srgb, var(--primary) 5%, white);
+  --line: color-mix(in srgb, var(--primary) 14%, white);
+  --ink: color-mix(in srgb, var(--secondary) 92%, black);
+  --muted: color-mix(in srgb, var(--secondary) 62%, white);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --shadow-card: 0 1px 2px rgb(11 18 48 / 0.05), 0 14px 30px -16px rgb(11 18 48 / 0.22);
   --shadow-lift: 0 2px 4px rgb(11 18 48 / 0.06), 0 28px 46px -20px color-mix(in srgb, var(--primary) 60%, rgb(11 18 48 / 0.4));
@@ -100,6 +101,9 @@ input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
 
 /* Arabic: travel the other way (delete this line to make it move like English) */
 
+/* breaking-news ticker: colours from Settings (--breaking-*), red only when none is set */
+.breaking-bar { background: var(--breaking-bg, linear-gradient(to right, #b91c1c, #dc2626, #ef4444)); color: var(--breaking-fg, #fff); }
+.breaking-label { background: var(--breaking-label-bg, rgb(0 0 0 / 0.4)); color: var(--breaking-label-fg, inherit); }
 /* breaking-news ticker */
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .ticker-track { animation: ticker var(--ticker-duration, 20s) linear infinite; will-change: transform; }

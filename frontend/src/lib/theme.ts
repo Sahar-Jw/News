@@ -11,13 +11,23 @@
 export const THEME_STORAGE_KEY = 'site-theme-v1';
 
 /** setting key -> CSS variable (+ values that count as "not customised", they keep the built-in look) */
-const THEME_VARS: Record<string, { cssVar: string; ignore?: string[] }> = {
+const THEME_VARS: Record<string, { cssVar: string; fg?: string }> = {
   primary_color: { cssVar: '--primary' },
   secondary_color: { cssVar: '--secondary' },
   accent_color: { cssVar: '--accent' },
-  header_background: { cssVar: '--header-bg', ignore: ['#ffffff', '#fff'] },
-  footer_background: { cssVar: '--footer-bg', ignore: ['#111827'] },
+  header_background: { cssVar: '--header-bg' },
+  footer_background: { cssVar: '--footer-bg' },
+  breaking_bg_color: { cssVar: '--breaking-bg', fg: '--breaking-fg' },
+  breaking_label_bg_color: { cssVar: '--breaking-label-bg', fg: '--breaking-label-fg' },
 };
+
+/** Black or white text, whichever reads better on the given #hex background. */
+export function readableOn(hex: string) {
+  let h = hex.replace('#', '');
+  if (h.length === 3 || h.length === 4) h = h.split('').map((c) => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? '#111827' : '#ffffff';
+}
 
 /** The first-visit skeleton is never kept longer than this (ms). */
 export const THEME_PENDING_MAX_MS = 2000;
@@ -34,12 +44,21 @@ export function applyTheme(appearance: Record<string, any> | undefined) {
   const a = appearance ?? {};
   const root = document.documentElement.style;
   const saved: Record<string, string> = {};
-  for (const [key, { cssVar, ignore }] of Object.entries(THEME_VARS)) {
+  for (const [key, { cssVar, fg }] of Object.entries(THEME_VARS)) {
     const v = typeof a[key] === 'string' ? a[key].trim() : '';
-    if (v && HEX.test(v) && !ignore?.includes(v.toLowerCase())) {
+    if (v && HEX.test(v)) {
+      // every colour that is set in Settings is used exactly as saved (nothing is treated as \"default\")
       root.setProperty(cssVar, v);
       saved[cssVar] = v;
-    } else root.removeProperty(cssVar);
+      if (fg) {
+        const c = readableOn(v);
+        root.setProperty(fg, c);
+        saved[fg] = c;
+      }
+    } else {
+      root.removeProperty(cssVar);
+      if (fg) root.removeProperty(fg);
+    }
   }
   themeReady();
   try { localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(saved)); } catch { /* private mode / storage full: only the first paint is affected */ }
