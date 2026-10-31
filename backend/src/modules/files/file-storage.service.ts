@@ -56,20 +56,30 @@ export class FileStorageService implements OnModuleInit {
     this.seedDir = path.resolve(config.get<string>('SEED_DIR') || './storage-seed');
     this.seedEnabled = config.get<string>('S3_SEED') !== 'false';
 
-    const bucket = (config.get<string>('S3_BUCKET') || '').trim();
+    // first non-empty variable wins; the AWS_* names are what S3 providers hand out in their ".env" snippet
+    const pick = (...names: string[]) => {
+      for (const n of names) {
+        const v = (config.get<string>(n) || '').trim();
+        if (v) return v;
+      }
+      return '';
+    };
+    const bucket = pick('S3_BUCKET', 'AWS_S3_BUCKET', 'AWS_BUCKET');
     const wanted = (config.get<string>('STORAGE_DRIVER') || (bucket ? 's3' : 'local')).trim().toLowerCase();
     this.driver = wanted === 's3' ? 's3' : 'local';
     if (this.driver === 's3') {
-      const accessKeyId = (config.get<string>('S3_ACCESS_KEY_ID') || config.get<string>('S3_ACCESS_KEY') || '').trim();
-      const secretAccessKey = (config.get<string>('S3_SECRET_ACCESS_KEY') || config.get<string>('S3_SECRET_KEY') || '').trim();
+      const accessKeyId = pick('S3_ACCESS_KEY_ID', 'S3_ACCESS_KEY', 'AWS_ACCESS_KEY_ID');
+      const secretAccessKey = pick('S3_SECRET_ACCESS_KEY', 'S3_SECRET_KEY', 'AWS_SECRET_ACCESS_KEY');
       if (!bucket || !accessKeyId || !secretAccessKey) {
-        throw new Error('S3 storage needs S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY (S3_ENDPOINT / S3_REGION are optional)');
+        throw new Error(
+          `S3 storage is missing: ${[!bucket && 'S3_BUCKET', !accessKeyId && 'S3_ACCESS_KEY_ID (or AWS_ACCESS_KEY_ID)', !secretAccessKey && 'S3_SECRET_ACCESS_KEY (or AWS_SECRET_ACCESS_KEY)'].filter(Boolean).join(', ')}`,
+        );
       }
-      let endpoint = (config.get<string>('S3_ENDPOINT') || '').trim();
+      let endpoint = pick('S3_ENDPOINT', 'AWS_ENDPOINT_URL_S3', 'AWS_ENDPOINT_URL', 'AWS_ENDPOINT');
       if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `https://${endpoint}`;
       this.bucket = bucket;
       this.s3 = new S3Client({
-        region: (config.get<string>('S3_REGION') || '').trim() || 'us-east-1',
+        region: pick('S3_REGION', 'AWS_REGION', 'AWS_DEFAULT_REGION') || 'us-east-1',
         endpoint: endpoint || undefined,
         forcePathStyle: config.get<string>('S3_FORCE_PATH_STYLE') !== 'false', // most S3-compatible providers need path-style
         credentials: { accessKeyId, secretAccessKey },

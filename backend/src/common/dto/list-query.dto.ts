@@ -1,16 +1,19 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 /** Shared query shape for every admin table (SRS TBL-FR). */
+/** `?from=` (empty) means "not set", not an invalid date. */
+const emptyToUndef = () => Transform(({ value }) => (value === '' || value === null ? undefined : value));
+
 export class AdminListQueryDto {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
-  @IsOptional() @IsIn(['10', '20', '50', '100', 'all']) limit?: string;
+  @emptyToUndef() @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @emptyToUndef() @IsOptional() @IsIn(['10', '20', '50', '100', 'all']) limit?: string;
   /** per-column search: JSON object {columnKey: text} */
-  @IsOptional() @IsString() @MaxLength(2000) cf?: string;
-  @IsOptional() @IsString() @MaxLength(200) q?: string;
-  @IsOptional() @IsDateString() from?: string;
-  @IsOptional() @IsDateString() to?: string;
-  @IsOptional() @IsIn(['asc', 'desc', 'ASC', 'DESC']) sortDir?: string;
+  @emptyToUndef() @IsOptional() @IsString() @MaxLength(2000) cf?: string;
+  @emptyToUndef() @IsOptional() @IsString() @MaxLength(200) q?: string;
+  @emptyToUndef() @IsOptional() @IsDateString() from?: string;
+  @emptyToUndef() @IsOptional() @IsDateString() to?: string;
+  @emptyToUndef() @IsOptional() @IsIn(['asc', 'desc', 'ASC', 'DESC']) sortDir?: string;
 }
 
 export class PublicListQueryDto {

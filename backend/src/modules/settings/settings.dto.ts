@@ -1,8 +1,9 @@
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 
 export class SettingsListQueryDto extends AdminListQueryDto {
-  @IsOptional() @IsString() @MaxLength(50) category?: string;
+  @Transform(({ value }) => (value === '' ? undefined : value)) @IsOptional() @IsString() @MaxLength(50) category?: string;
 }
 
 export class UpdateSettingDto {

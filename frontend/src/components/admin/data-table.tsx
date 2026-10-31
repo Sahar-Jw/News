@@ -47,6 +47,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
   const [rows, setRows] = useState<T[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
   const [page, setPage] = useState(1);
@@ -92,10 +93,13 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
     try {
       // filtering, paging and permissions are all enforced by the server
       const r = await api<{ data: T[]; meta: Meta }>(endpoint, { params: { ...params(), page, limit } });
-      setRows(r.data);
+      setRows(r.data ?? []);
       setMeta(r.meta);
+      setError('');
       setSel(new Set());
     } catch (e: any) {
+      setRows([]);
+      setError(e?.message || 'Error'); // stays on screen (a toast vanishes and left a silent empty table)
       toast(e.message, 'err');
     } finally {
       setLoading(false);
@@ -226,6 +230,8 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
           <tbody>
             {loading ? (
               <tr><td colSpan={99}><Center><Spinner /></Center></td></tr>
+            ) : error ? (
+              <tr><td colSpan={99} className="py-10 text-center text-red-600"><div role="alert">{error}</div><Button className="mt-3" size="sm" variant="outline" onClick={() => setBump((b) => b + 1)}>{lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}</Button></td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={99} className="py-10 text-center text-gray-500">{t('tbl.noRows')}</td></tr>
             ) : rows.map((r, i) => (
