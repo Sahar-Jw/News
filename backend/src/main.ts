@@ -7,6 +7,8 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createPublicCache } from './common/middleware/public-cache';
+import { applyPasswordReset } from './database/password-reset';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: true });
@@ -51,6 +53,7 @@ async function bootstrap() {
     }),
   );
   app.enableShutdownHooks();
+  await applyPasswordReset(app.get(DataSource)); // no-op unless RESET_USER_EMAIL + RESET_USER_PASSWORD are set
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port, '0.0.0.0');
