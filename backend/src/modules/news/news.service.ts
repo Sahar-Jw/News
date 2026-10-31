@@ -1,3 +1,4 @@
+import { toStringArray } from '../../common/utils/lists';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, LessThanOrEqual, Repository } from 'typeorm';
@@ -84,7 +85,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
   present(n: News) {
     const { createdBy, ...rest } = n as any;
-    return { ...rest, imageUrls: (n.images ?? []).map((p) => this.storage.url(p)), pdfUrl: n.pdf ? this.storage.url(n.pdf) : null, createdByName: createdBy?.fullName };
+    const images = toStringArray(n.images);
+    return { ...rest, images, topics: toStringArray(n.topics), imageUrls: images.map((p) => this.storage.url(p)), pdfUrl: n.pdf ? this.storage.url(n.pdf) : null, createdByName: createdBy?.fullName };
   }
 
   // ---------------------------------------------------------------- listing

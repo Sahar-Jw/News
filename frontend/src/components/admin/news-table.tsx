@@ -1,4 +1,5 @@
 'use client';
+import { asList } from '@/lib/list';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
@@ -39,7 +40,7 @@ export function NewsTable({ section }: { section: string }) {
       { key: 'mainCategory', label: t('f.mainCategory') } as Col<Row>,
       { key: 'subcategory', label: t('f.subcategory') } as Col<Row>,
     ]),
-    { key: 'topics', label: t('site.topics'), render: (r) => (r.topics ?? []).join(lang === 'ar' ? '، ' : ', '), text: (r) => (r.topics ?? []).join(', ') },
+    { key: 'topics', label: t('site.topics'), render: (r) => asList(r.topics).join(lang === 'ar' ? '، ' : ', '), text: (r) => asList(r.topics).join(', ') },
     { key: 'publishAt', type: 'date', label: t('f.publishAt'), render: (r) => <div>{fmtDate(lang, r.publishAt, true)} {statusBadge(r.status)}</div>, text: (r) => `${fmtDate(lang, r.publishAt)} (${r.status})` },
     { key: 'viewCount', label: t('f.views'), render: (r) => fmtNum(lang, r.viewCount) },
     { key: 'language', searchable: false, label: t('f.language'), render: (r) => t(`l.${r.language}`) },

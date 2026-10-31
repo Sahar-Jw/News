@@ -1,3 +1,4 @@
+import { toStringArray } from '../../common/utils/lists';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -31,14 +32,14 @@ export class NewsPublicService {
 
   /** Card = what lists/sections need. Never exposes created_by, status, or storage paths of other kinds. */
   card(n: News, withBody = false) {
-    const images = n.images ?? [];
+    const images = toStringArray(n.images);
     return {
       id: n.id,
       title: n.title,
       subject: n.subject,
       mainCategory: n.mainCategory,
       subcategory: n.subcategory,
-      topics: n.topics ?? [],
+      topics: toStringArray(n.topics),
       excerpt: n.excerpt || excerpt(n.body) || n.subject || '',
       images: images.map((p) => this.storage.url(p)),
       rating: n.rating,
@@ -123,7 +124,7 @@ export class NewsPublicService {
 
   /** Same language + main category, ≥1 shared topic, ordered by shared count then newest, max 4 (SRS 13.5). */
   private async related(n: News, v: Viewer) {
-    const mine = (n.topics ?? []).map((t) => t.toLowerCase());
+    const mine = toStringArray(n.topics).map((t) => t.toLowerCase());
     if (!mine.length) return [];
     const candidates = await this.order(this.slim(this.base(n.language, v)))
       .andWhere('n.mainCategory = :mc', { mc: n.mainCategory })
@@ -131,7 +132,7 @@ export class NewsPublicService {
       .take(200)
       .getMany();
     return candidates
-      .map((c) => ({ c, shared: (c.topics ?? []).filter((t) => mine.includes(t.toLowerCase())).length }))
+      .map((c) => ({ c, shared: toStringArray(c.topics).filter((t) => mine.includes(t.toLowerCase())).length }))
       .filter((x) => x.shared > 0)
       .sort((a, b) => b.shared - a.shared || (b.c.publishAt?.getTime() ?? 0) - (a.c.publishAt?.getTime() ?? 0))
       .slice(0, 4)

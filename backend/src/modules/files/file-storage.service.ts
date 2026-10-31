@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -48,10 +48,12 @@ export class FileStorageService implements OnModuleInit {
   readonly driver: 'local' | 's3';
   private readonly s3: S3Client | null = null;
   private readonly bucket: string = '';
+  /** optional folder inside the bucket (S3_PREFIX=storage -> objects live at "storage/users/x.jpg"); DB paths never contain it */
+  private readonly prefix: string = '';
   private readonly seedDir: string;
   private readonly seedEnabled: boolean;
 
-  constructor(config: ConfigService) {
+  constructor(private readonly config: ConfigService) {
     this.root = path.resolve(config.get<string>('STORAGE_DIR') || './storage');
     this.seedDir = path.resolve(config.get<string>('SEED_DIR') || './storage-seed');
     this.seedEnabled = config.get<string>('S3_SEED') !== 'false';
@@ -78,6 +80,8 @@ export class FileStorageService implements OnModuleInit {
       let endpoint = pick('S3_ENDPOINT', 'AWS_ENDPOINT_URL_S3', 'AWS_ENDPOINT_URL', 'AWS_ENDPOINT');
       if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `https://${endpoint}`;
       this.bucket = bucket;
+      const pre = pick('S3_PREFIX', 'S3_KEY_PREFIX').replace(/^\/+|\/+$/g, '');
+      this.prefix = pre ? `${pre}/` : '';
       this.s3 = new S3Client({
         region: pick('S3_REGION', 'AWS_REGION', 'AWS_DEFAULT_REGION') || 'us-east-1',
         endpoint: endpoint || undefined,
@@ -101,6 +105,11 @@ export class FileStorageService implements OnModuleInit {
     return `${e?.name ?? 'Error'}${e?.$metadata?.httpStatusCode ? ` (HTTP ${e.$metadata.httpStatusCode})` : ''}: ${e?.message ?? e}`;
   }
 
+  /** relative storage path -> object key inside the bucket */
+  private key(rel: string) {
+    return this.prefix + rel;
+  }
+
   private async initS3() {
     try {
       await this.s3!.send(new HeadBucketCommand({ Bucket: this.bucket }));
@@ -109,7 +118,31 @@ export class FileStorageService implements OnModuleInit {
       // not fatal: the API still starts, and the seed below / every upload will show the precise error
       this.logger.error(`S3 bucket "${this.bucket}" check failed - ${this.errText(e)}`);
     }
+    await this.s3Diagnostics();
     if (this.seedEnabled) await this.seedBucket();
+  }
+
+  /** Logs what the app can see / do in the bucket, so "files missing" and "upload fails" are explained in the log. */
+  private async s3Diagnostics() {
+    try {
+      const l = await this.s3!.send(new ListObjectsV2Command({ Bucket: this.bucket, Prefix: this.prefix, MaxKeys: 5 }));
+      const n = l.KeyCount ?? l.Contents?.length ?? 0;
+      this.logger.log(
+        n
+          ? `S3 listing OK: found objects under prefix \"${this.prefix}\" (e.g. ${(l.Contents ?? []).slice(0, 3).map((o) => o.Key).join(', ')})`
+          : `S3 listing: NO objects under prefix \"${this.prefix}\". If your files sit in a folder of the bucket (e.g. \"storage/\"), set S3_PREFIX=storage`,
+      );
+    } catch (e) {
+      this.logger.error(`S3 listing failed - ${this.errText(e)}`);
+    }
+    const probe = `${this.prefix}.healthcheck`;
+    try {
+      await this.s3!.send(new PutObjectCommand({ Bucket: this.bucket, Key: probe, Body: new Date().toISOString(), ContentType: 'text/plain' }));
+      await this.s3!.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: probe }));
+      this.logger.log('S3 write test OK (the access key can upload and delete)');
+    } catch (e) {
+      this.logger.error(`S3 WRITE TEST FAILED - uploads will fail: ${this.errText(e)}`);
+    }
   }
 
   private async listSeedFiles(dir: string, prefix = ''): Promise<string[]> {
@@ -130,7 +163,8 @@ export class FileStorageService implements OnModuleInit {
    */
   private async seedBucket() {
     try {
-      await this.s3!.send(new HeadObjectCommand({ Bucket: this.bucket, Key: SEED_MARKER }));
+      if (this.config.get<string>('S3_SEED_FORCE') === 'true') throw new Error('forced');
+      await this.s3!.send(new HeadObjectCommand({ Bucket: this.bucket, Key: this.key(SEED_MARKER) }));
       this.logger.log('S3 bucket already seeded - skipping');
       return;
     } catch {
@@ -156,7 +190,7 @@ export class FileStorageService implements OnModuleInit {
             await this.s3!.send(
               new PutObjectCommand({
                 Bucket: this.bucket,
-                Key: key,
+                Key: this.key(key),
                 Body: await fs.readFile(path.join(this.seedDir, key)),
                 ContentType: mimeFor(key),
                 CacheControl: key.startsWith(PRIVATE_PREFIX) ? 'private, no-store' : 'public, max-age=604800',
@@ -170,9 +204,10 @@ export class FileStorageService implements OnModuleInit {
         }),
       );
     }
+    if (keys.length === 0) return; // nothing was shipped: do NOT write the marker, or files added later would never be uploaded
     if (failed === 0) {
       try {
-        await this.s3!.send(new PutObjectCommand({ Bucket: this.bucket, Key: SEED_MARKER, Body: new Date().toISOString(), ContentType: 'text/plain' }));
+        await this.s3!.send(new PutObjectCommand({ Bucket: this.bucket, Key: this.key(SEED_MARKER), Body: new Date().toISOString(), ContentType: 'text/plain' }));
       } catch (e) {
         this.logger.error(`S3 seed marker could not be written - ${this.errText(e)}`);
         return;
@@ -187,7 +222,7 @@ export class FileStorageService implements OnModuleInit {
   async openS3(rel: string, ifNoneMatch?: string): Promise<S3File | null> {
     if (this.driver !== 's3' || !this.resolveSafe(rel) || rel.split('/').some((seg) => seg.startsWith('.'))) return null;
     try {
-      const out = await this.s3!.send(new GetObjectCommand({ Bucket: this.bucket, Key: rel, IfNoneMatch: ifNoneMatch || undefined }));
+      const out = await this.s3!.send(new GetObjectCommand({ Bucket: this.bucket, Key: this.key(rel), IfNoneMatch: ifNoneMatch || undefined }));
       return {
         notModified: false,
         body: out.Body as Readable,
@@ -261,15 +296,20 @@ export class FileStorageService implements OnModuleInit {
   private async writeNew(folder: string, ext: string, buffer: Buffer): Promise<string> {
     const rel = `${folder}/${randomUUID()}.${ext}`; // random names: no collisions, no guessing
     if (this.driver === 's3') {
-      await this.s3!.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: rel,
-          Body: buffer,
-          ContentType: mimeFor(rel),
-          CacheControl: rel.startsWith(PRIVATE_PREFIX) ? 'private, no-store' : 'public, max-age=604800',
-        }),
-      );
+      try {
+        await this.s3!.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: this.key(rel),
+            Body: buffer,
+            ContentType: mimeFor(rel),
+            CacheControl: rel.startsWith(PRIVATE_PREFIX) ? 'private, no-store' : 'public, max-age=604800',
+          }),
+        );
+      } catch (e) {
+        this.logger.error(`S3 upload failed for "${this.key(rel)}" - ${this.errText(e)}`);
+        throw new BadGatewayException(`تعذر رفع الملف إلى التخزين (${(e as any)?.name ?? 'S3'})`);
+      }
       return rel;
     }
     const abs = path.join(this.root, rel);
@@ -331,7 +371,7 @@ export class FileStorageService implements OnModuleInit {
     if (!abs) return false;
     try {
       if (this.driver === 's3') {
-        await this.s3!.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: rel })); // deleting a missing key is not an error
+        await this.s3!.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: this.key(rel) })); // deleting a missing key is not an error
         return true;
       }
       await fs.unlink(abs);

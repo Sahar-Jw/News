@@ -1,4 +1,5 @@
 'use client';
+import { asList } from '@/lib/list';
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -63,10 +64,10 @@ function Form() {
     if (!id) return;
     api<Existing>(`/admin/news/${id}`).then((n) => {
       setF({
-        title: n.title, subject: n.subject ?? '', mainCategory: n.mainCategory, newMain: '', subcategory: n.subcategory ?? '', newSub: '', topics: (n.topics ?? []).join(', '),
+        title: n.title, subject: n.subject ?? '', mainCategory: n.mainCategory, newMain: '', subcategory: n.subcategory ?? '', newSub: '', topics: asList(n.topics).join(', '),
         body: n.body ?? '', youtubeUrl: n.youtubeUrl ?? '', rating: n.rating ? String(n.rating) : '', isFeatured: n.isFeatured, publishAt: toLocalInput(n.publishAt), status: n.status, language: n.language, visibility: n.visibility,
       });
-      setExisting(n.images ?? []);
+      setExisting(asList(n.images));
       setPdfOld(n.pdf ?? null);
       setEditorKey((k) => k + 1);
     }).catch((e) => toast(e.message, 'err')).finally(() => setLoading(false));
