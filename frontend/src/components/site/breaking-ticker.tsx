@@ -50,16 +50,18 @@ export function BreakingTicker({ items }: { items: Card[] }) {
       setCell((prev) => (Math.abs(prev - next) < 2 ? prev : next));
     };
     calc();
+    // the web font changes the headline widths: measure again once it is loaded, so the loop is final before it starts
+    let alive = true;
+    document.fonts?.ready.then(() => { if (alive) calc(); }).catch(() => {});
     const ro = new ResizeObserver(calc);
     ro.observe(view);
     ro.observe(one);
-    return () => ro.disconnect();
+    return () => { alive = false; ro.disconnect(); };
   }, [items]);
 
   if (!items.length) return null;
 
   const ordered = rtl ? [...items].reverse() : items;
-  const fade = 'linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%)';
   const headline = (n: Card, key: string) => (
     <Link key={key} dir="auto" href={href(`/news/view?id=${n.id}`)} className="px-5 text-sm hover:underline">● {n.title}</Link>
   );
@@ -74,15 +76,18 @@ export function BreakingTicker({ items }: { items: Card[] }) {
         <span className="relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-current" /></span>
         {t('site.breaking')}
       </span>
-      <div ref={viewRef} dir="ltr" className="relative min-w-0 flex-1 overflow-hidden" style={{ WebkitMaskImage: fade, maskImage: fade }}>
+      <div ref={viewRef} dir="ltr" className="ticker-view relative min-w-0 flex-1 overflow-hidden">
+        <span className="ticker-edge ticker-edge-l" aria-hidden="true" />
+        <span className="ticker-edge ticker-edge-r" aria-hidden="true" />
         {/* hidden copy used only to measure how wide the headlines are */}
         <div ref={measureRef} aria-hidden className="pointer-events-none invisible absolute flex w-max whitespace-nowrap py-2">
           {ordered.map((n) => <span key={n.id} className="px-5 text-sm">● {n.title}</span>)}
         </div>
         <div
           data-rtl={rtl}
+          data-ready={cell > 0}
           className={`ticker-track flex w-max whitespace-nowrap ${cell ? '' : 'invisible'}`}
-          style={cell ? ({ '--ticker-duration': `${Math.max(8, cell / TICKER_SPEED)}s` } as React.CSSProperties) : undefined}
+          style={cell ? ({ '--ticker-cell': cell, '--ticker-duration': `${Math.max(8, cell / TICKER_SPEED)}s` } as React.CSSProperties) : undefined}
         >
           {[0, 1].map((side) => (
             <div key={side} aria-hidden={side === 1 || undefined} className="flex shrink-0 items-center py-2" style={cell ? { width: cell } : undefined}>

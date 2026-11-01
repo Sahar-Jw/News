@@ -66,7 +66,7 @@ export function NewsTable({ section }: { section: string }) {
       rowActions={(r, reload) => (
         <div className="flex gap-1">
           {may('update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}
-          <Link href={href(`/news/view?id=${r.id}`)} target="_blank"><Button size="sm" variant="ghost">{t('app.view')}</Button></Link>
+          <Link href={href(`/news/view?id=${r.id}`)}><Button size="sm" variant="ghost">{t('app.view')}</Button></Link>
           {may('delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
         </div>
       )}

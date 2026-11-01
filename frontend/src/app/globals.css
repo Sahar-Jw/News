@@ -124,11 +124,23 @@ input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
 .breaking-bar { background: var(--breaking-bg, linear-gradient(to right, #b91c1c, #dc2626, #ef4444)); color: var(--breaking-fg, #fff); }
 .breaking-label { background: var(--breaking-label-bg, rgb(0 0 0 / 0.4)); color: var(--breaking-label-fg, inherit); }
 /* breaking-news ticker */
-@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.ticker-track { animation: ticker var(--ticker-duration, 20s) linear infinite; will-change: transform; }
+/* The track slides by exactly one loop (--ticker-cell, in px) with a GPU-only transform: no layout, no repaint per frame. */
+@keyframes ticker { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(calc(var(--ticker-cell, 0) * -1px), 0, 0); } }
+.ticker-view { contain: layout paint; }
+.ticker-track { transform: translate3d(0, 0, 0); backface-visibility: hidden; will-change: transform; }
+/* the animation only starts once the loop has been measured (data-ready), so its speed never changes mid-way */
+.ticker-track[data-ready='true'] { animation: ticker var(--ticker-duration, 20s) linear infinite; }
 /* Arabic: travel the other way (delete this line to make it move like English) */
 .ticker-track[data-rtl='true'] { animation-direction: reverse; }
-.ticker-track:hover { animation-play-state: paused; }
+.ticker-view:hover .ticker-track { animation-play-state: paused; }
+/* soft edges: cheap gradient scrims instead of a mask on the moving content (masks are re-applied every frame) */
+.ticker-edge { position: absolute; inset-block: 0; width: 28px; z-index: 5; pointer-events: none; }
+.ticker-edge-l { left: 0; background: linear-gradient(to right, rgb(0 0 0 / 0.28), transparent); }
+.ticker-edge-r { right: 0; background: linear-gradient(to left, rgb(0 0 0 / 0.28), transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track[data-ready='true'] { animation: none !important; }
+  .ticker-view { overflow-x: auto; }
+}
 
 /* ---------- depth without blobs: crisp patterns, light sweeps and gradient edges ---------- */
 /* fine grid, fades out toward the bottom; put on an absolutely positioned, pointer-events-none layer */

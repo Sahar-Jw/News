@@ -61,7 +61,7 @@ function View() {
           {n.rating ? <Stars value={n.rating} /> : null}
         </div>
 
-        {n.images.length > 0 && <ImageSlider images={n.images} title={n.title} />}
+        {n.images.length > 0 && <ImageSlider images={n.images} title={n.title} dir={n.language === 'ar' ? 'rtl' : 'ltr'} />}
 
         {n.youtubeId && <YoutubeEmbed id={n.youtubeId} title={n.title} />}
 
