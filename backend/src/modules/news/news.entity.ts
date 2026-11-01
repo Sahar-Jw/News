@@ -1,7 +1,7 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Language, NewsStatus, Visibility } from '../../common/constants';
 import { TimestampedEntity } from '../../common/entities/base.entity';
-import { excerpt as makeExcerpt } from '../../common/utils/text';
+import { excerpt as makeExcerpt, mentionsChamberHead } from '../../common/utils/text';
 import { User } from '../users/user.entity';
 
 /** The single unified content table (SRS 13 / 17.5). */
@@ -11,6 +11,7 @@ import { User } from '../users/user.entity';
 @Index('idx_news_subcategory', ['language', 'status', 'visibility', 'subcategory'])
 @Index('idx_news_featured', ['isFeatured', 'publishAt'])
 @Index('idx_news_public_order', ['language', 'publishAt', 'id'])
+@Index('idx_news_chamber_head', ['publishAt'], { where: '"mentions_chamber_head" = true' })
 export class News extends TimestampedEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
@@ -54,6 +55,10 @@ export class News extends TimestampedEntity {
   @Column({ name: 'is_featured', type: 'boolean', default: false })
   isFeatured: boolean;
 
+  /** Maintained automatically on every save: true when title/subject/body mention "رئيس الغرفة". Such news also shows in the home featured carousel. */
+  @Column({ name: 'mentions_chamber_head', type: 'boolean', default: false })
+  mentionsChamberHead: boolean;
+
   @Column({ name: 'publish_at', type: 'timestamptz', nullable: true })
   publishAt: Date | null;
 
@@ -79,6 +84,9 @@ export class News extends TimestampedEntity {
   @BeforeInsert()
   @BeforeUpdate()
   protected syncExcerpt() {
-    if (this.body !== undefined) this.excerpt = makeExcerpt(this.body, 300) || null;
+    if (this.body !== undefined) {
+      this.excerpt = makeExcerpt(this.body, 300) || null;
+      this.mentionsChamberHead = mentionsChamberHead(this.title, this.subject, this.body);
+    }
   }
 }

@@ -22,7 +22,7 @@ Production: `npm run build` -> upload the contents of `out/` to `public_html` (t
 | Route | What |
 |---|---|
 | `/` | redirects to `/ar/` (or the last chosen language) |
-| `/{ar,en}/` | home: ticker, hero, featured, latest, team, services, testimonials (+Facebook page), partners, experts, statistics, company, contact. Order/visibility/titles come from `sections_home` settings |
+| `/{ar,en}/` | home: ticker, hero, featured (latest 5 news marked as featured, or mentioning "رئيس الغرفة"), latest, team, services, testimonials, partners, experts, statistics, company, contact. Order/visibility/titles come from `sections_home` settings |
 | `/{lang}/news/?category=&subcategory=&page=` | list with filters |
 | `/{lang}/news/view/?id=` | article: gallery, rich body, topics, share, related, view count |
 | `/{lang}/search/?q=` | search (min 2 chars) |
@@ -43,5 +43,5 @@ The shared top bar, navigation, and footer wrap every public page (including log
 - Menu items and buttons are hidden by permission (UI hint only; the API enforces every permission and returns 403).
 - Special-section forms pin the main category. Changing a category / adding a new one needs `news.category.change` / `news.category.create`.
 - Images: thumbnails, zoom, remove/undo existing, add new (marked "New"); nothing is saved until you press Save.
-- Optional settings (phone, social links, Facebook page, map, logo ...) are hidden when empty. Partners show logos only.
+- Optional settings (phone, social links, map, logo ...) are hidden when empty. Partners show logos only.
 - RTL/LTR switches `lang`/`dir` on `<html>`; layout uses logical properties (`start/end`).

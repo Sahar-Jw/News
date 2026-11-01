@@ -37,7 +37,6 @@ const BASE_AR: Record<string, string> = {
   youtube_url: 'يوتيوب',
   whatsapp_url: 'واتساب',
   telegram_url: 'تيليغرام',
-  facebook_page_url: 'صفحة فيسبوك',
   // appearance
   primary_color: 'اللون الأساسي',
   secondary_color: 'اللون الثانوي',

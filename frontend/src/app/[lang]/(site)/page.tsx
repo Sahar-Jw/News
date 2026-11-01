@@ -64,7 +64,7 @@ export default function HomePage() {
       case 'news': return <SectionWrap key={k} code={k} title={title(k)} action={<Link href={href('/news')} className="text-sm font-semibold text-primary">{t('site.allNews')} →</Link>}><RegularNews items={home.news} /></SectionWrap>;
       case 'team': return home.team.length ? <SectionWrap key={k} code={k} title={title(k)}><TeamSlider items={home.team} /></SectionWrap> : null;
       case 'services': return home.services.length ? <SectionWrap key={k} code={k} title={title(k)}><ServicesGrid items={home.services} /></SectionWrap> : null;
-      case 'testimonials': return <SectionWrap key={k} code={k} title={title(k)}><Testimonials items={home.testimonials} /></SectionWrap>;
+      case 'testimonials': return home.testimonials.length ? <SectionWrap key={k} code={k} title={title(k)}><Testimonials items={home.testimonials} /></SectionWrap> : null;
       case 'partners': return home.partners.length ? <SectionWrap key={k} code={k} title={title(k)}><Partners items={home.partners} /></SectionWrap> : null;
       case 'experts': return home.experts.length ? <SectionWrap key={k} code={k} title={title(k)}><Experts items={home.experts} /></SectionWrap> : null;
       case 'statistics': return home.statistics.length ? <SectionWrap key={k} code={k} title={title(k)}><StatsRow items={home.statistics} /></SectionWrap> : null;

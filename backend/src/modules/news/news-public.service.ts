@@ -168,7 +168,9 @@ export class NewsPublicService {
       const [settings, specials, featured, regular] = await Promise.all([
         this.settings.publicMap(),
         this.order(this.slim(this.base(L, v))).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
-        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).andWhere('n.isFeatured = true').take(5).getMany(), // latest 5 featured news (flag is independent of status/visibility, but the record must still be eligible)
+        // latest 5 featured news: marked as featured by an editor, OR mentioning "رئيس الغرفة" (flag kept up to date on save).
+        // Both are independent of status/visibility, but the record must still be eligible.
+        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).andWhere('(n.isFeatured = true OR n.mentionsChamberHead = true)').take(5).getMany(),
         this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).take(4).getMany(),
       ]);
       return { settings, specials, featured, regular };

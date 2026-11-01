@@ -53,7 +53,7 @@ export function SectionWrap({ code, title, children, action, compact }: { code: 
 }
 
 /**
- * Home hero. Slides crossfade without scaling the full-size images, the title rises word by word,
+ * Home hero. The picture always spans the full width of the page (object-cover). Slides crossfade without scaling the images, the title rises word by word,
  * and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
  */
 export function HeroSlider() {
@@ -77,7 +77,7 @@ export function HeroSlider() {
         return (
           <div key={k} aria-hidden={!on} className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${on ? 'hero-in opacity-100' : 'pointer-events-none opacity-0'}`}>
             <div className="absolute inset-0">
-              <FitImage src={sl.image} />
+              <FitImage src={sl.image} cover />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
             <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-transparent to-transparent rtl:bg-gradient-to-l" />
@@ -277,58 +277,22 @@ export function ServicesGrid({ items }: { items: Card[] }) {
   );
 }
 
-/** Facebook page plugin sized to its container (the plugin itself allows 180-500px) and clipped to the same radius as the cards. */
-function FacebookCard({ pageUrl }: { pageUrl: string }) {
-  const { t } = useI18n();
-  const box = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const measure = () => setW(Math.floor(el.getBoundingClientRect().width));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const width = Math.min(500, Math.max(180, w));
-  return (
-    <div ref={box} className="h-[500px] w-full overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-      {w > 0 && (
-        <iframe
-          key={width}
-          title={t('site.facebookPage')}
-          className="mx-auto block h-full border-0"
-          style={{ width }}
-          loading="lazy"
-          src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(pageUrl)}&tabs=timeline&width=${width}&height=500&small_header=true`}
-        />
-      )}
-    </div>
-  );
-}
-
 export function Testimonials({ items }: { items: Card[] }) {
-  const { s } = useSite();
-  const fb = s('social', 'facebook_page_url');
-  if (!items.length && !fb) return null;
+  if (!items.length) return null;
   return (
-    <div className={`grid items-start gap-5 ${fb ? 'lg:grid-cols-3' : ''}`}>
-      <div className={`grid content-start gap-5 sm:grid-cols-2 ${fb ? 'lg:col-span-2' : 'lg:grid-cols-3'}`}>
-        {items.map((x) => (
-          <div key={x.id} className="relative rounded-2xl bg-white p-6 text-ink shadow-card ring-1 ring-line">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="absolute end-5 top-5 text-primary/15" aria-hidden="true"><path d="M7.2 4C4.9 4 3 5.9 3 8.2V20h8.4V11.6H7.2V8.2h4.2V4H7.2Zm9.6 0c-2.3 0-4.2 1.9-4.2 4.2V20H21V11.6h-4.2V8.2H21V4h-4.2Z" /></svg>
-            <Stars value={x.rating} />
-            <h4 className="mt-2 font-bold">{x.title}</h4>
-            <p className="mt-2 text-sm leading-7 text-gray-600">{x.excerpt}</p>
-            <div className="mt-4 flex items-center gap-3">
-              {x.images[0] ? <Thumb src={x.images[0]} className="h-10 w-10 rounded-full" /> : <DefaultAvatar className="h-10 w-10 rounded-full" />}
-              <span className="text-sm text-gray-500">{x.subject}</span>
-            </div>
+    <div className="grid content-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((x) => (
+        <div key={x.id} className="relative rounded-2xl bg-white p-6 text-ink shadow-card ring-1 ring-line">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" className="absolute end-5 top-5 text-primary/15" aria-hidden="true"><path d="M7.2 4C4.9 4 3 5.9 3 8.2V20h8.4V11.6H7.2V8.2h4.2V4H7.2Zm9.6 0c-2.3 0-4.2 1.9-4.2 4.2V20H21V11.6h-4.2V8.2H21V4h-4.2Z" /></svg>
+          <Stars value={x.rating} />
+          <h4 className="mt-2 font-bold">{x.title}</h4>
+          <p className="mt-2 text-sm leading-7 text-gray-600">{x.excerpt}</p>
+          <div className="mt-4 flex items-center gap-3">
+            {x.images[0] ? <Thumb src={x.images[0]} className="h-10 w-10 rounded-full" /> : <DefaultAvatar className="h-10 w-10 rounded-full" />}
+            <span className="text-sm text-gray-500">{x.subject}</span>
           </div>
-        ))}
-      </div>
-      {fb && <FacebookCard pageUrl={fb} />}
+        </div>
+      ))}
     </div>
   );
 }

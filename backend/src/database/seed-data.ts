@@ -114,7 +114,6 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('social', 'youtube_url', 'url'),
   s('social', 'whatsapp_url', 'url'),
   s('social', 'telegram_url', 'url'),
-  s('social', 'facebook_page_url', 'url'),
   // hero slider: 3 slides
   ...[1, 2, 3].flatMap((n) => [
     s('hero', `slide${n}_image`, 'file'),

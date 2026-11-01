@@ -55,8 +55,9 @@ export function DefaultAvatar({ className = '' }: { className?: string }) {
 /**
  * Image that is never stretched or cropped: shown whole (object-contain) over a blurred copy of itself,
  * so any aspect ratio fills the frame. The parent must be `relative` with a fixed size.
+ * With `cover` the picture instead fills the whole frame edge to edge (used by the home hero, which must span the full width).
  */
-export function FitImage({ src, alt = '' }: { src?: string | null; alt?: string }) {
+export function FitImage({ src, alt = '', cover = false }: { src?: string | null; alt?: string; cover?: boolean }) {
   if (!src) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/60 to-secondary" aria-hidden>
@@ -65,6 +66,7 @@ export function FitImage({ src, alt = '' }: { src?: string | null; alt?: string 
     );
   }
   const url = fileUrl(src);
+  if (cover) return <img src={url} alt={alt} className="absolute inset-0 h-full w-full object-cover object-center" />;
   return (
     <>
       <img src={url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
@@ -146,18 +148,22 @@ export function NewsCard({ n }: { n: Card }) {
   const chip = 'z-10 transition hover:bg-primary hover:text-white';
   return (
     <article className="card-accent group relative flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1.5 hover:shadow-lift hover:ring-primary/30">
-      <div className="relative block overflow-hidden">
-        <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
+      {/* the picture is shown whole (never cropped): contained over a blurred copy of itself, so every aspect ratio fills the 16:10 frame */}
+      <div className="relative block aspect-[16/10] w-full overflow-hidden">
+        <FitImage src={n.images[0]} alt={n.title} />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true" />
         <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
           <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur`}>
             <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}
           </Link>
-          {mayEdit && <Link href={href(`/admin/news/edit?id=${n.id}${section ? `&section=${section}` : ''}`)} className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:brightness-110">{t('app.edit')}</Link>}
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-2.5 p-5">
-        <h3 className="line-clamp-2 text-base font-bold leading-[1.8] transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
+        {/* title on one side, the edit button (only for admins / users allowed to edit) on the opposite side */}
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-bold leading-[1.8] transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
+          {mayEdit && <Link href={href(`/admin/news/edit?id=${n.id}${section ? `&section=${section}` : ''}`)} className="relative z-10 mt-1.5 shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:brightness-110">{t('app.edit')}</Link>}
+        </div>
         {n.subject && <p className="line-clamp-1 text-sm font-medium text-[color:var(--muted)]">{n.subject}</p>}
         {n.excerpt && <p className="line-clamp-2 text-sm leading-7 text-gray-600">{shortExcerpt(n.excerpt)}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">

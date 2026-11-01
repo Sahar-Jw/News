@@ -30,6 +30,19 @@ export function excerpt(html: string | null | undefined, max = 180): string {
   return t.length > max ? t.slice(0, max).trimEnd() + '…' : t;
 }
 
+/** The phrase that promotes a news item to the home "featured" carousel when it is mentioned in it. */
+const CHAMBER_HEAD_RE = /رئيس[\s ]+الغرفة/;
+
+/**
+ * True when the news text mentions "رئيس الغرفة" (title, subject or body). Diacritics and tatweel are ignored and any
+ * run of spaces counts, so "رئيــس  الغرفة" matches too; attached prefixes ("ورئيس الغرفة", "لرئيس الغرفة") match as well.
+ * The database column `news.mentions_chamber_head` stores this result, so the home page never has to scan the bodies.
+ */
+export function mentionsChamberHead(title: string | null | undefined, subject: string | null | undefined, body: string | null | undefined): boolean {
+  const text = `${title ?? ''} ${subject ?? ''} ${stripHtml(body)}`.normalize('NFC').replace(/[ـً-ٰٟ]/g, '');
+  return CHAMBER_HEAD_RE.test(text);
+}
+
 /** SRS 13.6 – server-side whitelist sanitisation of rich text. */
 export function sanitizeRichText(html: string | null | undefined): string | null {
   if (html == null) return null;
