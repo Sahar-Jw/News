@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +24,8 @@ const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 12);
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Role) private readonly roles: Repository<Role>,
@@ -40,9 +42,16 @@ export class AuthService {
     if (await this.users.findOne({ where: { email: dto.email }, select: { id: true } })) {
       throw new ConflictException('البريد الإلكتروني مسجّل مسبقاً');
     }
-    const code = this.config.get<string>('DEFAULT_ROLE_CODE', 'registered');
+    // A hosting panel can save the value empty, with spaces, or with quotes: clean it, and fall back to "registered".
+    const rawCode = this.config.get<string>('DEFAULT_ROLE_CODE');
+    const code = (rawCode ?? '').trim().replace(/^(["'])(.*)\1$/, '$2').trim() || 'registered';
     const role = await this.roles.findOne({ where: { code } });
-    if (!role) throw new InternalServerErrorException('إعدادات النظام غير مكتملة (الدور الافتراضي غير موجود)');
+    if (!role) {
+      // Shows in the backend log exactly what was searched for and what the connected database really contains.
+      const existing = (await this.roles.find({ select: { code: true } })).map((r) => JSON.stringify(r.code)).join(', ');
+      this.logger.error(`Default role ${JSON.stringify(code)} not found (DEFAULT_ROLE_CODE=${JSON.stringify(rawCode)}). Roles in the connected database: [${existing}]`);
+      throw new InternalServerErrorException('إعدادات النظام غير مكتملة (الدور الافتراضي غير موجود)');
+    }
 
     const user = await this.users.save(
       this.users.create({
