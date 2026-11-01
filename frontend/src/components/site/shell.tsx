@@ -237,6 +237,19 @@ export function Navbar() {
   const clear = () => { setQ(''); leaveSearch(); };
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  // icon-only search: click the icon to expand the field; it folds back when empty and unfocused
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (q) setSearchOpen(true); }, [q]);
+  const toggleSearch = () => {
+    if (!searchOpen) { setSearchOpen(true); requestAnimationFrame(() => searchInput.current?.focus()); return; }
+    if (q.trim().length >= 2) { clearTimeout(timer.current); goSearch(q); return; }
+    setSearchOpen(false);
+  };
+  const onSearchBlur = (e: React.FocusEvent<HTMLFormElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !q.trim()) setSearchOpen(false);
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     clearTimeout(timer.current);
@@ -250,7 +263,7 @@ export function Navbar() {
           {logo && <img src={logo} alt="" className={`w-auto shrink-0 transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
           <div className="min-w-0">
             {/* the name wraps (max two lines) beside the logo, so the menu never drops to a second row; longer name = smaller text */}
-            <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-primary" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>
+            <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-black" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>
             {loc('branding', 'site_description') && <div className="max-w-[16rem] truncate text-xs text-gray-500">{loc('branding', 'site_description')}</div>}
           </div>
         </Link>
@@ -308,18 +321,6 @@ export function Navbar() {
 
           <NavDropdown label={t('site.services')} items={servicesItems} href={href} />
 
-          <form onSubmit={submit} role="search" className="relative w-full xl:w-auto">
-            <input value={q} onChange={(e) => typing(e.target.value)} placeholder={t('site.searchPlaceholder')} className="h-10 w-full rounded-full border border-transparent bg-gray-100/80 ps-4 pe-[4.25rem] text-sm outline-none transition-all duration-300 placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 xl:w-40 xl:focus:w-56 2xl:w-48" />
-            {q && (
-              <button type="button" onClick={clear} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="absolute end-10 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-gray-800">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-              </button>
-            )}
-            <button className="absolute end-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white transition hover:brightness-110 active:scale-95" aria-label={t('app.search')}>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            </button>
-          </form>
-
           {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
           {me && <NavDropdown label={t('adm.tools')} items={toolsItems} href={href} />}
           {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
@@ -354,6 +355,29 @@ export function Navbar() {
             </svg>
             <span>{lang === 'ar' ? 'EN' : 'AR'}</span>
           </Link>
+
+          <form onSubmit={submit} onBlur={onSearchBlur} role="search" className="relative order-first h-10 w-full xl:order-none xl:w-10">
+            <div className={`flex h-10 items-center overflow-hidden rounded-full transition-[width,background-color,box-shadow] duration-300 ease-out xl:absolute xl:end-0 xl:top-0 xl:z-50 ${searchOpen ? 'w-full bg-white shadow-lift ring-1 ring-primary/30 xl:w-72' : 'w-10 bg-primary/[0.08] hover:bg-primary/15'}`}>
+              <input
+                ref={searchInput}
+                value={q}
+                onChange={(e) => typing(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') { if (q) clear(); setSearchOpen(false); (e.target as HTMLInputElement).blur(); } }}
+                placeholder={t('site.searchPlaceholder')}
+                aria-label={t('app.search')}
+                tabIndex={searchOpen ? 0 : -1}
+                className={`h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400 ${searchOpen ? 'ps-4' : 'pointer-events-none w-0 p-0'}`}
+              />
+              {q && searchOpen && (
+                <button type="button" onClick={() => { clear(); searchInput.current?.focus(); }} title={t('site.clearSearch')} aria-label={t('site.clearSearch')} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-200 hover:text-gray-800">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                </button>
+              )}
+              <button type="button" onClick={toggleSearch} aria-label={t('app.search')} aria-expanded={searchOpen} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-primary transition hover:scale-110">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              </button>
+            </div>
+          </form>
 
         </nav>
           </div>
