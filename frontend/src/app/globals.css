@@ -4,9 +4,9 @@
 
 /* ---------- design tokens (primary / secondary are overridden from Settings at runtime) ---------- */
 :root {
-  --primary: #2748e8; /* ultramarine */
-  --secondary: #0a1236; /* midnight navy */
-  --accent: #ff7a2f; /* warm orange, echoes the logo */
+  --primary: #327399; /* ultramarine */
+  --secondary: #327399; /* midnight navy */
+  --accent: #000000; /* warm orange, echoes the logo */
   /* page background, borders and text tones are tints of the Settings colours (no fixed blue left over) */
   --canvas: color-mix(in srgb, var(--primary) 5%, white);
   --line: color-mix(in srgb, var(--primary) 14%, white);
