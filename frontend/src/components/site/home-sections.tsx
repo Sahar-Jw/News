@@ -36,12 +36,13 @@ export function SectionWrap({ code, title, children, action, compact }: { code: 
       {dark && <><div className="grid-lines pointer-events-none absolute inset-0" aria-hidden="true" /><div className="sheen" aria-hidden="true" /><div className="edge-glow pointer-events-none absolute inset-x-0 top-0" aria-hidden="true" /></>}
       <div className={`relative mx-auto max-w-7xl px-4 ${compact ? 'pb-1 pt-8 md:pb-2 md:pt-10' : 'py-8 md:py-10'}`}>
         <Reveal className="mb-6 text-center">
-          {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-white/10 text-white ring-1 ring-white/20' : 'bg-primary/10 text-primary ring-1 ring-primary/15'}`}>{eyebrow}</span>}
-          <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl`}>{title}</h2>
-          <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
-            <span className="bar-draw h-1 w-12 rounded-full bg-gradient-to-r from-primary to-accent" />
-            <span className="h-1 w-2 rounded-full bg-accent/60" />
-            <span className="h-1 w-1 rounded-full bg-accent/30" />
+          {eyebrow && <span className={`inline-block rounded-full px-3.5 py-1 text-xs font-semibold ${dark ? 'bg-accent/20 text-white ring-1 ring-accent/50' : 'bg-accent/15 text-secondary ring-1 ring-accent/40'}`}>{eyebrow}</span>}
+          <h2 className={`${eyebrow ? 'mt-3' : ''} text-xl font-extrabold leading-tight md:text-2xl ${dark ? '' : 'text-secondary'}`}>{title}</h2>
+          {/* gold ornament: hairlines either side of a small diamond, like the logo's flourishes */}
+          <div className="mt-3 flex items-center justify-center gap-2.5" aria-hidden="true">
+            <span className="bar-draw h-px w-14 bg-gradient-to-r from-transparent to-accent" />
+            <span className="relative h-2.5 w-2.5 rotate-45 border border-accent"><span className="absolute inset-[2px] bg-accent" /></span>
+            <span className="bar-draw h-px w-14 bg-gradient-to-l from-transparent to-accent" />
           </div>
           {subtitle && <p className={`mx-auto mt-3 max-w-2xl text-sm leading-7 ${dark ? 'text-white/70' : 'text-[color:var(--muted)]'}`}>{subtitle}</p>}
         </Reveal>
@@ -71,7 +72,7 @@ export function HeroSlider() {
   }, [i, many, paused, slides.length]);
   if (!slides.length) return null;
   return (
-    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[280px] overflow-hidden rounded-b-[2.5rem] bg-secondary shadow-lift md:h-[440px]" aria-roledescription="carousel">
+    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[280px] overflow-hidden rounded-b-[2.5rem] border-b-[3px] border-accent bg-secondary shadow-lift md:h-[440px]" aria-roledescription="carousel">
       {slides.map((sl, k) => {
         const on = k === i;
         return (
@@ -127,7 +128,7 @@ function Arrow({ side, onClick, label, below = false, disabled = false }: { side
       title={label}
       className={below
         ? 'flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white shadow-card transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-40'
-        : `absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40 ${side === 'left' ? 'left-3' : 'right-3'}`}
+        : `absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-secondary/60 text-white ring-1 ring-accent/50 transition hover:bg-secondary/85 disabled:cursor-not-allowed disabled:opacity-40 ${side === 'left' ? 'left-3' : 'right-3'}`}
     >
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d={side === 'left' ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} />
@@ -153,7 +154,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
   const rtl = dir === 'rtl';
   return (
     <div
-      className="relative h-60 overflow-hidden rounded-3xl bg-secondary shadow-lift ring-1 ring-primary/20 md:h-80"
+      className="relative h-60 overflow-hidden rounded-3xl bg-secondary shadow-lift ring-2 ring-accent/60 md:h-80"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       role="region"
@@ -235,7 +236,7 @@ export function TeamSlider({ items }: { items: Card[] }) {
           <div className="overflow-hidden" style={{ width: frameW }}>
             <div className={`flex transition-transform duration-500 ease-in-out ${slides ? '' : 'justify-center'}`} style={{ gap, transform: `translateX(${(rtl ? 1 : -1) * i * (size + gap)}px)` }}>
               {items.map((m) => (
-                <div key={m.id} title={m.title} style={{ width: size, height: size }} className="shrink-0 overflow-hidden rounded-full bg-white shadow-card ring-1 ring-line">
+                <div key={m.id} title={m.title} style={{ width: size, height: size }} className="shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-card ring-2 ring-accent/70">
                   {m.images[0] ? <img src={fileUrl(m.images[0])} alt={m.title} loading="lazy" className="h-full w-full rounded-full object-cover" /> : <DefaultAvatar className="h-full w-full rounded-full" />}
                 </div>
               ))}
@@ -338,8 +339,8 @@ export function StatsRow({ items }: { items: Card[] }) {
       <div className="sheen" aria-hidden="true" />
       <Stagger className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((x) => (
-          <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/10 px-4 py-4 text-center text-white ring-1 ring-white/15 backdrop-blur-sm">
-            <CountUp value={x.excerpt || x.subject || ''} className="break-words font-display text-lg font-extrabold leading-tight md:text-xl" />
+          <div key={x.id} className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.07] px-4 py-4 text-center text-white ring-1 ring-accent/40 backdrop-blur-sm">
+            <CountUp value={x.excerpt || x.subject || ''} className="break-words font-display text-lg font-extrabold leading-tight text-[#ecdcb8] md:text-xl" />
             <div className="mt-3 text-xs text-white/80 md:text-sm">{x.title}</div>
           </div>
         ))}

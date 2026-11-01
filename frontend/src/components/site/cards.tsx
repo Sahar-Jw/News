@@ -147,7 +147,7 @@ export function NewsCard({ n }: { n: Card }) {
   const mayEdit = can(newsPerm('update', section));
   const chip = 'z-10 transition hover:bg-primary hover:text-white';
   return (
-    <article className="card-accent group relative flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1.5 hover:shadow-lift hover:ring-primary/30">
+    <article className="card-accent group relative flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1.5 hover:shadow-lift hover:ring-accent/70">
       {/* the picture is shown whole (never cropped): contained over a blurred copy of itself, so every aspect ratio fills the 16:10 frame */}
       <div className="relative block aspect-[16/10] w-full overflow-hidden">
         <FitImage src={n.images[0]} alt={n.title} />

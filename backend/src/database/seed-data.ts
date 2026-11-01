@@ -141,13 +141,14 @@ export const SETTING_SEEDS: SettingSeed[] = [
   // dates (appointments): the statuses the Dates form offers, editable from Settings
   ...statusSettingRows(DEFAULT_APPOINTMENT_STATUSES).map(([key, type, value]) => s('appointments', key, type, value)),
   // appearance
-  s('appearance', 'primary_color', 'color', '#2748e8'),
-  s('appearance', 'secondary_color', 'color', '#0a1236'),
-  s('appearance', 'accent_color', 'color', '#ff7a2f'),
-  // empty = the built-in glass header / navy footer
+  // palette of the logo: emerald green, deep forest green, antique gold
+  s('appearance', 'primary_color', 'color', '#0a5c3d'),
+  s('appearance', 'secondary_color', 'color', '#043323'),
+  s('appearance', 'accent_color', 'color', '#bd9f6e'),
+  // empty = the built-in cream glass header / deep green footer
   s('appearance', 'header_background', 'color'),
   s('appearance', 'footer_background', 'color'),
-  // breaking-news bar: two independent colours. Empty = the built-in look (red gradient bar / dark label).
+  // breaking-news bar: two independent colours. Empty = the built-in look (green gradient bar / gold label).
   s('appearance', 'breaking_bg_color', 'color'), // the scrolling bar
   s('appearance', 'breaking_label_bg_color', 'color'), // the «Breaking» label block at the start of the bar
   s('appearance', 'default_service_icon', 'file'),

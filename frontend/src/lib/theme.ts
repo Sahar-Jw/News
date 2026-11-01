@@ -8,7 +8,8 @@
  * see globals.css and [lang]/layout.tsx) until the colours arrive from the API, so the default colours never show. A safety timer lifts the
  * skeleton after THEME_PENDING_MAX_MS even if the API is slow or down.
  */
-export const THEME_STORAGE_KEY = 'site-theme-v1';
+// v2: the palette changed to the logo's green / gold, so colours remembered by older visits are dropped instead of flashing blue first
+export const THEME_STORAGE_KEY = 'site-theme-v2';
 
 /** setting key -> CSS variable (+ values that count as "not customised", they keep the built-in look) */
 const THEME_VARS: Record<string, { cssVar: string; fg?: string }> = {

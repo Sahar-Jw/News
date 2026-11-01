@@ -127,7 +127,7 @@ export function TopBar() {
   const website = s('contact', 'website_url');
   const addr = loc('contact', 'address');
   return (
-    <div className="no-print bg-gradient-to-r from-secondary via-secondary to-primary/70 text-xs text-white/90">
+    <div className="no-print border-b border-accent/40 bg-gradient-to-r from-secondary via-secondary to-primary text-xs text-white/90">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2">
         <div className="flex flex-wrap items-center gap-4">
           {now && <span className="flex items-center gap-1.5"><ContactIcon name="date" />{now}</span>}
@@ -257,14 +257,14 @@ export function Navbar() {
   };
 
   return (
-    <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: 'var(--header-bg, rgb(255 255 255 / 0.8))' }}>
+    <header className={`no-print sticky top-0 z-40 border-b border-accent/35 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: 'var(--header-bg, color-mix(in srgb, var(--canvas) 88%, transparent))' }}>
       <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 xl:flex-nowrap xl:gap-x-4 ${scrolled ? 'py-1' : 'py-2.5'}`}>
         <Link href={href('/')} className="flex min-w-0 max-w-full shrink items-center gap-3 xl:min-w-[9rem]">
           {/* round logo with a 2px white border; it grows smoothly when hovered (and sits above the header content while doing so) */}
-          {logo && <img src={logo} alt="" className={`relative z-10 shrink-0 origin-center rounded-full border-2 border-white bg-white object-cover shadow-md transition-[width,height,transform,box-shadow] duration-300 ease-out hover:scale-125 hover:shadow-lift motion-reduce:transition-none motion-reduce:hover:scale-100 ${scrolled ? 'h-9 w-9' : 'h-12 w-12'}`} />}
+          {logo && <img src={logo} alt="" className={`relative z-10 shrink-0 origin-center rounded-full border-2 border-white bg-white object-cover shadow-md ring-1 ring-accent/50 transition-[width,height,transform,box-shadow] duration-300 ease-out hover:scale-125 hover:shadow-lift motion-reduce:transition-none motion-reduce:hover:scale-100 ${scrolled ? 'h-9 w-9' : 'h-12 w-12'}`} />}
           <div className="min-w-0">
             {/* the name wraps (max two lines) beside the logo, so the menu never drops to a second row; longer name = smaller text */}
-            <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-black" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>
+            <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-secondary" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>
             {loc('branding', 'site_description') && <div className="max-w-[16rem] truncate text-xs text-gray-500">{loc('branding', 'site_description')}</div>}
           </div>
         </Link>
@@ -397,21 +397,21 @@ export function Footer() {
   }, [lang]);
   const logo = img('branding', 'logo');
   return (
-    <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-gray-300" style={{ background: 'var(--footer-bg, color-mix(in srgb, var(--secondary) 94%, black))' }}>
+    <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-stone-200" style={{ background: 'var(--footer-bg, color-mix(in srgb, var(--secondary) 94%, black))' }}>
       <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />
       <div className="sheen" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 md:grid-cols-4">
         <div>
-          {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
+          {logo && <img src={logo} alt="" className="mb-3 h-16 w-16 rounded-full border-2 border-white bg-white object-cover shadow-md ring-1 ring-accent/60" />}
           <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
-          <p className="max-w-xs text-sm leading-7 text-gray-400">{loc('branding', 'site_description')}</p>
+          <p className="max-w-xs text-sm leading-7 text-stone-300">{loc('branding', 'site_description')}</p>
           <div className="mt-4"><SocialLinks /></div>
         </div>
         <div>
           <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.quickLinks')}</h4>
-          <ul className="space-y-2.5 text-sm text-gray-400">
+          <ul className="space-y-2.5 text-sm text-stone-300">
             <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
             <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
             <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
@@ -419,11 +419,11 @@ export function Footer() {
         </div>
         <div>
           <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.services')}</h4>
-          <ul className="space-y-2.5 text-sm text-gray-400">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
+          <ul className="space-y-2.5 text-sm text-stone-300">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
         </div>
         <div>
           <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
-          <ul className="space-y-2.5 text-sm text-gray-400">
+          <ul className="space-y-2.5 text-sm text-stone-300">
             {s('contact', 'phone') && <li><a href={telHref(s('contact', 'phone'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></a></li>}
             {s('contact', 'mobile') && <li><a href={telHref(s('contact', 'mobile'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="mobile" /><bdi dir="ltr">{s('contact', 'mobile')}</bdi></a></li>}
             {s('contact', 'fax') && <li className="flex items-center gap-2"><ContactIcon name="fax" /><bdi dir="ltr">{s('contact', 'fax')}</bdi></li>}

@@ -15,7 +15,7 @@ export function Center({ children }: { children: React.ReactNode }) {
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' | 'outline'; size?: 'sm' | 'md' };
 export function Button({ variant = 'primary', size = 'md', className, ...p }: BtnProps) {
   const v = {
-    primary: 'bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-inset ring-white/10 hover:-translate-y-px hover:shadow-lg hover:shadow-primary/30 hover:brightness-110',
+    primary: 'bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-inset ring-accent/40 hover:-translate-y-px hover:shadow-lg hover:shadow-primary/30 hover:brightness-110',
     ghost: 'bg-transparent text-ink/80 hover:bg-primary/10 hover:text-primary',
     danger: 'bg-red-600 text-white shadow-md shadow-red-600/20 hover:-translate-y-px hover:bg-red-700',
     outline: 'border border-line bg-white text-ink/85 shadow-sm hover:border-primary/40 hover:bg-primary/5 hover:text-primary',
