@@ -51,9 +51,18 @@ export class AuthService {
       const existing = (await this.roles.find({ select: { code: true } })).map((r) => JSON.stringify(r.code)).join(', ');
       this.logger.error(`Default role ${JSON.stringify(code)} not found (DEFAULT_ROLE_CODE=${JSON.stringify(rawCode)}). Roles in the connected database: [${existing}]`);
       try {
-        const [who] = await this.roles.query('SELECT current_database() AS db, current_schema() AS schema, current_user AS usr, inet_server_addr()::text AS addr, inet_server_port() AS port');
-        const n = await this.roles.count();
-        this.logger.error(`Connected to: ${JSON.stringify(who)} | roles rows: ${n} | DB_HOST=${JSON.stringify(this.config.get('DB_HOST'))} DB_NAME=${JSON.stringify(this.config.get('DB_NAME'))} DB_USER=${JSON.stringify(this.config.get('DB_USER'))} DB_SCHEMA=${JSON.stringify(this.config.get('DB_SCHEMA'))}`);
+        const [who] = await this.roles.query(
+          `SELECT current_database() AS db, inet_server_addr()::text AS addr, inet_server_port() AS port, current_user AS usr,
+                  pg_is_in_recovery() AS replica, current_setting('search_path') AS search_path,
+                  (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) AS superuser,
+                  (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user) AS bypass_rls,
+                  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.roles'::regclass) AS roles_rls,
+                  (SELECT count(*) FROM public.roles) AS roles,
+                  (SELECT count(*) FROM public.users) AS users,
+                  (SELECT count(*) FROM public.permissions) AS permissions,
+                  (SELECT max(id) FROM public.audit_logs) AS audit_max_id`,
+        );
+        this.logger.error(`DB identity: ${JSON.stringify(who)} | DB_HOST=${JSON.stringify(this.config.get('DB_HOST'))} DB_NAME=${JSON.stringify(this.config.get('DB_NAME'))} DB_USER=${JSON.stringify(this.config.get('DB_USER'))} DB_SCHEMA=${JSON.stringify(this.config.get('DB_SCHEMA'))}`);
       } catch (e) {
         this.logger.error(`Could not read connection info: ${(e as Error).message}`);
       }
