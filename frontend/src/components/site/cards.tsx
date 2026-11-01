@@ -106,7 +106,7 @@ export function ShareRow({ id, title }: { id: number; title: string }) {
     ['linkedin', <SocialIcon key="l" name="linkedin_url" size={12} />, l.linkedin],
     ['email', <ContactIcon key="e" name="email" size={12} />, l.email],
   ];
-  const cls = 'flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 hover:bg-primary hover:text-white';
+  const cls = 'flex h-7 w-7 items-center justify-center rounded-full bg-primary/[0.07] text-ink/70 transition hover:-translate-y-px hover:bg-primary hover:text-white';
   return (
     <div className="flex items-center gap-1 text-xs text-gray-500">
       <span className="me-1">{t('site.share')}</span>
@@ -145,9 +145,10 @@ export function NewsCard({ n }: { n: Card }) {
   const mayEdit = can(newsPerm('update', section));
   const chip = 'z-10 transition hover:bg-primary hover:text-white';
   return (
-    <article className="card-accent group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift hover:ring-primary/25">
+    <article className="card-accent group relative flex flex-col overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1.5 hover:shadow-lift hover:ring-primary/30">
       <div className="relative block overflow-hidden">
         <Thumb src={n.images[0]} alt={n.title} className="aspect-[16/10] w-full transition-transform duration-700 ease-out group-hover:scale-105" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true" />
         <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
           <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur`}>
             <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}
@@ -155,13 +156,19 @@ export function NewsCard({ n }: { n: Card }) {
           {mayEdit && <Link href={href(`/admin/news/edit?id=${n.id}${section ? `&section=${section}` : ''}`)} className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-sm transition hover:brightness-110">{t('app.edit')}</Link>}
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-5">
-        <h3 className="line-clamp-2 text-sm font-bold leading-[1.8] transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
+      <div className="flex flex-1 flex-col gap-2.5 p-5">
+        <h3 className="line-clamp-2 text-base font-bold leading-[1.8] transition group-hover:text-primary"><Link href={link} className="after:absolute after:inset-0 after:content-['']">{n.title}</Link></h3>
         {n.subject && <p className="line-clamp-1 text-sm font-medium text-[color:var(--muted)]">{n.subject}</p>}
         {n.excerpt && <p className="line-clamp-2 text-sm leading-7 text-gray-600">{shortExcerpt(n.excerpt)}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-xs text-gray-500">
-          <span>{fmtDate(lang, n.publishAt)}</span>
-          <span>👁 {fmtNum(lang, n.viewCount)} {t('site.views')}</span>
+          <span className="flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+            {fmtDate(lang, n.publishAt)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+            {fmtNum(lang, n.viewCount)} {t('site.views')}
+          </span>
         </div>
         <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
           {n.subcategory ? (

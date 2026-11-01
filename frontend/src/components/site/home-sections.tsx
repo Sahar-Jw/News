@@ -71,7 +71,7 @@ export function HeroSlider() {
   }, [i, many, paused, slides.length]);
   if (!slides.length) return null;
   return (
-    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[260px] overflow-hidden rounded-b-[2rem] bg-secondary md:h-[400px]" aria-roledescription="carousel">
+    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[280px] overflow-hidden rounded-b-[2.5rem] bg-secondary shadow-lift md:h-[440px]" aria-roledescription="carousel">
       {slides.map((sl, k) => {
         const on = k === i;
         return (

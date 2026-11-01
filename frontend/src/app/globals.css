@@ -13,14 +13,16 @@
   --ink: color-mix(in srgb, var(--secondary) 92%, black);
   --muted: color-mix(in srgb, var(--secondary) 62%, white);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --shadow-card: 0 1px 2px rgb(11 18 48 / 0.05), 0 14px 30px -16px rgb(11 18 48 / 0.22);
-  --shadow-lift: 0 2px 4px rgb(11 18 48 / 0.06), 0 28px 46px -20px color-mix(in srgb, var(--primary) 60%, rgb(11 18 48 / 0.4));
+  --shadow-card: 0 1px 2px rgb(11 18 48 / 0.04), 0 2px 6px -2px rgb(11 18 48 / 0.06), 0 16px 32px -18px rgb(11 18 48 / 0.2);
+  --shadow-lift: 0 2px 4px rgb(11 18 48 / 0.05), 0 8px 16px -8px rgb(11 18 48 / 0.12), 0 30px 48px -22px color-mix(in srgb, var(--primary) 55%, rgb(11 18 48 / 0.4));
 }
 html { scroll-behavior: smooth; }
 body {
   font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
   color: var(--ink);
+  text-rendering: optimizeLegibility;
   background-color: var(--canvas);
   /* soft colour washes so the page never feels flat */
   background-image:
@@ -30,9 +32,17 @@ body {
   background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; }
+h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif; text-wrap: balance; }
+p { text-wrap: pretty; }
+img { image-rendering: auto; }
+/* slim scrollbars tinted with the brand colour */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--primary) 35%, white) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--primary) 35%, white); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--primary) 60%, white); }
+::-webkit-scrollbar-track { background: transparent; }
 ::selection { background: color-mix(in srgb, var(--primary) 22%, white); }
-:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 0.5rem; }
 
 /* ---------- motion ---------- */
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
@@ -42,6 +52,7 @@ h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Se
 @keyframes sheen { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(260%) skewX(-18deg); } }
 @keyframes seg-fill { from { width: 0; } to { width: 100%; } }
 @keyframes loader-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes bar-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* whole page fades in on navigation (opacity only, so fixed elements keep working) */
@@ -73,15 +84,23 @@ h1, h2, h3, h4 { font-family: 'Readex Pro Variable', 'IBM Plex Sans Arabic', 'Se
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 
-.prose-news { line-height: 1.85; font-size: 0.9rem; color: #1f2937; }
-.prose-news h1, .prose-news h2, .prose-news h3, .prose-news h4 { font-weight: 700; margin: 1.2em 0 .5em; line-height: 1.4; }
-.prose-news h1 { font-size: 1.5rem } .prose-news h2 { font-size: 1.3rem } .prose-news h3 { font-size: 1.1rem }
-.prose-news p { margin: .8em 0 }
-.prose-news ul { list-style: disc; padding-inline-start: 1.6rem; margin: .8em 0 }
-.prose-news ol { list-style: decimal; padding-inline-start: 1.6rem; margin: .8em 0 }
-.prose-news a { color: var(--primary); text-decoration: underline }
-.prose-news blockquote { border-inline-start: 4px solid var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); padding: .6rem 1rem; border-radius: 0 .75rem .75rem 0; color: #374151; margin: 1.2em 0 }
-.prose-news img { border-radius: .75rem; margin: 1em 0; max-width: 100% }
+.prose-news { line-height: 1.95; font-size: 0.97rem; color: color-mix(in srgb, var(--ink) 88%, white); overflow-wrap: anywhere; }
+.prose-news > :first-child { margin-top: 0; }
+.prose-news h1, .prose-news h2, .prose-news h3, .prose-news h4 { font-weight: 700; margin: 1.6em 0 .55em; line-height: 1.45; color: var(--ink); }
+.prose-news h1 { font-size: 1.6rem } .prose-news h2 { font-size: 1.35rem; padding-inline-start: .7rem; border-inline-start: 4px solid var(--accent); } .prose-news h3 { font-size: 1.15rem }
+.prose-news p { margin: 1em 0 }
+.prose-news ul { list-style: disc; padding-inline-start: 1.6rem; margin: 1em 0 }
+.prose-news ol { list-style: decimal; padding-inline-start: 1.6rem; margin: 1em 0 }
+.prose-news li { margin: .35em 0 } .prose-news li::marker { color: var(--primary); }
+.prose-news a { color: var(--primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; transition: color .2s; }
+.prose-news a:hover { color: var(--accent); }
+.prose-news blockquote { border-inline-start: 4px solid var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); padding: .9rem 1.2rem; border-radius: .75rem; color: var(--ink); margin: 1.5em 0; font-weight: 500; }
+.prose-news img { border-radius: 1rem; margin: 1.5em auto; max-width: 100%; height: auto; box-shadow: var(--shadow-card); }
+.prose-news hr { border: 0; height: 1px; background: var(--line); margin: 2em 0; }
+.prose-news table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: .9em; display: block; overflow-x: auto; }
+.prose-news th, .prose-news td { border: 1px solid var(--line); padding: .55rem .8rem; text-align: start; }
+.prose-news th { background: color-mix(in srgb, var(--primary) 7%, white); font-weight: 700; }
+.prose-news strong { color: var(--ink); }
 /* browser autofill / saved-value suggestions paint inputs yellow or blue: keep them white */
 input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
   -webkit-box-shadow: 0 0 0 1000px #fff inset !important;

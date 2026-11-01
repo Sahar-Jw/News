@@ -14,7 +14,7 @@ type NavItem = { label: string; to: string; show: boolean };
 
 function NavTrigger({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex cursor-default items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-ink/80 transition hover:bg-primary/10 hover:text-primary">
+    <span className="flex cursor-default items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold text-ink/80 transition duration-200 hover:bg-primary/10 hover:text-primary">
       {children}
       <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-out group-hover:rotate-180 group-focus-within:rotate-180">
         <path d="m3 6 5 5 5-5" />
@@ -53,7 +53,7 @@ function Dropdown({ label, trigger, panelClass, children }: { label: string; tri
       >
         {trigger}
         <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,250ms] ${desktopOpenClasses} ${panelClass}`}>
-          <div onClickCapture={dismiss} className="rounded-2xl bg-white p-1.5 shadow-lift ring-1 ring-line">{children}</div>
+          <div onClickCapture={dismiss} className="rounded-2xl bg-white/95 p-2 shadow-lift ring-1 ring-line backdrop-blur-xl">{children}</div>
         </div>
       </div>
       <div className="w-full xl:hidden">
@@ -104,7 +104,7 @@ function SocialLinks() {
       {keys.map((k) => {
         const v = s('social', k);
         return v ? (
-          <a key={k} href={v} target="_blank" rel="noopener noreferrer" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/30" aria-label={k.replace('_url', '')} title={k.replace('_url', '')}>
+          <a key={k} href={v} target="_blank" rel="noopener noreferrer" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition hover:-translate-y-px hover:bg-white/30" aria-label={k.replace('_url', '')} title={k.replace('_url', '')}>
             <SocialIcon name={k} />
           </a>
         ) : null;
@@ -128,7 +128,7 @@ export function TopBar() {
   const addr = loc('contact', 'address');
   return (
     <div className="no-print bg-gradient-to-r from-secondary via-secondary to-primary/70 text-xs text-white/90">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2">
         <div className="flex flex-wrap items-center gap-4">
           {now && <span className="flex items-center gap-1.5"><ContactIcon name="date" />{now}</span>}
           {phone && <a href={telHref(phone)} className="flex items-center gap-1.5"><ContactIcon name="phone" /><bdi dir="ltr">{phone}</bdi></a>}
@@ -265,7 +265,7 @@ export function Navbar() {
         <div id={menuPanelId} data-open={menu} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
           <div className="min-h-0 overflow-hidden xl:contents">
         <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:shrink-0 xl:flex-row xl:items-center xl:gap-1">
-          <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-medium transition hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary' : 'text-ink/80'}`}>{t('site.home')}</Link>
+          <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
           {categories.main.length > 0 && (
             <Dropdown
@@ -377,28 +377,28 @@ export function Footer() {
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />
       <div className="sheen" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-7xl gap-6 px-4 py-8 md:grid-cols-4">
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 md:grid-cols-4">
         <div>
           {logo && <img src={logo} alt="" className="mb-3 h-12 w-auto" />}
           <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
-          <p className="text-sm leading-7">{loc('branding', 'site_description')}</p>
+          <p className="max-w-xs text-sm leading-7 text-gray-400">{loc('branding', 'site_description')}</p>
           <div className="mt-4"><SocialLinks /></div>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.quickLinks')}</h4>
-          <ul className="space-y-2 text-sm">
+          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.quickLinks')}</h4>
+          <ul className="space-y-2.5 text-sm text-gray-400">
             <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
-            <li><Link href={href('/news')} className="hover:text-white">{t('site.allNews')}</Link></li>
-            <li><Link href={href('/sitemap')} className="hover:text-white">{t('site.sitemap')}</Link></li>
+            <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
+            <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
           </ul>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.services')}</h4>
-          <ul className="space-y-2 text-sm">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
+          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.services')}</h4>
+          <ul className="space-y-2.5 text-sm text-gray-400">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
         </div>
         <div>
-          <h4 className="mb-4 flex items-center gap-2 font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
-          <ul className="space-y-2 text-sm">
+          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
+          <ul className="space-y-2.5 text-sm text-gray-400">
             {s('contact', 'phone') && <li><a href={telHref(s('contact', 'phone'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></a></li>}
             {s('contact', 'mobile') && <li><a href={telHref(s('contact', 'mobile'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="mobile" /><bdi dir="ltr">{s('contact', 'mobile')}</bdi></a></li>}
             {s('contact', 'fax') && <li className="flex items-center gap-2"><ContactIcon name="fax" /><bdi dir="ltr">{s('contact', 'fax')}</bdi></li>}

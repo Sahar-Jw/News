@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 export function Spinner({ className }: { className?: string }) {
   const t = useI18n()?.t ?? ((k: string) => k);
-  return <div className={cn('h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-primary', className)} role="status" aria-label={t('app.loading')} />;
+  return <div className={cn('h-6 w-6 animate-spin rounded-full border-2 border-primary/15 border-t-primary', className)} role="status" aria-label={t('app.loading')} />;
 }
 
 export function Center({ children }: { children: React.ReactNode }) {
@@ -15,25 +15,25 @@ export function Center({ children }: { children: React.ReactNode }) {
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' | 'outline'; size?: 'sm' | 'md' };
 export function Button({ variant = 'primary', size = 'md', className, ...p }: BtnProps) {
   const v = {
-    primary: 'bg-primary text-white shadow-sm shadow-primary/30 hover:brightness-110',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
-    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+    primary: 'bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-inset ring-white/10 hover:-translate-y-px hover:shadow-lg hover:shadow-primary/30 hover:brightness-110',
+    ghost: 'bg-transparent text-ink/80 hover:bg-primary/10 hover:text-primary',
+    danger: 'bg-red-600 text-white shadow-md shadow-red-600/20 hover:-translate-y-px hover:bg-red-700',
+    outline: 'border border-line bg-white text-ink/85 shadow-sm hover:border-primary/40 hover:bg-primary/5 hover:text-primary',
   }[variant];
   return (
     <button
       {...p}
-      className={cn('inline-flex items-center justify-center gap-2 rounded-xl font-medium transition duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50', size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm', v, className)}
+      className={cn('inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-200 active:translate-y-0 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50', size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-5 py-2.5 text-sm', v, className)}
     />
   );
 }
 
-export const inputCls = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-100';
+export const inputCls = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-gray-400 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-gray-100';
 
 export function Field({ label, children, hint, error }: { label?: string; children: React.ReactNode; hint?: string; error?: string }) {
   return (
-    <label className="block space-y-1">
-      {label && <span className="text-sm font-medium text-gray-700">{label}</span>}
+    <label className="block space-y-1.5">
+      {label && <span className="text-sm font-semibold text-ink/85">{label}</span>}
       {children}
       {hint && <span className="block text-xs text-gray-500">{hint}</span>}
       {error && <span className="block text-xs text-red-600">{error}</span>}
@@ -72,11 +72,11 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   }, [open]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : t('app.dialog')} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-xl bg-white p-5 shadow-2xl outline-none', wide ? 'max-w-3xl' : 'max-w-lg')}>
-        <div className="mb-4 flex items-center justify-between">
+    <div className="page-in fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-secondary/40 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : t('app.dialog')} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-2xl bg-white p-6 shadow-lift ring-1 ring-line outline-none [animation:pop_0.3s_var(--ease-out)]', wide ? 'max-w-3xl' : 'max-w-lg')}>
+        <div className="mb-4 flex items-center justify-between gap-3 border-b border-line pb-3">
           {title ? <h3 id={titleId} className="text-lg font-bold">{title}</h3> : <span />}
-          <button type="button" onClick={onClose} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label={t('app.close')}>✕</button>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition hover:bg-primary/10 hover:text-primary" aria-label={t('app.close')}>✕</button>
         </div>
         {children}
       </div>
@@ -87,7 +87,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
 export function FilePicker({ label, hint, accept, multiple, onChange }: { label: string; hint?: string; accept?: string; multiple?: boolean; onChange: (files: FileList | null) => void }) {
   const [selected, setSelected] = useState('');
   return (
-    <label className="group relative block cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-4 transition hover:border-primary hover:bg-blue-50/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+    <label className="group relative block cursor-pointer rounded-2xl border-2 border-dashed border-line bg-primary/[0.03] p-4 transition hover:border-primary hover:bg-primary/5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
       <input
         type="file"
         accept={accept}
@@ -102,12 +102,12 @@ export function FilePicker({ label, hint, accept, multiple, onChange }: { label:
         }}
       />
       <span className="flex items-center gap-3">
-        <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-xl text-primary shadow-sm">↑</span>
+        <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl text-primary shadow-sm ring-1 ring-line">↑</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-gray-800">{selected || label}</span>
           {hint && <span className="mt-0.5 block text-xs text-gray-500">{hint}</span>}
         </span>
-        <span className="shrink-0 rounded-md border bg-white px-3 py-1.5 text-xs font-medium text-gray-700 group-hover:border-primary group-hover:text-primary">{multiple ? 'Choose files' : 'Choose file'}</span>
+        <span className="shrink-0 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-medium text-gray-700 group-hover:border-primary group-hover:text-primary">{multiple ? 'Choose files' : 'Choose file'}</span>
       </span>
     </label>
   );

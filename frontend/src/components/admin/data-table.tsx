@@ -151,7 +151,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
 
   return (
     <div className="space-y-3">
-      <div className="no-print flex flex-wrap items-end gap-2 rounded-xl border bg-white p-3">
+      <div className="no-print flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-white p-3 shadow-card">
         <label className="flex items-center gap-2 text-sm text-gray-600">
           {t('tbl.pageSize')}
           <select value={limit} onChange={(e) => { setLimit(e.target.value); setPage(1); }} className="rounded-lg border px-2 py-2">
@@ -198,9 +198,9 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-start text-xs uppercase text-gray-600">
+          <thead className="bg-primary/[0.06] text-start text-xs uppercase text-ink/70">
             <tr>
               <th className="w-10 px-3 py-3 text-start">{t('tbl.no')}</th>
               {bulkDelete?.can && <th className="w-10 px-3"><input type="checkbox" aria-label={t('tbl.selectAll')} checked={allOnPage} onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
@@ -235,7 +235,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
             ) : rows.length === 0 ? (
               <tr><td colSpan={99} className="py-10 text-center text-gray-500">{t('tbl.noRows')}</td></tr>
             ) : rows.map((r, i) => (
-              <tr key={r.id} className="border-t hover:bg-gray-50">
+              <tr key={r.id} className="border-t border-line transition-colors odd:bg-white even:bg-primary/[0.02] hover:bg-primary/[0.06]">
                 <td className="px-3 py-2 text-gray-500">{skip + i + 1}</td>
                 {bulkDelete?.can && <td className="px-3"><input type="checkbox" checked={sel.has(r.id)} onChange={(e) => { const n = new Set(sel); e.target.checked ? n.add(r.id) : n.delete(r.id); setSel(n); }} /></td>}
                 {rowActions && <td className="whitespace-nowrap px-3">{rowActions(r, () => setBump((b) => b + 1))}</td>}
