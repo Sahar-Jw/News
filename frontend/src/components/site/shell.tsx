@@ -246,7 +246,7 @@ export function Navbar() {
   return (
     <header className={`no-print sticky top-0 z-40 border-b border-line/70 bg-white/80 backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-card' : ''}`} style={{ background: 'var(--header-bg, rgb(255 255 255 / 0.8))' }}>
       <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 xl:flex-nowrap xl:gap-x-4 ${scrolled ? 'py-1' : 'py-2.5'}`}>
-        <Link href={href('/')} className="flex min-w-0 flex-1 items-center gap-3 xl:min-w-[9rem]">
+        <Link href={href('/')} className="flex min-w-0 max-w-full shrink items-center gap-3 xl:min-w-[9rem]">
           {logo && <img src={logo} alt="" className={`w-auto shrink-0 transition-all duration-300 ${scrolled ? 'h-9' : 'h-12'}`} />}
           <div className="min-w-0">
             {/* the name wraps (max two lines) beside the logo, so the menu never drops to a second row; longer name = smaller text */}
