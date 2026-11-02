@@ -9,6 +9,8 @@ import { User } from '../users/user.entity';
 @Index('idx_news_status_publish', ['status', 'publishAt'])
 @Index('idx_news_listing', ['language', 'status', 'visibility', 'mainCategory'])
 @Index('idx_news_subcategory', ['language', 'status', 'visibility', 'subcategory'])
+@Index('idx_news_category_date', ['language', 'mainCategory', 'publishAt'])
+@Index('idx_news_views', ['language', 'viewCount'])
 @Index('idx_news_featured', ['isFeatured', 'publishAt'])
 @Index('idx_news_public_order', ['language', 'publishAt', 'id'])
 @Index('idx_news_chamber_head', ['publishAt'], { where: '"mentions_chamber_head" = true' })

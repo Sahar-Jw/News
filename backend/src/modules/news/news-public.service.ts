@@ -66,6 +66,13 @@ export class NewsPublicService {
     return qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC');
   }
 
+  /** Public list ordering: newest (default), oldest, or most viewed. `id` keeps pages stable when dates tie. */
+  private sorted(qb: ReturnType<NewsPublicService['base']>, sort?: 'newest' | 'oldest' | 'views') {
+    if (sort === 'oldest') return qb.orderBy('n.publishAt', 'ASC').addOrderBy('n.id', 'ASC');
+    if (sort === 'views') return qb.orderBy('n.viewCount', 'DESC').addOrderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC');
+    return this.order(qb);
+  }
+
   async list(q: PublicNewsQueryDto, v: Viewer) {
     const p = publicPage(q);
     const qb = this.slim(onlyRegular(this.base(q.lang ?? Language.AR, v), 'n'));
@@ -83,7 +90,10 @@ export class NewsPublicService {
       }
     }
     if (q.q) this.applyTextSearch(qb, q.q);
-    const [rows, total] = await this.order(qb).skip(p.skip).take(p.limit).getManyAndCount();
+    if (q.dateFrom && q.dateTo && q.dateFrom > q.dateTo) throw new BadRequestException('dateFrom must be before dateTo');
+    if (q.dateFrom) qb.andWhere('n.publishAt >= :dateFrom', { dateFrom: `${q.dateFrom}T00:00:00.000Z` });
+    if (q.dateTo) qb.andWhere('n.publishAt < (CAST(:dateTo AS date) + 1)', { dateTo: q.dateTo });
+    const [rows, total] = await this.sorted(qb, q.sort).skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows.map((r) => this.card(r)), total, p);
   }
 

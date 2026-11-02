@@ -96,6 +96,11 @@ export class PublicNewsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsString() @MaxLength(100) q?: string;
   /** comma-separated topics: matches news that has at least one of them */
   @IsOptional() @IsString() @MaxLength(500) topics?: string;
+  /** publish date range, inclusive (YYYY-MM-DD) */
+  @IsOptional() @IsDateString({ strict: true }, { message: 'dateFrom must be a valid date (YYYY-MM-DD)' }) dateFrom?: string;
+  @IsOptional() @IsDateString({ strict: true }, { message: 'dateTo must be a valid date (YYYY-MM-DD)' }) dateTo?: string;
+  /** newest (default) | oldest | views */
+  @IsOptional() @IsIn(['newest', 'oldest', 'views']) sort?: 'newest' | 'oldest' | 'views';
 }
 
 export class SearchQueryDto extends PublicNewsQueryDto {}
