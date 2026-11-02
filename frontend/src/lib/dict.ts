@@ -75,6 +75,24 @@ const ar: Record<string, string> = {
   // static pages
   'adm.pages': 'الصفحات الثابتة', 'mod.pages': 'الصفحات الثابتة', 'pg.add': 'إضافة صفحة', 'pg.edit': 'تعديل الصفحة', 'pg.view': 'عرض', 'pg.titleAr': 'العنوان بالعربية', 'pg.titleEn': 'العنوان بالإنجليزية (اختياري)',
   'pg.slug': 'الرابط المختصر', 'pg.slugHint': 'أحرف إنجليزية صغيرة وأرقام وشرطات فقط، مثل about', 'pg.footer': 'يظهر في الفوتر', 'pg.bodyAr': 'المحتوى بالعربية', 'pg.bodyEn': 'المحتوى بالإنجليزية (اختياري)',
+  // main navigation groups
+  'nav.about': 'عن الغرفة', 'nav.aboutChamber': 'عن الغرفة', 'nav.committees': 'اللجان والقطاعات', 'nav.women': 'لجنة سيدات الأعمال',
+  'nav.media': 'الأخبار والإعلام', 'nav.mediaCenter': 'المركز الإعلامي', 'nav.newsletter': 'النشرة البريدية',
+  'nav.servicesList': 'خدمات الغرفة', 'nav.oneStop': 'النافذة الواحدة', 'nav.membership': 'للانتساب', 'nav.library': 'المكتبة والأرشيف الرقمي',
+  'nav.dev': 'التطوير والأعمال', 'nav.training': 'مركز التدريب الإداري', 'nav.incubator': 'حاضنة الأعمال', 'nav.get2trade': 'غيت تو تريد',
+  'nav.events': 'المعارض والفعاليات', 'nav.exhibitions': 'المعارض والفعاليات', 'nav.agenda': 'أجندة الغرفة', 'nav.expo': 'DCC EXPO',
+  // committees (sector + businesswomen)
+  'adm.committees': 'اللجان والقطاعات', 'mod.committees': 'اللجان والقطاعات', 'cm.title': 'اللجان والقطاعات', 'cm.add': 'إضافة لجنة', 'cm.edit': 'تعديل اللجنة',
+  'cm.kind': 'نوع اللجنة', 'cm.kind.sector': 'لجنة قطاعية', 'cm.kind.women': 'لجنة سيدات الأعمال', 'cm.chair': 'رئيس اللجنة', 'cm.chairAr': 'رئيس اللجنة بالعربية', 'cm.chairEn': 'رئيس اللجنة بالإنجليزية (اختياري)',
+  'cm.activity': 'النشاط التجاري', 'cm.tagsAr': 'الأنشطة التجارية بالعربية', 'cm.tagsEn': 'الأنشطة التجارية بالإنجليزية (اختياري)', 'cm.tagsHint': 'افصل بين الأنشطة بفاصلة؛ يبحث الزائر بها عن لجنته',
+  'cm.summaryAr': 'تعريف مختصر بالعربية', 'cm.summaryEn': 'تعريف مختصر بالإنجليزية (اختياري)', 'cm.dutiesAr': 'الاختصاصات بالعربية', 'cm.dutiesEn': 'الاختصاصات بالإنجليزية (اختياري)', 'cm.logo': 'صورة أو شعار اللجنة',
+  'cm.search': 'ابحث عن لجنة أو نشاط تجاري', 'cm.empty': 'لا توجد لجان مطابقة', 'cm.noContent': 'لا يوجد محتوى بعد',
+  'cm.tab.overview': 'نظرة عامة', 'cm.tab.members': 'الأعضاء', 'cm.tab.duties': 'الاختصاصات', 'cm.tab.news': 'الأخبار', 'cm.tab.meetings': 'الاجتماعات والزيارات', 'cm.tab.recommendations': 'التوصيات والمخرجات', 'cm.tab.initiatives': 'المبادرات',
+  'cm.latestNews': 'آخر أخبار اللجنة', 'cm.upcomingMeetings': 'الاجتماعات القادمة', 'cm.upcoming': 'قادم', 'cm.archiveNote': 'كل خبر يُربط باللجنة يظهر هنا تلقائياً وفي أرشيف نشاطها',
+  'cm.role.chair': 'الرئيس', 'cm.role.vice': 'نائب الرئيس', 'cm.role.member': 'عضو', 'cm.act.meeting': 'اجتماع', 'cm.act.visit': 'زيارة', 'cm.act.recommendation': 'توصية / مخرج', 'cm.act.initiative': 'مبادرة',
+  'cm.manage.details': 'البيانات', 'cm.manage.members': 'الأعضاء', 'cm.manage.activities': 'الأنشطة', 'cm.manage.news': 'الأخبار المرتبطة', 'cm.saveFirst': 'احفظ بيانات اللجنة أولاً ثم أضف الأعضاء والأنشطة والأخبار.', 'cm.addMore': 'يمكنك الآن إضافة الأعضاء والأنشطة والأخبار',
+  'cm.addMember': 'إضافة عضو', 'cm.noMembers': 'لا يوجد أعضاء', 'cm.addActivity': 'إضافة نشاط', 'cm.noActivities': 'لا توجد أنشطة', 'cm.actKind': 'نوع النشاط', 'cm.date': 'التاريخ', 'cm.bodyAr': 'التفاصيل بالعربية', 'cm.bodyEn': 'التفاصيل بالإنجليزية (اختياري)',
+  'cm.newsHint': 'الأخبار تُكتب مرة واحدة في قسم الأخبار، وهنا تُربط باللجنة لتظهر في صفحتها تلقائياً.', 'cm.searchNews': 'ابحث بعنوان الخبر', 'cm.linkNews': 'ربط', 'cm.unlink': 'فك الربط', 'cm.linkedNews': 'الأخبار المرتبطة باللجنة',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -192,6 +210,24 @@ const en: Record<string, string> = {
   // static pages
   'adm.pages': 'Pages', 'mod.pages': 'Static pages', 'pg.add': 'Add page', 'pg.edit': 'Edit page', 'pg.view': 'View', 'pg.titleAr': 'Title (Arabic)', 'pg.titleEn': 'Title (English, optional)',
   'pg.slug': 'Short link', 'pg.slugHint': 'Lowercase English letters, digits and dashes only, e.g. about', 'pg.footer': 'Show in footer', 'pg.bodyAr': 'Content (Arabic)', 'pg.bodyEn': 'Content (English, optional)',
+  // main navigation groups
+  'nav.about': 'About', 'nav.aboutChamber': 'About the chamber', 'nav.committees': 'Committees & sectors', 'nav.women': 'Businesswomen committee',
+  'nav.media': 'News & media', 'nav.mediaCenter': 'Media center', 'nav.newsletter': 'Newsletter',
+  'nav.servicesList': 'Chamber services', 'nav.oneStop': 'One-stop window', 'nav.membership': 'Membership', 'nav.library': 'Library & digital archive',
+  'nav.dev': 'Development & business', 'nav.training': 'Management training center', 'nav.incubator': 'Business incubator', 'nav.get2trade': 'Get2Trade',
+  'nav.events': 'Exhibitions & events', 'nav.exhibitions': 'Exhibitions & events', 'nav.agenda': 'Chamber agenda', 'nav.expo': 'DCC EXPO',
+  // committees (sector + businesswomen)
+  'adm.committees': 'Committees & sectors', 'mod.committees': 'Committees & sectors', 'cm.title': 'Committees & sectors', 'cm.add': 'Add committee', 'cm.edit': 'Edit committee',
+  'cm.kind': 'Committee type', 'cm.kind.sector': 'Sector committee', 'cm.kind.women': 'Businesswomen committee', 'cm.chair': 'Committee chair', 'cm.chairAr': 'Chair (Arabic)', 'cm.chairEn': 'Chair (English, optional)',
+  'cm.activity': 'Business activity', 'cm.tagsAr': 'Business activities (Arabic)', 'cm.tagsEn': 'Business activities (English, optional)', 'cm.tagsHint': 'Separate activities with a comma; visitors search them to find their committee',
+  'cm.summaryAr': 'Short description (Arabic)', 'cm.summaryEn': 'Short description (English, optional)', 'cm.dutiesAr': 'Terms of reference (Arabic)', 'cm.dutiesEn': 'Terms of reference (English, optional)', 'cm.logo': 'Committee picture or logo',
+  'cm.search': 'Search a committee or business activity', 'cm.empty': 'No matching committees', 'cm.noContent': 'Nothing here yet',
+  'cm.tab.overview': 'Overview', 'cm.tab.members': 'Members', 'cm.tab.duties': 'Terms of reference', 'cm.tab.news': 'News', 'cm.tab.meetings': 'Meetings & visits', 'cm.tab.recommendations': 'Recommendations & outputs', 'cm.tab.initiatives': 'Initiatives',
+  'cm.latestNews': 'Latest committee news', 'cm.upcomingMeetings': 'Upcoming meetings', 'cm.upcoming': 'Upcoming', 'cm.archiveNote': 'Every news item linked to the committee appears here automatically and in its activity archive',
+  'cm.role.chair': 'Chair', 'cm.role.vice': 'Vice chair', 'cm.role.member': 'Member', 'cm.act.meeting': 'Meeting', 'cm.act.visit': 'Visit', 'cm.act.recommendation': 'Recommendation / output', 'cm.act.initiative': 'Initiative',
+  'cm.manage.details': 'Details', 'cm.manage.members': 'Members', 'cm.manage.activities': 'Activities', 'cm.manage.news': 'Linked news', 'cm.saveFirst': 'Save the committee details first, then add members, activities and news.', 'cm.addMore': 'You can now add members, activities and news',
+  'cm.addMember': 'Add member', 'cm.noMembers': 'No members', 'cm.addActivity': 'Add activity', 'cm.noActivities': 'No activities', 'cm.actKind': 'Activity type', 'cm.date': 'Date', 'cm.bodyAr': 'Details (Arabic)', 'cm.bodyEn': 'Details (English, optional)',
+  'cm.newsHint': 'News is written once in the news section; here it is linked to the committee so it appears on its page automatically.', 'cm.searchNews': 'Search by news title', 'cm.linkNews': 'Link', 'cm.unlink': 'Unlink', 'cm.linkedNews': 'News linked to this committee',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

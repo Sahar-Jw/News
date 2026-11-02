@@ -6,7 +6,7 @@ import { fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
-import { SECTION_ORDER_KEYS } from './sections-meta';
+import { NAV_EXPO, NAV_GROUPS } from '@/lib/nav';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
@@ -145,7 +145,7 @@ export function TopBar() {
 
 export function Navbar() {
   const { lang, t, href, otherLangHref } = useI18n();
-  const { loc, img, categories, settings } = useSite();
+  const { loc, img } = useSite();
   const { me, can, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -165,8 +165,6 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', on);
   }, []);
   const logo = img('branding', 'logo');
-  const secs = SECTION_ORDER_KEYS.filter((c) => settings.sections_home?.[`${c}_visible`] !== false && c !== 'hero' && c !== 'shortcuts')
-    .sort((a, b) => (settings.sections_home?.[`${a}_order`] ?? 99) - (settings.sections_home?.[`${b}_order`] ?? 99));
   const isHome = pathname === `/${lang}/` || pathname === `/${lang}`;
 
   // Extra dropdowns for logged-in users. Each item only appears if the user holds the permission
@@ -181,6 +179,7 @@ export function Navbar() {
     { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
     { label: t('adm.board'), to: '/admin/board', show: can('board.read') },
+    { label: t('adm.committees'), to: '/admin/committees', show: can('committees.read') },
     { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
     { label: t('adm.pages'), to: '/admin/pages', show: can('pages.read') },
     { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
@@ -190,15 +189,9 @@ export function Navbar() {
     { label: t('adm.dates'), to: '/admin/dates', show: can('appointments.read') },
     { label: t('adm.datesDashboard'), to: '/admin/dates-dashboard', show: can('appointments.dashboard') },
   ];
-  // Services: public pages, visible to everyone.
-  const servicesItems: NavItem[] = [
-    { label: t('pub.upcoming'), to: '/occasions/upcoming', show: true },
-    { label: t('pub.previous'), to: '/occasions/previous', show: true },
-    { label: t('pub.gallery'), to: '/gallery', show: true },
-    { label: t('site.board'), to: '/board', show: true },
-    { label: t('site.documents'), to: '/documents', show: true },
-    { label: t('site.faq'), to: '/faq', show: true },
-  ];
+  // Public groups (document 7.1): built from lib/nav.ts, only pages that already exist are listed.
+  const groups = NAV_GROUPS.map((g) => ({ key: g.key, label: t(g.label), items: g.items.map((i): NavItem => ({ label: t(i.label), to: i.to, show: i.ready })) }));
+  const contactHref = isHome ? '#sec-contact' : `${href('/')}#sec-contact`;
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
     { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
@@ -288,46 +281,13 @@ export function Navbar() {
         <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:shrink-0 xl:flex-row xl:items-center xl:gap-1">
           <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
-          {categories.main.length > 0 && (
-            <Dropdown
-              label={t('site.categories')}
-              trigger={<NavTrigger>{t('site.categories')}</NavTrigger>}
-              panelClass="start-0 min-w-48"
-            >
-              {categories.main.map((c) => (
-                <Link key={c} href={href(`/news?category=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
-              ))}
-            </Dropdown>
+          {groups.map((g) => <NavDropdown key={g.key} label={g.label} items={g.items} href={href} />)}
+
+          <a href={contactHref} className="w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold text-ink/80 transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto">{t('contact.title')}</a>
+
+          {NAV_EXPO.ready && (
+            <Link href={href(NAV_EXPO.to)} className="w-full rounded-full bg-gradient-to-r from-primary to-accent px-4 py-2 text-center text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift xl:w-auto">{t(NAV_EXPO.label)}</Link>
           )}
-
-          {categories.sub.length > 0 && (
-            <Dropdown
-              label={t('site.subcategories')}
-              trigger={<NavTrigger>{t('site.subcategories')}</NavTrigger>}
-              panelClass="start-0 min-w-48"
-            >
-              {/* 8 rows (each 2.15rem tall) are visible, the rest scroll */}
-              <div className="max-h-[17.2rem] overflow-y-auto overscroll-contain">
-                {categories.sub.map((c) => (
-                  <Link key={c} href={href(`/news?subcategory=${encodeURIComponent(c)}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{c}</Link>
-                ))}
-              </div>
-            </Dropdown>
-          )}
-
-          <Dropdown
-            label={t('site.sections')}
-            trigger={<NavTrigger>{t('site.sections')}</NavTrigger>}
-            panelClass="start-0 min-w-48"
-          >
-            {secs.map((c) => (
-              <a key={c} href={isHome ? `#sec-${c}` : `${href('/')}#sec-${c}`} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">
-                {loc('sections_home', `${c}_title`) || t(`sec.${c}`)}
-              </a>
-            ))}
-          </Dropdown>
-
-          <NavDropdown label={t('site.services')} items={servicesItems} href={href} />
 
           {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
           {me && <NavDropdown label={t('adm.tools')} items={toolsItems} href={href} />}
@@ -427,6 +387,7 @@ export function Footer() {
             <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
             {pages.map((p) => <li key={p.id}><Link href={href(`/pages/view?slug=${encodeURIComponent(p.slug)}`)} className="transition hover:text-white">{p.title}</Link></li>)}
             <li><Link href={href('/board')} className="transition hover:text-white">{t('site.board')}</Link></li>
+            <li><Link href={href('/committees')} className="transition hover:text-white">{t('cm.title')}</Link></li>
             <li><Link href={href('/documents')} className="transition hover:text-white">{t('site.documents')}</Link></li>
             <li><Link href={href('/faq')} className="transition hover:text-white">{t('site.faq')}</Link></li>
             <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>

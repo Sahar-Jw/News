@@ -153,6 +153,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'faqs.create', module: 'faqs', nameAr: 'إضافة سؤال شائع', nameEn: 'Create FAQs' },
   { code: 'faqs.update', module: 'faqs', nameAr: 'تعديل سؤال شائع', nameEn: 'Update FAQs' },
   { code: 'faqs.delete', module: 'faqs', nameAr: 'حذف سؤال شائع', nameEn: 'Delete FAQs' },
+  // committees (sectoral + businesswomen) with members, activities and linked news
+  { code: 'committees.read', module: 'committees', nameAr: 'عرض اللجان', nameEn: 'View committees' },
+  { code: 'committees.create', module: 'committees', nameAr: 'إضافة لجنة', nameEn: 'Create committees' },
+  { code: 'committees.update', module: 'committees', nameAr: 'تعديل لجنة وأعضائها وأنشطتها وأخبارها', nameEn: 'Update committees, members, activities and linked news' },
+  { code: 'committees.delete', module: 'committees', nameAr: 'حذف لجنة', nameEn: 'Delete committees' },
   // board of directors
   { code: 'board.read', module: 'board', nameAr: 'عرض أعضاء المجلس', nameEn: 'View board members' },
   { code: 'board.create', module: 'board', nameAr: 'إضافة عضو مجلس', nameEn: 'Create board members' },
@@ -242,6 +247,10 @@ export const PERM = {
   FAQS_CREATE: 'faqs.create',
   FAQS_UPDATE: 'faqs.update',
   FAQS_DELETE: 'faqs.delete',
+  COMMITTEES_READ: 'committees.read',
+  COMMITTEES_CREATE: 'committees.create',
+  COMMITTEES_UPDATE: 'committees.update',
+  COMMITTEES_DELETE: 'committees.delete',
   BOARD_READ: 'board.read',
   BOARD_CREATE: 'board.create',
   BOARD_UPDATE: 'board.update',

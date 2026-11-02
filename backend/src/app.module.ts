@@ -24,6 +24,8 @@ import { AdsModule } from './modules/ads/ads.module';
 import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { BoardModule } from './modules/board/board.module';
+import { CommitteesModule } from './modules/committees/committees.module';
+import { ContentLinksModule } from './modules/content-links/content-links.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
@@ -71,6 +73,8 @@ import { UsersModule } from './modules/users/users.module';
     PagesModule,
     DocumentsModule,
     BoardModule,
+    CommitteesModule,
+    ContentLinksModule,
     GalleryModule,
     MailModule,
     SubscribersModule,

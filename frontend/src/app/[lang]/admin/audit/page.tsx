@@ -16,7 +16,7 @@ interface Row {
   ip: string | null; userAgent: string | null; method: string | null; route: string | null;
 }
 // every category the backend writes (keep in sync with AuditService callers); "system" = the safety net, should stay empty
-const CATS = ['auth', 'security', 'news', 'users', 'permissions', 'settings', 'cities', 'messages', 'subscribers', 'ads', 'gallery', 'occasions', 'faqs', 'pages', 'documents', 'board', 'customers', 'appointments', 'files', 'audit', 'system'];
+const CATS = ['auth', 'security', 'news', 'users', 'permissions', 'settings', 'cities', 'messages', 'subscribers', 'ads', 'gallery', 'occasions', 'faqs', 'pages', 'documents', 'board', 'committees', 'customers', 'appointments', 'files', 'audit', 'system'];
 
 function Val({ v }: { v: unknown }) {
   if (v === undefined) return <span className="text-gray-300">—</span>;
