@@ -23,6 +23,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
+import { PagesModule } from './modules/pages/pages.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
@@ -65,6 +66,7 @@ import { UsersModule } from './modules/users/users.module';
     NewsModule,
     OccasionsModule,
     FaqsModule,
+    PagesModule,
     GalleryModule,
     MailModule,
     SubscribersModule,

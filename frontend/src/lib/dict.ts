@@ -59,6 +59,9 @@ const ar: Record<string, string> = {
   'f.youtube': 'رابط فيديو يوتيوب', 'f.youtubeHint': 'اختياري — الصق رابط الفيديو وسيظهر داخل صفحة الخبر', 'f.youtubeInvalid': 'رابط يوتيوب غير صالح', 'site.video': 'فيديو', 'site.openYoutube': 'المشاهدة على يوتيوب',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+  // static pages
+  'adm.pages': 'الصفحات الثابتة', 'mod.pages': 'الصفحات الثابتة', 'pg.add': 'إضافة صفحة', 'pg.edit': 'تعديل الصفحة', 'pg.view': 'عرض', 'pg.titleAr': 'العنوان بالعربية', 'pg.titleEn': 'العنوان بالإنجليزية (اختياري)',
+  'pg.slug': 'الرابط المختصر', 'pg.slugHint': 'أحرف إنجليزية صغيرة وأرقام وشرطات فقط، مثل about', 'pg.footer': 'يظهر في الفوتر', 'pg.bodyAr': 'المحتوى بالعربية', 'pg.bodyEn': 'المحتوى بالإنجليزية (اختياري)',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -160,6 +163,9 @@ const en: Record<string, string> = {
   'f.youtube': 'YouTube video link', 'f.youtubeHint': 'Optional — paste the video link and it will appear inside the news page', 'f.youtubeInvalid': 'Invalid YouTube link', 'site.video': 'Video', 'site.openYoutube': 'Watch on YouTube',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+  // static pages
+  'adm.pages': 'Pages', 'mod.pages': 'Static pages', 'pg.add': 'Add page', 'pg.edit': 'Edit page', 'pg.view': 'View', 'pg.titleAr': 'Title (Arabic)', 'pg.titleEn': 'Title (English, optional)',
+  'pg.slug': 'Short link', 'pg.slugHint': 'Lowercase English letters, digits and dashes only, e.g. about', 'pg.footer': 'Show in footer', 'pg.bodyAr': 'Content (Arabic)', 'pg.bodyEn': 'Content (English, optional)',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

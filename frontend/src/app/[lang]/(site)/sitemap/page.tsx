@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from '@/components/site/site-context';
 import { SECTION_ORDER_KEYS } from '@/components/site/sections-meta';
@@ -30,9 +32,11 @@ const chip = 'rounded-full border bg-gray-50 px-3 py-1.5 text-sm text-gray-700 t
 
 /** Generated from live content: pages, home sections, and the (independent) category / subcategory lists. */
 export default function SitemapPage() {
-  const { t, href } = useI18n();
+  const { lang, t, href } = useI18n();
   const { categories, settings, loc } = useSite();
-  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/faq', t('site.faq')]];
+  const [extra, setExtra] = useState<{ slug: string; title: string }[]>([]);
+  useEffect(() => { api<{ slug: string; title: string }[]>('/public/pages', { params: { lang } }).then(setExtra).catch(() => setExtra([])); }, [lang]);
+  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/faq', t('site.faq')], ...extra.map((x): [string, string] => [`/pages/view?slug=${encodeURIComponent(x.slug)}`, x.title])];
   const sh = settings.sections_home ?? {};
   const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && k !== 'shortcuts' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
   return (

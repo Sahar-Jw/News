@@ -153,6 +153,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'faqs.create', module: 'faqs', nameAr: 'إضافة سؤال شائع', nameEn: 'Create FAQs' },
   { code: 'faqs.update', module: 'faqs', nameAr: 'تعديل سؤال شائع', nameEn: 'Update FAQs' },
   { code: 'faqs.delete', module: 'faqs', nameAr: 'حذف سؤال شائع', nameEn: 'Delete FAQs' },
+  // static pages (about the chamber, ...)
+  { code: 'pages.read', module: 'pages', nameAr: 'عرض الصفحات الثابتة', nameEn: 'View static pages' },
+  { code: 'pages.create', module: 'pages', nameAr: 'إضافة صفحة ثابتة', nameEn: 'Create static pages' },
+  { code: 'pages.update', module: 'pages', nameAr: 'تعديل صفحة ثابتة', nameEn: 'Update static pages' },
+  { code: 'pages.delete', module: 'pages', nameAr: 'حذف صفحة ثابتة', nameEn: 'Delete static pages' },
   // tools: image gallery
   { code: 'gallery.read', module: 'gallery', nameAr: 'عرض معرض الصور', nameEn: 'View image gallery' },
   { code: 'gallery.create', module: 'gallery', nameAr: 'إضافة معرض صور', nameEn: 'Create galleries' },
@@ -227,6 +232,10 @@ export const PERM = {
   FAQS_CREATE: 'faqs.create',
   FAQS_UPDATE: 'faqs.update',
   FAQS_DELETE: 'faqs.delete',
+  PAGES_READ: 'pages.read',
+  PAGES_CREATE: 'pages.create',
+  PAGES_UPDATE: 'pages.update',
+  PAGES_DELETE: 'pages.delete',
   GALLERY_READ: 'gallery.read',
   GALLERY_CREATE: 'gallery.create',
   GALLERY_UPDATE: 'gallery.update',

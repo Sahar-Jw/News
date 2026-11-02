@@ -180,6 +180,7 @@ export function Navbar() {
   const toolsItems: NavItem[] = [
     { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
+    { label: t('adm.pages'), to: '/admin/pages', show: can('pages.read') },
     { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
     { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
     { label: t('adm.ads'), to: '/admin/ads', show: can('ads.read') },
@@ -394,8 +395,12 @@ export function Footer() {
   const { lang, t, href } = useI18n();
   const { s, loc, img } = useSite();
   const [services, setServices] = useState<{ id: number; title: string }[]>([]);
+  const [pages, setPages] = useState<{ id: number; slug: string; title: string }[]>([]);
   useEffect(() => {
-    import('@/lib/api').then(({ api }) => api('/public/sections/SERVICES', { params: { lang } }).then((r: any) => setServices(r.slice(0, 6))).catch(() => {}));
+    import('@/lib/api').then(({ api }) => {
+      api('/public/sections/SERVICES', { params: { lang } }).then((r: any) => setServices(r.slice(0, 6))).catch(() => {});
+      api('/public/pages', { params: { lang, footer: 'true' } }).then((r: any) => setPages(r)).catch(() => {});
+    });
   }, [lang]);
   const logo = img('branding', 'logo');
   return (
@@ -416,6 +421,8 @@ export function Footer() {
           <ul className="space-y-2.5 text-sm text-stone-300">
             <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
             <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
+            {pages.map((p) => <li key={p.id}><Link href={href(`/pages/view?slug=${encodeURIComponent(p.slug)}`)} className="transition hover:text-white">{p.title}</Link></li>)}
+            <li><Link href={href('/faq')} className="transition hover:text-white">{t('site.faq')}</Link></li>
             <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
           </ul>
         </div>
