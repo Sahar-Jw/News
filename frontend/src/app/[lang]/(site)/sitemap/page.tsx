@@ -32,9 +32,9 @@ const chip = 'rounded-full border bg-gray-50 px-3 py-1.5 text-sm text-gray-700 t
 export default function SitemapPage() {
   const { t, href } = useI18n();
   const { categories, settings, loc } = useSite();
-  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')]];
+  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/faq', t('site.faq')]];
   const sh = settings.sections_home ?? {};
-  const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
+  const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && k !== 'shortcuts' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <header className="mb-8 text-center">

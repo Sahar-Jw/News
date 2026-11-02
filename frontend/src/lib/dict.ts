@@ -59,6 +59,11 @@ const ar: Record<string, string> = {
   'f.youtube': 'رابط فيديو يوتيوب', 'f.youtubeHint': 'اختياري — الصق رابط الفيديو وسيظهر داخل صفحة الخبر', 'f.youtubeInvalid': 'رابط يوتيوب غير صالح', 'site.video': 'فيديو', 'site.openYoutube': 'المشاهدة على يوتيوب',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+  // faq + home quick links
+  'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
+  'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
+  'faq.scope': 'القسم', 'faq.order': 'الترتيب', 'faq.active': 'ظاهر', 'faq.add': 'إضافة سؤال', 'faq.edit': 'تعديل السؤال', 'faq.all': 'الكل', 'faq.empty': 'لا توجد أسئلة شائعة بعد', 'faq.hint': 'العنصر الإنجليزي اختياري: يظهر النص العربي عند تركه فارغاً.',
+  'faq.scope.general': 'عام', 'faq.scope.one_stop': 'النافذة الواحدة', 'faq.scope.membership': 'الانتساب', 'faq.scope.training': 'التدريب', 'faq.scope.expo': 'المعرض',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.gallery': 'معرض الصور',
   'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'التاريخ', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
@@ -155,6 +160,11 @@ const en: Record<string, string> = {
   'f.youtube': 'YouTube video link', 'f.youtubeHint': 'Optional — paste the video link and it will appear inside the news page', 'f.youtubeInvalid': 'Invalid YouTube link', 'site.video': 'Video', 'site.openYoutube': 'Watch on YouTube',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+  // faq + home quick links
+  'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
+  'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',
+  'faq.scope': 'Section', 'faq.order': 'Order', 'faq.active': 'Visible', 'faq.add': 'Add question', 'faq.edit': 'Edit question', 'faq.all': 'All', 'faq.empty': 'No questions yet', 'faq.hint': 'The English text is optional: the Arabic text is shown when it is empty.',
+  'faq.scope.general': 'General', 'faq.scope.one_stop': 'One-stop window', 'faq.scope.membership': 'Membership', 'faq.scope.training': 'Training', 'faq.scope.expo': 'Expo',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.gallery': 'Image gallery',
   'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Date', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',

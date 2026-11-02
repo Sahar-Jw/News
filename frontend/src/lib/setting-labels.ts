@@ -9,6 +9,7 @@ const CATEGORY_AR: Record<string, string> = {
   labels: 'النصوص',
   pages: 'الصفحات',
   appointments: 'المواعيد',
+  shortcuts: 'الاختصارات السريعة',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -68,6 +69,7 @@ const HOME_SECTION_AR: Record<string, string> = {
   statistics: 'إحصائياتنا',
   company: 'الشركات الشريكة',
   contact: 'تواصل معنا',
+  shortcuts: 'اختصارات سريعة',
 };
 
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
@@ -90,6 +92,10 @@ export function keyLabel(category: string, key: string, lang: string): string {
   if (category === 'hero') {
     const s = /^slide(\d+)_(image|title|description)$/.exec(base);
     if (s) return `${SLIDE_PART_AR[s[2]]} الشريحة ${s[1]}${suffix}`;
+  }
+  if (category === 'shortcuts') {
+    const s = /^item(\d+)_(title|link)$/.exec(base);
+    if (s) return `الاختصار ${s[1]} — ${s[2] === 'title' ? 'العنوان' : 'الرابط (مسار داخل الموقع يبدأ بـ / أو رابط كامل)'}${suffix}`;
   }
   if (category === 'sections_home') {
     const s = /^(.+)_(title|order|visible|eyebrow|subtitle)$/.exec(base);

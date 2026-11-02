@@ -68,6 +68,7 @@ const s = (category: string, key: string, type: SettingValueType, value: string 
 
 export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[] = [
   { code: 'hero', titleAr: 'الرئيسية', titleEn: 'Home' },
+  { code: 'shortcuts', titleAr: 'اختصارات سريعة', titleEn: 'Quick links' },
   { code: 'featured', titleAr: 'الأخبار المميزة', titleEn: 'Featured News' },
   { code: 'news', titleAr: 'آخر الأخبار', titleEn: 'Latest News' },
   { code: 'team', titleAr: 'فريقنا', titleEn: 'Our Team' },
@@ -79,6 +80,16 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'company', titleAr: 'الشركات الشريكة', titleEn: 'Partner Companies' },
   { code: 'subscribe', titleAr: 'اشترك في نشرتنا', titleEn: 'Subscribe to our newsletter' },
   { code: 'contact', titleAr: 'تواصل معنا', titleEn: 'Contact Us' },
+];
+
+/** Default quick links of the home page (all point to pages that already exist). */
+export const SHORTCUT_DEFAULTS: { ar: string; en: string; link: string }[] = [
+  { ar: 'آخر الأخبار', en: 'Latest news', link: '/news' },
+  { ar: 'معرض الصور', en: 'Photo gallery', link: '/gallery' },
+  { ar: 'المناسبات القادمة', en: 'Upcoming occasions', link: '/occasions/upcoming' },
+  { ar: 'المناسبات السابقة', en: 'Previous occasions', link: '/occasions/previous' },
+  { ar: 'الأسئلة الشائعة', en: 'FAQ', link: '/faq' },
+  { ar: 'تواصل معنا', en: 'Contact us', link: '/#sec-contact' },
 ];
 
 export const SETTING_SEEDS: SettingSeed[] = [
@@ -114,13 +125,19 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('social', 'youtube_url', 'url'),
   s('social', 'whatsapp_url', 'url'),
   s('social', 'telegram_url', 'url'),
-  // hero slider: 3 slides
-  ...[1, 2, 3].flatMap((n) => [
+  // hero slider: 5 slides
+  ...[1, 2, 3, 4, 5].flatMap((n) => [
     s('hero', `slide${n}_image`, 'file'),
     s('hero', `slide${n}_title_ar`, 'text'),
     s('hero', `slide${n}_title_en`, 'text'),
     s('hero', `slide${n}_description_ar`, 'text'),
     s('hero', `slide${n}_description_en`, 'text'),
+  ]),
+  // home "quick links" section: up to 6 shortcuts (an empty title hides the shortcut; a link starting with / stays inside the site)
+  ...SHORTCUT_DEFAULTS.flatMap((d, i) => [
+    s('shortcuts', `item${i + 1}_title_ar`, 'text', d.ar),
+    s('shortcuts', `item${i + 1}_title_en`, 'text', d.en),
+    s('shortcuts', `item${i + 1}_link`, 'text', d.link),
   ]),
   // homepage sections: titles, order, visibility
   ...HOME_SECTIONS.flatMap((sec, i) => [

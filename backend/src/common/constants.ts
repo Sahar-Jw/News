@@ -148,6 +148,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'occasions.update', module: 'occasions', nameAr: 'تعديل مناسبة', nameEn: 'Update occasions' },
   { code: 'occasions.delete', module: 'occasions', nameAr: 'حذف مناسبة', nameEn: 'Delete occasions' },
   { code: 'occasions.export', module: 'occasions', nameAr: 'تصدير المناسبات', nameEn: 'Export occasions' },
+  // faq (frequently asked questions)
+  { code: 'faqs.read', module: 'faqs', nameAr: 'عرض الأسئلة الشائعة', nameEn: 'View FAQs' },
+  { code: 'faqs.create', module: 'faqs', nameAr: 'إضافة سؤال شائع', nameEn: 'Create FAQs' },
+  { code: 'faqs.update', module: 'faqs', nameAr: 'تعديل سؤال شائع', nameEn: 'Update FAQs' },
+  { code: 'faqs.delete', module: 'faqs', nameAr: 'حذف سؤال شائع', nameEn: 'Delete FAQs' },
   // tools: image gallery
   { code: 'gallery.read', module: 'gallery', nameAr: 'عرض معرض الصور', nameEn: 'View image gallery' },
   { code: 'gallery.create', module: 'gallery', nameAr: 'إضافة معرض صور', nameEn: 'Create galleries' },
@@ -218,6 +223,10 @@ export const PERM = {
   OCCASIONS_UPDATE: 'occasions.update',
   OCCASIONS_DELETE: 'occasions.delete',
   OCCASIONS_EXPORT: 'occasions.export',
+  FAQS_READ: 'faqs.read',
+  FAQS_CREATE: 'faqs.create',
+  FAQS_UPDATE: 'faqs.update',
+  FAQS_DELETE: 'faqs.delete',
   GALLERY_READ: 'gallery.read',
   GALLERY_CREATE: 'gallery.create',
   GALLERY_UPDATE: 'gallery.update',

@@ -165,7 +165,7 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', on);
   }, []);
   const logo = img('branding', 'logo');
-  const secs = SECTION_ORDER_KEYS.filter((c) => settings.sections_home?.[`${c}_visible`] !== false && c !== 'hero')
+  const secs = SECTION_ORDER_KEYS.filter((c) => settings.sections_home?.[`${c}_visible`] !== false && c !== 'hero' && c !== 'shortcuts')
     .sort((a, b) => (settings.sections_home?.[`${a}_order`] ?? 99) - (settings.sections_home?.[`${b}_order`] ?? 99));
   const isHome = pathname === `/${lang}/` || pathname === `/${lang}`;
 
@@ -180,6 +180,7 @@ export function Navbar() {
   const toolsItems: NavItem[] = [
     { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
+    { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
     { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
     { label: t('adm.ads'), to: '/admin/ads', show: can('ads.read') },
     { label: t('adm.customers'), to: '/admin/customers', show: can('customers.read') },
@@ -191,6 +192,7 @@ export function Navbar() {
     { label: t('pub.upcoming'), to: '/occasions/upcoming', show: true },
     { label: t('pub.previous'), to: '/occasions/previous', show: true },
     { label: t('pub.gallery'), to: '/gallery', show: true },
+    { label: t('site.faq'), to: '/faq', show: true },
   ];
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },

@@ -53,13 +53,39 @@ export function SectionWrap({ code, title, children, action, compact }: { code: 
   );
 }
 
+/** Quick links under the hero: up to 6 shortcuts from Settings (shortcuts → itemN_title_ar/en + itemN_link). Empty title or link = not shown. */
+export function ShortcutsGrid() {
+  const { s, loc } = useSite();
+  const { href } = useI18n();
+  const items = [1, 2, 3, 4, 5, 6]
+    .map((n) => ({ n, title: loc('shortcuts', `item${n}_title`), link: String(s('shortcuts', `item${n}_link`) ?? '').trim() }))
+    .filter((x) => x.title && x.link);
+  if (!items.length) return null;
+  const cls = 'group flex h-full flex-col items-center justify-center gap-2 rounded-2xl bg-white px-3 py-5 text-center text-sm font-bold text-secondary shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:text-primary hover:ring-accent';
+  const body = (title: string) => (
+    <>
+      <span className="relative h-2.5 w-2.5 rotate-45 border border-accent transition group-hover:bg-accent" aria-hidden="true" />
+      <span className="leading-6">{title}</span>
+    </>
+  );
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      {items.map((x) => {
+        if (/^https?:\/\//i.test(x.link)) return <a key={x.n} href={x.link} target="_blank" rel="noopener noreferrer" className={cls}>{body(x.title)}</a>;
+        const [path, hash] = x.link.split('#');
+        return <Link key={x.n} href={`${href(path || '/')}${hash ? `#${hash}` : ''}`} className={cls}>{body(x.title)}</Link>;
+      })}
+    </div>
+  );
+}
+
 /**
  * Home hero. The picture always spans the full width of the page (object-cover). Slides crossfade without scaling the images, the title rises word by word,
  * and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
  */
 export function HeroSlider() {
   const { s, loc, img } = useSite();
-  const slides = [1, 2, 3]
+  const slides = [1, 2, 3, 4, 5]
     .map((n) => ({ image: img('hero', `slide${n}_image`), title: loc('hero', `slide${n}_title`), desc: loc('hero', `slide${n}_description`), has: !!(s('hero', `slide${n}_image`) || s('hero', `slide${n}_title_ar`) || s('hero', `slide${n}_title_en`)) }))
     .filter((x) => x.has);
   const [i, setI] = useState(0);
