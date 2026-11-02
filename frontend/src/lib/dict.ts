@@ -59,6 +59,12 @@ const ar: Record<string, string> = {
   'f.youtube': 'رابط فيديو يوتيوب', 'f.youtubeHint': 'اختياري — الصق رابط الفيديو وسيظهر داخل صفحة الخبر', 'f.youtubeInvalid': 'رابط يوتيوب غير صالح', 'site.video': 'فيديو', 'site.openYoutube': 'المشاهدة على يوتيوب',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+  // documents
+  'adm.documents': 'القرارات والتعاميم', 'mod.documents': 'القرارات والتعاميم', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
+  'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'المكتبة', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
+  'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
+  'doc.fileHint': 'مطلوب، حتى 25 ميغابايت', 'doc.fileKeep': 'اتركه فارغاً للإبقاء على الملف الحالي', 'doc.current': 'عرض الملف الحالي', 'doc.pdfOnly': 'ملف PDF فقط', 'doc.pdfRequired': 'اختر ملف PDF',
+  'doc.search': 'ابحث في العنوان أو الرقم', 'doc.searchBtn': 'بحث', 'doc.empty': 'لا توجد وثائق', 'doc.open': 'عرض', 'doc.download': 'تنزيل', 'doc.prev': 'السابق', 'doc.next': 'التالي',
   // static pages
   'adm.pages': 'الصفحات الثابتة', 'mod.pages': 'الصفحات الثابتة', 'pg.add': 'إضافة صفحة', 'pg.edit': 'تعديل الصفحة', 'pg.view': 'عرض', 'pg.titleAr': 'العنوان بالعربية', 'pg.titleEn': 'العنوان بالإنجليزية (اختياري)',
   'pg.slug': 'الرابط المختصر', 'pg.slugHint': 'أحرف إنجليزية صغيرة وأرقام وشرطات فقط، مثل about', 'pg.footer': 'يظهر في الفوتر', 'pg.bodyAr': 'المحتوى بالعربية', 'pg.bodyEn': 'المحتوى بالإنجليزية (اختياري)',
@@ -163,6 +169,12 @@ const en: Record<string, string> = {
   'f.youtube': 'YouTube video link', 'f.youtubeHint': 'Optional — paste the video link and it will appear inside the news page', 'f.youtubeInvalid': 'Invalid YouTube link', 'site.video': 'Video', 'site.openYoutube': 'Watch on YouTube',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+  // documents
+  'adm.documents': 'Decisions & circulars', 'mod.documents': 'Decisions & circulars', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
+  'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Library', 'doc.number': 'Number', 'doc.date': 'Date',
+  'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
+  'doc.fileHint': 'Required, up to 25 MB', 'doc.fileKeep': 'Leave empty to keep the current file', 'doc.current': 'View current file', 'doc.pdfOnly': 'PDF files only', 'doc.pdfRequired': 'Choose a PDF file',
+  'doc.search': 'Search by title or number', 'doc.searchBtn': 'Search', 'doc.empty': 'No documents', 'doc.open': 'View', 'doc.download': 'Download', 'doc.prev': 'Previous', 'doc.next': 'Next',
   // static pages
   'adm.pages': 'Pages', 'mod.pages': 'Static pages', 'pg.add': 'Add page', 'pg.edit': 'Edit page', 'pg.view': 'View', 'pg.titleAr': 'Title (Arabic)', 'pg.titleEn': 'Title (English, optional)',
   'pg.slug': 'Short link', 'pg.slugHint': 'Lowercase English letters, digits and dashes only, e.g. about', 'pg.footer': 'Show in footer', 'pg.bodyAr': 'Content (Arabic)', 'pg.bodyEn': 'Content (English, optional)',

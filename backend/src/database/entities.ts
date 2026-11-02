@@ -12,6 +12,7 @@ import { Ad } from '../modules/ads/ad.entity';
 import { Subscriber } from '../modules/subscribers/subscriber.entity';
 import { Gallery } from '../modules/gallery/gallery.entity';
 import { Occasion } from '../modules/occasions/occasion.entity';
+import { Document } from '../modules/documents/document.entity';
 import { SitePage } from '../modules/pages/page.entity';
 import { Faq } from '../modules/faqs/faq.entity';
 import { News } from '../modules/news/news.entity';
@@ -19,4 +20,4 @@ import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, Faq, SitePage];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, Faq, SitePage, Document];

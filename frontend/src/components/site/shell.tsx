@@ -180,6 +180,7 @@ export function Navbar() {
   const toolsItems: NavItem[] = [
     { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
+    { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
     { label: t('adm.pages'), to: '/admin/pages', show: can('pages.read') },
     { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
     { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
@@ -193,6 +194,7 @@ export function Navbar() {
     { label: t('pub.upcoming'), to: '/occasions/upcoming', show: true },
     { label: t('pub.previous'), to: '/occasions/previous', show: true },
     { label: t('pub.gallery'), to: '/gallery', show: true },
+    { label: t('site.documents'), to: '/documents', show: true },
     { label: t('site.faq'), to: '/faq', show: true },
   ];
   const securityItems: NavItem[] = [
@@ -422,6 +424,7 @@ export function Footer() {
             <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
             <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
             {pages.map((p) => <li key={p.id}><Link href={href(`/pages/view?slug=${encodeURIComponent(p.slug)}`)} className="transition hover:text-white">{p.title}</Link></li>)}
+            <li><Link href={href('/documents')} className="transition hover:text-white">{t('site.documents')}</Link></li>
             <li><Link href={href('/faq')} className="transition hover:text-white">{t('site.faq')}</Link></li>
             <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
           </ul>

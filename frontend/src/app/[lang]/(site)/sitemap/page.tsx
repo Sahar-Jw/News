@@ -36,7 +36,7 @@ export default function SitemapPage() {
   const { categories, settings, loc } = useSite();
   const [extra, setExtra] = useState<{ slug: string; title: string }[]>([]);
   useEffect(() => { api<{ slug: string; title: string }[]>('/public/pages', { params: { lang } }).then(setExtra).catch(() => setExtra([])); }, [lang]);
-  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/faq', t('site.faq')], ...extra.map((x): [string, string] => [`/pages/view?slug=${encodeURIComponent(x.slug)}`, x.title])];
+  const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/documents', t('site.documents')], ['/faq', t('site.faq')], ...extra.map((x): [string, string] => [`/pages/view?slug=${encodeURIComponent(x.slug)}`, x.title])];
   const sh = settings.sections_home ?? {};
   const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && k !== 'shortcuts' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
   return (

@@ -153,6 +153,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'faqs.create', module: 'faqs', nameAr: 'إضافة سؤال شائع', nameEn: 'Create FAQs' },
   { code: 'faqs.update', module: 'faqs', nameAr: 'تعديل سؤال شائع', nameEn: 'Update FAQs' },
   { code: 'faqs.delete', module: 'faqs', nameAr: 'حذف سؤال شائع', nameEn: 'Delete FAQs' },
+  // documents: decisions, circulars, library (PDF files)
+  { code: 'documents.read', module: 'documents', nameAr: 'عرض الوثائق', nameEn: 'View documents' },
+  { code: 'documents.create', module: 'documents', nameAr: 'إضافة وثيقة', nameEn: 'Create documents' },
+  { code: 'documents.update', module: 'documents', nameAr: 'تعديل وثيقة', nameEn: 'Update documents' },
+  { code: 'documents.delete', module: 'documents', nameAr: 'حذف وثيقة', nameEn: 'Delete documents' },
   // static pages (about the chamber, ...)
   { code: 'pages.read', module: 'pages', nameAr: 'عرض الصفحات الثابتة', nameEn: 'View static pages' },
   { code: 'pages.create', module: 'pages', nameAr: 'إضافة صفحة ثابتة', nameEn: 'Create static pages' },
@@ -232,6 +237,10 @@ export const PERM = {
   FAQS_CREATE: 'faqs.create',
   FAQS_UPDATE: 'faqs.update',
   FAQS_DELETE: 'faqs.delete',
+  DOCUMENTS_READ: 'documents.read',
+  DOCUMENTS_CREATE: 'documents.create',
+  DOCUMENTS_UPDATE: 'documents.update',
+  DOCUMENTS_DELETE: 'documents.delete',
   PAGES_READ: 'pages.read',
   PAGES_CREATE: 'pages.create',
   PAGES_UPDATE: 'pages.update',
