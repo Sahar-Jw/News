@@ -181,6 +181,7 @@ export function Navbar() {
     { label: t('adm.board'), to: '/admin/board', show: can('board.read') },
     { label: t('adm.committees'), to: '/admin/committees', show: can('committees.read') },
     { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
+    { label: t('adm.services'), to: '/admin/services', show: can('services.read') },
     { label: t('adm.pages'), to: '/admin/pages', show: can('pages.read') },
     { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
     { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },

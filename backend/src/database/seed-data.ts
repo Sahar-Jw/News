@@ -117,6 +117,15 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('contact', 'working_hours_ar', 'text'),
   s('contact', 'working_hours_en', 'text'),
   s('contact', 'map_url', 'url'),
+  // One-Stop window: opening hours + a temporary notice (shown only between notice_from and notice_to, or always when both are empty)
+  s('one_stop', 'hours_ar', 'text'),
+  s('one_stop', 'hours_en', 'text'),
+  s('one_stop', 'days_ar', 'text'),
+  s('one_stop', 'days_en', 'text'),
+  s('one_stop', 'notice_ar', 'text'),
+  s('one_stop', 'notice_en', 'text'),
+  s('one_stop', 'notice_from', 'text'),
+  s('one_stop', 'notice_to', 'text'),
   // social
   s('social', 'facebook_url', 'url'),
   s('social', 'x_url', 'url'),

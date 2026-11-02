@@ -10,7 +10,8 @@ type Errors = Partial<Record<keyof Values, string>>;
 const EMPTY: Values = { name: '', email: '', subject: '', message: '' };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export function ContactForm() {
+/** `subjectPrefix` is added in front of the subject when sending (e.g. to tag inquiries from the One-Stop page). */
+export function ContactForm({ subjectPrefix = '' }: { subjectPrefix?: string }) {
   const { t } = useI18n();
   const toast = useToast();
   const [f, setF] = useState<Values>(EMPTY);
@@ -30,7 +31,7 @@ export function ContactForm() {
     else if (!EMAIL_RE.test(email)) e.email = t('contact.err.emailInvalid');
     if (!subject) e.subject = t('contact.err.subjectRequired');
     else if (subject.length < 2) e.subject = t('contact.err.subjectMin');
-    else if (subject.length > 255) e.subject = t('contact.err.subjectMax');
+    else if (subject.length > 255 - subjectPrefix.length) e.subject = t('contact.err.subjectMax');
     if (!message) e.message = t('contact.err.messageRequired');
     else if (message.length < 5) e.message = t('contact.err.messageMin');
     else if (message.length > 5000) e.message = t('contact.err.messageMax');
@@ -59,7 +60,7 @@ export function ContactForm() {
     }
     setBusy(true);
     try {
-      await api('/public/contact', { method: 'POST', body: { name: f.name.trim(), email: f.email.trim(), subject: f.subject.trim(), message: f.message.trim() } });
+      await api('/public/contact', { method: 'POST', body: { name: f.name.trim(), email: f.email.trim(), subject: `${subjectPrefix}${f.subject.trim()}`, message: f.message.trim() } });
       toast(t('contact.ok'));
       setF(EMPTY);
       setErrors({});

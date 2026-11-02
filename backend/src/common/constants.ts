@@ -168,6 +168,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'documents.create', module: 'documents', nameAr: 'إضافة وثيقة', nameEn: 'Create documents' },
   { code: 'documents.update', module: 'documents', nameAr: 'تعديل وثيقة', nameEn: 'Update documents' },
   { code: 'documents.delete', module: 'documents', nameAr: 'حذف وثيقة', nameEn: 'Delete documents' },
+  // chamber services (One-Stop window / Services page)
+  { code: 'services.read', module: 'services', nameAr: 'عرض الخدمات', nameEn: 'View services' },
+  { code: 'services.create', module: 'services', nameAr: 'إضافة خدمة', nameEn: 'Create services' },
+  { code: 'services.update', module: 'services', nameAr: 'تعديل خدمة', nameEn: 'Update services' },
+  { code: 'services.delete', module: 'services', nameAr: 'حذف خدمة', nameEn: 'Delete services' },
   // static pages (about the chamber, ...)
   { code: 'pages.read', module: 'pages', nameAr: 'عرض الصفحات الثابتة', nameEn: 'View static pages' },
   { code: 'pages.create', module: 'pages', nameAr: 'إضافة صفحة ثابتة', nameEn: 'Create static pages' },
@@ -259,6 +264,10 @@ export const PERM = {
   DOCUMENTS_CREATE: 'documents.create',
   DOCUMENTS_UPDATE: 'documents.update',
   DOCUMENTS_DELETE: 'documents.delete',
+  SERVICES_READ: 'services.read',
+  SERVICES_CREATE: 'services.create',
+  SERVICES_UPDATE: 'services.update',
+  SERVICES_DELETE: 'services.delete',
   PAGES_READ: 'pages.read',
   PAGES_CREATE: 'pages.create',
   PAGES_UPDATE: 'pages.update',

@@ -10,6 +10,7 @@ const CATEGORY_AR: Record<string, string> = {
   pages: 'الصفحات',
   appointments: 'المواعيد',
   shortcuts: 'الاختصارات السريعة',
+  one_stop: 'النافذة الواحدة',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -29,6 +30,11 @@ const BASE_AR: Record<string, string> = {
   email: 'البريد الإلكتروني',
   address: 'العنوان',
   working_hours: 'ساعات العمل',
+  hours: 'أوقات الاستقبال (من … إلى …)',
+  days: 'أيام الدوام',
+  notice: 'تنبيه عطلة أو تعديل مؤقت',
+  notice_from: 'بداية التنبيه (YYYY-MM-DD، اتركه فارغاً ليظهر دائماً)',
+  notice_to: 'نهاية التنبيه (YYYY-MM-DD)',
   map_url: 'رابط الخريطة',
   // social
   facebook_url: 'فيسبوك',
