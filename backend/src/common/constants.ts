@@ -153,6 +153,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'faqs.create', module: 'faqs', nameAr: 'إضافة سؤال شائع', nameEn: 'Create FAQs' },
   { code: 'faqs.update', module: 'faqs', nameAr: 'تعديل سؤال شائع', nameEn: 'Update FAQs' },
   { code: 'faqs.delete', module: 'faqs', nameAr: 'حذف سؤال شائع', nameEn: 'Delete FAQs' },
+  // board of directors
+  { code: 'board.read', module: 'board', nameAr: 'عرض أعضاء المجلس', nameEn: 'View board members' },
+  { code: 'board.create', module: 'board', nameAr: 'إضافة عضو مجلس', nameEn: 'Create board members' },
+  { code: 'board.update', module: 'board', nameAr: 'تعديل عضو مجلس', nameEn: 'Update board members' },
+  { code: 'board.delete', module: 'board', nameAr: 'حذف عضو مجلس', nameEn: 'Delete board members' },
   // documents: decisions, circulars, library (PDF files)
   { code: 'documents.read', module: 'documents', nameAr: 'عرض الوثائق', nameEn: 'View documents' },
   { code: 'documents.create', module: 'documents', nameAr: 'إضافة وثيقة', nameEn: 'Create documents' },
@@ -237,6 +242,10 @@ export const PERM = {
   FAQS_CREATE: 'faqs.create',
   FAQS_UPDATE: 'faqs.update',
   FAQS_DELETE: 'faqs.delete',
+  BOARD_READ: 'board.read',
+  BOARD_CREATE: 'board.create',
+  BOARD_UPDATE: 'board.update',
+  BOARD_DELETE: 'board.delete',
   DOCUMENTS_READ: 'documents.read',
   DOCUMENTS_CREATE: 'documents.create',
   DOCUMENTS_UPDATE: 'documents.update',

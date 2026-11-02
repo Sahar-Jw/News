@@ -59,6 +59,13 @@ const ar: Record<string, string> = {
   'f.youtube': 'رابط فيديو يوتيوب', 'f.youtubeHint': 'اختياري — الصق رابط الفيديو وسيظهر داخل صفحة الخبر', 'f.youtubeInvalid': 'رابط يوتيوب غير صالح', 'site.video': 'فيديو', 'site.openYoutube': 'المشاهدة على يوتيوب',
   'site.copyLink': 'نسخ الرابط', 'site.copied': 'تم نسخ الرابط', 'site.pdf': 'مستند PDF', 'site.openPdf': 'فتح PDF', 'site.pdfError': 'تعذّر عرض الملف', 'site.pdfPages': 'صفحة',
   's.upload': 'رفع ملف', 's.category': 'الفئة', 's.hidden': 'تُخفى إن تُركت فارغة',
+  // board of directors
+  'adm.board': 'أعضاء المجلس', 'mod.board': 'أعضاء المجلس', 'board.title': 'مجلس الإدارة', 'site.board': 'مجلس الإدارة', 'board.add': 'إضافة عضو', 'board.edit': 'تعديل العضو',
+  'board.position': 'الصفة في المجلس', 'board.pos.president': 'الرئيس', 'board.pos.vice_president': 'نائب الرئيس', 'board.pos.secretary': 'أمين السر', 'board.pos.treasurer': 'أمين الصندوق', 'board.pos.member': 'عضو',
+  'board.jobTitle': 'الصفة المهنية', 'board.jobTitleAr': 'الصفة المهنية بالعربية', 'board.jobTitleEn': 'الصفة المهنية بالإنجليزية (اختياري)', 'board.term': 'الدورة', 'board.termHint': 'مثال: 2024 - 2028',
+  'board.photo': 'الصورة', 'board.photoHint': 'JPG أو PNG أو WEBP، حتى 5 ميغابايت', 'board.removePhoto': 'حذف الصورة', 'board.photoRemoved': 'ستُحذف الصورة عند الحفظ', 'board.imageOnly': 'صور فقط',
+  'board.bioAr': 'النبذة المهنية بالعربية', 'board.bioEn': 'النبذة المهنية بالإنجليزية (اختياري)', 'board.dutiesAr': 'اللجان والمهام بالعربية', 'board.dutiesEn': 'اللجان والمهام بالإنجليزية (اختياري)',
+  'board.bio': 'نبذة مهنية', 'board.duties': 'اللجان والمهام', 'board.back': 'العودة إلى مجلس الإدارة', 'board.empty': 'لم تتم إضافة أعضاء بعد',
   // documents
   'adm.documents': 'القرارات والتعاميم', 'mod.documents': 'القرارات والتعاميم', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
   'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'المكتبة', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
@@ -169,6 +176,13 @@ const en: Record<string, string> = {
   'f.youtube': 'YouTube video link', 'f.youtubeHint': 'Optional — paste the video link and it will appear inside the news page', 'f.youtubeInvalid': 'Invalid YouTube link', 'site.video': 'Video', 'site.openYoutube': 'Watch on YouTube',
   'site.copyLink': 'Copy link', 'site.copied': 'Link copied', 'site.pdf': 'PDF document', 'site.openPdf': 'Open PDF', 'site.pdfError': 'Could not display the file', 'site.pdfPages': 'pages',
   's.upload': 'Upload file', 's.category': 'Category', 's.hidden': 'Hidden when left empty',
+  // board of directors
+  'adm.board': 'Board members', 'mod.board': 'Board members', 'board.title': 'Board of Directors', 'site.board': 'Board of Directors', 'board.add': 'Add member', 'board.edit': 'Edit member',
+  'board.position': 'Board position', 'board.pos.president': 'President', 'board.pos.vice_president': 'Vice president', 'board.pos.secretary': 'Secretary', 'board.pos.treasurer': 'Treasurer', 'board.pos.member': 'Member',
+  'board.jobTitle': 'Job title', 'board.jobTitleAr': 'Job title (Arabic)', 'board.jobTitleEn': 'Job title (English, optional)', 'board.term': 'Term', 'board.termHint': 'Example: 2024 - 2028',
+  'board.photo': 'Picture', 'board.photoHint': 'JPG, PNG or WEBP, up to 5 MB', 'board.removePhoto': 'Remove picture', 'board.photoRemoved': 'The picture will be removed on save', 'board.imageOnly': 'Images only',
+  'board.bioAr': 'Biography (Arabic)', 'board.bioEn': 'Biography (English, optional)', 'board.dutiesAr': 'Committees and duties (Arabic)', 'board.dutiesEn': 'Committees and duties (English, optional)',
+  'board.bio': 'Biography', 'board.duties': 'Committees and duties', 'board.back': 'Back to the board', 'board.empty': 'No members added yet',
   // documents
   'adm.documents': 'Decisions & circulars', 'mod.documents': 'Decisions & circulars', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
   'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Library', 'doc.number': 'Number', 'doc.date': 'Date',
