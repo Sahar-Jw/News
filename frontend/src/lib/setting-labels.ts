@@ -12,6 +12,7 @@ const CATEGORY_AR: Record<string, string> = {
   shortcuts: 'الاختصارات السريعة',
   one_stop: 'النافذة الواحدة',
   promo: 'البانر الترويجي (DCC EXPO)',
+  media: 'المركز الإعلامي',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -58,6 +59,10 @@ const BASE_AR: Record<string, string> = {
   // labels
   read_more: 'نص «اقرأ المزيد»',
   breaking: 'نص «عاجل»',
+  // media center
+  statements_category: 'تصنيف الأخبار لتبويب «البيانات الرسمية»',
+  interviews_category: 'تصنيف الأخبار لتبويب «المقابلات»',
+  coverage_category: 'تصنيف الأخبار لتبويب «التغطيات الإعلامية»',
   // pages
   privacy: 'سياسة الخصوصية',
   terms: 'الشروط والأحكام',

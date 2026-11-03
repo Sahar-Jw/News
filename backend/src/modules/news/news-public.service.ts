@@ -14,7 +14,7 @@ import { ViewCounterService } from './view-counter.service';
 import { ttlCache } from '../../common/utils/ttl-cache';
 import { parseYoutubeId } from '../../common/utils/youtube';
 
-const CARD_COLUMNS = ['id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'excerpt', 'images', 'rating', 'isFeatured', 'publishAt', 'language', 'viewCount'];
+const CARD_COLUMNS = ['id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'excerpt', 'images', 'rating', 'isFeatured', 'publishAt', 'language', 'viewCount', 'youtubeUrl'];
 const homeCache = ttlCache<{ settings: any; specials: News[]; featured: News[]; regular: News[] }>(Number(process.env.PUBLIC_CACHE_TTL_MS ?? 15_000));
 
 export interface Viewer {
@@ -47,6 +47,7 @@ export class NewsPublicService {
       publishAt: n.publishAt,
       language: n.language,
       viewCount: n.viewCount,
+      hasVideo: !!n.youtubeUrl,
       ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null, youtubeId: parseYoutubeId(n.youtubeUrl) }),
     };
   }
@@ -89,6 +90,7 @@ export class NewsPublicService {
         qb.andWhere(`(${conds.join(' OR ')})`, params);
       }
     }
+    if (q.hasVideo === 'true') qb.andWhere("(n.youtubeUrl IS NOT NULL AND n.youtubeUrl <> '')");
     if (q.q) this.applyTextSearch(qb, q.q);
     if (q.dateFrom && q.dateTo && q.dateFrom > q.dateTo) throw new BadRequestException('dateFrom must be before dateTo');
     if (q.dateFrom) qb.andWhere('n.publishAt >= :dateFrom', { dateFrom: `${q.dateFrom}T00:00:00.000Z` });

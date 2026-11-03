@@ -10,6 +10,7 @@ import { ContactIcon, SocialIcon } from './icons';
 
 export interface Card {
   id: number;
+  hasVideo?: boolean;
   title: string;
   subject: string | null;
   mainCategory: string;
@@ -152,6 +153,7 @@ export function NewsCard({ n }: { n: Card }) {
       <div className="relative block aspect-[16/10] w-full overflow-hidden">
         <FitImage src={n.images[0]} alt={n.title} />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true" />
+        {n.hasVideo && <span className="absolute end-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-xs text-white" aria-label="video">▶</span>}
         <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
           <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm backdrop-blur`}>
             <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}

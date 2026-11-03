@@ -11,7 +11,7 @@ import { RequirePerm } from '@/components/admin/guard';
 
 interface Row { id: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
 interface Draft { id?: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
-const KINDS = ['circular', 'decision', 'law', 'guide', 'study', 'report', 'bulletin', 'form', 'historical', 'library'];
+const KINDS = ['circular', 'decision', 'law', 'guide', 'study', 'report', 'bulletin', 'form', 'historical', 'press', 'mediakit', 'library'];
 const EMPTY: Draft = { kind: 'circular', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
 
 /** Decisions, circulars and library files. Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. */

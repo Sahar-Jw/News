@@ -99,6 +99,8 @@ export class PublicNewsQueryDto extends PublicListQueryDto {
   /** publish date range, inclusive (YYYY-MM-DD) */
   @IsOptional() @IsDateString({ strict: true }, { message: 'dateFrom must be a valid date (YYYY-MM-DD)' }) dateFrom?: string;
   @IsOptional() @IsDateString({ strict: true }, { message: 'dateTo must be a valid date (YYYY-MM-DD)' }) dateTo?: string;
+  /** "true" = only news that has a YouTube link (the Media Center video tab) */
+  @IsOptional() @IsIn(['true']) hasVideo?: string;
   /** newest (default) | oldest | views */
   @IsOptional() @IsIn(['newest', 'oldest', 'views']) sort?: 'newest' | 'oldest' | 'views';
 }

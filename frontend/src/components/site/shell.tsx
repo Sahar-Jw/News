@@ -391,6 +391,7 @@ export function Footer() {
             <li><Link href={href('/committees')} className="transition hover:text-white">{t('cm.title')}</Link></li>
             <li><Link href={href('/documents')} className="transition hover:text-white">{t('site.documents')}</Link></li>
             <li><Link href={href('/library')} className="transition hover:text-white">{t('nav.library')}</Link></li>
+            <li><Link href={href('/media')} className="transition hover:text-white">{t('nav.mediaCenter')}</Link></li>
             <li><Link href={href('/faq')} className="transition hover:text-white">{t('site.faq')}</Link></li>
             <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
           </ul>

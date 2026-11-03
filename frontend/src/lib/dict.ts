@@ -100,6 +100,10 @@ const ar: Record<string, string> = {
   'cm.newsHint': 'الأخبار تُكتب مرة واحدة في قسم الأخبار، وهنا تُربط باللجنة لتظهر في صفحتها تلقائياً.', 'cm.searchNews': 'ابحث بعنوان الخبر', 'cm.linkNews': 'ربط', 'cm.unlink': 'فك الربط', 'cm.linkedNews': 'الأخبار المرتبطة باللجنة',
   // wireframe gaps: documents
   'doc.kind.law': 'القوانين والأنظمة', 'doc.kind.guide': 'الأدلة', 'doc.issuer': 'الجهة', 'doc.issuerAr': 'الجهة بالعربية', 'doc.issuerEn': 'الجهة بالإنجليزية (اختياري)',
+  // media center
+  'md.title': 'المركز الإعلامي', 'md.tab.news': 'الأخبار', 'md.tab.statements': 'البيانات الرسمية', 'md.tab.photos': 'الصور', 'md.tab.video': 'الفيديو', 'md.tab.interviews': 'المقابلات',
+  'md.tab.coverage': 'التغطيات الإعلامية', 'md.tab.press': 'المواد الصحفية', 'md.tab.kit': 'Media Kit', 'md.empty': 'لا يوجد محتوى في هذا التبويب بعد', 'md.allNews': 'عرض جميع الأخبار',
+  'md.kitIntro': 'حقيبة إعلامية جاهزة للتحميل: الشعار والهوية البصرية ومعلومات تعريفية عن الغرفة.', 'doc.kind.press': 'مواد صحفية', 'doc.kind.mediakit': 'Media Kit',
   'doc.kind.study': 'دراسات', 'doc.kind.report': 'تقارير', 'doc.kind.bulletin': 'نشرات', 'doc.kind.form': 'نماذج', 'doc.kind.historical': 'وثائق تاريخية',
   'doc.from': 'من', 'doc.to': 'إلى', 'doc.allIssuers': 'كل الجهات', 'doc.colTitle': 'العنوان',
   // wireframe gaps: linked news
@@ -250,6 +254,10 @@ const en: Record<string, string> = {
   'cm.newsHint': 'News is written once in the news section; here it is linked to the committee so it appears on its page automatically.', 'cm.searchNews': 'Search by news title', 'cm.linkNews': 'Link', 'cm.unlink': 'Unlink', 'cm.linkedNews': 'News linked to this committee',
   // wireframe gaps: documents
   'doc.kind.law': 'Laws & regulations', 'doc.kind.guide': 'Guides', 'doc.issuer': 'Issuer', 'doc.issuerAr': 'Issuer (Arabic)', 'doc.issuerEn': 'Issuer (English, optional)',
+  // media center
+  'md.title': 'Media center', 'md.tab.news': 'News', 'md.tab.statements': 'Official statements', 'md.tab.photos': 'Photos', 'md.tab.video': 'Video', 'md.tab.interviews': 'Interviews',
+  'md.tab.coverage': 'Media coverage', 'md.tab.press': 'Press materials', 'md.tab.kit': 'Media Kit', 'md.empty': 'Nothing in this tab yet', 'md.allNews': 'View all news',
+  'md.kitIntro': 'A ready-made media kit to download: logo, visual identity and general information about the chamber.', 'doc.kind.press': 'Press materials', 'doc.kind.mediakit': 'Media Kit',
   'doc.kind.study': 'Studies', 'doc.kind.report': 'Reports', 'doc.kind.bulletin': 'Bulletins', 'doc.kind.form': 'Forms', 'doc.kind.historical': 'Historical documents',
   'doc.from': 'From', 'doc.to': 'To', 'doc.allIssuers': 'All issuers', 'doc.colTitle': 'Title',
   // wireframe gaps: linked news

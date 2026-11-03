@@ -155,6 +155,10 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('promo', 'text_ar', 'text'), s('promo', 'text_en', 'text'),
   s('promo', 'button_ar', 'text'), s('promo', 'button_en', 'text'),
   s('promo', 'link', 'text'), s('promo', 'image', 'file'),
+  // Media Center tabs: which news category each tab reads (the admin writes the same label when posting the news)
+  s('media', 'statements_category', 'text', 'بيانات رسمية'),
+  s('media', 'interviews_category', 'text', 'مقابلات'),
+  s('media', 'coverage_category', 'text', 'تغطيات إعلامية'),
   // homepage sections: titles, order, visibility
   ...HOME_SECTIONS.flatMap((sec, i) => [
     s('sections_home', `${sec.code}_title_ar`, 'text', sec.titleAr),
