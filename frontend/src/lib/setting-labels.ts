@@ -11,6 +11,7 @@ const CATEGORY_AR: Record<string, string> = {
   appointments: 'المواعيد',
   shortcuts: 'الاختصارات السريعة',
   one_stop: 'النافذة الواحدة',
+  training: 'مركز التدريب',
   promo: 'البانر الترويجي (DCC EXPO)',
   media: 'المركز الإعلامي',
 };
@@ -32,6 +33,8 @@ const BASE_AR: Record<string, string> = {
   email: 'البريد الإلكتروني',
   address: 'العنوان',
   working_hours: 'ساعات العمل',
+  officer_email: 'بريد مسؤول التدريب (يصله إشعار عند كل تسجيل)',
+  news_topic: 'وسم أخبار المركز (تظهر الأخبار التي تحمل هذا الوسم)',
   hours: 'أوقات الاستقبال (من … إلى …)',
   days: 'أيام الدوام',
   notice: 'تنبيه عطلة أو تعديل مؤقت',

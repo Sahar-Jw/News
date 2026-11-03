@@ -128,6 +128,10 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('one_stop', 'notice_en', 'text'),
   s('one_stop', 'notice_from', 'text'),
   s('one_stop', 'notice_to', 'text'),
+  // Administrative Training Center: who gets the registration e-mails, and the news topic shown in the "center news" tab
+  s('training', 'officer_email', 'text'),
+  s('training', 'news_topic_ar', 'text'),
+  s('training', 'news_topic_en', 'text'),
   // social
   s('social', 'facebook_url', 'url'),
   s('social', 'x_url', 'url'),
