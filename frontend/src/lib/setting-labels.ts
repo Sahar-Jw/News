@@ -14,6 +14,7 @@ const CATEGORY_AR: Record<string, string> = {
   training: 'مركز التدريب',
   promo: 'البانر الترويجي (DCC EXPO)',
   media: 'المركز الإعلامي',
+  expo: 'DCC EXPO (المعرض)',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -89,6 +90,14 @@ const HOME_SECTION_AR: Record<string, string> = {
   gallery: 'معرض الصور',
 };
 
+/** labels of the "expo" settings category (the generic names such as logo / email would be too vague here) */
+const EXPO_AR: Record<string, string> = {
+  name: 'اسم المعرض', tagline: 'الشعار النصي (العنوان الرئيسي)', about: 'عن المعرض', why: 'لماذا تشارك؟ (كل نقطة في سطر)',
+  start_date: 'تاريخ البداية (YYYY-MM-DD)', end_date: 'تاريخ النهاية (YYYY-MM-DD)', venue: 'مكان المعرض', hero_image: 'صورة الواجهة', logo: 'شعار المعرض',
+  primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', contact_email: 'بريد المعرض (يصله إشعار عند كل طلب)', contact_phone: 'هاتف المعرض',
+  news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
+};
+
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
 const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عنوان', description: 'وصف' };
 
@@ -110,6 +119,7 @@ export function keyLabel(category: string, key: string, lang: string): string {
     const s = /^slide(\d+)_(image|title|description)$/.exec(base);
     if (s) return `${SLIDE_PART_AR[s[2]]} الشريحة ${s[1]}${suffix}`;
   }
+  if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;
   if (category === 'promo') {
     const p = /^(title|text|button)_(ar|en)$/.exec(base);
     if (p) return `البانر — ${{ title: 'العنوان', text: 'النص', button: 'نص الزر' }[p[1] as 'title' | 'text' | 'button']}${suffix}`;

@@ -18,6 +18,8 @@ import { ContentLink } from '../modules/content-links/content-link.entity';
 import { Document } from '../modules/documents/document.entity';
 import { NavGroup, NavItem } from '../modules/nav/nav.entity';
 import { ChamberService } from '../modules/services/service.entity';
+import { ExpoApplication } from '../modules/expo/expo-application.entity';
+import { ExpoItem } from '../modules/expo/expo-item.entity';
 import { Course } from '../modules/training/course.entity';
 import { CourseRegistration } from '../modules/training/course-registration.entity';
 import { Trainer } from '../modules/training/trainer.entity';
@@ -28,4 +30,4 @@ import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, Faq, SitePage, Document, BoardMember, Committee, ChamberService, Course, Trainer, CourseRegistration, CommitteeMember, CommitteeActivity, ContentLink, NavGroup, NavItem];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, Faq, SitePage, Document, BoardMember, Committee, ChamberService, Course, Trainer, CourseRegistration, CommitteeMember, CommitteeActivity, ContentLink, NavGroup, NavItem, ExpoItem, ExpoApplication];

@@ -60,4 +60,4 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 /** The highlighted button next to the groups. */
-export const NAV_EXPO: NavLeaf = { label: 'nav.expo', to: '/expo', ready: false };
+export const NAV_EXPO: NavLeaf = { label: 'nav.expo', to: '/expo', ready: true };

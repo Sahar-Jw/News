@@ -29,6 +29,7 @@ import { ContentLinksModule } from './modules/content-links/content-links.module
 import { DocumentsModule } from './modules/documents/documents.module';
 import { NavModule } from './modules/nav/nav.module';
 import { ServicesModule } from './modules/services/services.module';
+import { ExpoModule } from './modules/expo/expo.module';
 import { TrainingModule } from './modules/training/training.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
@@ -78,6 +79,7 @@ import { UsersModule } from './modules/users/users.module';
     ServicesModule,
     NavModule,
     TrainingModule,
+    ExpoModule,
     BoardModule,
     CommitteesModule,
     ContentLinksModule,
