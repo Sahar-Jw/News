@@ -8,7 +8,7 @@ import { escapeLike } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
-import { Document, DocumentKind } from './document.entity';
+import { Document, DocumentKind, OFFICIAL_DOCUMENT_KINDS } from './document.entity';
 import { CreateDocumentDto, DocumentsAdminQueryDto, PublicDocumentsQueryDto, UpdateDocumentDto } from './documents.dto';
 
 @Injectable()
@@ -117,6 +117,7 @@ export class DocumentsService {
     const p = publicPage(q, 12, 50);
     const qb = this.repo.createQueryBuilder('d').where('d.isActive = true');
     if (q.kind) qb.andWhere('d.kind = :kind', { kind: q.kind });
+    else if (q.scope === 'official') qb.andWhere('d.kind IN (:...official)', { official: OFFICIAL_DOCUMENT_KINDS });
     if (q.issuer?.trim()) qb.andWhere('(d.issuerAr = :issuer OR d.issuerEn = :issuer)', { issuer: q.issuer.trim() });
     if (q.from) qb.andWhere('d.docDate >= :from', { from: q.from.slice(0, 10) });
     if (q.to) qb.andWhere('d.docDate <= :to', { to: q.to.slice(0, 10) });
@@ -131,9 +132,10 @@ export class DocumentsService {
   }
 
   /** Issuers of the visible documents (for the filter box of the public page). */
-  async publicIssuers(lang: string, kind?: string) {
+  async publicIssuers(lang: string, kind?: string, scope?: string) {
     const qb = this.repo.createQueryBuilder('d').select('d.issuerAr', 'ar').addSelect('d.issuerEn', 'en').where('d.isActive = true').andWhere("d.issuerAr IS NOT NULL AND d.issuerAr <> ''");
     if (kind) qb.andWhere('d.kind = :kind', { kind });
+    else if (scope === 'official') qb.andWhere('d.kind IN (:...official)', { official: OFFICIAL_DOCUMENT_KINDS });
     const rows = await qb.groupBy('d.issuerAr').addGroupBy('d.issuerEn').getRawMany<{ ar: string; en: string | null }>();
     const en = lang === 'en';
     return [...new Set(rows.map((r) => (en && r.en) || r.ar))].sort((a, b) => a.localeCompare(b, en ? 'en' : 'ar'));

@@ -30,7 +30,7 @@ function View() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <article className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:p-10">
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-          <Link href={href(`/documents?kind=${d.kind}`)} className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary transition hover:bg-primary hover:text-white">{t(`doc.kind.${d.kind}`)}</Link>
+          <Link href={href(`${['circular', 'decision', 'law', 'guide'].includes(d.kind) ? '/documents' : '/library'}?kind=${d.kind}`)} className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary transition hover:bg-primary hover:text-white">{t(`doc.kind.${d.kind}`)}</Link>
           {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
           {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
           {d.issuer && <span>{t('doc.issuer')}: {d.issuer}</span>}

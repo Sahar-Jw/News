@@ -39,6 +39,8 @@ export class DocumentsAdminQueryDto extends AdminListQueryDto {
 
 export class PublicDocumentsQueryDto {
   @IsOptional() @IsIn(DOCUMENT_KINDS as unknown as string[]) kind?: string;
+  /** "official" = only decisions, circulars, laws and guides (when no kind is chosen); omitted = every kind (the Library) */
+  @IsOptional() @IsIn(['official']) scope?: string;
   @IsOptional() @IsString() @MaxLength(200) q?: string;
   /** issuer as shown on the page (matches the Arabic or English issuer text exactly) */
   @IsOptional() @IsString() @MaxLength(150) issuer?: string;

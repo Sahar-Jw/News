@@ -72,8 +72,8 @@ const ar: Record<string, string> = {
   'board.bioAr': 'النبذة المهنية بالعربية', 'board.bioEn': 'النبذة المهنية بالإنجليزية (اختياري)', 'board.dutiesAr': 'اللجان والمهام بالعربية', 'board.dutiesEn': 'اللجان والمهام بالإنجليزية (اختياري)',
   'board.bio': 'نبذة مهنية', 'board.duties': 'اللجان والمهام', 'board.back': 'العودة إلى مجلس الإدارة', 'board.empty': 'لم تتم إضافة أعضاء بعد',
   // documents
-  'adm.documents': 'القرارات والتعاميم', 'mod.documents': 'القرارات والتعاميم', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
-  'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'المكتبة', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
+  'adm.documents': 'الوثائق والمكتبة', 'mod.documents': 'الوثائق والمكتبة', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
+  'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'وثائق ومواد أخرى', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
   'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
   'doc.fileHint': 'مطلوب، حتى 25 ميغابايت', 'doc.fileKeep': 'اتركه فارغاً للإبقاء على الملف الحالي', 'doc.current': 'عرض الملف الحالي', 'doc.pdfOnly': 'ملف PDF فقط', 'doc.pdfRequired': 'اختر ملف PDF',
   'doc.search': 'ابحث في العنوان أو الرقم', 'doc.searchBtn': 'بحث', 'doc.empty': 'لا توجد وثائق', 'doc.open': 'عرض', 'doc.download': 'تنزيل', 'doc.prev': 'السابق', 'doc.next': 'التالي',
@@ -100,6 +100,7 @@ const ar: Record<string, string> = {
   'cm.newsHint': 'الأخبار تُكتب مرة واحدة في قسم الأخبار، وهنا تُربط باللجنة لتظهر في صفحتها تلقائياً.', 'cm.searchNews': 'ابحث بعنوان الخبر', 'cm.linkNews': 'ربط', 'cm.unlink': 'فك الربط', 'cm.linkedNews': 'الأخبار المرتبطة باللجنة',
   // wireframe gaps: documents
   'doc.kind.law': 'القوانين والأنظمة', 'doc.kind.guide': 'الأدلة', 'doc.issuer': 'الجهة', 'doc.issuerAr': 'الجهة بالعربية', 'doc.issuerEn': 'الجهة بالإنجليزية (اختياري)',
+  'doc.kind.study': 'دراسات', 'doc.kind.report': 'تقارير', 'doc.kind.bulletin': 'نشرات', 'doc.kind.form': 'نماذج', 'doc.kind.historical': 'وثائق تاريخية',
   'doc.from': 'من', 'doc.to': 'إلى', 'doc.allIssuers': 'كل الجهات', 'doc.colTitle': 'العنوان',
   // wireframe gaps: linked news
   'ln.title': 'الأخبار المرتبطة', 'ln.hint': 'الأخبار المرتبطة تظهر تلقائياً في الصفحة العامة لهذا العنصر دون إعادة كتابتها.', 'ln.search': 'ابحث عن خبر بالعنوان …', 'ln.attach': 'ربط', 'ln.detach': 'فك الربط', 'ln.none': 'لا توجد أخبار مرتبطة', 'board.news': 'الأخبار والأنشطة المرتبطة',
@@ -221,8 +222,8 @@ const en: Record<string, string> = {
   'board.bioAr': 'Biography (Arabic)', 'board.bioEn': 'Biography (English, optional)', 'board.dutiesAr': 'Committees and duties (Arabic)', 'board.dutiesEn': 'Committees and duties (English, optional)',
   'board.bio': 'Biography', 'board.duties': 'Committees and duties', 'board.back': 'Back to the board', 'board.empty': 'No members added yet',
   // documents
-  'adm.documents': 'Decisions & circulars', 'mod.documents': 'Decisions & circulars', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
-  'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Library', 'doc.number': 'Number', 'doc.date': 'Date',
+  'adm.documents': 'Documents & library', 'mod.documents': 'Documents & library', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
+  'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Other documents', 'doc.number': 'Number', 'doc.date': 'Date',
   'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
   'doc.fileHint': 'Required, up to 25 MB', 'doc.fileKeep': 'Leave empty to keep the current file', 'doc.current': 'View current file', 'doc.pdfOnly': 'PDF files only', 'doc.pdfRequired': 'Choose a PDF file',
   'doc.search': 'Search by title or number', 'doc.searchBtn': 'Search', 'doc.empty': 'No documents', 'doc.open': 'View', 'doc.download': 'Download', 'doc.prev': 'Previous', 'doc.next': 'Next',
@@ -249,6 +250,7 @@ const en: Record<string, string> = {
   'cm.newsHint': 'News is written once in the news section; here it is linked to the committee so it appears on its page automatically.', 'cm.searchNews': 'Search by news title', 'cm.linkNews': 'Link', 'cm.unlink': 'Unlink', 'cm.linkedNews': 'News linked to this committee',
   // wireframe gaps: documents
   'doc.kind.law': 'Laws & regulations', 'doc.kind.guide': 'Guides', 'doc.issuer': 'Issuer', 'doc.issuerAr': 'Issuer (Arabic)', 'doc.issuerEn': 'Issuer (English, optional)',
+  'doc.kind.study': 'Studies', 'doc.kind.report': 'Reports', 'doc.kind.bulletin': 'Bulletins', 'doc.kind.form': 'Forms', 'doc.kind.historical': 'Historical documents',
   'doc.from': 'From', 'doc.to': 'To', 'doc.allIssuers': 'All issuers', 'doc.colTitle': 'Title',
   // wireframe gaps: linked news
   'ln.title': 'Linked news', 'ln.hint': 'Linked news appear automatically on the public page of this item, without retyping them.', 'ln.search': 'Search news by title …', 'ln.attach': 'Link', 'ln.detach': 'Unlink', 'ln.none': 'No linked news', 'board.news': 'Related news and activities',
