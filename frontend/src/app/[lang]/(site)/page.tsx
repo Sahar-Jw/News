@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Center } from '@/components/ui/ui';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Card } from '@/components/site/cards';
-import { BreakingTicker, Company, ContactSection, Experts, FeaturedCarousel, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, ShortcutsGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
+import { AgendaSection, BreakingTicker, Company, ContactSection, Experts, FeaturedCarousel, GallerySection, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, ShortcutsGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
 import { AdMiddle } from '@/components/site/ad-slot';
 import { SECTION_ORDER_KEYS } from '@/components/site/sections-meta';
 import { useSite } from '@/components/site/site-context';
@@ -63,6 +63,8 @@ export default function HomePage() {
       case 'shortcuts': return <SectionWrap key={k} code={k} title={title(k)} compact><ShortcutsGrid /></SectionWrap>;
       case 'featured': return home.featured.length ? <SectionWrap key={k} code={k} title={title(k)}><FeaturedCarousel items={home.featured} /></SectionWrap> : null;
       case 'news': return <SectionWrap key={k} code={k} title={title(k)} action={<Link href={href('/news')} className="text-sm font-semibold text-primary">{t('site.allNews')} →</Link>}><RegularNews items={home.news} /></SectionWrap>;
+      case 'agenda': return <AgendaSection key={k} code={k} title={title(k)} />;
+      case 'gallery': return <GallerySection key={k} code={k} title={title(k)} />;
       case 'team': return home.team.length ? <SectionWrap key={k} code={k} title={title(k)}><TeamSlider items={home.team} /></SectionWrap> : null;
       case 'services': return home.services.length ? <SectionWrap key={k} code={k} title={title(k)}><ServicesGrid items={home.services} /></SectionWrap> : null;
       case 'testimonials': return home.testimonials.length ? <SectionWrap key={k} code={k} title={title(k)}><Testimonials items={home.testimonials} /></SectionWrap> : null;

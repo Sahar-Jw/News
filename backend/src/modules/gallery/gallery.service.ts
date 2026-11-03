@@ -23,7 +23,7 @@ export class GalleryService {
 
   present(g: Gallery) {
     const images = g.images ?? [];
-    return { id: g.id, titleAr: g.titleAr, titleEn: g.titleEn, images, imageUrls: images.map((p) => this.storage.url(p)), imageCount: images.length, createdAt: g.createdAt, updatedAt: g.updatedAt };
+    return { id: g.id, titleAr: g.titleAr, titleEn: g.titleEn, images, imageUrls: images.map((p) => this.storage.url(p)), imageCount: images.length, committeeId: g.committeeId ? Number(g.committeeId) : null, createdAt: g.createdAt, updatedAt: g.updatedAt };
   }
 
   async list(q: AdminListQueryDto) {
@@ -44,7 +44,7 @@ export class GalleryService {
     if (files.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const paths = await this.storage.saveImages(files, 'gallery');
     try {
-      const saved = await this.repo.save(this.repo.create({ titleAr: dto.titleAr.trim(), titleEn: dto.titleEn.trim(), images: paths, createdById: actor.id }));
+      const saved = await this.repo.save(this.repo.create({ titleAr: dto.titleAr.trim(), titleEn: dto.titleEn.trim(), images: paths, committeeId: dto.committeeId ?? null, createdById: actor.id }));
       await this.audit.log({ category: 'gallery', action: 'create', description: `إضافة معرض صور: ${saved.titleAr}`, actorId: actor.id, entityType: 'galleries', entityId: saved.id });
       return this.present(saved);
     } catch (e) {
@@ -66,6 +66,7 @@ export class GalleryService {
     try {
       g.titleAr = dto.titleAr?.trim() ?? g.titleAr;
       g.titleEn = dto.titleEn?.trim() ?? g.titleEn;
+      if (dto.committeeId !== undefined) g.committeeId = dto.committeeId;
       g.images = [...keep, ...added];
       const saved = await this.repo.save(g);
       await this.storage.removeMany(removed);
@@ -94,7 +95,7 @@ export class GalleryService {
 
   async publicList(q: PublicGalleryQueryDto) {
     const p = publicPage(q);
-    const [rows, total] = await this.repo.findAndCount({ order: { id: 'DESC' }, skip: p.skip, take: p.limit });
+    const [rows, total] = await this.repo.findAndCount({ where: q.committeeId ? { committeeId: q.committeeId } : {}, order: { id: 'DESC' }, skip: p.skip, take: p.limit });
     return paged(rows.map((r) => this.card(r, q.lang ?? 'ar')), total, p);
   }
 

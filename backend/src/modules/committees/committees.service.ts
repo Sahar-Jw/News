@@ -9,6 +9,7 @@ import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentLinksService } from '../content-links/content-links.service';
 import { FileStorageService } from '../files/file-storage.service';
+import { Gallery } from '../gallery/gallery.entity';
 import { News } from '../news/news.entity';
 import { applyEligibility } from '../news/news.eligibility';
 import { ActivityKind, Committee, CommitteeActivity, CommitteeKind, CommitteeMember, MEMBER_ROLES, MemberRole } from './committee.entity';
@@ -24,6 +25,7 @@ export class CommitteesService {
     @InjectRepository(CommitteeMember) private readonly members: Repository<CommitteeMember>,
     @InjectRepository(CommitteeActivity) private readonly activities: Repository<CommitteeActivity>,
     @InjectRepository(News) private readonly news: Repository<News>,
+    @InjectRepository(Gallery) private readonly galleries: Repository<Gallery>,
     private readonly links: ContentLinksService,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
@@ -298,6 +300,8 @@ export class CommitteesService {
       qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(30);
       newsList = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
     }
+    const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 24 });
+    const gallery = albums.map((g) => ({ id: g.id, title: (en && g.titleEn) || g.titleAr, cover: this.storage.url((g.images ?? [])[0] ?? null), count: (g.images ?? []).length }));
     const byKind = (k: ActivityKind) => acts.filter((a) => a.kind === k).map(act);
     return {
       ...this.card(c, en), duties: (en && c.dutiesEn) || c.dutiesAr || '',
@@ -306,6 +310,7 @@ export class CommitteesService {
       recommendations: byKind('recommendation'),
       initiatives: byKind('initiative'),
       news: newsList,
+      gallery,
     };
   }
 }

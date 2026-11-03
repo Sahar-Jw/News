@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -10,8 +10,9 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
-interface Row { id: number; titleAr: string; titleEn: string; images: string[]; imageUrls: string[]; imageCount: number; createdAt: string }
-interface Draft { id?: number; titleAr: string; titleEn: string; imgs: ImageSet }
+interface Row { id: number; titleAr: string; titleEn: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
+interface Draft { id?: number; titleAr: string; titleEn: string; committeeId: string; imgs: ImageSet }
+interface CommitteeOpt { id: number; name: string }
 
 /** Image galleries: a titled set of pictures, shown on the site with the same slider as news. */
 export function GalleryAdmin() {
@@ -22,11 +23,15 @@ export function GalleryAdmin() {
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
+  const [committees, setCommittees] = useState<CommitteeOpt[]>([]);
+
+  // committees an album can be attached to (public list: no extra permission needed)
+  useEffect(() => { api<CommitteeOpt[]>('/public/committees', { params: { lang } }).then(setCommittees).catch(() => setCommittees([])); }, [lang]);
 
   const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
   const open = (r?: Row) => setDraft(r
-    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, imgs: imageSetOf(r.images, r.imageUrls) }
-    : { titleAr: '', titleEn: '', imgs: emptyImageSet() });
+    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }
+    : { titleAr: '', titleEn: '', committeeId: '', imgs: emptyImageSet() });
 
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
@@ -50,6 +55,7 @@ export function GalleryAdmin() {
     const fd = new FormData();
     fd.append('titleAr', draft.titleAr.trim());
     fd.append('titleEn', draft.titleEn.trim());
+    fd.append('committeeId', draft.committeeId);
     appendImages(fd, draft.imgs, !!draft.id);
     setBusy(true);
     try {
@@ -95,6 +101,14 @@ export function GalleryAdmin() {
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
+              {committees.length > 0 && (
+                <Field label={t('gl.committee')} hint={t('gl.committeeHint')}>
+                  <select className={inputCls} value={draft.committeeId} onChange={(e) => setDraft({ ...draft, committeeId: e.target.value })}>
+                    <option value="">{t('gl.noCommittee')}</option>
+                    {committees.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </Field>
+              )}
             </div>
             <Field label={t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>

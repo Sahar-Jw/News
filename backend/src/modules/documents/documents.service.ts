@@ -23,7 +23,7 @@ export class DocumentsService {
     return {
       id: d.id, kind: d.kind, docNumber: d.docNumber ?? '',
       titleAr: d.titleAr, titleEn: d.titleEn ?? '', summaryAr: d.summaryAr ?? '', summaryEn: d.summaryEn ?? '',
-      docDate: d.docDate, file: d.file, fileUrl: this.storage.url(d.file), isActive: d.isActive,
+      issuerAr: d.issuerAr ?? '', issuerEn: d.issuerEn ?? '', docDate: d.docDate, file: d.file, fileUrl: this.storage.url(d.file), isActive: d.isActive,
       createdAt: d.createdAt, updatedAt: d.updatedAt,
     };
   }
@@ -51,6 +51,7 @@ export class DocumentsService {
           kind: dto.kind as DocumentKind, docNumber: dto.docNumber?.trim() || null,
           titleAr: dto.titleAr.trim(), titleEn: dto.titleEn?.trim() || null,
           summaryAr: dto.summaryAr?.trim() || null, summaryEn: dto.summaryEn?.trim() || null,
+          issuerAr: dto.issuerAr?.trim() || null, issuerEn: dto.issuerEn?.trim() || null,
           docDate: dto.docDate ? dto.docDate.slice(0, 10) : null, file: path, isActive: dto.isActive ?? true,
         }),
       );
@@ -74,6 +75,8 @@ export class DocumentsService {
       if (dto.titleEn !== undefined) d.titleEn = dto.titleEn?.trim() || null;
       if (dto.summaryAr !== undefined) d.summaryAr = dto.summaryAr?.trim() || null;
       if (dto.summaryEn !== undefined) d.summaryEn = dto.summaryEn?.trim() || null;
+      if (dto.issuerAr !== undefined) d.issuerAr = dto.issuerAr?.trim() || null;
+      if (dto.issuerEn !== undefined) d.issuerEn = dto.issuerEn?.trim() || null;
       if (dto.docDate !== undefined) d.docDate = dto.docDate ? dto.docDate.slice(0, 10) : null;
       if (dto.isActive !== undefined) d.isActive = dto.isActive;
       if (newPath) d.file = newPath;
@@ -104,7 +107,7 @@ export class DocumentsService {
   // ---------------------------------------------------------------- public (active only)
   private card(d: Document, en: boolean) {
     return {
-      id: d.id, kind: d.kind, docNumber: d.docNumber ?? '', docDate: d.docDate,
+      id: d.id, kind: d.kind, docNumber: d.docNumber ?? '', docDate: d.docDate, issuer: (en && d.issuerEn) || d.issuerAr || '',
       title: (en && d.titleEn) || d.titleAr, summary: (en && d.summaryEn) || d.summaryAr || '',
       fileUrl: this.storage.url(d.file),
     };
@@ -114,6 +117,9 @@ export class DocumentsService {
     const p = publicPage(q, 12, 50);
     const qb = this.repo.createQueryBuilder('d').where('d.isActive = true');
     if (q.kind) qb.andWhere('d.kind = :kind', { kind: q.kind });
+    if (q.issuer?.trim()) qb.andWhere('(d.issuerAr = :issuer OR d.issuerEn = :issuer)', { issuer: q.issuer.trim() });
+    if (q.from) qb.andWhere('d.docDate >= :from', { from: q.from.slice(0, 10) });
+    if (q.to) qb.andWhere('d.docDate <= :to', { to: q.to.slice(0, 10) });
     if (q.q?.trim()) {
       const like = `%${escapeLike(q.q.trim())}%`;
       qb.andWhere(new Brackets((b) => b.where('d.titleAr ILIKE :like', { like }).orWhere('d.titleEn ILIKE :like', { like }).orWhere('d.docNumber ILIKE :like', { like }).orWhere('d.summaryAr ILIKE :like', { like })));
@@ -122,6 +128,15 @@ export class DocumentsService {
     const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
     const en = q.lang === 'en';
     return paged(rows.map((r) => this.card(r, en)), total, p);
+  }
+
+  /** Issuers of the visible documents (for the filter box of the public page). */
+  async publicIssuers(lang: string, kind?: string) {
+    const qb = this.repo.createQueryBuilder('d').select('d.issuerAr', 'ar').addSelect('d.issuerEn', 'en').where('d.isActive = true').andWhere("d.issuerAr IS NOT NULL AND d.issuerAr <> ''");
+    if (kind) qb.andWhere('d.kind = :kind', { kind });
+    const rows = await qb.groupBy('d.issuerAr').addGroupBy('d.issuerEn').getRawMany<{ ar: string; en: string | null }>();
+    const en = lang === 'en';
+    return [...new Set(rows.map((r) => (en && r.en) || r.ar))].sort((a, b) => a.localeCompare(b, en ? 'en' : 'ar'));
   }
 
   async publicOne(id: number, lang: string) {

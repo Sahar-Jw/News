@@ -17,6 +17,10 @@ export class Gallery extends TimestampedEntity {
   @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
 
+  /** optional: the album belongs to a committee and appears in its "photos" tab (FK committees.id, ON DELETE SET NULL) */
+  @Column({ name: 'committee_id', type: 'bigint', nullable: true })
+  committeeId: number | null;
+
   @Column({ name: 'created_by', type: 'bigint', nullable: true })
   createdById: number | null;
 

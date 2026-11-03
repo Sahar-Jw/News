@@ -71,6 +71,8 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'shortcuts', titleAr: 'اختصارات سريعة', titleEn: 'Quick links' },
   { code: 'featured', titleAr: 'الأخبار المميزة', titleEn: 'Featured News' },
   { code: 'news', titleAr: 'آخر الأخبار', titleEn: 'Latest News' },
+  { code: 'agenda', titleAr: 'أجندة الغرفة', titleEn: 'Chamber agenda' },
+  { code: 'gallery', titleAr: 'معرض الصور', titleEn: 'Photo gallery' },
   { code: 'team', titleAr: 'فريقنا', titleEn: 'Our Team' },
   { code: 'services', titleAr: 'خدماتنا', titleEn: 'Our Services' },
   { code: 'testimonials', titleAr: 'آراء العملاء', titleEn: 'Testimonials' },
@@ -148,6 +150,11 @@ export const SETTING_SEEDS: SettingSeed[] = [
     s('shortcuts', `item${i + 1}_title_en`, 'text', d.en),
     s('shortcuts', `item${i + 1}_link`, 'text', d.link),
   ]),
+  // promo banner next to the agenda on the home page (DCC EXPO); empty title = no banner
+  s('promo', 'title_ar', 'text'), s('promo', 'title_en', 'text'),
+  s('promo', 'text_ar', 'text'), s('promo', 'text_en', 'text'),
+  s('promo', 'button_ar', 'text'), s('promo', 'button_en', 'text'),
+  s('promo', 'link', 'text'), s('promo', 'image', 'file'),
   // homepage sections: titles, order, visibility
   ...HOME_SECTIONS.flatMap((sec, i) => [
     s('sections_home', `${sec.code}_title_ar`, 'text', sec.titleAr),

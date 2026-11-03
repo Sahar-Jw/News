@@ -9,7 +9,7 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { PdfViewer } from '@/components/site/pdf-viewer';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface Doc { id: number; kind: string; docNumber: string; docDate: string | null; title: string; summary: string; fileUrl: string | null; file: string }
+interface Doc { id: number; kind: string; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string }
 
 /** One document: details and the PDF drawn in the page: /documents/view?id=5 */
 function View() {
@@ -33,6 +33,7 @@ function View() {
           <Link href={href(`/documents?kind=${d.kind}`)} className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary transition hover:bg-primary hover:text-white">{t(`doc.kind.${d.kind}`)}</Link>
           {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
           {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
+          {d.issuer && <span>{t('doc.issuer')}: {d.issuer}</span>}
         </div>
         <h1 className="mt-4 text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{d.title}</h1>
         {d.summary && <p className="mt-3 leading-8 text-gray-700">{d.summary}</p>}

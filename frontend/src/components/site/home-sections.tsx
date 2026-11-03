@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fileUrl } from '@/lib/api';
+import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { prettyUrl, telHref } from '@/lib/utils';
+import { fmtDay, prettyUrl, telHref } from '@/lib/utils';
 import { Modal, Stars } from '@/components/ui/ui';
 import { Card, DefaultAvatar, FitImage, NewsCard, Thumb } from './cards';
 import { ContactIcon } from './icons';
@@ -50,6 +50,88 @@ export function SectionWrap({ code, title, children, action, compact }: { code: 
         {action && <div className="mt-5 text-center">{action}</div>}
       </div>
     </section>
+  );
+}
+
+/** A setting link: "/path#hash" stays inside the site, "https://…" opens a new tab. */
+function SmartLink({ link, className, children }: { link: string; className: string; children: React.ReactNode }) {
+  const { href } = useI18n();
+  if (/^https?:\/\//i.test(link)) return <a href={link} target="_blank" rel="noopener noreferrer" className={className}>{children}</a>;
+  const [path, hash] = link.split('#');
+  return <Link href={`${href(path || '/')}${hash ? `#${hash}` : ''}`} className={className}>{children}</Link>;
+}
+
+interface AgendaItem { id: number; title: string; date: string; images: string[] }
+
+/**
+ * "Chamber agenda" (wireframe W01): the next occasions, next to a promo banner (DCC EXPO) that is filled from Settings (promo → title, text, button, link, image).
+ * Nothing is drawn while there are no upcoming occasions and no banner title.
+ */
+export function AgendaSection({ code, title }: { code: string; title: string }) {
+  const { lang, t, href } = useI18n();
+  const { s, loc, img } = useSite();
+  const [items, setItems] = useState<AgendaItem[] | null>(null);
+  useEffect(() => {
+    api<{ data: AgendaItem[] }>('/public/occasions', { params: { lang, scope: 'upcoming', limit: 4 }, cache: 'no-store' }).then((r) => setItems(r.data)).catch(() => setItems([]));
+  }, [lang]);
+  const promoTitle = loc('promo', 'title'), promoText = loc('promo', 'text'), promoButton = loc('promo', 'button');
+  const promoLink = String(s('promo', 'link') ?? '').trim(), promoImage = img('promo', 'image');
+  const hasPromo = !!promoTitle;
+  if (items === null || (items.length === 0 && !hasPromo)) return null;
+  return (
+    <SectionWrap code={code} title={title} action={items.length ? <Link href={href('/occasions/upcoming')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link> : undefined}>
+      <div className={`grid gap-5 ${hasPromo && items.length ? 'lg:grid-cols-2' : ''}`}>
+        {items.length > 0 && (
+          <ul className="space-y-3">
+            {items.map((o) => (
+              <li key={o.id}>
+                <Link href={href(`/occasions/view?id=${o.id}`)} className="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+                  <Thumb src={o.images[0]} alt="" className="h-16 w-24 shrink-0 rounded-xl" />
+                  <span className="min-w-0">
+                    <span className="block text-xs font-semibold text-primary">{fmtDay(lang, o.date)}</span>
+                    <span className="mt-0.5 line-clamp-2 block font-bold text-secondary group-hover:text-primary">{o.title}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {hasPromo && (
+          <div className="relative flex min-h-[200px] flex-col justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary p-6 text-white shadow-card">
+            {promoImage && <img src={promoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
+            <div className="relative">
+              <h3 className="text-2xl font-extrabold leading-tight">{promoTitle}</h3>
+              {promoText && <p className="mt-2 max-w-md text-sm leading-7 text-white/85">{promoText}</p>}
+              {promoLink && promoButton && <SmartLink link={promoLink} className="mt-4 inline-block rounded-full bg-accent px-5 py-2 text-sm font-bold text-secondary transition hover:brightness-110">{promoButton}</SmartLink>}
+            </div>
+          </div>
+        )}
+      </div>
+    </SectionWrap>
+  );
+}
+
+interface AlbumItem { id: number; title: string; images: string[] }
+
+/** Photo strip (wireframe W01): the latest 5 albums, each opens its slider page. */
+export function GallerySection({ code, title }: { code: string; title: string }) {
+  const { lang, t, href } = useI18n();
+  const [items, setItems] = useState<AlbumItem[] | null>(null);
+  useEffect(() => {
+    api<{ data: AlbumItem[] }>('/public/gallery', { params: { lang, limit: 5 }, cache: 'no-store' }).then((r) => setItems(r.data)).catch(() => setItems([]));
+  }, [lang]);
+  if (!items || items.length === 0) return null;
+  return (
+    <SectionWrap code={code} title={title} action={<Link href={href('/gallery')} className="text-sm font-semibold text-primary">{t('home.allPhotos')} →</Link>}>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {items.map((g) => (
+          <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group relative block overflow-hidden rounded-2xl ring-1 ring-line transition hover:ring-accent">
+            <Thumb src={g.images[0]} alt={g.title} className="h-32 w-full md:h-36" />
+            <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-secondary/85 to-transparent px-3 pb-2 pt-6 text-xs font-bold text-white">{g.title}</span>
+          </Link>
+        ))}
+      </div>
+    </SectionWrap>
   );
 }
 

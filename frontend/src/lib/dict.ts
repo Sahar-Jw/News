@@ -98,6 +98,15 @@ const ar: Record<string, string> = {
   'cm.manage.details': 'البيانات', 'cm.manage.members': 'الأعضاء', 'cm.manage.activities': 'الأنشطة', 'cm.manage.news': 'الأخبار المرتبطة', 'cm.saveFirst': 'احفظ بيانات اللجنة أولاً ثم أضف الأعضاء والأنشطة والأخبار.', 'cm.addMore': 'يمكنك الآن إضافة الأعضاء والأنشطة والأخبار',
   'cm.addMember': 'إضافة عضو', 'cm.noMembers': 'لا يوجد أعضاء', 'cm.addActivity': 'إضافة نشاط', 'cm.noActivities': 'لا توجد أنشطة', 'cm.actKind': 'نوع النشاط', 'cm.date': 'التاريخ', 'cm.bodyAr': 'التفاصيل بالعربية', 'cm.bodyEn': 'التفاصيل بالإنجليزية (اختياري)',
   'cm.newsHint': 'الأخبار تُكتب مرة واحدة في قسم الأخبار، وهنا تُربط باللجنة لتظهر في صفحتها تلقائياً.', 'cm.searchNews': 'ابحث بعنوان الخبر', 'cm.linkNews': 'ربط', 'cm.unlink': 'فك الربط', 'cm.linkedNews': 'الأخبار المرتبطة باللجنة',
+  // wireframe gaps: documents
+  'doc.kind.law': 'القوانين والأنظمة', 'doc.kind.guide': 'الأدلة', 'doc.issuer': 'الجهة', 'doc.issuerAr': 'الجهة بالعربية', 'doc.issuerEn': 'الجهة بالإنجليزية (اختياري)',
+  'doc.from': 'من', 'doc.to': 'إلى', 'doc.allIssuers': 'كل الجهات', 'doc.colTitle': 'العنوان',
+  // wireframe gaps: linked news
+  'ln.title': 'الأخبار المرتبطة', 'ln.hint': 'الأخبار المرتبطة تظهر تلقائياً في الصفحة العامة لهذا العنصر دون إعادة كتابتها.', 'ln.search': 'ابحث عن خبر بالعنوان …', 'ln.attach': 'ربط', 'ln.detach': 'فك الربط', 'ln.none': 'لا توجد أخبار مرتبطة', 'board.news': 'الأخبار والأنشطة المرتبطة',
+  // wireframe gaps: committee photos
+  'cm.tab.media': 'الصور والفيديو', 'gl.committee': 'اللجنة (اختياري)', 'gl.committeeHint': 'عند اختيار لجنة يظهر هذا الألبوم في تبويب «الصور والفيديو» في صفحتها.', 'gl.noCommittee': 'بدون لجنة',
+  // wireframe gaps: home agenda + gallery strip
+  'sec.agenda': 'أجندة الغرفة', 'sec.gallery': 'معرض الصور', 'home.allEvents': 'كل المناسبات القادمة', 'home.allPhotos': 'كل الألبومات',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -238,6 +247,15 @@ const en: Record<string, string> = {
   'cm.manage.details': 'Details', 'cm.manage.members': 'Members', 'cm.manage.activities': 'Activities', 'cm.manage.news': 'Linked news', 'cm.saveFirst': 'Save the committee details first, then add members, activities and news.', 'cm.addMore': 'You can now add members, activities and news',
   'cm.addMember': 'Add member', 'cm.noMembers': 'No members', 'cm.addActivity': 'Add activity', 'cm.noActivities': 'No activities', 'cm.actKind': 'Activity type', 'cm.date': 'Date', 'cm.bodyAr': 'Details (Arabic)', 'cm.bodyEn': 'Details (English, optional)',
   'cm.newsHint': 'News is written once in the news section; here it is linked to the committee so it appears on its page automatically.', 'cm.searchNews': 'Search by news title', 'cm.linkNews': 'Link', 'cm.unlink': 'Unlink', 'cm.linkedNews': 'News linked to this committee',
+  // wireframe gaps: documents
+  'doc.kind.law': 'Laws & regulations', 'doc.kind.guide': 'Guides', 'doc.issuer': 'Issuer', 'doc.issuerAr': 'Issuer (Arabic)', 'doc.issuerEn': 'Issuer (English, optional)',
+  'doc.from': 'From', 'doc.to': 'To', 'doc.allIssuers': 'All issuers', 'doc.colTitle': 'Title',
+  // wireframe gaps: linked news
+  'ln.title': 'Linked news', 'ln.hint': 'Linked news appear automatically on the public page of this item, without retyping them.', 'ln.search': 'Search news by title …', 'ln.attach': 'Link', 'ln.detach': 'Unlink', 'ln.none': 'No linked news', 'board.news': 'Related news and activities',
+  // wireframe gaps: committee photos
+  'cm.tab.media': 'Photos & video', 'gl.committee': 'Committee (optional)', 'gl.committeeHint': 'When a committee is chosen, this album appears in the "Photos & video" tab of its page.', 'gl.noCommittee': 'No committee',
+  // wireframe gaps: home agenda + gallery strip
+  'sec.agenda': 'Chamber agenda', 'sec.gallery': 'Photo gallery', 'home.allEvents': 'All upcoming occasions', 'home.allPhotos': 'All albums',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

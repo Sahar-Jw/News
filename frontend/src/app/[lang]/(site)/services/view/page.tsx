@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Center, Spinner } from '@/components/ui/ui';
+import { Button, Center, Modal, Spinner } from '@/components/ui/ui';
+import { ContactForm } from '@/components/site/contact-form';
 import { NotFoundContent } from '@/components/site/not-found-content';
 import { PublicService } from '@/components/site/services-shared';
 
@@ -18,6 +19,7 @@ function View() {
   const id = useSearchParams().get('id');
   const [d, setD] = useState<PublicService | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
+  const [inquiry, setInquiry] = useState(false);
 
   useEffect(() => {
     if (!id) { setState('404'); return; }
@@ -48,9 +50,16 @@ function View() {
           )}
           {d.documents.length > 0 && <Block title={t('svc.documents')}><ul className="list-disc space-y-1 ps-5 text-sm leading-7 text-gray-700">{d.documents.map((x, i) => <li key={i}>{x}</li>)}</ul></Block>}
           {d.steps.length > 0 && <Block title={t('svc.steps')}><ol className="list-decimal space-y-1 ps-5 text-sm leading-7 text-gray-700">{d.steps.map((x, i) => <li key={i}>{x}</li>)}</ol></Block>}
-          {d.formUrl && <a href={d.formUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">{t('svc.form')}</a>}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Button type="button" onClick={() => setInquiry(true)}>{t('os.inquiry')}</Button>
+            {d.formUrl && <a href={d.formUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">{t('svc.form')}</a>}
+          </div>
+          <p className="mt-4 rounded-xl border border-dashed border-accent/70 px-4 py-2 text-center text-xs text-gray-600">{t('os.future')}</p>
         </div>
       </article>
+      <Modal open={inquiry} onClose={() => setInquiry(false)} title={t('os.inquiryTitle')}>
+        <ContactForm subjectPrefix={`${t('os.inquiryPrefix')}${d.name} - `} />
+      </Modal>
     </div>
   );
 }

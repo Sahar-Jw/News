@@ -5,6 +5,7 @@ import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { AuthUser } from '../../common/types';
 import { BulkDeleteDto } from '../news/news.dto';
+import { LinkNewsDto } from '../committees/committees.dto';
 import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from './board.dto';
 import { BoardService } from './board.service';
 
@@ -32,6 +33,30 @@ export class BoardAdminController {
   @Permissions(PERM.BOARD_DELETE)
   bulkDelete(@Body() dto: BulkDeleteDto, @CurrentUser() u: AuthUser) {
     return this.service.bulkRemove(dto.ids, u);
+  }
+
+  @Get(':id/news')
+  @Permissions(PERM.BOARD_READ)
+  linkedNews(@Param('id', ParseIntPipe) id: number) {
+    return this.service.linkedNews(id);
+  }
+
+  @Get(':id/news-search')
+  @Permissions(PERM.BOARD_UPDATE)
+  searchNews(@Param('id', ParseIntPipe) id: number, @Query('q') q?: string) {
+    return this.service.searchNews(id, q ?? '');
+  }
+
+  @Post(':id/news')
+  @Permissions(PERM.BOARD_UPDATE)
+  linkNews(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkNewsDto, @CurrentUser() u: AuthUser) {
+    return this.service.linkNews(id, dto.newsIds, u);
+  }
+
+  @Post(':id/news/unlink')
+  @Permissions(PERM.BOARD_UPDATE)
+  unlinkNews(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkNewsDto, @CurrentUser() u: AuthUser) {
+    return this.service.unlinkNews(id, dto.newsIds, u);
   }
 
   @Patch(':id')

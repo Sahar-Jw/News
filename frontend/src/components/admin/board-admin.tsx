@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { RichEditor } from '@/components/admin/rich-editor';
+import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
 
 interface Row { id: number; position: string; nameAr: string; nameEn: string; jobTitleAr: string; jobTitleEn: string; bioAr: string; bioEn: string; dutiesAr: string; dutiesEn: string; termLabel: string; photoUrl: string | null; sortOrder: number; isActive: boolean }
 interface Draft { id?: number; position: string; nameAr: string; nameEn: string; jobTitleAr: string; jobTitleEn: string; bioAr: string; bioEn: string; dutiesAr: string; dutiesEn: string; termLabel: string; sortOrder: string; isActive: boolean; photoUrl: string | null }
@@ -134,6 +135,7 @@ export function BoardAdmin() {
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDraft(null)}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
+        {draft?.id && can('board.update') && <LinkedNewsPanel base={`/admin/board/${draft.id}`} />}
       </Modal>
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
         <p className="mb-5">{t('tbl.confirmDelete')}</p>

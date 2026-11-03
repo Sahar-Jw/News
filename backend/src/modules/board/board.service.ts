@@ -7,6 +7,9 @@ import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
+import { ContentLinksService } from '../content-links/content-links.service';
+import { News } from '../news/news.entity';
+import { applyEligibility } from '../news/news.eligibility';
 import { FileStorageService } from '../files/file-storage.service';
 import { BOARD_POSITIONS, BoardMember, BoardPosition } from './board-member.entity';
 import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from './board.dto';
@@ -17,6 +20,8 @@ export class BoardService {
     @InjectRepository(BoardMember) private readonly repo: Repository<BoardMember>,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
+    @InjectRepository(News) private readonly news: Repository<News>,
+    private readonly links: ContentLinksService,
   ) {}
 
   present(m: BoardMember) {
@@ -99,9 +104,50 @@ export class BoardService {
     const rows = await this.repo.find({ where: { id: In(unique) } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض الأعضاء غير موجودين'); // nothing is deleted
     await this.repo.delete({ id: In(unique) });
+    await this.links.removeAllOf('board_member', unique);
     await this.storage.removeMany(rows.map((r) => r.photo));
     await this.audit.log({ category: 'board', action: 'delete', description: `حذف ${rows.length} من أعضاء المجلس`, actorId: actor.id, entityType: 'board_members', details: { ids: unique }, changes: removedChanges('board_members', rows) });
     return { deleted: rows.length };
+  }
+
+  // ---------------------------------------------------------------- admin: linked news (shown on the member's page)
+  private async mustFind(id: number) {
+    const m = await this.repo.findOne({ where: { id } });
+    if (!m) throw new NotFoundException('العضو غير موجود');
+    return m;
+  }
+
+  async linkedNews(id: number) {
+    await this.mustFind(id);
+    const ids = await this.links.newsIdsOf('board_member', id);
+    if (!ids.length) return [];
+    const rows = await this.news.find({ where: { id: In(ids) }, select: ['id', 'title', 'publishAt'], order: { publishAt: 'DESC' } });
+    return rows.map((n) => ({ id: n.id, title: n.title, publishAt: n.publishAt }));
+  }
+
+  /** Find news by title to attach (already linked ones are left out). */
+  async searchNews(id: number, q: string) {
+    await this.mustFind(id);
+    const linked = await this.links.newsIdsOf('board_member', id);
+    const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.publishAt']).orderBy('n.publishAt', 'DESC', 'NULLS LAST').addOrderBy('n.id', 'DESC').take(10);
+    if (q.trim()) qb.andWhere('n.title ILIKE :like', { like: `%${escapeLike(q.trim())}%` });
+    if (linked.length) qb.andWhere('n.id NOT IN (:...linked)', { linked });
+    return (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, publishAt: n.publishAt }));
+  }
+
+  async linkNews(id: number, newsIds: number[], actor: AuthUser) {
+    const m = await this.mustFind(id);
+    const found = await this.news.find({ where: { id: In(newsIds) }, select: ['id'] });
+    await this.links.link('board_member', id, found.map((n) => Number(n.id)));
+    await this.audit.log({ category: 'board', action: 'update', description: `ربط أخبار بعضو المجلس: ${m.nameAr}`, actorId: actor.id, entityType: 'board_members', entityId: id, details: { newsIds } });
+    return { linked: found.length };
+  }
+
+  async unlinkNews(id: number, newsIds: number[], actor: AuthUser) {
+    const m = await this.mustFind(id);
+    await this.links.unlink('board_member', id, newsIds);
+    await this.audit.log({ category: 'board', action: 'update', description: `فك ربط أخبار عن عضو المجلس: ${m.nameAr}`, actorId: actor.id, entityType: 'board_members', entityId: id, details: { newsIds } });
+    return { unlinked: newsIds.length };
   }
 
   // ---------------------------------------------------------------- public (active only)
@@ -123,6 +169,14 @@ export class BoardService {
     const m = await this.repo.findOne({ where: { id, isActive: true } });
     if (!m) throw new NotFoundException('العضو غير موجود');
     const en = lang === 'en';
-    return { ...this.card(m, en), bio: (en && m.bioEn) || m.bioAr || '', duties: (en && m.dutiesEn) || m.dutiesAr || '' };
+    const newsIds = await this.links.newsIdsOf('board_member', id);
+    let news: unknown[] = [];
+    if (newsIds.length) {
+      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...newsIds)', { newsIds });
+      applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
+      qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(12);
+      news = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
+    }
+    return { ...this.card(m, en), bio: (en && m.bioEn) || m.bioAr || '', duties: (en && m.dutiesEn) || m.dutiesAr || '', news };
   }
 }

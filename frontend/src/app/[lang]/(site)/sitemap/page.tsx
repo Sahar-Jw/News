@@ -38,7 +38,7 @@ export default function SitemapPage() {
   useEffect(() => { api<{ slug: string; title: string }[]>('/public/pages', { params: { lang } }).then(setExtra).catch(() => setExtra([])); }, [lang]);
   const pages: [string, string][] = [['/', t('site.home')], ['/news', t('site.allNews')], ['/privacy', t('site.privacy')], ['/terms', t('site.terms')], ['/board', t('site.board')], ['/committees', t('cm.title')], ['/committees/women', t('nav.women')], ['/documents', t('site.documents')], ['/faq', t('site.faq')], ['/one-stop', t('nav.oneStop')], ...extra.map((x): [string, string] => [`/pages/view?slug=${encodeURIComponent(x.slug)}`, x.title])];
   const sh = settings.sections_home ?? {};
-  const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && k !== 'shortcuts' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
+  const sections = SECTION_ORDER_KEYS.filter((k) => k !== 'hero' && k !== 'shortcuts' && k !== 'agenda' && k !== 'gallery' && sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <header className="mb-8 text-center">

@@ -10,9 +10,10 @@ import { NotFoundContent } from '@/components/site/not-found-content';
 interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 interface Activity { id: number; kind: string; title: string; body: string; eventDate: string | null; upcoming: boolean }
 interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
+interface Album { id: number; title: string; cover: string | null; count: number }
 export interface CommitteeData {
   id: number; kind: string; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null; duties: string;
-  members: Member[]; meetings: Activity[]; recommendations: Activity[]; initiatives: Activity[]; news: NewsItem[];
+  members: Member[]; meetings: Activity[]; recommendations: Activity[]; initiatives: Activity[]; news: NewsItem[]; gallery: Album[];
 }
 
 const Heading = ({ children }: { children: React.ReactNode }) => <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{children}</h2>;
@@ -105,6 +106,7 @@ export function CommitteeView({ path }: { path: string }) {
       { key: 'meetings', show: c.meetings.length > 0 },
       { key: 'recommendations', show: c.recommendations.length > 0 },
       { key: 'initiatives', show: c.kind === 'women' },
+      { key: 'media', show: (c.gallery ?? []).length > 0 },
     ].filter((x) => x.show);
   }, [c]);
 
@@ -159,6 +161,18 @@ export function CommitteeView({ path }: { path: string }) {
       {tab === 'news' && <Box><NewsList items={c.news} /></Box>}
       {tab === 'meetings' && <Box><ActivityList items={c.meetings} empty={t('cm.noContent')} /></Box>}
       {tab === 'recommendations' && <Box><ActivityList items={c.recommendations} empty={t('cm.noContent')} /></Box>}
+      {tab === 'media' && (
+        <Box>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {c.gallery.map((g) => (
+              <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">
+                {g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}
+                <span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}<span className="ms-1 text-xs font-normal text-gray-500">({g.count})</span></span>
+              </Link>
+            ))}
+          </div>
+        </Box>
+      )}
       {tab === 'initiatives' && <Box><ActivityList items={c.initiatives} empty={t('cm.noContent')} /></Box>}
 
       <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>

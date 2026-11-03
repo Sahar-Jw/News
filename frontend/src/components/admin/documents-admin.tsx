@@ -9,10 +9,10 @@ import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
-interface Row { id: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
-interface Draft { id?: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
-const KINDS = ['decision', 'circular', 'library'];
-const EMPTY: Draft = { kind: 'decision', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', docDate: '', isActive: true, fileUrl: null };
+interface Row { id: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
+interface Draft { id?: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
+const KINDS = ['circular', 'decision', 'law', 'guide', 'library'];
+const EMPTY: Draft = { kind: 'circular', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
 
 /** Decisions, circulars and library files. Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. */
 export function DocumentsAdmin() {
@@ -28,7 +28,7 @@ export function DocumentsAdmin() {
   const open = (r?: Row) => {
     setPdf(null);
     setDraft(r
-      ? { id: r.id, kind: r.kind, docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl }
+      ? { id: r.id, kind: r.kind, docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl }
       : { ...EMPTY });
   };
 
@@ -38,6 +38,7 @@ export function DocumentsAdmin() {
     { key: 'titleEn', label: t('pg.titleEn') },
     { key: 'docNumber', label: t('doc.number'), render: (r) => <bdi dir="ltr">{r.docNumber}</bdi> },
     { key: 'kind', searchable: false, label: t('doc.kind'), render: (r) => t(`doc.kind.${r.kind}`), text: (r) => t(`doc.kind.${r.kind}`) },
+    { key: 'issuerAr', searchable: false, label: t('doc.issuer'), render: (r) => r.issuerAr, text: (r) => r.issuerAr },
     { key: 'docDate', searchable: false, label: t('doc.date'), render: (r) => r.docDate ?? '', text: (r) => r.docDate ?? '' },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
   ];
@@ -55,7 +56,7 @@ export function DocumentsAdmin() {
     if (!draft.id && !pdf) return toast(t('doc.pdfRequired'), 'err');
     const fd = new FormData();
     fd.set('kind', draft.kind); fd.set('docNumber', draft.docNumber.trim()); fd.set('titleAr', draft.titleAr.trim()); fd.set('titleEn', draft.titleEn.trim());
-    fd.set('summaryAr', draft.summaryAr.trim()); fd.set('summaryEn', draft.summaryEn.trim()); fd.set('docDate', draft.docDate); fd.set('isActive', String(draft.isActive));
+    fd.set('summaryAr', draft.summaryAr.trim()); fd.set('summaryEn', draft.summaryEn.trim()); fd.set('issuerAr', draft.issuerAr.trim()); fd.set('issuerEn', draft.issuerEn.trim()); fd.set('docDate', draft.docDate); fd.set('isActive', String(draft.isActive));
     if (pdf) fd.set('file', pdf);
     setBusy(true);
     try {
@@ -105,6 +106,8 @@ export function DocumentsAdmin() {
               <Field label={t('doc.number')}><input maxLength={50} dir="ltr" className={inputCls} value={draft.docNumber} onChange={(e) => setDraft({ ...draft, docNumber: e.target.value })} /></Field>
               <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
+              <Field label={t('doc.issuerAr')}><input maxLength={150} dir="rtl" className={inputCls} value={draft.issuerAr} onChange={(e) => setDraft({ ...draft, issuerAr: e.target.value })} /></Field>
+              <Field label={t('doc.issuerEn')}><input maxLength={150} dir="ltr" className={inputCls} value={draft.issuerEn} onChange={(e) => setDraft({ ...draft, issuerEn: e.target.value })} /></Field>
               <Field label={t('doc.date')}><input type="date" className={inputCls} value={draft.docDate} onChange={(e) => setDraft({ ...draft, docDate: e.target.value })} /></Field>
               <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => setDraft({ ...draft, isActive: e.target.checked })} />{t('faq.active')}</label>
               <Field label={t('doc.summaryAr')}><textarea rows={3} maxLength={5000} dir="rtl" className={inputCls} value={draft.summaryAr} onChange={(e) => setDraft({ ...draft, summaryAr: e.target.value })} /></Field>

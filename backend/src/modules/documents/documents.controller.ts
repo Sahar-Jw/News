@@ -59,6 +59,12 @@ export class DocumentsPublicController {
   }
 
   @Public()
+  @Get('issuers')
+  issuers(@Query('lang') lang?: string, @Query('kind') kind?: string) {
+    return this.service.publicIssuers(lang === 'en' ? 'en' : 'ar', kind);
+  }
+
+  @Public()
   @Get(':id')
   one(@Param('id', ParseIntPipe) id: number, @Query('lang') lang?: string) {
     return this.service.publicOne(id, lang === 'en' ? 'en' : 'ar');

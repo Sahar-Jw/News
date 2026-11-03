@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { TimestampedEntity } from '../../common/entities/base.entity';
 
 /** Entity kinds a news item can be attached to ("smart archiving", document 7.2). Add new kinds here. */
-export const LINK_ENTITY_TYPES = ['committee'] as const;
+export const LINK_ENTITY_TYPES = ['committee', 'board_member'] as const;
 export type LinkEntityType = (typeof LINK_ENTITY_TYPES)[number];
 
 /** One news item shown inside another entity's page (committee, later: event, course, expo, board member). */

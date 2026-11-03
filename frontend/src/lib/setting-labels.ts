@@ -11,6 +11,7 @@ const CATEGORY_AR: Record<string, string> = {
   appointments: 'المواعيد',
   shortcuts: 'الاختصارات السريعة',
   one_stop: 'النافذة الواحدة',
+  promo: 'البانر الترويجي (DCC EXPO)',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -76,6 +77,8 @@ const HOME_SECTION_AR: Record<string, string> = {
   company: 'الشركات الشريكة',
   contact: 'تواصل معنا',
   shortcuts: 'اختصارات سريعة',
+  agenda: 'أجندة الغرفة',
+  gallery: 'معرض الصور',
 };
 
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
@@ -98,6 +101,12 @@ export function keyLabel(category: string, key: string, lang: string): string {
   if (category === 'hero') {
     const s = /^slide(\d+)_(image|title|description)$/.exec(base);
     if (s) return `${SLIDE_PART_AR[s[2]]} الشريحة ${s[1]}${suffix}`;
+  }
+  if (category === 'promo') {
+    const p = /^(title|text|button)_(ar|en)$/.exec(base);
+    if (p) return `البانر — ${{ title: 'العنوان', text: 'النص', button: 'نص الزر' }[p[1] as 'title' | 'text' | 'button']}${suffix}`;
+    if (base === 'link') return 'البانر — رابط الزر (مسار داخل الموقع يبدأ بـ / أو رابط كامل)';
+    if (base === 'image') return 'البانر — الصورة (اختياري)';
   }
   if (category === 'shortcuts') {
     const s = /^item(\d+)_(title|link)$/.exec(base);

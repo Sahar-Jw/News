@@ -4,10 +4,11 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null; bio: string; duties: string }
+interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null; bio: string; duties: string; news: { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }[] }
 
 /** One board member: picture, name, position, bio, committees and duties: /board/view?id=3. The HTML is sanitised by the API. */
 function View() {
@@ -40,6 +41,24 @@ function View() {
         </div>
         {m.bio && <section className="mt-8"><h2 className="mb-2 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.bio')}</h2><div className="prose-news" dangerouslySetInnerHTML={{ __html: m.bio }} /></section>}
         {m.duties && <section className="mt-8"><h2 className="mb-2 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.duties')}</h2><div className="prose-news" dangerouslySetInnerHTML={{ __html: m.duties }} /></section>}
+        {m.news.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.news')}</h2>
+            <ul className="space-y-3">
+              {m.news.map((n) => (
+                <li key={n.id}>
+                  <Link href={href(`/news/view?id=${n.id}`)} className="group flex items-start gap-3">
+                    {n.image && <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-16 w-24 shrink-0 rounded-lg object-cover" />}
+                    <span className="min-w-0">
+                      <span className="block font-semibold text-secondary group-hover:text-primary">{n.title}</span>
+                      {n.publishAt && <span className="block text-xs text-gray-500">{fmtDate(lang, n.publishAt)}</span>}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <Link href={href('/board')} className="mt-8 inline-block rounded-lg border border-line px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('board.back')}</Link>
       </article>
     </div>
