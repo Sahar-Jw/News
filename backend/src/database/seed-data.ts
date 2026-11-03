@@ -94,6 +94,35 @@ export const SHORTCUT_DEFAULTS: { ar: string; en: string; link: string }[] = [
   { ar: 'تواصل معنا', en: 'Contact us', link: '/#sec-contact' },
 ];
 
+/** Default main menu (only pages that exist). Used by the seed on an empty database; the migration inserts the same rows. Edited later from Settings -> Main menu. */
+export const NAV_DEFAULTS: { ar: string; en: string; items: { ar: string; en: string; url: string }[] }[] = [
+  { ar: 'عن الغرفة', en: 'About', items: [
+    { ar: 'عن الغرفة', en: 'About the chamber', url: '/pages/view?slug=about' },
+    { ar: 'مجلس الإدارة', en: 'Board of Directors', url: '/board' },
+    { ar: 'اللجان والقطاعات', en: 'Committees & sectors', url: '/committees' },
+    { ar: 'لجنة سيدات الأعمال', en: 'Businesswomen committee', url: '/committees/women' },
+  ] },
+  { ar: 'الأخبار والإعلام', en: 'News & media', items: [
+    { ar: 'كل الأخبار', en: 'All news', url: '/news' },
+    { ar: 'المركز الإعلامي', en: 'Media center', url: '/media' },
+    { ar: 'معرض الصور', en: 'Image gallery', url: '/gallery' },
+    { ar: 'النشرة البريدية', en: 'Newsletter', url: '/subscribe' },
+  ] },
+  { ar: 'الخدمات', en: 'Services', items: [
+    { ar: 'النافذة الواحدة', en: 'One-stop window', url: '/one-stop' },
+    { ar: 'القرارات والتعاميم', en: 'Decisions & circulars', url: '/documents' },
+    { ar: 'المكتبة والأرشيف الرقمي', en: 'Library & digital archive', url: '/library' },
+    { ar: 'الأسئلة الشائعة', en: 'FAQ', url: '/faq' },
+  ] },
+  { ar: 'التطوير والأعمال', en: 'Development & business', items: [
+    { ar: 'مركز التدريب الإداري', en: 'Management training center', url: '/training' },
+  ] },
+  { ar: 'المعارض والفعاليات', en: 'Exhibitions & events', items: [
+    { ar: 'المعارض والفعاليات', en: 'Exhibitions & events', url: '/occasions/previous' },
+    { ar: 'أجندة الغرفة', en: 'Chamber agenda', url: '/occasions/upcoming' },
+  ] },
+];
+
 export const SETTING_SEEDS: SettingSeed[] = [
   // branding
   s('branding', 'site_name_ar', 'text', 'الموقع الإخباري'),

@@ -116,6 +116,18 @@ const ar: Record<string, string> = {
   'cm.tab.media': 'الصور والفيديو', 'gl.committee': 'اللجنة (اختياري)', 'gl.committeeHint': 'عند اختيار لجنة يظهر هذا الألبوم في تبويب «الصور والفيديو» في صفحتها.', 'gl.noCommittee': 'بدون لجنة',
   // wireframe gaps: home agenda + gallery strip
   'sec.agenda': 'أجندة الغرفة', 'sec.gallery': 'معرض الصور', 'home.allEvents': 'كل المناسبات القادمة', 'home.allPhotos': 'كل الألبومات',
+  // main menu editor + merged admin dropdown
+  'adm.admin': 'لوحة الإدارة', 'nav.editor': 'القائمة الرئيسية', 'mod.nav': 'قائمة التنقل',
+  'nv.title': 'إدارة القائمة الرئيسية', 'nv.subtitle': 'أنشئ القوائم المنسدلة وسمّها بالعربية والإنجليزية، أضف الروابط وعدّلها واحذفها، وانقلها بين القوائم بالسحب والإفلات. لا يُحفظ شيء قبل الضغط على «حفظ».',
+  'nv.preview': 'معاينة شريط التنقل', 'nv.links': 'رابط', 'nv.maxHint': 'تظهر 8 روابط كحد أقصى في القائمة المنسدلة ثم يظهر شريط تمرير.',
+  'nv.addGroup': 'إضافة قائمة منسدلة', 'nv.addLink': 'إضافة رابط', 'nv.groupAr': 'اسم القائمة بالعربية', 'nv.groupEn': 'اسم القائمة بالإنجليزية (اختياري)',
+  'nv.linkAr': 'عنوان الرابط بالعربية', 'nv.linkEn': 'عنوان الرابط بالإنجليزية (اختياري)', 'nv.url': 'الرابط', 'nv.urlHint': 'مسار داخل الموقع مثل /news أو رابط كامل يبدأ بـ https://',
+  'nv.visible': 'ظاهر', 'nv.hidden': 'مخفي', 'nv.newTab': 'يفتح في تبويب جديد', 'nv.moveTo': 'نقل إلى', 'nv.drag': 'اسحب لإعادة الترتيب', 'nv.up': 'أعلى', 'nv.down': 'أسفل',
+  'nv.delete': 'حذف', 'nv.deleteGroup': 'حذف القائمة', 'nv.deleteGroupMsg': 'ستُحذف القائمة وكل روابطها عند الحفظ. هل تريد المتابعة؟',
+  'nv.empty': 'لا توجد روابط. اسحب رابطاً إلى هنا أو أضف رابطاً جديداً.', 'nv.noGroups': 'لا توجد قوائم منسدلة بعد',
+  'nv.unsaved': 'لديك تغييرات غير محفوظة', 'nv.save': 'حفظ القائمة', 'nv.discard': 'تراجع عن التغييرات', 'nv.saved': 'تم حفظ القائمة',
+  'nv.errGroup': 'اسم القائمة بالعربية مطلوب', 'nv.errLink': 'عنوان الرابط بالعربية مطلوب', 'nv.errUrl': 'رابط غير صالح: يبدأ بـ / أو بـ http(s)://',
+  'nv.banner': 'إدارة القائمة الرئيسية', 'nv.bannerHint': 'القوائم المنسدلة وروابطها: الأسماء بالعربية والإنجليزية، الإضافة والتعديل والحذف، والنقل بين القوائم بالسحب والإفلات.', 'nv.open': 'فتح المحرر',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -274,6 +286,18 @@ const en: Record<string, string> = {
   'cm.tab.media': 'Photos & video', 'gl.committee': 'Committee (optional)', 'gl.committeeHint': 'When a committee is chosen, this album appears in the "Photos & video" tab of its page.', 'gl.noCommittee': 'No committee',
   // wireframe gaps: home agenda + gallery strip
   'sec.agenda': 'Chamber agenda', 'sec.gallery': 'Photo gallery', 'home.allEvents': 'All upcoming occasions', 'home.allPhotos': 'All albums',
+  // main menu editor + merged admin dropdown
+  'adm.admin': 'Administration', 'nav.editor': 'Main menu', 'mod.nav': 'Main menu',
+  'nv.title': 'Main menu', 'nv.subtitle': 'Create the dropdowns and name them in Arabic and English, add, edit and delete links, and move them between dropdowns by drag and drop. Nothing is stored until you press "Save".',
+  'nv.preview': 'Navbar preview', 'nv.links': 'links', 'nv.maxHint': 'A dropdown shows at most 8 links, then a scroll bar appears.',
+  'nv.addGroup': 'Add dropdown', 'nv.addLink': 'Add link', 'nv.groupAr': 'Dropdown name (Arabic)', 'nv.groupEn': 'Dropdown name (English, optional)',
+  'nv.linkAr': 'Link title (Arabic)', 'nv.linkEn': 'Link title (English, optional)', 'nv.url': 'Link', 'nv.urlHint': 'A site path such as /news, or a full address starting with https://',
+  'nv.visible': 'Visible', 'nv.hidden': 'Hidden', 'nv.newTab': 'Open in a new tab', 'nv.moveTo': 'Move to', 'nv.drag': 'Drag to reorder', 'nv.up': 'Up', 'nv.down': 'Down',
+  'nv.delete': 'Delete', 'nv.deleteGroup': 'Delete dropdown', 'nv.deleteGroupMsg': 'The dropdown and all its links are deleted when you save. Continue?',
+  'nv.empty': 'No links. Drag a link here or add a new one.', 'nv.noGroups': 'No dropdowns yet',
+  'nv.unsaved': 'You have unsaved changes', 'nv.save': 'Save menu', 'nv.discard': 'Discard changes', 'nv.saved': 'Menu saved',
+  'nv.errGroup': 'The Arabic dropdown name is required', 'nv.errLink': 'The Arabic link title is required', 'nv.errUrl': 'Invalid link: start with / or http(s)://',
+  'nv.banner': 'Main menu', 'nv.bannerHint': 'The navbar dropdowns and their links: Arabic and English names, add / edit / delete, and move links between dropdowns by drag and drop.', 'nv.open': 'Open the editor',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

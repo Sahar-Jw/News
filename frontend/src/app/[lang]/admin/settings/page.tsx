@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -22,7 +23,7 @@ const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ICON_TYPES = ['image/x-icon', 'image/vnd.microsoft.icon'];
 
 export default function SettingsPage() {
-  const { t, lang } = useI18n();
+  const { t, lang, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const [cats, setCats] = useState<{ category: string }[]>([]);
@@ -105,6 +106,17 @@ export default function SettingsPage() {
   return (
     <RequirePerm any={['settings.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.settings')}</h1>
+      {can('nav.read') && (
+        <Link href={href('/admin/nav')} className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-l from-primary/10 to-white p-4 shadow-card ring-1 ring-line transition hover:ring-primary/50">
+          <span className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h10M4 18h16" /></svg>
+            </span>
+            <span><span className="block font-bold text-secondary">{t('nv.banner')}</span><span className="block max-w-2xl text-xs text-gray-600">{t('nv.bannerHint')}</span></span>
+          </span>
+          <span className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white">{t('nv.open')} →</span>
+        </Link>
+      )}
       <DataTable<Row>
         endpoint="/admin/settings" columns={cols} refreshKey={key} exportable={false}
         filters={[{ key: 'category', label: t('s.category'), options: cats.map((c) => ({ value: c.category, label: categoryLabel(c.category, lang) })) }]}

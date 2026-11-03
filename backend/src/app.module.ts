@@ -27,6 +27,7 @@ import { BoardModule } from './modules/board/board.module';
 import { CommitteesModule } from './modules/committees/committees.module';
 import { ContentLinksModule } from './modules/content-links/content-links.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { NavModule } from './modules/nav/nav.module';
 import { ServicesModule } from './modules/services/services.module';
 import { TrainingModule } from './modules/training/training.module';
 import { PagesModule } from './modules/pages/pages.module';
@@ -75,6 +76,7 @@ import { UsersModule } from './modules/users/users.module';
     PagesModule,
     DocumentsModule,
     ServicesModule,
+    NavModule,
     TrainingModule,
     BoardModule,
     CommitteesModule,

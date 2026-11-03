@@ -11,7 +11,8 @@ import { ContactMessage } from '../modules/contact/contact-message.entity';
 import { News } from '../modules/news/news.entity';
 import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
-import { CITY_SEEDS, CONTACT_MESSAGE_SEEDS, NEWS_SEEDS, ROLE_SEEDS, SETTING_SEEDS } from './seed-data';
+import { CITY_SEEDS, CONTACT_MESSAGE_SEEDS, NAV_DEFAULTS, NEWS_SEEDS, ROLE_SEEDS, SETTING_SEEDS } from './seed-data';
+import { NavGroup, NavItem } from '../modules/nav/nav.entity';
 
 /**
  * Idempotent: safe to run on every deploy.
@@ -81,6 +82,18 @@ async function main() {
     if (!(await setRepo.findOne({ where: { category: st.category, key: st.key } }))) {
       await setRepo.save(setRepo.create({ category: st.category, key: st.key, value: st.value, valueType: st.type }));
       addedSettings++;
+    }
+  }
+
+  // main menu: defaults only while the menu is empty (afterwards it belongs to the admin: Settings -> Main menu)
+  let addedNav = 0;
+  const navGroups = dataSource.getRepository(NavGroup);
+  if ((await navGroups.count()) === 0) {
+    const navItems = dataSource.getRepository(NavItem);
+    for (const [gi, g] of NAV_DEFAULTS.entries()) {
+      const saved = await navGroups.save(navGroups.create({ titleAr: g.ar, titleEn: g.en, sortOrder: gi, isActive: true }));
+      for (const [ii, i] of g.items.entries()) await navItems.save(navItems.create({ groupId: saved.id, titleAr: i.ar, titleEn: i.en, url: i.url, sortOrder: ii, isActive: true, newTab: false }));
+      addedNav += g.items.length;
     }
   }
 

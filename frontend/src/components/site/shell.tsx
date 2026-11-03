@@ -6,11 +6,13 @@ import { fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
-import { NAV_EXPO, NAV_GROUPS } from '@/lib/nav';
+import { NAV_EXPO } from '@/lib/nav';
+import { useNavGroups } from './use-nav';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
-type NavItem = { label: string; to: string; show: boolean };
+type NavItem = { label: string; to: string; show: boolean; newTab?: boolean };
+type AdminGroup = { key: string; label: string; items: NavItem[] };
 
 function NavTrigger({ children }: { children: React.ReactNode }) {
   return (
@@ -53,7 +55,7 @@ function Dropdown({ label, trigger, panelClass, children }: { label: string; tri
       >
         {trigger}
         <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,250ms] ${desktopOpenClasses} ${panelClass}`}>
-          <div onClickCapture={dismiss} className="rounded-2xl bg-white/95 p-2 shadow-lift ring-1 ring-line backdrop-blur-xl">{children}</div>
+          <div onClickCapture={(e) => { if (!(e.target as HTMLElement).closest('[data-keep-open]')) dismiss(); }} className="rounded-2xl bg-white/95 p-2 shadow-lift ring-1 ring-line backdrop-blur-xl">{children}</div>
         </div>
       </div>
       <div className="w-full xl:hidden">
@@ -71,7 +73,7 @@ function Dropdown({ label, trigger, panelClass, children }: { label: string; tri
         </button>
         <div id={panelId} data-open={mobileOpen} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
           <div className="min-h-0 overflow-hidden xl:contents">
-            <div onClickCapture={dismiss} className="mt-1 w-full rounded-2xl border border-line bg-white p-1.5 shadow-card">{children}</div>
+            <div onClickCapture={(e) => { if (!(e.target as HTMLElement).closest('[data-keep-open]')) dismiss(); }} className="mt-1 w-full rounded-2xl border border-line bg-white p-1.5 shadow-card">{children}</div>
           </div>
         </div>
       </div>
@@ -79,7 +81,17 @@ function Dropdown({ label, trigger, panelClass, children }: { label: string; tri
   );
 }
 
-/** Hover dropdown used for the permission-based menus (same look as the other nav dropdowns). */
+/** Every dropdown shows at most 8 links (8 rows of 2.25rem); the rest scrolls inside the panel. */
+const SCROLL_PANEL = 'max-h-72 overflow-y-auto overscroll-contain';
+const ROW = 'block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary';
+
+/** One link of a dropdown: a site path stays in the site (language prefix added), a full address opens as given. */
+function NavLink({ item, href }: { item: NavItem; href: (p: string) => string }) {
+  if (/^https?:\/\//i.test(item.to)) return <a href={item.to} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} className={ROW}>{item.label}</a>;
+  return <Link href={href(item.to)} target={item.newTab ? '_blank' : undefined} className={ROW}>{item.label}</Link>;
+}
+
+/** Hover dropdown used for the public menu groups (same look as the other nav dropdowns). */
 function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; href: (p: string) => string }) {
   const visible = items.filter((i) => i.show);
   if (visible.length === 0) return null;
@@ -89,9 +101,45 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
       trigger={<NavTrigger>{label}</NavTrigger>}
       panelClass="start-0 min-w-52"
     >
-      {visible.map((i) => (
-        <Link key={i.to} href={href(i.to)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{i.label}</Link>
-      ))}
+      <div className={SCROLL_PANEL}>
+        {visible.map((i) => <NavLink key={i.to + i.label} item={i} href={href} />)}
+      </div>
+    </Dropdown>
+  );
+}
+
+/**
+ * The single permission-based dropdown (Content / Tools / Settings & security as sub-dropdowns). A group opens inline under its
+ * title (one at a time, or at once when it is the only one); the whole panel scrolls after 8 rows. Items still appear only for
+ * holders of their permission (UI hint only - the API enforces every permission).
+ */
+function AdminMenu({ label, groups, href }: { label: string; groups: AdminGroup[]; href: (p: string) => string }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const shown = groups.map((g) => ({ ...g, items: g.items.filter((i) => i.show) })).filter((g) => g.items.length > 0);
+  if (shown.length === 0) return null;
+  const current = shown.length === 1 ? shown[0].key : open;
+  return (
+    <Dropdown label={label} trigger={<NavTrigger>{label}</NavTrigger>} panelClass="start-0 min-w-60">
+      <div className={SCROLL_PANEL}>
+        {shown.map((g) => {
+          const on = current === g.key;
+          return (
+            <div key={g.key}>
+              <button
+                type="button"
+                data-keep-open
+                aria-expanded={on}
+                onClick={() => setOpen(on ? null : g.key)}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-start text-sm font-bold transition hover:bg-primary/10 hover:text-primary ${on ? 'bg-primary/10 text-primary' : 'text-secondary'}`}
+              >
+                <span>{g.label}</span>
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`shrink-0 transition-transform duration-200 ${on ? 'rotate-180' : ''}`}><path d="m3 6 5 5 5-5" /></svg>
+              </button>
+              {on && <div className="mb-1 ms-3 border-s-2 border-accent/50 ps-1">{g.items.map((i) => <NavLink key={i.to} item={i} href={href} />)}</div>}
+            </div>
+          );
+        })}
+      </div>
     </Dropdown>
   );
 }
@@ -193,13 +241,15 @@ export function Navbar() {
     { label: t('adm.dates'), to: '/admin/dates', show: can('appointments.read') },
     { label: t('adm.datesDashboard'), to: '/admin/dates-dashboard', show: can('appointments.dashboard') },
   ];
-  // Public groups (document 7.1): built from lib/nav.ts, only pages that already exist are listed.
-  const groups = NAV_GROUPS.map((g) => ({ key: g.key, label: t(g.label), items: g.items.map((i): NavItem => ({ label: t(i.label), to: i.to, show: i.ready })) }));
+  // Public dropdowns: managed in Settings -> Main menu (loaded from the API).
+  const navGroups = useNavGroups(lang, t);
+  const groups = (navGroups ?? []).map((g) => ({ key: String(g.id), label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) }));
   const contactHref = isHome ? '#sec-contact' : `${href('/')}#sec-contact`;
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
     { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
     { label: t('adm.settings'), to: '/admin/settings', show: can('settings.read') },
+    { label: t('nav.editor'), to: '/admin/nav', show: can('nav.read') },
     { label: t('adm.cities'), to: '/admin/cities', show: can('cities.read') },
     { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
   ];
@@ -293,9 +343,7 @@ export function Navbar() {
             <Link href={href(NAV_EXPO.to)} className="w-full rounded-full bg-gradient-to-r from-primary to-accent px-4 py-2 text-center text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift xl:w-auto">{t(NAV_EXPO.label)}</Link>
           )}
 
-          {me && <NavDropdown label={t('adm.content')} items={manageItems} href={href} />}
-          {me && <NavDropdown label={t('adm.tools')} items={toolsItems} href={href} />}
-          {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
+          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
 
           {me && (
             <div className="flex flex-col gap-1 xl:hidden">

@@ -130,6 +130,9 @@ export const PERMISSIONS: PermissionDef[] = [
   // settings
   { code: 'settings.read', module: 'settings', nameAr: 'عرض الإعدادات', nameEn: 'View settings' },
   { code: 'settings.update', module: 'settings', nameAr: 'تعديل الإعدادات', nameEn: 'Update settings' },
+  // main menu (navigation dropdowns)
+  { code: 'nav.read', module: 'nav', nameAr: 'عرض قائمة التنقل', nameEn: 'View the main menu' },
+  { code: 'nav.update', module: 'nav', nameAr: 'تعديل قائمة التنقل', nameEn: 'Edit the main menu' },
   // cities
   { code: 'cities.read', module: 'cities', nameAr: 'عرض المدن', nameEn: 'View cities' },
   { code: 'cities.create', module: 'cities', nameAr: 'إضافة مدينة', nameEn: 'Create cities' },
@@ -242,6 +245,8 @@ export const PERM = {
   PERMISSIONS_ASSIGN: 'permissions.assign',
   SETTINGS_READ: 'settings.read',
   SETTINGS_UPDATE: 'settings.update',
+  NAV_READ: 'nav.read',
+  NAV_UPDATE: 'nav.update',
   CITIES_READ: 'cities.read',
   CITIES_CREATE: 'cities.create',
   CITIES_UPDATE: 'cities.update',
