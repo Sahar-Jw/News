@@ -129,6 +129,16 @@ const ar: Record<string, string> = {
   'nv.unsaved': 'لديك تغييرات غير محفوظة', 'nv.save': 'حفظ القائمة', 'nv.discard': 'تراجع عن التغييرات', 'nv.saved': 'تم حفظ القائمة',
   'nv.errGroup': 'اسم القائمة بالعربية مطلوب', 'nv.errLink': 'عنوان الرابط بالعربية مطلوب', 'nv.errUrl': 'رابط غير صالح: يبدأ بـ / أو بـ http(s)://',
   'nv.banner': 'إدارة القائمة الرئيسية', 'nv.bannerHint': 'القوائم المنسدلة وروابطها: الأسماء بالعربية والإنجليزية، الإضافة والتعديل والحذف، والنقل بين القوائم بالسحب والإفلات.', 'nv.open': 'فتح المحرر',
+  // membership
+  'adm.membership': 'طلبات الانتساب', 'mod.membership': 'الانتساب',
+  'mb.title': 'للانتساب', 'mb.conditions': 'شروط الانتساب', 'mb.documents': 'الوثائق المطلوبة', 'mb.fees': 'الرسوم', 'mb.steps': 'الخطوات', 'mb.soon': 'سيُعلن عن التفاصيل قريباً',
+  'mb.online': 'طلب الانتساب الإلكتروني', 'mb.onlineFields': 'اسم المنشأة · النشاط · المدير · الهاتف · البريد · رفع الوثائق', 'mb.start': 'ابدأ طلب الانتساب', 'mb.closed': 'باب تقديم الطلبات مغلق حالياً',
+  'mb.faq': 'أسئلة شائعة عن الانتساب', 'mb.future': 'مستقبلاً: متابعة حالة الطلب من حساب المنتسب (الدخول والتسجيل موجودان في النظام الحالي).',
+  'mb.company': 'اسم المنشأة', 'mb.activity': 'النشاط', 'mb.manager': 'اسم المدير', 'mb.phone': 'الهاتف', 'mb.address': 'العنوان', 'mb.message': 'ملاحظات', 'mb.upload': 'رفع الوثائق', 'mb.uploadHint': 'حتى 6 ملفات (PDF أو Word أو صور)، كل ملف حتى 5 ميغابايت', 'mb.maxFiles': 'الحد الأقصى 6 ملفات', 'mb.submit': 'إرسال الطلب',
+  'mb.received': 'تم استلام طلب الانتساب', 'mb.reference': 'رقم الطلب', 'mb.receivedHint': 'أرسلنا رسالة تأكيد إلى بريدك، وسنوافيك بالنتيجة بعد مراجعة الطلب.', 'mb.close': 'إغلاق',
+  'mb.status.new': 'جديد', 'mb.status.in_review': 'قيد المراجعة', 'mb.status.accepted': 'مقبول', 'mb.status.rejected': 'مرفوض',
+  'mb.adm.apps': 'الطلبات', 'mb.adm.content': 'محتوى الصفحة', 'mb.adm.status': 'الحالة', 'mb.adm.statusHint': 'عند اختيار «مقبول» أو «مرفوض» يصل مقدّم الطلب بريد بالنتيجة', 'mb.adm.date': 'التاريخ', 'mb.adm.open': 'فتح', 'mb.adm.files': 'المرفقات', 'mb.adm.noFiles': 'لا توجد مرفقات', 'mb.adm.download': 'تنزيل',
+  'mb.adm.notes': 'ملاحظات داخلية', 'mb.adm.notesHint': 'لا تظهر لمقدّم الطلب', 'mb.adm.ar': 'العربية', 'mb.adm.en': 'الإنجليزية (اختياري)', 'mb.adm.stepsHint': 'خطوة في كل سطر', 'mb.adm.notifyEmail': 'بريد استقبال الطلبات', 'mb.adm.notifyHint': 'يصله بريد عند كل طلب جديد', 'mb.adm.open2': 'استقبال الطلبات مفتوح',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -300,6 +310,16 @@ const en: Record<string, string> = {
   'nv.unsaved': 'You have unsaved changes', 'nv.save': 'Save menu', 'nv.discard': 'Discard changes', 'nv.saved': 'Menu saved',
   'nv.errGroup': 'The Arabic dropdown name is required', 'nv.errLink': 'The Arabic link title is required', 'nv.errUrl': 'Invalid link: start with / or http(s)://',
   'nv.banner': 'Main menu', 'nv.bannerHint': 'The navbar dropdowns and their links: Arabic and English names, add / edit / delete, and move links between dropdowns by drag and drop.', 'nv.open': 'Open the editor',
+  // membership
+  'adm.membership': 'Membership applications', 'mod.membership': 'Membership',
+  'mb.title': 'Membership', 'mb.conditions': 'Membership conditions', 'mb.documents': 'Required documents', 'mb.fees': 'Fees', 'mb.steps': 'Steps', 'mb.soon': 'Details will be announced soon',
+  'mb.online': 'Online membership application', 'mb.onlineFields': 'Company name · Activity · Manager · Phone · Email · Document upload', 'mb.start': 'Start the membership application', 'mb.closed': 'Applications are currently closed',
+  'mb.faq': 'Membership FAQ', 'mb.future': 'Coming: follow the application status from the member account (sign-in and registration already exist).',
+  'mb.company': 'Company name', 'mb.activity': 'Business activity', 'mb.manager': 'Manager name', 'mb.phone': 'Phone', 'mb.address': 'Address', 'mb.message': 'Notes', 'mb.upload': 'Upload documents', 'mb.uploadHint': 'Up to 6 files (PDF, Word or pictures), each up to 5 MB', 'mb.maxFiles': 'Up to 6 files', 'mb.submit': 'Submit the application',
+  'mb.received': 'Your membership application was received', 'mb.reference': 'Reference', 'mb.receivedHint': 'We sent a confirmation to your e-mail and will tell you the result after the review.', 'mb.close': 'Close',
+  'mb.status.new': 'New', 'mb.status.in_review': 'In review', 'mb.status.accepted': 'Accepted', 'mb.status.rejected': 'Rejected',
+  'mb.adm.apps': 'Applications', 'mb.adm.content': 'Page content', 'mb.adm.status': 'Status', 'mb.adm.statusHint': 'Choosing "Accepted" or "Rejected" e-mails the result to the applicant', 'mb.adm.date': 'Date', 'mb.adm.open': 'Open', 'mb.adm.files': 'Attachments', 'mb.adm.noFiles': 'No attachments', 'mb.adm.download': 'Download',
+  'mb.adm.notes': 'Internal notes', 'mb.adm.notesHint': 'Never shown to the applicant', 'mb.adm.ar': 'Arabic', 'mb.adm.en': 'English (optional)', 'mb.adm.stepsHint': 'One step per line', 'mb.adm.notifyEmail': 'Applications e-mail', 'mb.adm.notifyHint': 'Receives an e-mail for every new application', 'mb.adm.open2': 'Accepting applications',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

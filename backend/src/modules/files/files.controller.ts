@@ -30,11 +30,12 @@ export class FilesController {
     const isPrivate = this.storage.isPrivate(rel);
     if (isPrivate) {
       if (!req.user) throw new UnauthorizedException('يلزم تسجيل الدخول');
-      const mayRead = req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
-      const owner = await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
+      const membershipDoc = rel.startsWith('private/membership/');
+      const mayRead = membershipDoc ? req.user.permissions.has(PERM.MEMBERSHIP_READ) : req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
+      const owner = membershipDoc ? null : await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
       // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive
-      await this.audit.log({ category: 'files', action: 'private.download', description: 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
+      await this.audit.log({ category: 'files', action: 'private.download', description: membershipDoc ? 'تنزيل مرفق طلب انتساب' : 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: membershipDoc ? 'membership_files' : 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
     }
 
     if (this.storage.driver === 's3') {

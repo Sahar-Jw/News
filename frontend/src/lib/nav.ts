@@ -34,7 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'nav.servicesList', to: '/services', ready: false },
       { label: 'nav.oneStop', to: '/one-stop', ready: true },
-      { label: 'nav.membership', to: '/membership', ready: false },
+      { label: 'nav.membership', to: '/membership', ready: true },
       { label: 'site.documents', to: '/documents', ready: true },
       { label: 'nav.library', to: '/library', ready: true },
       { label: 'site.faq', to: '/faq', ready: true },

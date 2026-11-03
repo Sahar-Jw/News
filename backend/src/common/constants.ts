@@ -161,6 +161,11 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'committees.create', module: 'committees', nameAr: 'إضافة لجنة', nameEn: 'Create committees' },
   { code: 'committees.update', module: 'committees', nameAr: 'تعديل لجنة وأعضائها وأنشطتها وأخبارها', nameEn: 'Update committees, members, activities and linked news' },
   { code: 'committees.delete', module: 'committees', nameAr: 'حذف لجنة', nameEn: 'Delete committees' },
+  // membership applications (private documents) and the page content
+  { code: 'membership.read', module: 'membership', nameAr: 'عرض طلبات الانتساب ومرفقاتها', nameEn: 'View membership applications and their documents' },
+  { code: 'membership.update', module: 'membership', nameAr: 'معالجة طلبات الانتساب وتعديل محتوى الصفحة', nameEn: 'Process applications and edit the page content' },
+  { code: 'membership.delete', module: 'membership', nameAr: 'حذف طلبات الانتساب', nameEn: 'Delete membership applications' },
+  { code: 'membership.export', module: 'membership', nameAr: 'تصدير طلبات الانتساب', nameEn: 'Export membership applications' },
   // board of directors
   { code: 'board.read', module: 'board', nameAr: 'عرض أعضاء المجلس', nameEn: 'View board members' },
   { code: 'board.create', module: 'board', nameAr: 'إضافة عضو مجلس', nameEn: 'Create board members' },
@@ -278,6 +283,10 @@ export const PERM = {
   COMMITTEES_CREATE: 'committees.create',
   COMMITTEES_UPDATE: 'committees.update',
   COMMITTEES_DELETE: 'committees.delete',
+  MEMBERSHIP_READ: 'membership.read',
+  MEMBERSHIP_UPDATE: 'membership.update',
+  MEMBERSHIP_DELETE: 'membership.delete',
+  MEMBERSHIP_EXPORT: 'membership.export',
   BOARD_READ: 'board.read',
   BOARD_CREATE: 'board.create',
   BOARD_UPDATE: 'board.update',

@@ -228,6 +228,7 @@ export function Navbar() {
     { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
     { label: t('adm.board'), to: '/admin/board', show: can('board.read') },
     { label: t('adm.committees'), to: '/admin/committees', show: can('committees.read') },
+    { label: t('adm.membership'), to: '/admin/membership', show: can('membership.read') },
     { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
     { label: t('adm.services'), to: '/admin/services', show: can('services.read') },
     { label: t('adm.courses'), to: '/admin/courses', show: can('courses.read') },
