@@ -26,6 +26,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { BoardModule } from './modules/board/board.module';
 import { CommitteesModule } from './modules/committees/committees.module';
 import { MembershipModule } from './modules/membership/membership.module';
+import { Get2TradeModule } from './modules/get2trade/get2trade.module';
 import { ContentLinksModule } from './modules/content-links/content-links.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { NavModule } from './modules/nav/nav.module';
@@ -84,6 +85,7 @@ import { UsersModule } from './modules/users/users.module';
     BoardModule,
     CommitteesModule,
     MembershipModule,
+    Get2TradeModule,
     ContentLinksModule,
     GalleryModule,
     MailModule,

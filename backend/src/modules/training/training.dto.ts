@@ -3,8 +3,9 @@ import { IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsOptional, IsString, Ma
 import { AdminListQueryDto, PublicListQueryDto } from '../../common/dto/list-query.dto';
 import { COURSE_KINDS } from './course.entity';
 
-// multipart/form-data: every value is a string, and an empty field means "clear it"
-const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
+// multipart/form-data: every value is a string, and an empty field means "clear it". The raw value is checked because
+// @Type(() => Number) has already turned '' into 0 by the time this runs.
+const blankToNull = () => Transform(({ value, obj, key }) => { const raw = obj?.[key]; return typeof raw === 'string' && raw.trim() === '' ? null : value; });
 const toBool = () => Transform(({ value }) => (value === 'true' || value === true || value === '1' ? true : value === 'false' || value === false || value === '0' ? false : value));
 const KINDS = COURSE_KINDS as unknown as string[];
 
