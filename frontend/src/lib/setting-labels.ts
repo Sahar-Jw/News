@@ -15,6 +15,7 @@ const CATEGORY_AR: Record<string, string> = {
   promo: 'البانر الترويجي (DCC EXPO)',
   media: 'المركز الإعلامي',
   expo: 'DCC EXPO (المعرض)',
+  incubator: 'حاضنة الأعمال',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -98,6 +99,12 @@ const EXPO_AR: Record<string, string> = {
   news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
 };
 
+/** labels of the "incubator" settings category */
+const INCUBATOR_AR: Record<string, string> = {
+  about: 'عن الحاضنة', vision: 'الرؤية', goals: 'الأهداف (كل هدف في سطر)', how: 'آلية العمل (كل خطوة في سطر)', opportunities: 'الفرص المتاحة (كل فرصة في سطر)',
+  news_topic: 'وسم أخبار الحاضنة', officer_email: 'بريد مسؤول الحاضنة (يصله إشعار عند كل مشروع)', apply_open: 'استقبال المشاريع مفتوح (زر «قدّم مشروعك»)',
+};
+
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
 const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عنوان', description: 'وصف' };
 
@@ -119,6 +126,7 @@ export function keyLabel(category: string, key: string, lang: string): string {
     const s = /^slide(\d+)_(image|title|description)$/.exec(base);
     if (s) return `${SLIDE_PART_AR[s[2]]} الشريحة ${s[1]}${suffix}`;
   }
+  if (category === 'incubator' && INCUBATOR_AR[base]) return `${INCUBATOR_AR[base]}${suffix}`;
   if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;
   if (category === 'promo') {
     const p = /^(title|text|button)_(ar|en)$/.exec(base);

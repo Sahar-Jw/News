@@ -45,7 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'nav.dev',
     items: [
       { label: 'nav.training', to: '/training', ready: true },
-      { label: 'nav.incubator', to: '/incubator', ready: false },
+      { label: 'nav.incubator', to: '/incubator', ready: true },
       { label: 'nav.get2trade', to: '/get2trade', ready: true },
     ],
   },

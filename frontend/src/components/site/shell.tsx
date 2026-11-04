@@ -229,6 +229,8 @@ export function Navbar() {
     { label: t('adm.board'), to: '/admin/board', show: can('board.read') },
     { label: t('adm.committees'), to: '/admin/committees', show: can('committees.read') },
     { label: t('adm.membership'), to: '/admin/membership', show: can('membership.read') },
+    { label: t('adm.incubatorProjects'), to: '/admin/incubator-projects', show: can('incubator.read') },
+    { label: t('adm.incubatorApplications'), to: '/admin/incubator-applications', show: can('incubator.applications.read') },
     { label: t('adm.get2trade'), to: '/admin/get2trade', show: can('get2trade.read') },
     { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
     { label: t('adm.services'), to: '/admin/services', show: can('services.read') },
