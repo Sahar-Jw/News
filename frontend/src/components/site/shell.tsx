@@ -108,7 +108,7 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
 }
 
 /**
- * The Admin dropdown (Content / Tools as sub-dropdowns). On large screens each sub-dropdown opens beside the panel (to the right in
+ * The one Admin dropdown (Content / Tools / Settings & security as sub-dropdowns). On large screens each sub-dropdown opens beside the panel (to the right in
  * Arabic, to the left in English, so it never runs off the screen) while the pointer or keyboard focus is on its row; on small screens
  * the groups collapse as an accordion (one at a time, or at once when there is only one). Every sub-dropdown shows at most 8 rows
  * and scrolls after that. Items appear only for holders of their permission (UI hint only - the API enforces every permission).
@@ -373,8 +373,7 @@ export function Navbar() {
           <a href={contactHref} className="w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold text-ink/80 transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto">{t('contact.title')}</a>
 
 
-          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }]} href={href} />}
-          {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
+          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
 
           {me && (
             <div className="flex flex-col gap-1 xl:hidden">

@@ -6,9 +6,9 @@ import { AuditService } from '../audit/audit.service';
 import { SaveNavDto } from './nav.dto';
 import { NavGroup, NavItem } from './nav.entity';
 
-type LinkLike = { titleAr: string; titleEn?: string | null; url: string; isActive?: boolean; newTab?: boolean };
-/** identity of a link: everything the editor is NOT allowed to change */
-const linkKey = (i: LinkLike) => [i.titleAr.trim(), (i.titleEn ?? '').trim(), i.url.trim(), i.isActive ?? true, i.newTab ?? false].join('\u0001');
+type LinkLike = { url: string; isActive?: boolean; newTab?: boolean };
+/** identity of a link: its address and how it opens. The names (Arabic / English) are the part the editor MAY change. */
+const linkKey = (i: LinkLike) => [i.url.trim(), i.isActive ?? true, i.newTab ?? false].join('\u0001');
 
 @Injectable()
 export class NavService {
@@ -40,14 +40,14 @@ export class NavService {
 
   /**
    * Replaces the stored menu with the submitted one (same order), in one transaction. The dropdowns can be added, renamed, reordered and
-   * deleted, and the links can be moved between them and reordered, but the set of links itself cannot change here: a link is added by the
-   * migration of the page it points to, so a menu saved from the editor can never gain, lose or rewrite one.
+   * deleted, and the links can be renamed, moved between them and reordered, but the set of links itself cannot change here: a link is added
+   * by the migration of the page it points to, so a menu saved from the editor can never gain, lose or re-point one.
    */
   async save(dto: SaveNavDto, actor: AuthUser) {
     const stored = (await this.items.find()).map(linkKey).sort();
     const sent = dto.groups.flatMap((g) => g.items).map(linkKey).sort();
     if (stored.length !== sent.length || stored.some((k, i) => k !== sent[i])) {
-      throw new BadRequestException('لا يمكن إضافة الروابط أو تعديلها أو حذفها من هنا، ويمكن فقط نقلها بين القوائم وترتيبها. انقل روابط القائمة قبل حذفها.');
+      throw new BadRequestException('لا يمكن إضافة الروابط أو حذفها أو تغيير عنوانها من هنا، ويمكن تعديل أسمائها ونقلها بين القوائم وترتيبها. انقل روابط القائمة قبل حذفها.');
     }
     await this.ds.transaction(async (m) => {
       await m.createQueryBuilder().delete().from(NavItem).execute();

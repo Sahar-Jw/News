@@ -124,7 +124,7 @@ const ar: Record<string, string> = {
   'sec.agenda': 'أجندة الغرفة', 'sec.gallery': 'معرض الصور', 'home.allEvents': 'كل المناسبات القادمة', 'home.allPhotos': 'كل الألبومات',
   // main menu editor + merged admin dropdown
   'adm.admin': 'لوحة الإدارة', 'nav.editor': 'القائمة الرئيسية', 'mod.nav': 'قائمة التنقل',
-  'nv.title': 'إدارة القائمة الرئيسية', 'nv.subtitle': 'أنشئ القوائم المنسدلة وسمّها بالعربية والإنجليزية وأعد ترتيبها، وانقل الروابط بين القوائم بالسحب أو بقائمة «نقل إلى». لا يمكن إضافة الروابط أو تعديلها أو حذفها من هنا.',
+  'nv.title': 'إدارة القائمة الرئيسية', 'nv.subtitle': 'أنشئ القوائم المنسدلة وسمّها بالعربية والإنجليزية وأعد ترتيبها، وعدّل أسماء الروابط بالعربية والإنجليزية، وانقلها بين القوائم بالسحب أو بقائمة «نقل إلى». لا يمكن إضافة الروابط أو حذفها من هنا.',
   'nv.preview': 'معاينة شريط التنقل', 'nv.links': 'رابط', 'nv.maxHint': 'تظهر 8 روابط كحد أقصى في القائمة المنسدلة ثم يظهر شريط تمرير.',
   'nv.addGroup': 'إضافة قائمة منسدلة', 'nv.addLink': 'إضافة رابط', 'nv.groupAr': 'اسم القائمة بالعربية', 'nv.groupEn': 'اسم القائمة بالإنجليزية (اختياري)',
   'nv.linkAr': 'عنوان الرابط بالعربية', 'nv.linkEn': 'عنوان الرابط بالإنجليزية (اختياري)', 'nv.url': 'الرابط', 'nv.urlHint': 'مسار داخل الموقع مثل /news أو رابط كامل يبدأ بـ https://',
@@ -310,7 +310,7 @@ const en: Record<string, string> = {
   'sec.agenda': 'Chamber agenda', 'sec.gallery': 'Photo gallery', 'home.allEvents': 'All upcoming occasions', 'home.allPhotos': 'All albums',
   // main menu editor + merged admin dropdown
   'adm.admin': 'Administration', 'nav.editor': 'Main menu', 'mod.nav': 'Main menu',
-  'nv.title': 'Main menu', 'nv.subtitle': 'Create the dropdowns, name them in Arabic and English and reorder them, and move links between dropdowns by dragging or with the "Move to" list. Links cannot be added, edited or deleted here.',
+  'nv.title': 'Main menu', 'nv.subtitle': 'Create the dropdowns, name them in Arabic and English and reorder them, rename the links in Arabic and English, and move them between dropdowns by dragging or with the "Move to" list. Links cannot be added or deleted here.',
   'nv.preview': 'Navbar preview', 'nv.links': 'links', 'nv.maxHint': 'A dropdown shows at most 8 links, then a scroll bar appears.',
   'nv.addGroup': 'Add dropdown', 'nv.addLink': 'Add link', 'nv.groupAr': 'Dropdown name (Arabic)', 'nv.groupEn': 'Dropdown name (English, optional)',
   'nv.linkAr': 'Link title (Arabic)', 'nv.linkEn': 'Link title (English, optional)', 'nv.url': 'Link', 'nv.urlHint': 'A site path such as /news, or a full address starting with https://',
