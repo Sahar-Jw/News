@@ -3,17 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Center, Modal, Spinner, inputCls } from '@/components/ui/ui';
+import { Button, Center, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RequirePerm } from '@/components/admin/guard';
 
 interface ItemD { uid: string; titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean }
 interface GroupD { uid: string; titleAr: string; titleEn: string; isActive: boolean; items: ItemD[] }
 interface Api { groups: { titleAr: string; titleEn: string; isActive: boolean; items: { titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean }[] }[] }
-
-const URL_OK = /^(\/(?!\/)\S*|https?:\/\/\S+)$/i;
-/** site pages offered while typing a link (any other path or full address can be typed too) */
-const KNOWN = ['/', '/#sec-contact', '/news', '/media', '/gallery', '/subscribe', '/one-stop', '/services', '/membership', '/documents', '/library', '/faq', '/training', '/incubator', '/get2trade', '/occasions/upcoming', '/occasions/previous', '/board', '/committees', '/committees/women', '/pages/view?slug=about', '/search', '/sitemap', '/expo'];
 
 let seq = 0;
 const uid = () => `n${++seq}`;
@@ -43,9 +39,9 @@ const IconBtn = ({ label, onClick, disabled, danger, children }: { label: string
 );
 
 /**
- * Main menu editor (Settings -> Main menu): the dropdowns of the site's navbar, their Arabic / English names and links.
- * Drag a link by its handle to reorder it or drop it into another dropdown (the "move to" list does the same on touch screens),
- * drag a dropdown by its handle to reorder dropdowns. Nothing is stored until "Save" is pressed.
+ * Main menu editor (Settings -> Main menu): the dropdowns of the site's navbar. Dropdowns can be added, renamed (Arabic / English), shown or
+ * hidden, reordered and deleted (only when empty). Links cannot be added, edited or deleted here: they can only be moved to another dropdown
+ * (drag by the handle, or the "move to" list on touch screens) and reordered. Nothing is stored until "Save" is pressed.
  */
 export function NavAdmin() {
   const { t } = useI18n();
@@ -55,7 +51,6 @@ export function NavAdmin() {
   const [groups, setGroups] = useState<GroupD[] | null>(null);
   const [saved, setSaved] = useState('');
   const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState<string | null>(null);
   const drag = useRef<Drag | null>(null);
   const [over, setOver] = useState<{ gid: string; iid?: string } | null>(null);
 
@@ -76,26 +71,17 @@ export function NavAdmin() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  // ---- problems (shown under the fields and block saving)
+  // ---- problems (shown under the fields and block saving): only the dropdown names are edited here
   const problems = useMemo(() => {
     const p = new Map<string, string>();
-    (groups ?? []).forEach((g) => {
-      if (!g.titleAr.trim()) p.set(g.uid, t('nv.errGroup'));
-      g.items.forEach((i) => {
-        if (!i.titleAr.trim()) p.set(i.uid + ':t', t('nv.errLink'));
-        if (!URL_OK.test(i.url.trim())) p.set(i.uid + ':u', t('nv.errUrl'));
-      });
-    });
+    (groups ?? []).forEach((g) => { if (!g.titleAr.trim()) p.set(g.uid, t('nv.errGroup')); });
     return p;
   }, [groups, t]);
 
   // ---- state helpers
   const setG = (gid: string, patch: Partial<GroupD>) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, ...patch } : g)));
-  const setI = (gid: string, iid: string, patch: Partial<ItemD>) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, items: g.items.map((i) => (i.uid === iid ? { ...i, ...patch } : i)) } : g)));
   const addGroup = () => setGroups((gs) => [...gs!, { uid: uid(), titleAr: '', titleEn: '', isActive: true, items: [] }]);
-  const addItem = (gid: string) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, items: [...g.items, { uid: uid(), titleAr: '', titleEn: '', url: '/', isActive: true, newTab: false }] } : g)));
   const delGroup = (gid: string) => setGroups((gs) => gs!.filter((g) => g.uid !== gid));
-  const delItem = (gid: string, iid: string) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, items: g.items.filter((i) => i.uid !== iid) } : g)));
 
   /** moves a link to `toGid`, before `beforeIid` (or at the end) */
   const moveItem = (fromGid: string, iid: string, toGid: string, beforeIid: string | null) => setGroups((gs) => {
@@ -239,7 +225,7 @@ export function NavAdmin() {
                       <div className="flex shrink-0 items-center">
                         <IconBtn label={t('nv.up')} onClick={() => shiftGroup(g.uid, -1)} disabled={gi === 0}>↑</IconBtn>
                         <IconBtn label={t('nv.down')} onClick={() => shiftGroup(g.uid, 1)} disabled={gi === groups.length - 1}>↓</IconBtn>
-                        <IconBtn label={t('nv.deleteGroup')} danger onClick={() => (g.items.length ? setConfirm(g.uid) : delGroup(g.uid))}>✕</IconBtn>
+                        <IconBtn label={g.items.length ? t('nv.deleteBlocked') : t('nv.deleteGroup')} danger disabled={g.items.length > 0} onClick={() => delGroup(g.uid)}>✕</IconBtn>
                       </div>
                     )}
                   </header>
@@ -248,7 +234,6 @@ export function NavAdmin() {
                   <div className={`space-y-2 p-3 transition ${over?.gid === g.uid && !over.iid && drag.current?.kind === 'item' ? 'bg-primary/5' : ''}`} onDragOver={allow('item', { gid: g.uid })} onDrop={dropItem(g.uid, null)}>
                     {g.items.length === 0 && <p className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-xs text-gray-500">{t('nv.empty')}</p>}
                     {g.items.map((it, ii) => {
-                      const tp = problems.get(it.uid + ':t'), up = problems.get(it.uid + ':u');
                       const target = over?.iid === it.uid && drag.current?.kind === 'item';
                       return (
                         <div
@@ -256,51 +241,35 @@ export function NavAdmin() {
                           data-row
                           onDragOver={allow('item', { gid: g.uid, iid: it.uid })}
                           onDrop={dropItem(g.uid, it.uid)}
-                          className={`rounded-xl border bg-white p-2 transition ${target ? 'border-primary border-t-4' : 'border-line'} ${it.isActive ? '' : 'bg-gray-50 opacity-70'}`}
+                          className={`flex items-center gap-2 rounded-xl border bg-white p-2 transition ${target ? 'border-primary border-t-4' : 'border-line'} ${it.isActive ? '' : 'bg-gray-50 opacity-70'}`}
                         >
-                          <div className="flex items-start gap-2">
-                            {edit && <Grip draggable onDragStart={(e) => startDrag({ kind: 'item', gid: g.uid, iid: it.uid }, (e.currentTarget as HTMLElement).closest('[data-row]'))(e)} onDragEnd={endDrag} title={t('nv.drag')} />}
-                            <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-                              <div>
-                                <input value={it.titleAr} disabled={!edit} dir="rtl" maxLength={150} placeholder={t('nv.linkAr')} aria-label={t('nv.linkAr')} onChange={(e) => setI(g.uid, it.uid, { titleAr: e.target.value })} className={`${inputCls} ${tp ? 'border-red-400' : ''}`} />
-                                {tp && <span className="mt-1 block text-xs text-red-600">{tp}</span>}
-                              </div>
-                              <input value={it.titleEn} disabled={!edit} dir="ltr" maxLength={150} placeholder={t('nv.linkEn')} aria-label={t('nv.linkEn')} onChange={(e) => setI(g.uid, it.uid, { titleEn: e.target.value })} className={inputCls} />
-                              <div className="sm:col-span-2">
-                                <input value={it.url} disabled={!edit} dir="ltr" maxLength={500} list="nav-known-urls" placeholder="/news" aria-label={t('nv.url')} onChange={(e) => setI(g.uid, it.uid, { url: e.target.value })} className={`${inputCls} font-mono text-xs ${up ? 'border-red-400' : ''}`} />
-                                {up ? <span className="mt-1 block text-xs text-red-600">{up}</span> : <span className="mt-1 block text-[11px] text-gray-500">{t('nv.urlHint')}</span>}
-                              </div>
+                          {edit && <Grip draggable onDragStart={(e) => startDrag({ kind: 'item', gid: g.uid, iid: it.uid }, (e.currentTarget as HTMLElement).closest('[data-row]'))(e)} onDragEnd={endDrag} title={t('nv.drag')} />}
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold">{it.titleAr}{!it.isActive && <span className="ms-2 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-normal text-gray-600">{t('nv.hidden')}</span>}</div>
+                            {it.titleEn && <div dir="ltr" className="truncate text-xs text-gray-500">{it.titleEn}</div>}
+                          </div>
+                          {edit && groups.length > 1 && (
+                            <label className="flex shrink-0 items-center gap-1.5 text-xs text-gray-600"><span className="hidden sm:inline">{t('nv.moveTo')}</span>
+                              <select value={g.uid} onChange={(e) => moveItem(g.uid, it.uid, e.target.value, null)} aria-label={t('nv.moveTo')} className="max-w-[9rem] rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-primary">
+                                {groups.map((x) => <option key={x.uid} value={x.uid}>{x.titleAr.trim() || '—'}</option>)}
+                              </select>
+                            </label>
+                          )}
+                          {edit && (
+                            <div className="flex shrink-0 items-center">
+                              <IconBtn label={t('nv.up')} onClick={() => shiftItem(g.uid, it.uid, -1)} disabled={ii === 0}>↑</IconBtn>
+                              <IconBtn label={t('nv.down')} onClick={() => shiftItem(g.uid, it.uid, 1)} disabled={ii === g.items.length - 1}>↓</IconBtn>
                             </div>
-                            {edit && (
-                              <div className="flex shrink-0 flex-col items-center">
-                                <IconBtn label={t('nv.up')} onClick={() => shiftItem(g.uid, it.uid, -1)} disabled={ii === 0}>↑</IconBtn>
-                                <IconBtn label={t('nv.down')} onClick={() => shiftItem(g.uid, it.uid, 1)} disabled={ii === g.items.length - 1}>↓</IconBtn>
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 ps-8 text-xs text-gray-600">
-                            <label className="flex items-center gap-2"><Switch on={it.isActive} onChange={(v) => setI(g.uid, it.uid, { isActive: v })} label={t('nv.visible')} disabled={!edit} />{t('nv.visible')}</label>
-                            <label className="flex items-center gap-1.5"><input type="checkbox" disabled={!edit} checked={it.newTab} onChange={(e) => setI(g.uid, it.uid, { newTab: e.target.checked })} className="accent-primary" />{t('nv.newTab')}</label>
-                            {edit && groups.length > 1 && (
-                              <label className="flex items-center gap-1.5">{t('nv.moveTo')}
-                                <select value={g.uid} onChange={(e) => moveItem(g.uid, it.uid, e.target.value, null)} className="rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-primary">
-                                  {groups.map((x) => <option key={x.uid} value={x.uid}>{x.titleAr.trim() || '—'}</option>)}
-                                </select>
-                              </label>
-                            )}
-                            {edit && <button type="button" onClick={() => delItem(g.uid, it.uid)} className="ms-auto rounded-lg px-2 py-1 text-red-600 transition hover:bg-red-50">✕ {t('nv.delete')}</button>}
-                          </div>
+                          )}
                         </div>
                       );
                     })}
-                    {edit && <button type="button" onClick={() => addItem(g.uid)} className="w-full rounded-xl border border-dashed border-primary/40 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5">＋ {t('nv.addLink')}</button>}
                   </div>
                 </section>
               );
             })}
           </div>
 
-          <datalist id="nav-known-urls">{KNOWN.map((u) => <option key={u} value={u} />)}</datalist>
 
           {/* unsaved changes bar */}
           {edit && dirty && (
@@ -315,13 +284,6 @@ export function NavAdmin() {
         </>
       )}
 
-      <Modal open={!!confirm} onClose={() => setConfirm(null)} title={t('nv.deleteGroup')}>
-        <p className="mb-5">{t('nv.deleteGroupMsg')}</p>
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => setConfirm(null)}>{t('app.cancel')}</Button>
-          <Button type="button" variant="danger" onClick={() => { if (confirm) delGroup(confirm); setConfirm(null); }}>{t('app.delete')}</Button>
-        </div>
-      </Modal>
     </RequirePerm>
   );
 }

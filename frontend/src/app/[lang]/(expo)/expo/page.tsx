@@ -47,7 +47,7 @@ export default function ExpoHome() {
         </div>
       </section>
 
-      <section className="mx-auto -mt-8 grid max-w-5xl grid-cols-2 gap-3 px-4 md:grid-cols-4" aria-label={t('ex.stats')}>
+      <section className="relative z-10 mx-auto -mt-8 grid max-w-5xl grid-cols-2 gap-3 px-4 md:grid-cols-4" aria-label={t('ex.stats')}>
         {stats.map(([n, l]) => (
           <div key={l} className="rounded-2xl bg-white p-5 text-center shadow-card ring-1 ring-line">
             <div className="text-3xl font-extrabold text-primary">{n}</div>

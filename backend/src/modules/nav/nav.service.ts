@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { AuthUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
 import { SaveNavDto } from './nav.dto';
 import { NavGroup, NavItem } from './nav.entity';
+
+type LinkLike = { titleAr: string; titleEn?: string | null; url: string; isActive?: boolean; newTab?: boolean };
+/** identity of a link: everything the editor is NOT allowed to change */
+const linkKey = (i: LinkLike) => [i.titleAr.trim(), (i.titleEn ?? '').trim(), i.url.trim(), i.isActive ?? true, i.newTab ?? false].join('\u0001');
 
 @Injectable()
 export class NavService {
@@ -34,8 +38,17 @@ export class NavService {
     };
   }
 
-  /** Replaces the stored menu with the submitted one (same order), in one transaction. */
+  /**
+   * Replaces the stored menu with the submitted one (same order), in one transaction. The dropdowns can be added, renamed, reordered and
+   * deleted, and the links can be moved between them and reordered, but the set of links itself cannot change here: a link is added by the
+   * migration of the page it points to, so a menu saved from the editor can never gain, lose or rewrite one.
+   */
   async save(dto: SaveNavDto, actor: AuthUser) {
+    const stored = (await this.items.find()).map(linkKey).sort();
+    const sent = dto.groups.flatMap((g) => g.items).map(linkKey).sort();
+    if (stored.length !== sent.length || stored.some((k, i) => k !== sent[i])) {
+      throw new BadRequestException('لا يمكن إضافة الروابط أو تعديلها أو حذفها من هنا، ويمكن فقط نقلها بين القوائم وترتيبها. انقل روابط القائمة قبل حذفها.');
+    }
     await this.ds.transaction(async (m) => {
       await m.createQueryBuilder().delete().from(NavItem).execute();
       await m.createQueryBuilder().delete().from(NavGroup).execute();

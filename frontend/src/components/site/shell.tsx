@@ -6,7 +6,6 @@ import { fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
-import { NAV_EXPO } from '@/lib/nav';
 import { useNavGroups } from './use-nav';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
@@ -32,7 +31,7 @@ function NavTrigger({ children }: { children: React.ReactNode }) {
  */
 let closedByClick = false;
 
-function Dropdown({ label, trigger, panelClass, children }: { label: string; trigger: React.ReactNode; panelClass: string; children: React.ReactNode }) {
+function Dropdown({ label, trigger, panelClass, children, mobileChildren }: { label: string; trigger: React.ReactNode; panelClass: string; children: React.ReactNode; mobileChildren?: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dismissed, setDismissed] = useState(() => closedByClick);
   const panelId = useId();
@@ -73,7 +72,7 @@ function Dropdown({ label, trigger, panelClass, children }: { label: string; tri
         </button>
         <div id={panelId} data-open={mobileOpen} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
           <div className="min-h-0 overflow-hidden xl:contents">
-            <div onClickCapture={(e) => { if (!(e.target as HTMLElement).closest('[data-keep-open]')) dismiss(); }} className="mt-1 w-full rounded-2xl border border-line bg-white p-1.5 shadow-card">{children}</div>
+            <div onClickCapture={(e) => { if (!(e.target as HTMLElement).closest('[data-keep-open]')) dismiss(); }} className="mt-1 w-full rounded-2xl border border-line bg-white p-1.5 shadow-card">{mobileChildren ?? children}</div>
           </div>
         </div>
       </div>
@@ -109,39 +108,65 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
 }
 
 /**
- * The single permission-based dropdown (Content / Tools / Settings & security as sub-dropdowns). A group opens inline under its
- * title (one at a time, or at once when it is the only one); the whole panel scrolls after 8 rows. Items still appear only for
- * holders of their permission (UI hint only - the API enforces every permission).
+ * The Admin dropdown (Content / Tools as sub-dropdowns). On large screens each sub-dropdown opens beside the panel (to the right in
+ * Arabic, to the left in English, so it never runs off the screen) while the pointer or keyboard focus is on its row; on small screens
+ * the groups collapse as an accordion (one at a time, or at once when there is only one). Every sub-dropdown shows at most 8 rows
+ * and scrolls after that. Items appear only for holders of their permission (UI hint only - the API enforces every permission).
  */
 function AdminMenu({ label, groups, href }: { label: string; groups: AdminGroup[]; href: (p: string) => string }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null); // small screens only
   const shown = groups.map((g) => ({ ...g, items: g.items.filter((i) => i.show) })).filter((g) => g.items.length > 0);
   if (shown.length === 0) return null;
   const current = shown.length === 1 ? shown[0].key : open;
-  return (
-    <Dropdown label={label} trigger={<NavTrigger>{label}</NavTrigger>} panelClass="start-0 min-w-60">
-      <div className={SCROLL_PANEL}>
-        {shown.map((g) => {
-          const on = current === g.key;
-          return (
-            <div key={g.key}>
-              <button
-                type="button"
-                data-keep-open
-                aria-expanded={on}
-                onClick={() => setOpen(on ? null : g.key)}
-                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-start text-sm font-bold transition hover:bg-primary/10 hover:text-primary ${on ? 'bg-primary/10 text-primary' : 'text-secondary'}`}
-              >
-                <span>{g.label}</span>
-                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`shrink-0 transition-transform duration-200 ${on ? 'rotate-180' : ''}`}><path d="m3 6 5 5 5-5" /></svg>
-              </button>
-              {on && <div className="mb-1 ms-3 border-s-2 border-accent/50 ps-1">{g.items.map((i) => <NavLink key={i.to} item={i} href={href} />)}</div>}
+
+  const desktop = (
+    <div>
+      {shown.map((g) => (
+        <div key={g.key} className="group/sub relative">
+          <button
+            type="button"
+            aria-haspopup="true"
+            data-keep-open
+            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-start text-sm font-bold text-secondary transition hover:bg-primary/10 hover:text-primary group-hover/sub:bg-primary/10 group-hover/sub:text-primary group-focus-within/sub:bg-primary/10 group-focus-within/sub:text-primary"
+          >
+            <span>{g.label}</span>
+            {/* points toward the side the sub-dropdown opens on */}
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 rtl:rotate-180"><path d="m10 3-5 5 5 5" /></svg>
+          </button>
+          <div className="invisible absolute end-full top-0 z-50 pe-1 opacity-0 transition-[opacity,visibility] duration-150 group-hover/sub:visible group-hover/sub:opacity-100 group-focus-within/sub:visible group-focus-within/sub:opacity-100">
+            <div className="min-w-56 rounded-2xl bg-white p-2 shadow-lift ring-1 ring-line">
+              <div className={SCROLL_PANEL}>{g.items.map((i) => <NavLink key={i.to} item={i} href={href} />)}</div>
             </div>
-          );
-        })}
-      </div>
-    </Dropdown>
+          </div>
+        </div>
+      ))}
+    </div>
   );
+
+  const mobile = (
+    <div className={SCROLL_PANEL}>
+      {shown.map((g) => {
+        const on = current === g.key;
+        return (
+          <div key={g.key}>
+            <button
+              type="button"
+              data-keep-open
+              aria-expanded={on}
+              onClick={() => setOpen(on ? null : g.key)}
+              className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-start text-sm font-bold transition hover:bg-primary/10 hover:text-primary ${on ? 'bg-primary/10 text-primary' : 'text-secondary'}`}
+            >
+              <span>{g.label}</span>
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`shrink-0 transition-transform duration-200 ${on ? 'rotate-180' : ''}`}><path d="m3 6 5 5 5-5" /></svg>
+            </button>
+            {on && <div className="mb-1 ms-3 border-s-2 border-accent/50 ps-1">{g.items.map((i) => <NavLink key={i.to} item={i} href={href} />)}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return <Dropdown label={label} trigger={<NavTrigger>{label}</NavTrigger>} panelClass="start-0 min-w-52" mobileChildren={mobile}>{desktop}</Dropdown>;
 }
 
 function SocialLinks() {
@@ -347,11 +372,9 @@ export function Navbar() {
 
           <a href={contactHref} className="w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold text-ink/80 transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto">{t('contact.title')}</a>
 
-          {NAV_EXPO.ready && (
-            <Link href={href(NAV_EXPO.to)} className="w-full rounded-full bg-gradient-to-r from-primary to-accent px-4 py-2 text-center text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift xl:w-auto">{t(NAV_EXPO.label)}</Link>
-          )}
 
-          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
+          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }]} href={href} />}
+          {me && <NavDropdown label={t('adm.security')} items={securityItems} href={href} />}
 
           {me && (
             <div className="flex flex-col gap-1 xl:hidden">

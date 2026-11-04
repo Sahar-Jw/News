@@ -1,6 +1,6 @@
 /**
  * Main navigation (document section 7.1): the 16 destinations grouped in 5 dropdowns + Home + Contact,
- * with DCC EXPO as a highlighted button. An item is shown only when `ready` is true, so the menu never
+ * DCC EXPO being one of the links. An item is shown only when `ready` is true, so the menu never
  * links to a page that does not exist yet: the patch that adds a page flips its flag to true.
  * `to` is a site path without the language prefix; `label` is a key of the i18n dictionary.
  */
@@ -55,9 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'nav.exhibitions', to: '/occasions/previous', ready: true },
       { label: 'nav.agenda', to: '/occasions/upcoming', ready: true },
+      { label: 'nav.expo', to: '/expo', ready: true },
     ],
   },
 ];
-
-/** The highlighted button next to the groups. */
-export const NAV_EXPO: NavLeaf = { label: 'nav.expo', to: '/expo', ready: true };

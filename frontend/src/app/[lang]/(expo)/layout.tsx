@@ -37,6 +37,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
             {links.map(([to, k]) => <Link key={to} href={href(to)} className={`rounded-full px-3 py-1.5 text-sm font-semibold transition hover:bg-white/15 ${active(to) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{t(k)}</Link>)}
           </nav>
           <div className="flex items-center gap-2">
+            <Link href={href('/')} title={t('ex.backToChamber')} className="hidden items-center gap-1 rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 md:inline-flex"><span aria-hidden="true" className="rtl:rotate-180">←</span>{t('ex.backToChamber')}</Link>
             {x.registerOpen && <Link href={href('/expo/register')} className="hidden rounded-full bg-accent px-4 py-2 text-sm font-extrabold text-secondary shadow transition hover:brightness-110 sm:inline-block">{t('ex.registerExhibitor')}</Link>}
             <Link href={otherLangHref(pathname)} onClick={() => { try { localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar'); } catch {} }} className="rounded-full border border-white/30 px-3 py-1.5 text-xs font-bold hover:bg-white/15">{t('site.language')}</Link>
             <button type="button" aria-label="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-lg border border-white/30 px-2.5 py-1.5 text-lg leading-none lg:hidden">☰</button>
@@ -45,6 +46,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
         {open && (
           <nav className="border-t border-white/15 px-4 pb-3 lg:hidden" onClick={() => setOpen(false)}>
             {links.map(([to, k]) => <Link key={to} href={href(to)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{t(k)}</Link>)}
+            <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10">← {t('ex.backToChamber')}</Link>
             <Link href={href('/expo/register')} className="mt-2 block rounded-full bg-accent px-4 py-2 text-center text-sm font-extrabold text-secondary">{t('ex.registerExhibitor')}</Link>
           </nav>
         )}
