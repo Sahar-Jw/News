@@ -88,6 +88,7 @@ const HOME_SECTION_AR: Record<string, string> = {
   contact: 'تواصل معنا',
   shortcuts: 'اختصارات سريعة',
   agenda: 'أجندة الغرفة',
+  women: 'لجنة سيدات الأعمال',
   gallery: 'معرض الصور',
 };
 

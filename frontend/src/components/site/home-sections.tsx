@@ -76,11 +76,20 @@ export function AgendaSection({ code, title }: { code: string; title: string }) 
   }, [lang]);
   const promoTitle = loc('promo', 'title'), promoText = loc('promo', 'text'), promoButton = loc('promo', 'button');
   const promoLink = String(s('promo', 'link') ?? '').trim(), promoImage = img('promo', 'image');
+  // DCC EXPO banner (wireframe P1): always beside the agenda. The "promo" settings, when filled, replace its content.
   const hasPromo = !!promoTitle;
-  if (items === null || (items.length === 0 && !hasPromo)) return null;
+  const expoName = loc('expo', 'name') || 'DCC EXPO';
+  const expoTagline = loc('expo', 'tagline');
+  const expoVenue = loc('expo', 'venue');
+  const expoStart = String(s('expo', 'start_date') ?? ''), expoEnd = String(s('expo', 'end_date') ?? '');
+  const expoDates = expoStart ? (expoEnd && expoEnd !== expoStart ? `${fmtDay(lang, expoStart)} – ${fmtDay(lang, expoEnd)}` : fmtDay(lang, expoStart)) : '';
+  const expoImage = img('expo', 'hero_image');
+  const expoFrom = String(s('expo', 'primary_color') ?? '') || '#4b1d7a', expoAccent = String(s('expo', 'accent_color') ?? '') || '#c9a227';
+  if (items === null) return null;
+  const bannerCls = 'relative flex min-h-[200px] flex-col justify-center overflow-hidden rounded-2xl p-6 text-white shadow-card';
   return (
     <SectionWrap code={code} title={title} action={items.length ? <Link href={href('/occasions/upcoming')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link> : undefined}>
-      <div className={`grid gap-5 ${hasPromo && items.length ? 'lg:grid-cols-2' : ''}`}>
+      <div className={`grid gap-5 ${items.length ? 'lg:grid-cols-2' : ''}`}>
         {items.length > 0 && (
           <ul className="space-y-3">
             {items.map((o) => (
@@ -96,14 +105,100 @@ export function AgendaSection({ code, title }: { code: string; title: string }) 
             ))}
           </ul>
         )}
-        {hasPromo && (
-          <div className="relative flex min-h-[200px] flex-col justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-primary p-6 text-white shadow-card">
+        {hasPromo ? (
+          <div className={`${bannerCls} bg-gradient-to-br from-secondary to-primary`}>
             {promoImage && <img src={promoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
             <div className="relative">
               <h3 className="text-2xl font-extrabold leading-tight">{promoTitle}</h3>
               {promoText && <p className="mt-2 max-w-md text-sm leading-7 text-white/85">{promoText}</p>}
               {promoLink && promoButton && <SmartLink link={promoLink} className="mt-4 inline-block rounded-full bg-accent px-5 py-2 text-sm font-bold text-secondary transition hover:brightness-110">{promoButton}</SmartLink>}
             </div>
+          </div>
+        ) : (
+          <Link href={href('/expo')} className={`${bannerCls} group`} style={{ backgroundImage: `linear-gradient(135deg, ${expoFrom}, ${expoFrom}d9)` }}>
+            {expoImage && <img src={expoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30 transition duration-500 group-hover:scale-105" />}
+            <div className="relative">
+              <span className="inline-block rounded-full px-3 py-1 text-xs font-bold text-secondary" style={{ backgroundColor: expoAccent }}>{expoDates || t('home.expoSoon')}</span>
+              <h3 className="mt-3 text-3xl font-extrabold leading-tight">{expoName}</h3>
+              {expoTagline && <p className="mt-1 text-base text-white/90">{expoTagline}</p>}
+              {expoVenue && <p className="mt-2 text-sm text-white/75">{expoVenue}</p>}
+              <span className="mt-4 inline-block rounded-full px-5 py-2 text-sm font-bold text-secondary transition group-hover:brightness-110" style={{ backgroundColor: expoAccent }}>{t('home.expoCta')} →</span>
+            </div>
+          </Link>
+        )}
+      </div>
+    </SectionWrap>
+  );
+}
+
+interface WomenAct { id: number; kind: string; title: string; body?: string; eventDate?: string | null }
+interface WomenData { name: string; summary: string; tags: string[]; meetings: WomenAct[]; initiatives: WomenAct[]; recommendations: WomenAct[] }
+
+/**
+ * Businesswomen committee slider (own rose / charcoal theme from the committee's logo file).
+ * Slide 1 is the committee card (logo, tagline); the next slides are its latest activities. Any slide opens the committee page.
+ */
+export function WomenCommitteeSection({ code, title }: { code: string; title: string }) {
+  const { lang, t, href } = useI18n();
+  const [d, setD] = useState<WomenData | null | undefined>(undefined);
+  const [i, setI] = useState(0);
+  const [hover, setHover] = useState(false);
+  useEffect(() => {
+    api<WomenData>('/public/committees/women', { params: { lang }, cache: 'no-store' }).then(setD).catch(() => setD(null));
+  }, [lang]);
+  const acts = useMemo(() => (d ? [...d.initiatives, ...d.meetings].slice(0, 4) : []), [d]);
+  const count = 1 + acts.length;
+  useEffect(() => {
+    if (count < 2 || hover) return;
+    const h = setInterval(() => setI((x) => (x + 1) % count), 6000);
+    return () => clearInterval(h);
+  }, [count, hover]);
+  if (!d) return null;
+  const to = href('/committees/women');
+  const ROSE = '#C7878D', DARK = '#231F20';
+  const go = (n: number) => setI((n + count) % count);
+  return (
+    <SectionWrap code={code} title={title}>
+      <div
+        className="relative overflow-hidden rounded-3xl shadow-card"
+        style={{ backgroundColor: DARK, color: '#fff' }}
+        onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      >
+        <div className="pointer-events-none absolute -top-24 end-[-4rem] h-72 w-72 rounded-full opacity-20 blur-2xl" style={{ backgroundColor: ROSE }} aria-hidden="true" />
+        <div className="relative min-h-[260px]">
+          {i === 0 ? (
+            <Link href={to} className="grid items-center gap-6 p-6 md:grid-cols-[auto,1fr] md:p-10">
+              <img src="/brand/women-committee-icon.svg" alt={d.name} className="mx-auto h-36 w-auto md:h-44" />
+              <div className="text-center md:text-start">
+                <h3 className="text-2xl font-extrabold leading-tight md:text-3xl">{d.name}</h3>
+                <p className="mt-2 text-base font-semibold" style={{ color: ROSE }}>{t('women.tagline')}</p>
+                {d.summary && <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-7 text-white/75">{d.summary}</p>}
+                <span className="mt-5 inline-block rounded-full px-6 py-2 text-sm font-bold" style={{ backgroundColor: ROSE, color: DARK }}>{t('women.cta')} →</span>
+              </div>
+            </Link>
+          ) : (
+            (() => {
+              const a = acts[i - 1];
+              return (
+                <Link href={to} className="flex h-full min-h-[260px] flex-col justify-center gap-3 p-6 md:p-10">
+                  <span className="inline-block w-fit rounded-full px-3 py-1 text-xs font-bold" style={{ backgroundColor: ROSE, color: DARK }}>
+                    {a.eventDate ? fmtDay(lang, a.eventDate) : d.name}
+                  </span>
+                  <h3 className="max-w-3xl text-xl font-extrabold leading-snug md:text-2xl">{a.title}</h3>
+                  {a.body && <p className="line-clamp-3 max-w-3xl text-sm leading-7 text-white/75">{a.body}</p>}
+                  <span className="mt-2 text-sm font-bold" style={{ color: ROSE }}>{t('women.cta')} →</span>
+                </Link>
+              );
+            })()
+          )}
+        </div>
+        {count > 1 && (
+          <div className="relative flex items-center justify-center gap-3 pb-4">
+            <button type="button" aria-label="‹" onClick={() => go(i - 1)} className="h-7 w-7 rounded-full text-sm ring-1 ring-white/30 hover:bg-white/10">‹</button>
+            {Array.from({ length: count }).map((_, n) => (
+              <button key={n} type="button" aria-label={String(n + 1)} onClick={() => setI(n)} className="h-2 rounded-full transition-all" style={{ width: n === i ? 24 : 8, backgroundColor: n === i ? ROSE : 'rgba(255,255,255,.35)' }} />
+            ))}
+            <button type="button" aria-label="›" onClick={() => go(i + 1)} className="h-7 w-7 rounded-full text-sm ring-1 ring-white/30 hover:bg-white/10">›</button>
           </div>
         )}
       </div>

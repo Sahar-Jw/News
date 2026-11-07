@@ -72,6 +72,7 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'featured', titleAr: 'الأخبار المميزة', titleEn: 'Featured News' },
   { code: 'news', titleAr: 'آخر الأخبار', titleEn: 'Latest News' },
   { code: 'agenda', titleAr: 'أجندة الغرفة', titleEn: 'Chamber agenda' },
+  { code: 'women', titleAr: 'لجنة سيدات الأعمال', titleEn: 'Women Business Committee' },
   { code: 'gallery', titleAr: 'معرض الصور', titleEn: 'Photo gallery' },
   { code: 'team', titleAr: 'فريقنا', titleEn: 'Our Team' },
   { code: 'services', titleAr: 'خدماتنا', titleEn: 'Our Services' },
