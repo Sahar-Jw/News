@@ -1,29 +1,50 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
+import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
-import { applyColumnFilters } from '../../common/utils/column-filters';
-import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentLinksService } from '../content-links/content-links.service';
+import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
+import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { Gallery } from '../gallery/gallery.entity';
 import { News } from '../news/news.entity';
 import { applyEligibility } from '../news/news.eligibility';
-import { ActivityKind, Committee, CommitteeActivity, CommitteeKind, CommitteeMember, MEMBER_ROLES, MemberRole } from './committee.entity';
+import { ActivityKind, CommitteeKind, MEMBER_ROLES, MemberRole } from './committee.entity';
 import { CommitteeAdminQueryDto, CreateActivityDto, CreateCommitteeDto, CreateMemberDto, UpdateActivityDto, UpdateCommitteeDto, UpdateMemberDto } from './committees.dto';
 
 const tags = (v: string | null) => (v ?? '').split(/[,،\n]/).map((x) => x.trim()).filter(Boolean);
 const today = () => new Date().toISOString().slice(0, 10);
 
+const COMMITTEE_CODES = [CC.COMMITTEE, CC.WOMEN_COMMITTEE] as string[];
+const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE : CC.COMMITTEE);
+const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
+const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_INITIATIVE] as string[];
+const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
+const activityKind = (code: string) => code.replace(/^COMMITTEE_/, '').toLowerCase() as ActivityKind;
+
+/** newest first, undated activities first (what ORDER BY event_date DESC does in PostgreSQL), then newest id first */
+const newestFirst = (a: { eventDate: string | null; id: number }, b: { eventDate: string | null; id: number }) => {
+  if (a.eventDate !== b.eventDate) {
+    if (a.eventDate === null) return -1;
+    if (b.eventDate === null) return 1;
+    return a.eventDate < b.eventDate ? 1 : -1;
+  }
+  return b.id - a.id;
+};
+
+/**
+ * Committees: every part is a news row. A committee is COMMITTEE (or WOMEN_COMMITTEE for the businesswomen one); its members are
+ * COMMITTEE_MEMBER rows and its meetings / visits / recommendations / initiatives COMMITTEE_MEETING ... rows, each pointing to the
+ * committee through `extra.parentId`. Linked news (content_links) and photo albums (galleries.committee_id) point to the committee's news id.
+ */
 @Injectable()
 export class CommitteesService {
   constructor(
-    @InjectRepository(Committee) private readonly repo: Repository<Committee>,
-    @InjectRepository(CommitteeMember) private readonly members: Repository<CommitteeMember>,
-    @InjectRepository(CommitteeActivity) private readonly activities: Repository<CommitteeActivity>,
+    private readonly store: ContentStore,
     @InjectRepository(News) private readonly news: Repository<News>,
     @InjectRepository(Gallery) private readonly galleries: Repository<Gallery>,
     private readonly links: ContentLinksService,
@@ -32,66 +53,68 @@ export class CommitteesService {
   ) {}
 
   // ---------------------------------------------------------------- presenters
-  present(c: Committee) {
+  private view(r: Rec) {
     return {
-      id: c.id, kind: c.kind, nameAr: c.nameAr, nameEn: c.nameEn ?? '', summaryAr: c.summaryAr ?? '', summaryEn: c.summaryEn ?? '',
-      dutiesAr: c.dutiesAr ?? '', dutiesEn: c.dutiesEn ?? '', chairNameAr: c.chairNameAr ?? '', chairNameEn: c.chairNameEn ?? '',
-      activityTagsAr: c.activityTagsAr ?? '', activityTagsEn: c.activityTagsEn ?? '', logoUrl: this.storage.url(c.logo),
-      sortOrder: c.sortOrder, isActive: c.isActive, createdAt: c.createdAt, updatedAt: c.updatedAt,
+      id: r.id, kind: kindOfCode(r.code), nameAr: r.title, nameEn: s(r.x.nameEn), summaryAr: r.body ?? '', summaryEn: s(r.x.summaryEn),
+      dutiesAr: s(r.x.dutiesAr), dutiesEn: s(r.x.dutiesEn), chairNameAr: s(r.x.chairNameAr), chairNameEn: s(r.x.chairNameEn),
+      activityTagsAr: s(r.x.activityTagsAr), activityTagsEn: s(r.x.activityTagsEn), logo: r.images[0] ?? null, logoUrl: this.storage.url(r.images[0] ?? null),
+      sortOrder: sortOf(r), isActive: isActive(r), createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
   }
-  presentMember(m: CommitteeMember) {
-    return { id: m.id, committeeId: m.committeeId, role: m.role, nameAr: m.nameAr, nameEn: m.nameEn ?? '', titleAr: m.titleAr ?? '', titleEn: m.titleEn ?? '', photoUrl: this.storage.url(m.photo), sortOrder: m.sortOrder };
+  present(r: Rec) {
+    const { logo, ...v } = this.view(r);
+    void logo;
+    return v;
   }
-  presentActivity(a: CommitteeActivity) {
-    return { id: a.id, committeeId: a.committeeId, kind: a.kind, titleAr: a.titleAr, titleEn: a.titleEn ?? '', bodyAr: a.bodyAr ?? '', bodyEn: a.bodyEn ?? '', eventDate: a.eventDate };
+  private memberView(r: Rec) {
+    return { id: r.id, committeeId: Number(r.x.parentId), role: (r.x.role ?? 'member') as MemberRole, nameAr: r.title, nameEn: s(r.x.nameEn), titleAr: s(r.x.titleAr), titleEn: s(r.x.titleEn), photoUrl: this.storage.url(r.images[0] ?? null), sortOrder: sortOf(r) };
+  }
+  private activityView(r: Rec) {
+    return { id: r.id, committeeId: Number(r.x.parentId), kind: activityKind(r.code), titleAr: r.title, titleEn: s(r.x.titleEn), bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn), eventDate: (r.x.eventDate ?? null) as string | null };
   }
 
   private async mustFind(id: number) {
-    const c = await this.repo.findOne({ where: { id } });
+    const c = await this.store.get(id, COMMITTEE_CODES);
     if (!c) throw new NotFoundException('اللجنة غير موجودة');
     return c;
+  }
+  private async membersOf(id: number) {
+    return (await this.store.list(CC.COMMITTEE_MEMBER)).filter((m) => Number(m.x.parentId) === id).sort(by((m) => sortOf(m), (m) => m.id));
+  }
+  private async activitiesOf(id: number) {
+    return (await this.store.list(ACTIVITY_CODES)).filter((a) => Number(a.x.parentId) === id).map((a) => ({ r: a, v: this.activityView(a) })).sort((a, b) => newestFirst(a.v, b.v));
   }
 
   // ---------------------------------------------------------------- admin: committees
   async list(q: CommitteeAdminQueryDto) {
-    const p = adminPage(q);
-    const qb = this.repo.createQueryBuilder('c');
-    if (q.kind) qb.andWhere('c.kind = :kind', { kind: q.kind });
-    if (q.q) {
-      const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.nameAr ILIKE :like', { like }).orWhere('c.nameEn ILIKE :like', { like }).orWhere('c.chairNameAr ILIKE :like', { like })));
-    }
-    applyColumnFilters(qb, q.cf, { nameAr: 'c.nameAr', nameEn: 'c.nameEn', chairNameAr: 'c.chairNameAr' });
-    qb.orderBy('c.sortOrder', 'ASC').addOrderBy('c.id', 'ASC');
-    const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
-    return paged(rows.map((r) => this.present(r)), total, p);
+    let rows = (await this.store.list(q.kind ? committeeCode(q.kind) : COMMITTEE_CODES)).map((r) => this.view(r));
+    if (q.q) rows = rows.filter((c) => matches([c.nameAr, c.nameEn, c.chairNameAr], q.q!));
+    rows = filterByCf(rows, q.cf, { nameAr: (c) => [c.nameAr], nameEn: (c) => [c.nameEn], chairNameAr: (c) => [c.chairNameAr] });
+    rows.sort(by((c) => c.sortOrder, (c) => c.id));
+    return pageRows(rows, q, ({ logo, ...c }) => (void logo, c));
   }
 
   /** Everything the admin editor needs for one committee. */
   async full(id: number) {
     const c = await this.mustFind(id);
-    const [members, activities, newsIds] = await Promise.all([
-      this.members.find({ where: { committeeId: id }, order: { sortOrder: 'ASC', id: 'ASC' } }),
-      this.activities.find({ where: { committeeId: id }, order: { eventDate: 'DESC', id: 'DESC' } }),
-      this.links.newsIdsOf('committee', id),
-    ]);
+    const [members, activities, newsIds] = await Promise.all([this.membersOf(id), this.activitiesOf(id), this.links.newsIdsOf('committee', id)]);
     const linked = newsIds.length ? await this.news.find({ where: { id: In(newsIds) }, select: ['id', 'title', 'publishAt'], order: { publishAt: 'DESC' } }) : [];
-    return { ...this.present(c), members: members.map((m) => this.presentMember(m)), activities: activities.map((a) => this.presentActivity(a)), news: linked.map((n) => ({ id: n.id, title: n.title, publishAt: n.publishAt })) };
+    return { ...this.present(c), members: members.map((m) => this.memberView(m)), activities: activities.map((a) => a.v), news: linked.map((n) => ({ id: n.id, title: n.title, publishAt: n.publishAt })) };
   }
 
   async create(dto: CreateCommitteeDto, logo: Express.Multer.File | undefined, actor: AuthUser) {
     const path = logo ? await this.storage.saveImage(logo, 'committees', 800) : null;
     try {
-      const saved = await this.repo.save(
-        this.repo.create({
-          kind: dto.kind as CommitteeKind, nameAr: dto.nameAr.trim(), nameEn: dto.nameEn?.trim() || null, summaryAr: dto.summaryAr?.trim() || null, summaryEn: dto.summaryEn?.trim() || null,
-          dutiesAr: sanitizeRichText(dto.dutiesAr), dutiesEn: sanitizeRichText(dto.dutiesEn), chairNameAr: dto.chairNameAr?.trim() || null, chairNameEn: dto.chairNameEn?.trim() || null,
-          activityTagsAr: dto.activityTagsAr?.trim() || null, activityTagsEn: dto.activityTagsEn?.trim() || null, logo: path, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true,
-        }),
-      );
-      await this.audit.log({ category: 'committees', action: 'create', description: `إضافة لجنة: ${saved.nameAr}`, actorId: actor.id, entityType: 'committees', entityId: saved.id });
-      return this.present(saved);
+      const r = await this.store.create(committeeCode(dto.kind), {
+        title: dto.nameAr.trim(), body: dto.summaryAr?.trim() || null, images: path ? [path] : [],
+        x: {
+          nameEn: dto.nameEn?.trim() || null, summaryEn: dto.summaryEn?.trim() || null, dutiesAr: sanitizeRichText(dto.dutiesAr), dutiesEn: sanitizeRichText(dto.dutiesEn),
+          chairNameAr: dto.chairNameAr?.trim() || null, chairNameEn: dto.chairNameEn?.trim() || null, activityTagsAr: dto.activityTagsAr?.trim() || null, activityTagsEn: dto.activityTagsEn?.trim() || null,
+          sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true,
+        },
+      });
+      await this.audit.log({ category: 'committees', action: 'create', description: `إضافة لجنة: ${r.title}`, actorId: actor.id, entityType: 'committees', entityId: r.id });
+      return this.present(r);
     } catch (e) {
       await this.storage.remove(path);
       throw e;
@@ -99,29 +122,23 @@ export class CommitteesService {
   }
 
   async update(id: number, dto: UpdateCommitteeDto, logo: Express.Multer.File | undefined, actor: AuthUser) {
-    const c = await this.mustFind(id);
+    const cur = await this.mustFind(id);
     const newPath = logo ? await this.storage.saveImage(logo, 'committees', 800) : null;
-    const oldPath = c.logo;
+    const oldPath = cur.images[0] ?? null;
     try {
-      if (dto.kind !== undefined) c.kind = dto.kind as CommitteeKind;
-      if (dto.nameAr !== undefined) c.nameAr = dto.nameAr.trim();
-      if (dto.nameEn !== undefined) c.nameEn = dto.nameEn?.trim() || null;
-      if (dto.summaryAr !== undefined) c.summaryAr = dto.summaryAr?.trim() || null;
-      if (dto.summaryEn !== undefined) c.summaryEn = dto.summaryEn?.trim() || null;
-      if (dto.dutiesAr !== undefined) c.dutiesAr = sanitizeRichText(dto.dutiesAr);
-      if (dto.dutiesEn !== undefined) c.dutiesEn = sanitizeRichText(dto.dutiesEn);
-      if (dto.chairNameAr !== undefined) c.chairNameAr = dto.chairNameAr?.trim() || null;
-      if (dto.chairNameEn !== undefined) c.chairNameEn = dto.chairNameEn?.trim() || null;
-      if (dto.activityTagsAr !== undefined) c.activityTagsAr = dto.activityTagsAr?.trim() || null;
-      if (dto.activityTagsEn !== undefined) c.activityTagsEn = dto.activityTagsEn?.trim() || null;
-      if (dto.sortOrder !== undefined) c.sortOrder = dto.sortOrder;
-      if (dto.isActive !== undefined) c.isActive = dto.isActive;
-      if (newPath) c.logo = newPath;
-      else if (dto.removeLogo) c.logo = null;
-      const saved = await this.repo.save(c);
-      await this.audit.log({ category: 'committees', action: 'update', description: `تعديل لجنة: ${saved.nameAr}`, actorId: actor.id, entityType: 'committees', entityId: id });
-      if (oldPath && oldPath !== saved.logo) await this.storage.remove(oldPath);
-      return this.present(saved);
+      const nz = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+      const rich = (v: string | null | undefined) => (v === undefined ? undefined : sanitizeRichText(v));
+      const r = await this.store.update(id, {
+        code: dto.kind !== undefined ? committeeCode(dto.kind) : undefined, title: dto.nameAr?.trim(), body: nz(dto.summaryAr),
+        images: newPath ? [newPath] : dto.removeLogo ? [] : undefined,
+        x: {
+          nameEn: nz(dto.nameEn), summaryEn: nz(dto.summaryEn), dutiesAr: rich(dto.dutiesAr), dutiesEn: rich(dto.dutiesEn), chairNameAr: nz(dto.chairNameAr), chairNameEn: nz(dto.chairNameEn),
+          activityTagsAr: nz(dto.activityTagsAr), activityTagsEn: nz(dto.activityTagsEn), sortOrder: dto.sortOrder, isActive: dto.isActive,
+        },
+      });
+      await this.audit.log({ category: 'committees', action: 'update', description: `تعديل لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committees', entityId: id });
+      if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
+      return this.present(r!);
     } catch (e) {
       await this.storage.remove(newPath);
       throw e;
@@ -134,13 +151,14 @@ export class CommitteesService {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) } });
+    const all = await this.store.list(COMMITTEE_CODES);
+    const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض اللجان غير موجودة'); // nothing is deleted
-    const memberRows = await this.members.find({ where: { committeeId: In(unique) } });
-    await this.repo.delete({ id: In(unique) }); // members and activities go with it (ON DELETE CASCADE)
+    const parts = (await this.store.list([CC.COMMITTEE_MEMBER, ...ACTIVITY_CODES])).filter((p) => unique.includes(Number(p.x.parentId)));
+    await this.store.remove([...unique, ...parts.map((p) => p.id)]); // members and activities go with it
     await this.links.removeAllOf('committee', unique);
-    await this.storage.removeMany([...rows.map((r) => r.logo), ...memberRows.map((m) => m.photo)]);
-    await this.audit.log({ category: 'committees', action: 'delete', description: `حذف ${rows.length} من اللجان`, actorId: actor.id, entityType: 'committees', details: { ids: unique }, changes: removedChanges('committees', rows) });
+    await this.storage.removeMany([...rows.map((r) => r.images[0] ?? null), ...parts.map((p) => p.images[0] ?? null)]);
+    await this.audit.log({ category: 'committees', action: 'delete', description: `حذف ${rows.length} من اللجان`, actorId: actor.id, entityType: 'committees', details: { ids: unique }, changes: removedChanges('committees', rows.map((r) => this.view(r))) });
     return { deleted: rows.length };
   }
 
@@ -149,11 +167,12 @@ export class CommitteesService {
     const c = await this.mustFind(committeeId);
     const path = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
     try {
-      const saved = await this.members.save(
-        this.members.create({ committeeId, role: dto.role as MemberRole, nameAr: dto.nameAr.trim(), nameEn: dto.nameEn?.trim() || null, titleAr: dto.titleAr?.trim() || null, titleEn: dto.titleEn?.trim() || null, photo: path, sortOrder: dto.sortOrder ?? 0 }),
-      );
-      await this.audit.log({ category: 'committees', action: 'update', description: `إضافة عضو إلى لجنة ${c.nameAr}: ${saved.nameAr}`, actorId: actor.id, entityType: 'committee_members', entityId: saved.id });
-      return this.presentMember(saved);
+      const r = await this.store.create(CC.COMMITTEE_MEMBER, {
+        title: dto.nameAr.trim(), images: path ? [path] : [],
+        x: { parentId: committeeId, role: dto.role, nameEn: dto.nameEn?.trim() || null, titleAr: dto.titleAr?.trim() || null, titleEn: dto.titleEn?.trim() || null, sortOrder: dto.sortOrder ?? 0 },
+      });
+      await this.audit.log({ category: 'committees', action: 'update', description: `إضافة عضو إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_members', entityId: r.id });
+      return this.memberView(r);
     } catch (e) {
       await this.storage.remove(path);
       throw e;
@@ -161,23 +180,19 @@ export class CommitteesService {
   }
 
   async updateMember(id: number, dto: UpdateMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
-    const m = await this.members.findOne({ where: { id } });
-    if (!m) throw new NotFoundException('العضو غير موجود');
+    const cur = await this.store.get(id, CC.COMMITTEE_MEMBER);
+    if (!cur) throw new NotFoundException('العضو غير موجود');
     const newPath = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
-    const oldPath = m.photo;
+    const oldPath = cur.images[0] ?? null;
     try {
-      if (dto.role !== undefined) m.role = dto.role as MemberRole;
-      if (dto.nameAr !== undefined) m.nameAr = dto.nameAr.trim();
-      if (dto.nameEn !== undefined) m.nameEn = dto.nameEn?.trim() || null;
-      if (dto.titleAr !== undefined) m.titleAr = dto.titleAr?.trim() || null;
-      if (dto.titleEn !== undefined) m.titleEn = dto.titleEn?.trim() || null;
-      if (dto.sortOrder !== undefined) m.sortOrder = dto.sortOrder;
-      if (newPath) m.photo = newPath;
-      else if (dto.removePhoto) m.photo = null;
-      const saved = await this.members.save(m);
-      await this.audit.log({ category: 'committees', action: 'update', description: `تعديل عضو لجنة: ${saved.nameAr}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
-      if (oldPath && oldPath !== saved.photo) await this.storage.remove(oldPath);
-      return this.presentMember(saved);
+      const nz = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+      const r = await this.store.update(id, {
+        title: dto.nameAr?.trim(), images: newPath ? [newPath] : dto.removePhoto ? [] : undefined,
+        x: { role: dto.role, nameEn: nz(dto.nameEn), titleAr: nz(dto.titleAr), titleEn: nz(dto.titleEn), sortOrder: dto.sortOrder },
+      });
+      await this.audit.log({ category: 'committees', action: 'update', description: `تعديل عضو لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
+      if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
+      return this.memberView(r!);
     } catch (e) {
       await this.storage.remove(newPath);
       throw e;
@@ -185,43 +200,44 @@ export class CommitteesService {
   }
 
   async removeMember(id: number, actor: AuthUser) {
-    const m = await this.members.findOne({ where: { id } });
+    const m = await this.store.get(id, CC.COMMITTEE_MEMBER);
     if (!m) throw new NotFoundException('العضو غير موجود');
-    await this.members.delete({ id });
-    await this.storage.remove(m.photo);
-    await this.audit.log({ category: 'committees', action: 'update', description: `حذف عضو لجنة: ${m.nameAr}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
+    await this.store.remove([id]);
+    await this.storage.remove(m.images[0] ?? null);
+    await this.audit.log({ category: 'committees', action: 'update', description: `حذف عضو لجنة: ${m.title}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
     return { deleted: 1 };
   }
 
   // ---------------------------------------------------------------- admin: activities
   async addActivity(committeeId: number, dto: CreateActivityDto, actor: AuthUser) {
     const c = await this.mustFind(committeeId);
-    const saved = await this.activities.save(
-      this.activities.create({ committeeId, kind: dto.kind as ActivityKind, titleAr: dto.titleAr.trim(), titleEn: dto.titleEn?.trim() || null, bodyAr: sanitizeRichText(dto.bodyAr), bodyEn: sanitizeRichText(dto.bodyEn), eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null }),
-    );
-    await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.nameAr}: ${saved.titleAr}`, actorId: actor.id, entityType: 'committee_activities', entityId: saved.id });
-    return this.presentActivity(saved);
+    const r = await this.store.create(activityCode(dto.kind), {
+      title: dto.titleAr.trim(), body: sanitizeRichText(dto.bodyAr),
+      x: { parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn), eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null },
+    });
+    await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
+    return this.activityView(r);
   }
 
   async updateActivity(id: number, dto: UpdateActivityDto, actor: AuthUser) {
-    const a = await this.activities.findOne({ where: { id } });
-    if (!a) throw new NotFoundException('النشاط غير موجود');
-    if (dto.kind !== undefined) a.kind = dto.kind as ActivityKind;
-    if (dto.titleAr !== undefined) a.titleAr = dto.titleAr.trim();
-    if (dto.titleEn !== undefined) a.titleEn = dto.titleEn?.trim() || null;
-    if (dto.bodyAr !== undefined) a.bodyAr = sanitizeRichText(dto.bodyAr);
-    if (dto.bodyEn !== undefined) a.bodyEn = sanitizeRichText(dto.bodyEn);
-    if (dto.eventDate !== undefined) a.eventDate = dto.eventDate ? dto.eventDate.slice(0, 10) : null;
-    const saved = await this.activities.save(a);
-    await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${saved.titleAr}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
-    return this.presentActivity(saved);
+    const cur = await this.store.get(id, ACTIVITY_CODES);
+    if (!cur) throw new NotFoundException('النشاط غير موجود');
+    const r = await this.store.update(id, {
+      code: dto.kind !== undefined ? activityCode(dto.kind) : undefined, title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
+      x: {
+        titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
+        eventDate: dto.eventDate === undefined ? undefined : dto.eventDate ? dto.eventDate.slice(0, 10) : null,
+      },
+    });
+    await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
+    return this.activityView(r!);
   }
 
   async removeActivity(id: number, actor: AuthUser) {
-    const a = await this.activities.findOne({ where: { id } });
+    const a = await this.store.get(id, ACTIVITY_CODES);
     if (!a) throw new NotFoundException('النشاط غير موجود');
-    await this.activities.delete({ id });
-    await this.audit.log({ category: 'committees', action: 'update', description: `حذف نشاط لجنة: ${a.titleAr}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
+    await this.store.remove([id]);
+    await this.audit.log({ category: 'committees', action: 'update', description: `حذف نشاط لجنة: ${a.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
     return { deleted: 1 };
   }
 
@@ -231,6 +247,7 @@ export class CommitteesService {
     await this.mustFind(committeeId);
     const linked = await this.links.newsIdsOf('committee', committeeId);
     const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.publishAt']).orderBy('n.publishAt', 'DESC', 'NULLS LAST').addOrderBy('n.id', 'DESC').take(10);
+    qb.andWhere('n.mainCategory NOT IN (:...res)', { res: RESERVED_CATEGORY_CODES });
     if (q.trim()) qb.andWhere('n.title ILIKE :like', { like: `%${escapeLike(q.trim())}%` });
     if (linked.length) qb.andWhere('n.id NOT IN (:...linked)', { linked });
     return (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, publishAt: n.publishAt }));
@@ -238,61 +255,57 @@ export class CommitteesService {
 
   async linkNews(committeeId: number, newsIds: number[], actor: AuthUser) {
     const c = await this.mustFind(committeeId);
-    const found = await this.news.find({ where: { id: In(newsIds) }, select: ['id'] });
+    const found = await this.news.find({ where: { id: In(newsIds), mainCategory: Not(In(RESERVED_CATEGORY_CODES)) }, select: ['id'] });
     await this.links.link('committee', committeeId, found.map((n) => Number(n.id)));
-    await this.audit.log({ category: 'committees', action: 'update', description: `ربط أخبار باللجنة: ${c.nameAr}`, actorId: actor.id, entityType: 'committees', entityId: committeeId, details: { newsIds } });
+    await this.audit.log({ category: 'committees', action: 'update', description: `ربط أخبار باللجنة: ${c.title}`, actorId: actor.id, entityType: 'committees', entityId: committeeId, details: { newsIds } });
     return { linked: found.length };
   }
 
   async unlinkNews(committeeId: number, newsIds: number[], actor: AuthUser) {
     const c = await this.mustFind(committeeId);
     await this.links.unlink('committee', committeeId, newsIds);
-    await this.audit.log({ category: 'committees', action: 'update', description: `فك ربط أخبار عن اللجنة: ${c.nameAr}`, actorId: actor.id, entityType: 'committees', entityId: committeeId, details: { newsIds } });
+    await this.audit.log({ category: 'committees', action: 'update', description: `فك ربط أخبار عن اللجنة: ${c.title}`, actorId: actor.id, entityType: 'committees', entityId: committeeId, details: { newsIds } });
     return { unlinked: newsIds.length };
   }
 
   // ---------------------------------------------------------------- public (active only)
-  private card(c: Committee, en: boolean) {
+  private card(r: Rec, en: boolean) {
+    const c = this.view(r);
     return {
-      id: c.id, kind: c.kind, name: (en && c.nameEn) || c.nameAr, summary: (en && c.summaryEn) || c.summaryAr || '', chairName: (en && c.chairNameEn) || c.chairNameAr || '',
-      tags: tags((en && c.activityTagsEn) || c.activityTagsAr), logoUrl: this.storage.url(c.logo),
+      id: c.id, kind: c.kind, name: pick(c.nameAr, c.nameEn, en), summary: pick(c.summaryAr, c.summaryEn, en), chairName: pick(c.chairNameAr, c.chairNameEn, en),
+      tags: tags((en && c.activityTagsEn) || c.activityTagsAr || null), logoUrl: c.logoUrl,
     };
   }
 
   /** Sector committees with the "find my committee by business activity" search. Women kind has its own page. */
   async publicList(lang: string, q?: string) {
-    const qb = this.repo.createQueryBuilder('c').where('c.isActive = true').andWhere('c.kind = :kind', { kind: 'sector' });
-    if (q?.trim()) {
-      const like = `%${escapeLike(q.trim())}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.nameAr ILIKE :like', { like }).orWhere('c.nameEn ILIKE :like', { like }).orWhere('c.activityTagsAr ILIKE :like', { like }).orWhere('c.activityTagsEn ILIKE :like', { like }).orWhere('c.summaryAr ILIKE :like', { like })));
-    }
-    qb.orderBy('c.sortOrder', 'ASC').addOrderBy('c.id', 'ASC');
-    return (await qb.getMany()).map((c) => this.card(c, lang === 'en'));
+    let rows = (await this.store.list(CC.COMMITTEE)).filter(isActive).map((r) => ({ r, c: this.view(r) }));
+    if (q?.trim()) rows = rows.filter(({ c }) => matches([c.nameAr, c.nameEn, c.activityTagsAr, c.activityTagsEn, c.summaryAr], q));
+    rows.sort((a, b) => by((x: { c: { sortOrder: number; id: number } }) => x.c.sortOrder, (x) => x.c.id)(a, b));
+    return rows.map(({ r }) => this.card(r, lang === 'en'));
   }
 
   /** The businesswomen committee page (first active committee of kind "women"). */
   async publicWomen(lang: string) {
-    const c = await this.repo.findOne({ where: { kind: 'women', isActive: true }, order: { sortOrder: 'ASC', id: 'ASC' } });
+    const c = (await this.store.list(CC.WOMEN_COMMITTEE)).filter(isActive).sort(by((r) => sortOf(r), (r) => r.id))[0];
     if (!c) throw new NotFoundException('اللجنة غير موجودة');
     return this.detail(c, lang);
   }
 
   async publicOne(id: number, lang: string) {
-    const c = await this.repo.findOne({ where: { id, isActive: true } });
-    if (!c) throw new NotFoundException('اللجنة غير موجودة');
+    const c = await this.store.get(id, COMMITTEE_CODES);
+    if (!c || !isActive(c)) throw new NotFoundException('اللجنة غير موجودة');
     return this.detail(c, lang);
   }
 
-  private async detail(c: Committee, lang: string) {
+  private async detail(c: Rec, lang: string) {
     const en = lang === 'en';
-    const [members, acts, newsIds] = await Promise.all([
-      this.members.find({ where: { committeeId: c.id }, order: { sortOrder: 'ASC', id: 'ASC' } }),
-      this.activities.find({ where: { committeeId: c.id }, order: { eventDate: 'DESC', id: 'DESC' } }),
-      this.links.newsIdsOf('committee', c.id),
-    ]);
-    const rank = (r: string) => MEMBER_ROLES.indexOf(r as MemberRole);
+    const [members, acts, newsIds] = await Promise.all([this.membersOf(c.id), this.activitiesOf(c.id), this.links.newsIdsOf('committee', c.id)]);
+    const rank = (r: unknown) => MEMBER_ROLES.indexOf(r as MemberRole);
     const t = today();
-    const act = (a: CommitteeActivity) => ({ id: a.id, kind: a.kind, title: (en && a.titleEn) || a.titleAr, body: (en && a.bodyEn) || a.bodyAr || '', eventDate: a.eventDate, upcoming: !!a.eventDate && a.eventDate >= t });
+    const act = ({ r, v }: { r: Rec; v: ReturnType<CommitteesService['activityView']> }) => ({
+      id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en), eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t,
+    });
     let newsList: unknown[] = [];
     if (newsIds.length) {
       const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...newsIds)', { newsIds });
@@ -302,10 +315,10 @@ export class CommitteesService {
     }
     const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 24 });
     const gallery = albums.map((g) => ({ id: g.id, title: (en && g.titleEn) || g.titleAr, cover: this.storage.url((g.images ?? [])[0] ?? null), count: (g.images ?? []).length }));
-    const byKind = (k: ActivityKind) => acts.filter((a) => a.kind === k).map(act);
+    const byKind = (k: ActivityKind) => acts.filter((a) => a.v.kind === k).map(act);
     return {
-      ...this.card(c, en), duties: (en && c.dutiesEn) || c.dutiesAr || '',
-      members: members.sort((a, b) => rank(a.role) - rank(b.role)).map((m) => ({ id: m.id, role: m.role, name: (en && m.nameEn) || m.nameAr, title: (en && m.titleEn) || m.titleAr || '', photoUrl: this.storage.url(m.photo) })),
+      ...this.card(c, en), duties: pick(c.x.dutiesAr, c.x.dutiesEn, en),
+      members: [...members].sort((a, b) => rank(a.x.role) - rank(b.x.role)).map((m) => ({ id: m.id, role: m.x.role, name: pick(m.title, m.x.nameEn, en), title: pick(m.x.titleAr, m.x.titleEn, en), photoUrl: this.storage.url(m.images[0] ?? null) })),
       meetings: [...byKind('meeting'), ...byKind('visit')].sort((a, b) => (b.eventDate ?? '').localeCompare(a.eventDate ?? '')),
       recommendations: byKind('recommendation'),
       initiatives: byKind('initiative'),

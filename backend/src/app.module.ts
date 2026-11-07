@@ -35,6 +35,7 @@ import { IncubatorModule } from './modules/incubator/incubator.module';
 import { ExpoModule } from './modules/expo/expo.module';
 import { TrainingModule } from './modules/training/training.module';
 import { PagesModule } from './modules/pages/pages.module';
+import { ContentModule } from './modules/content/content.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
@@ -76,6 +77,7 @@ import { UsersModule } from './modules/users/users.module';
     ContactModule,
     NewsModule,
     OccasionsModule,
+    ContentModule,
     FaqsModule,
     PagesModule,
     DocumentsModule,

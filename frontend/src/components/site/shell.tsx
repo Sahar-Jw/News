@@ -348,7 +348,7 @@ export function Navbar() {
       <div className={`mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 transition-all duration-300 xl:flex-nowrap xl:gap-x-4 ${scrolled ? 'py-1' : 'py-2.5'}`}>
         <Link href={href('/')} className="flex min-w-0 max-w-full shrink items-center gap-3 xl:min-w-[9rem]">
           {/* round logo with a 2px white border; it grows smoothly when hovered (and sits above the header content while doing so) */}
-          {logo && <img src={logo} alt="" className={`relative z-10 shrink-0 origin-center rounded-full border-2 border-white bg-white object-cover shadow-md ring-1 ring-accent/50 transition-[width,height,transform,box-shadow] duration-300 ease-out hover:scale-125 hover:shadow-lift motion-reduce:transition-none motion-reduce:hover:scale-100 ${scrolled ? 'h-9 w-9' : 'h-12 w-12'}`} />}
+          {logo && <img src={logo} alt="" className={`relative z-10 shrink-0 origin-center rounded-full border-2 border-white bg-white object-cover shadow-md ring-1 ring-accent/50 transition-[width,height,transform,box-shadow] duration-300 ease-out hover:scale-125 hover:shadow-lift motion-reduce:transition-none motion-reduce:hover:scale-100 ${scrolled ? 'h-9 w-9' : 'h-10 w-10'}`} />}
           <div className="min-w-0">
             {/* the name wraps (max two lines) beside the logo, so the menu never drops to a second row; longer name = smaller text */}
             <div className="line-clamp-2 break-words py-0.5 font-display font-bold leading-[1.75] text-secondary" style={{ fontSize: `${Math.max(0.85, 1.125 - Math.max(0, loc('branding', 'site_name').length - 14) * 0.012).toFixed(3)}rem` }}>{loc('branding', 'site_name')}</div>

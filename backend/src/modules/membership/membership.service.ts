@@ -9,6 +9,8 @@ import { escapeLike, sanitizeRichText } from '../../common/utils/text';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { MailService } from '../mail/mail.service';
+import { CC } from '../../common/content-categories';
+import { ContentStore, Rec, pick } from '../content/content.store';
 import { ApplyDto, MembershipAdminQueryDto, UpdateApplicationDto, UpdateMembershipSettingsDto } from './membership.dto';
 import { MembershipApplication, MembershipFile, MembershipSettings, MembershipStatus } from './membership.entity';
 
@@ -23,6 +25,7 @@ export class MembershipService {
   constructor(
     @InjectRepository(MembershipApplication) private readonly apps: Repository<MembershipApplication>,
     @InjectRepository(MembershipFile) private readonly files: Repository<MembershipFile>,
+    private readonly store: ContentStore,
     @InjectRepository(MembershipSettings) private readonly settingsRepo: Repository<MembershipSettings>,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
@@ -30,32 +33,51 @@ export class MembershipService {
   ) {}
 
   // ---------------------------------------------------------------- settings (page content)
+  /** the page texts: one news row (main category MEMBERSHIP_INFO), created on first use */
+  private async infoRec(): Promise<Rec> {
+    const hit = (await this.store.list(CC.MEMBERSHIP_INFO))[0];
+    return hit ?? (await this.store.create(CC.MEMBERSHIP_INFO, { title: 'الانتساب', body: null, x: {} }));
+  }
+
+  /** notify e-mail + open flag stay in the (small) settings row */
   private async settingsRow() {
     return (await this.settingsRepo.findOne({ where: { id: 1 } })) ?? (await this.settingsRepo.save(this.settingsRepo.create({ id: 1, isOpen: true })));
   }
 
+  /** texts (news row) + notify e-mail / open flag (settings row) in the shape the admin form always had */
+  private async merged() {
+    const [i, st] = await Promise.all([this.infoRec(), this.settingsRow()]);
+    const n = (k: string) => (i.x[k] ?? null) as string | null;
+    return {
+      id: 1, conditionsAr: i.body ?? null, conditionsEn: n('conditionsEn'), documentsAr: n('documentsAr'), documentsEn: n('documentsEn'), feesAr: n('feesAr'), feesEn: n('feesEn'),
+      stepsAr: n('stepsAr'), stepsEn: n('stepsEn'), notifyEmail: st.notifyEmail, isOpen: st.isOpen, createdAt: i.createdAt, updatedAt: st.updatedAt > i.updatedAt ? st.updatedAt : i.updatedAt,
+    };
+  }
+
   getSettings() {
-    return this.settingsRow();
+    return this.merged();
   }
 
   async updateSettings(dto: UpdateMembershipSettingsDto, actor: AuthUser) {
-    const s = await this.settingsRow();
-    const rich = ['conditionsAr', 'conditionsEn', 'documentsAr', 'documentsEn', 'feesAr', 'feesEn'] as const;
-    for (const k of rich) if (dto[k] !== undefined) s[k] = sanitizeRichText(dto[k]);
-    for (const k of ['stepsAr', 'stepsEn', 'notifyEmail'] as const) if (dto[k] !== undefined) s[k] = dto[k]?.trim() || null;
-    if (dto.isOpen !== undefined) s.isOpen = !!dto.isOpen;
-    const saved = await this.settingsRepo.save(s);
+    const i = await this.infoRec();
+    const x: Record<string, any> = {};
+    for (const k of ['conditionsEn', 'documentsAr', 'documentsEn', 'feesAr', 'feesEn'] as const) if (dto[k] !== undefined) x[k] = sanitizeRichText(dto[k]);
+    for (const k of ['stepsAr', 'stepsEn'] as const) if (dto[k] !== undefined) x[k] = dto[k]?.trim() || null;
+    await this.store.update(i.id, { body: dto.conditionsAr === undefined ? undefined : sanitizeRichText(dto.conditionsAr), x });
+    const st = await this.settingsRow();
+    if (dto.notifyEmail !== undefined) st.notifyEmail = dto.notifyEmail?.trim() || null;
+    if (dto.isOpen !== undefined) st.isOpen = !!dto.isOpen;
+    await this.settingsRepo.save(st);
     await this.audit.log({ category: 'membership', action: 'update', description: 'تعديل محتوى صفحة الانتساب وإعداداتها', actorId: actor.id, entityType: 'membership_settings', entityId: 1 });
-    return saved;
+    return this.merged();
   }
 
   async publicPage(lang: string) {
     const en = lang === 'en';
-    const s = await this.settingsRow();
-    const pick = (ar: string | null, e: string | null) => (en && e) || ar || '';
+    const m = await this.merged();
     return {
-      isOpen: s.isOpen, conditions: pick(s.conditionsAr, s.conditionsEn), documents: pick(s.documentsAr, s.documentsEn), fees: pick(s.feesAr, s.feesEn),
-      steps: pick(s.stepsAr, s.stepsEn).split(/\r?\n/).map((x) => x.trim()).filter(Boolean),
+      isOpen: m.isOpen, conditions: pick(m.conditionsAr, m.conditionsEn, en), documents: pick(m.documentsAr, m.documentsEn, en), fees: pick(m.feesAr, m.feesEn, en),
+      steps: pick(m.stepsAr, m.stepsEn, en).split(/\r?\n/).map((x) => x.trim()).filter(Boolean),
     };
   }
 

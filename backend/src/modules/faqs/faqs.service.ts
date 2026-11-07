@@ -1,98 +1,83 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { CC } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
-import { applyColumnFilters } from '../../common/utils/column-filters';
-import { adminPage, paged } from '../../common/utils/pagination';
-import { escapeLike } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
-import { Faq, FaqScope } from './faq.entity';
+import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
+import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { FaqScope } from './faq.entity';
 import { CreateFaqDto, FaqsAdminQueryDto, PublicFaqsQueryDto, UpdateFaqDto } from './faqs.dto';
 
+/**
+ * Frequently asked questions: news rows of the main category FAQ. The question is the news title, the answer its body;
+ * scope, order, visibility and the English texts live in `extra`.
+ */
 @Injectable()
 export class FaqsService {
   constructor(
-    @InjectRepository(Faq) private readonly repo: Repository<Faq>,
+    private readonly store: ContentStore,
     private readonly audit: AuditService,
   ) {}
 
-  present(f: Faq) {
+  private view(r: Rec) {
     return {
-      id: f.id, scope: f.scope,
-      questionAr: f.questionAr, questionEn: f.questionEn ?? '',
-      answerAr: f.answerAr, answerEn: f.answerEn ?? '',
-      sortOrder: f.sortOrder, isActive: f.isActive,
-      createdAt: f.createdAt, updatedAt: f.updatedAt,
+      id: r.id, scope: (r.x.scope ?? 'general') as FaqScope, questionAr: r.title, questionEn: s(r.x.questionEn), answerAr: r.body ?? '', answerEn: s(r.x.answerEn),
+      sortOrder: sortOf(r), isActive: isActive(r), createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
   }
 
   async list(q: FaqsAdminQueryDto) {
-    const p = adminPage(q);
-    const qb = this.repo.createQueryBuilder('f');
-    if (q.q) {
-      const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('f.questionAr ILIKE :like', { like }).orWhere('f.questionEn ILIKE :like', { like }).orWhere('f.answerAr ILIKE :like', { like })));
-    }
-    applyColumnFilters(qb, q.cf, { questionAr: 'f.questionAr', questionEn: 'f.questionEn', scope: 'f.scope' });
-    if (q.scope) qb.andWhere('f.scope = :scope', { scope: q.scope });
-    qb.orderBy('f.scope', 'ASC').addOrderBy('f.sortOrder', 'ASC').addOrderBy('f.id', 'ASC');
-    const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
-    return paged(rows.map((r) => this.present(r)), total, p);
+    let rows = (await this.store.list(CC.FAQ)).map((r) => this.view(r));
+    if (q.q) rows = rows.filter((f) => matches([f.questionAr, f.questionEn, f.answerAr], q.q!));
+    rows = filterByCf(rows, q.cf, { questionAr: (f) => [f.questionAr], questionEn: (f) => [f.questionEn], scope: (f) => [f.scope] });
+    if (q.scope) rows = rows.filter((f) => f.scope === q.scope);
+    rows.sort(by((f) => f.scope, (f) => f.sortOrder, (f) => f.id));
+    return pageRows(rows, q, (f) => f);
   }
 
   async create(dto: CreateFaqDto, actor: AuthUser) {
-    const saved = await this.repo.save(
-      this.repo.create({
-        scope: (dto.scope as FaqScope) ?? 'general',
-        questionAr: dto.questionAr.trim(), questionEn: dto.questionEn?.trim() || null,
-        answerAr: dto.answerAr.trim(), answerEn: dto.answerEn?.trim() || null,
-        sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true,
-      }),
-    );
-    await this.audit.log({ category: 'faqs', action: 'create', description: `إضافة سؤال شائع: ${saved.questionAr}`, actorId: actor.id, entityType: 'faqs', entityId: saved.id });
-    return this.present(saved);
+    const r = await this.store.create(CC.FAQ, {
+      title: dto.questionAr.trim(), body: dto.answerAr.trim(),
+      x: { scope: dto.scope ?? 'general', questionEn: dto.questionEn?.trim() || null, answerEn: dto.answerEn?.trim() || null, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true },
+    });
+    await this.audit.log({ category: 'faqs', action: 'create', description: `إضافة سؤال شائع: ${r.title}`, actorId: actor.id, entityType: 'faqs', entityId: r.id });
+    return this.view(r);
   }
 
   async update(id: number, dto: UpdateFaqDto, actor: AuthUser) {
-    const f = await this.repo.findOne({ where: { id } });
-    if (!f) throw new NotFoundException('السؤال غير موجود');
-    if (dto.scope !== undefined) f.scope = dto.scope as FaqScope;
-    if (dto.questionAr !== undefined) f.questionAr = dto.questionAr.trim();
-    if (dto.questionEn !== undefined) f.questionEn = dto.questionEn?.trim() || null;
-    if (dto.answerAr !== undefined) f.answerAr = dto.answerAr.trim();
-    if (dto.answerEn !== undefined) f.answerEn = dto.answerEn?.trim() || null;
-    if (dto.sortOrder !== undefined) f.sortOrder = dto.sortOrder;
-    if (dto.isActive !== undefined) f.isActive = dto.isActive;
-    const saved = await this.repo.save(f);
-    await this.audit.log({ category: 'faqs', action: 'update', description: `تعديل سؤال شائع: ${saved.questionAr}`, actorId: actor.id, entityType: 'faqs', entityId: id });
-    return this.present(saved);
+    const cur = await this.store.get(id, CC.FAQ);
+    if (!cur) throw new NotFoundException('السؤال غير موجود');
+    const r = await this.store.update(id, {
+      title: dto.questionAr?.trim(), body: dto.answerAr?.trim(),
+      x: {
+        scope: dto.scope, questionEn: dto.questionEn === undefined ? undefined : dto.questionEn?.trim() || null,
+        answerEn: dto.answerEn === undefined ? undefined : dto.answerEn?.trim() || null, sortOrder: dto.sortOrder, isActive: dto.isActive,
+      },
+    });
+    await this.audit.log({ category: 'faqs', action: 'update', description: `تعديل سؤال شائع: ${r!.title}`, actorId: actor.id, entityType: 'faqs', entityId: id });
+    return this.view(r!);
   }
 
-  async remove(id: number, actor: AuthUser) {
+  remove(id: number, actor: AuthUser) {
     return this.bulkRemove([id], actor);
   }
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) } });
+    const all = await this.store.list(CC.FAQ);
+    const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض الأسئلة غير موجودة'); // nothing is deleted
-    await this.repo.delete({ id: In(unique) });
-    await this.audit.log({ category: 'faqs', action: 'delete', description: `حذف ${rows.length} سؤال شائع`, actorId: actor.id, entityType: 'faqs', details: { ids: unique }, changes: removedChanges('faqs', rows) });
+    await this.store.remove(unique);
+    await this.audit.log({ category: 'faqs', action: 'delete', description: `حذف ${rows.length} سؤال شائع`, actorId: actor.id, entityType: 'faqs', details: { ids: unique }, changes: removedChanges('faqs', rows.map((r) => this.view(r))) });
     return { deleted: rows.length };
   }
 
   /** Public: only active questions; the Arabic text stands in for a missing English one. */
   async publicList(q: PublicFaqsQueryDto) {
     const en = q.lang === 'en';
-    const rows = await this.repo.find({
-      where: { isActive: true, ...(q.scope ? { scope: q.scope as FaqScope } : {}) },
-      order: { sortOrder: 'ASC', id: 'ASC' },
-    });
-    return rows.map((f) => ({
-      id: f.id, scope: f.scope,
-      question: (en && f.questionEn) || f.questionAr,
-      answer: (en && f.answerEn) || f.answerAr,
-    }));
+    return (await this.store.list(CC.FAQ))
+      .filter((r) => isActive(r) && (!q.scope || (r.x.scope ?? 'general') === q.scope))
+      .sort(by((r) => sortOf(r), (r) => r.id))
+      .map((r) => ({ id: r.id, scope: (r.x.scope ?? 'general') as FaqScope, question: pick(r.title, r.x.questionEn, en), answer: pick(r.body, r.x.answerEn, en) }));
   }
 }

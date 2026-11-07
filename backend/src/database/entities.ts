@@ -12,26 +12,16 @@ import { Ad } from '../modules/ads/ad.entity';
 import { Subscriber } from '../modules/subscribers/subscriber.entity';
 import { Gallery } from '../modules/gallery/gallery.entity';
 import { Occasion } from '../modules/occasions/occasion.entity';
-import { BoardMember } from '../modules/board/board-member.entity';
 import { MembershipApplication, MembershipFile, MembershipSettings } from '../modules/membership/membership.entity';
-import { G2tBooking, G2tPackage, G2tSpace, Get2TradeSettings } from '../modules/get2trade/get2trade.entity';
-import { Committee, CommitteeActivity, CommitteeMember } from '../modules/committees/committee.entity';
+import { G2tBooking, Get2TradeSettings } from '../modules/get2trade/get2trade.entity';
 import { ContentLink } from '../modules/content-links/content-link.entity';
-import { Document } from '../modules/documents/document.entity';
 import { NavGroup, NavItem } from '../modules/nav/nav.entity';
-import { ChamberService } from '../modules/services/service.entity';
 import { IncubatorApplication } from '../modules/incubator/incubator-application.entity';
-import { IncubatorProject } from '../modules/incubator/incubator-project.entity';
 import { ExpoApplication } from '../modules/expo/expo-application.entity';
-import { ExpoItem } from '../modules/expo/expo-item.entity';
-import { Course } from '../modules/training/course.entity';
 import { CourseRegistration } from '../modules/training/course-registration.entity';
-import { Trainer } from '../modules/training/trainer.entity';
-import { SitePage } from '../modules/pages/page.entity';
-import { Faq } from '../modules/faqs/faq.entity';
 import { News } from '../modules/news/news.entity';
 import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, Faq, SitePage, Document, BoardMember, Committee, ChamberService, Course, Trainer, CourseRegistration, CommitteeMember, CommitteeActivity, ContentLink, NavGroup, NavItem, ExpoItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tPackage, G2tSpace, G2tBooking, IncubatorProject, IncubatorApplication];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Occasion, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, CourseRegistration, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication];

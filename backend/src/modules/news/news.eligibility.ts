@@ -1,5 +1,6 @@
 import { Brackets, SelectQueryBuilder } from 'typeorm';
-import { NewsStatus, SPECIAL_CATEGORY_CODES, Visibility } from '../../common/constants';
+import { NewsStatus, Visibility } from '../../common/constants';
+import { RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { News } from './news.entity';
 
 /**
@@ -28,5 +29,5 @@ export function applyEligibility(
 
 /** Ordinary news only: excludes every reserved special-section code. */
 export function onlyRegular(qb: SelectQueryBuilder<News>, alias: string) {
-  return qb.andWhere(`${alias}.mainCategory NOT IN (:...specials)`, { specials: SPECIAL_CATEGORY_CODES });
+  return qb.andWhere(`${alias}.mainCategory NOT IN (:...specials)`, { specials: RESERVED_CATEGORY_CODES });
 }

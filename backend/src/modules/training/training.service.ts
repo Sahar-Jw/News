@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, In, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
+import { CC } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { applyColumnFilters } from '../../common/utils/column-filters';
@@ -8,10 +9,13 @@ import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
+import { ContentStore, Rec, isActive, pick, s } from '../content/content.store';
+import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { MailService } from '../mail/mail.service';
+import { News } from '../news/news.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
-import { Course, CourseKind } from './course.entity';
+import { CourseKind } from './course.entity';
 import { CourseRegistration } from './course-registration.entity';
 import { CoursesAdminQueryDto, CreateCourseDto, PublicCoursesQueryDto, RegisterDto, RegistrationsAdminQueryDto, UpdateCourseDto } from './training.dto';
 
@@ -22,7 +26,7 @@ export const todayStr = () => new Date().toLocaleDateString('en-CA', { timeZone:
 export type RegistrationStatus = 'open' | 'full' | 'closed' | 'ended';
 
 /** open = can register; full = capacity reached; closed = closed by hand or already started; ended = finished (archive). */
-export function registrationStatus(c: Pick<Course, 'startDate' | 'endDate' | 'registrationClosed' | 'capacity'>, registered: number, today = todayStr()): RegistrationStatus {
+export function registrationStatus(c: { startDate: string; endDate: string | null; registrationClosed: boolean; capacity: number | null }, registered: number, today = todayStr()): RegistrationStatus {
   const last = c.endDate ?? c.startDate;
   if (last < today) return 'ended';
   if (c.registrationClosed || c.startDate < today) return 'closed';
@@ -30,16 +34,21 @@ export function registrationStatus(c: Pick<Course, 'startDate' | 'endDate' | 're
   return 'open';
 }
 
-const TEXT_FIELDS = ['nameEn', 'fieldAr', 'fieldEn', 'topicsAr', 'topicsEn', 'audienceAr', 'audienceEn', 'locationAr', 'locationEn', 'feeAr', 'feeEn'] as const;
+/** course text fields kept in `extra` (the Arabic name is the news title) */
+const X_TEXT_FIELDS = ['nameEn', 'fieldAr', 'fieldEn', 'topicsAr', 'topicsEn', 'audienceAr', 'audienceEn', 'locationAr', 'locationEn', 'feeAr', 'feeEn'] as const;
 const lines = (v: string | null | undefined) => (v ?? '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
+/**
+ * Training courses: news rows of the main category COURSE (name = news title, picture = news image); dates, trainer (the news id of a TRAINER row),
+ * hours, capacity, fee, topics, order and visibility live in `extra`. Registrations stay in their own table and point to the course's news id.
+ */
 @Injectable()
 export class TrainingService {
   private readonly logger = new Logger(TrainingService.name);
 
   constructor(
-    @InjectRepository(Course) private readonly courses: Repository<Course>,
+    private readonly store: ContentStore,
     @InjectRepository(CourseRegistration) private readonly regs: Repository<CourseRegistration>,
     @InjectRepository(SiteSetting) private readonly settings: Repository<SiteSetting>,
     @InjectDataSource() private readonly ds: DataSource,
@@ -56,72 +65,80 @@ export class TrainingService {
     return out;
   }
 
+  /** a course as the old entity looked: `x` fields flattened, name = news title */
+  private view(r: Rec) {
+    const x = r.x;
+    return {
+      id: r.id, kind: (x.kind ?? 'course') as CourseKind, nameAr: r.title, nameEn: s(x.nameEn), fieldAr: s(x.fieldAr), fieldEn: s(x.fieldEn), topicsAr: s(x.topicsAr), topicsEn: s(x.topicsEn),
+      audienceAr: s(x.audienceAr), audienceEn: s(x.audienceEn), locationAr: s(x.locationAr), locationEn: s(x.locationEn), feeAr: s(x.feeAr), feeEn: s(x.feeEn),
+      trainerId: x.trainerId != null ? Number(x.trainerId) : null, startDate: String(x.startDate ?? ''), endDate: (x.endDate ?? null) as string | null, hours: (x.hours ?? null) as number | null,
+      capacity: (x.capacity ?? null) as number | null, registrationClosed: x.registrationClosed === true, isActive: isActive(r), image: r.images[0] ?? null, createdAt: r.createdAt, updatedAt: r.updatedAt,
+    };
+  }
+
+  private async trainerMap() {
+    return new Map((await this.store.list(CC.TRAINER)).map((t) => [t.id, t]));
+  }
+
   // ---------------------------------------------------------------- admin
-  private presentAdmin(c: Course, registered: number) {
+  private presentAdmin(c: ReturnType<TrainingService['view']>, registered: number, trainers: Map<number, Rec>) {
+    const t = c.trainerId != null ? trainers.get(c.trainerId) : undefined;
     const out: Record<string, unknown> = {
-      id: c.id, kind: c.kind, nameAr: c.nameAr, trainerId: c.trainerId != null ? Number(c.trainerId) : null, trainerName: c.trainer?.nameAr ?? '',
+      id: c.id, kind: c.kind, nameAr: c.nameAr, trainerId: c.trainerId, trainerName: t?.title ?? '',
       startDate: c.startDate, endDate: c.endDate ?? '', hours: c.hours, capacity: c.capacity, registrationClosed: c.registrationClosed,
       isActive: c.isActive, registered, status: registrationStatus(c, registered), imageUrl: this.storage.url(c.image), createdAt: c.createdAt, updatedAt: c.updatedAt,
     };
-    for (const f of TEXT_FIELDS) out[f] = c[f] ?? '';
+    for (const f of X_TEXT_FIELDS) out[f] = (c as Record<string, any>)[f] ?? '';
     return out;
   }
 
   async list(q: CoursesAdminQueryDto) {
-    const p = adminPage(q);
-    const qb = this.courses.createQueryBuilder('c').leftJoinAndSelect('c.trainer', 't');
-    if (q.kind) qb.andWhere('c.kind = :kind', { kind: q.kind });
-    if (q.scope === 'current') qb.andWhere('COALESCE(c.endDate, c.startDate) >= :today', { today: todayStr() });
-    if (q.scope === 'archive') qb.andWhere('COALESCE(c.endDate, c.startDate) < :today', { today: todayStr() });
-    if (q.q) {
-      const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.nameAr ILIKE :like', { like }).orWhere('c.nameEn ILIKE :like', { like }).orWhere('c.fieldAr ILIKE :like', { like }).orWhere('t.nameAr ILIKE :like', { like })));
-    }
-    applyColumnFilters(qb, q.cf, { nameAr: 'c.nameAr', nameEn: 'c.nameEn', fieldAr: 'c.fieldAr', trainerName: 't.nameAr', startDate: 'CAST(c.startDate AS TEXT)' });
-    qb.orderBy('c.startDate', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('c.id', 'DESC');
-    const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
+    const trainers = await this.trainerMap();
+    const today = todayStr();
+    let rows = (await this.store.list(CC.COURSE)).map((r) => this.view(r));
+    if (q.kind) rows = rows.filter((c) => c.kind === q.kind);
+    if (q.scope === 'current') rows = rows.filter((c) => (c.endDate ?? c.startDate) >= today);
+    if (q.scope === 'archive') rows = rows.filter((c) => (c.endDate ?? c.startDate) < today);
+    const tname = (c: { trainerId: number | null }) => (c.trainerId != null ? trainers.get(c.trainerId)?.title ?? '' : '');
+    if (q.q) rows = rows.filter((c) => matches([c.nameAr, c.nameEn, c.fieldAr, tname(c)], q.q!));
+    rows = filterByCf(rows, q.cf, { nameAr: (c) => [c.nameAr], nameEn: (c) => [c.nameEn], fieldAr: (c) => [c.fieldAr], trainerName: (c) => [tname(c)], startDate: (c) => [c.startDate] });
+    const asc = q.sortDir?.toUpperCase() === 'ASC';
+    rows.sort((a, b) => (a.startDate === b.startDate ? b.id - a.id : (a.startDate < b.startDate ? -1 : 1) * (asc ? 1 : -1)));
     const n = await this.counts(rows.map((r) => r.id));
-    return paged(rows.map((r) => this.presentAdmin(r, n.get(Number(r.id)) ?? 0)), total, p);
+    return pageRows(rows, q, (c) => this.presentAdmin(c, n.get(c.id) ?? 0, trainers));
   }
 
   /** lists for the course picker in the registrations screen */
   async options() {
-    const rows = await this.courses.find({ select: { id: true, nameAr: true, startDate: true }, order: { startDate: 'DESC', id: 'DESC' }, take: 500 });
-    return rows.map((r) => ({ id: Number(r.id), name: `${r.nameAr} (${r.startDate})` }));
+    return (await this.store.list(CC.COURSE)).map((r) => this.view(r)).sort((a, b) => (a.startDate === b.startDate ? b.id - a.id : a.startDate < b.startDate ? 1 : -1)).slice(0, 500).map((r) => ({ id: r.id, name: `${r.nameAr} (${r.startDate})` }));
   }
 
   private async checkTrainer(id: number | null | undefined) {
     if (id == null) return;
-    const ok = await this.ds.query(`SELECT 1 FROM "trainers" WHERE "id" = $1`, [id]);
-    if (!ok.length) throw new BadRequestException('المدرب غير موجود');
+    if (!(await this.store.get(id, CC.TRAINER))) throw new BadRequestException('المدرب غير موجود');
   }
 
-  private apply(c: Course, dto: CreateCourseDto | UpdateCourseDto) {
-    if (dto.kind !== undefined) c.kind = dto.kind as CourseKind;
-    if (dto.nameAr !== undefined) c.nameAr = dto.nameAr.trim();
-    for (const f of TEXT_FIELDS) {
+  private xOf(dto: CreateCourseDto | UpdateCourseDto) {
+    const x: Record<string, any> = {
+      kind: dto.kind, trainerId: dto.trainerId === undefined ? undefined : dto.trainerId ?? null, startDate: dto.startDate, endDate: dto.endDate === undefined ? undefined : dto.endDate ?? null,
+      hours: dto.hours === undefined ? undefined : dto.hours ?? null, capacity: dto.capacity === undefined ? undefined : dto.capacity ?? null, registrationClosed: dto.registrationClosed, isActive: dto.isActive,
+    };
+    for (const f of X_TEXT_FIELDS) {
       const v = (dto as Record<string, any>)[f];
-      if (v !== undefined) c[f] = typeof v === 'string' ? v.trim() || null : null;
+      if (v !== undefined) x[f] = typeof v === 'string' ? v.trim() || null : null;
     }
-    if (dto.trainerId !== undefined) c.trainerId = dto.trainerId ?? null;
-    if (dto.startDate !== undefined) c.startDate = dto.startDate;
-    if (dto.endDate !== undefined) c.endDate = dto.endDate ?? null;
-    if (dto.hours !== undefined) c.hours = dto.hours ?? null;
-    if (dto.capacity !== undefined) c.capacity = dto.capacity ?? null;
-    if (dto.registrationClosed !== undefined) c.registrationClosed = dto.registrationClosed;
-    if (dto.isActive !== undefined) c.isActive = dto.isActive;
-    if (c.endDate && c.endDate < c.startDate) throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+    return x;
   }
 
   async create(dto: CreateCourseDto, image: Express.Multer.File | undefined, actor: AuthUser) {
     await this.checkTrainer(dto.trainerId);
+    if (dto.endDate && dto.endDate < dto.startDate) throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
     const path = image ? await this.storage.saveImage(image, 'courses', 1200) : null;
     try {
-      const c = this.courses.create({ image: path, isActive: true, registrationClosed: false });
-      this.apply(c, dto);
-      const saved = await this.courses.save(c);
-      await this.audit.log({ category: 'training', action: 'create', description: `إضافة دورة: ${saved.nameAr}`, actorId: actor.id, entityType: 'courses', entityId: saved.id });
-      return this.presentAdmin(saved, 0);
+      const x = this.xOf(dto);
+      const r = await this.store.create(CC.COURSE, { title: dto.nameAr.trim(), images: path ? [path] : [], x: { ...x, kind: x.kind ?? 'course', registrationClosed: x.registrationClosed ?? false, isActive: x.isActive ?? true } });
+      await this.audit.log({ category: 'training', action: 'create', description: `إضافة دورة: ${r.title}`, actorId: actor.id, entityType: 'courses', entityId: r.id });
+      return this.presentAdmin(this.view(r), 0, await this.trainerMap());
     } catch (e) {
       await this.storage.remove(path); // nothing saved: do not leave an orphan file
       throw e;
@@ -129,20 +146,20 @@ export class TrainingService {
   }
 
   async update(id: number, dto: UpdateCourseDto, image: Express.Multer.File | undefined, actor: AuthUser) {
-    const c = await this.courses.findOne({ where: { id } });
-    if (!c) throw new NotFoundException('الدورة غير موجودة');
+    const cur = await this.store.get(id, CC.COURSE);
+    if (!cur) throw new NotFoundException('الدورة غير موجودة');
     if (dto.trainerId !== undefined) await this.checkTrainer(dto.trainerId);
+    const start = dto.startDate ?? String(cur.x.startDate ?? '');
+    const end = dto.endDate !== undefined ? dto.endDate : (cur.x.endDate ?? null);
+    if (end && end < start) throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
     const newPath = image ? await this.storage.saveImage(image, 'courses', 1200) : null;
-    const oldPath = c.image;
+    const oldPath = cur.images[0] ?? null;
     try {
-      this.apply(c, dto);
-      if (newPath) c.image = newPath;
-      else if (dto.removeImage) c.image = null;
-      const saved = await this.courses.save(c);
-      await this.audit.log({ category: 'training', action: 'update', description: `تعديل دورة: ${saved.nameAr}`, actorId: actor.id, entityType: 'courses', entityId: id });
-      if (oldPath && oldPath !== saved.image) await this.storage.remove(oldPath);
+      const r = await this.store.update(id, { title: dto.nameAr?.trim(), images: newPath ? [newPath] : dto.removeImage ? [] : undefined, x: this.xOf(dto) });
+      await this.audit.log({ category: 'training', action: 'update', description: `تعديل دورة: ${r!.title}`, actorId: actor.id, entityType: 'courses', entityId: id });
+      if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
       const n = await this.counts([id]);
-      return this.presentAdmin(saved, n.get(Number(id)) ?? 0);
+      return this.presentAdmin(this.view(r!), n.get(id) ?? 0, await this.trainerMap());
     } catch (e) {
       await this.storage.remove(newPath);
       throw e;
@@ -155,11 +172,12 @@ export class TrainingService {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.courses.find({ where: { id: In(unique) } });
+    const all = await this.store.list(CC.COURSE);
+    const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض الدورات غير موجودة'); // nothing is deleted
-    await this.courses.delete({ id: In(unique) }); // registrations go with it (ON DELETE CASCADE)
-    await this.storage.removeMany(rows.map((r) => r.image));
-    await this.audit.log({ category: 'training', action: 'delete', description: `حذف ${rows.length} دورة`, actorId: actor.id, entityType: 'courses', details: { ids: unique }, changes: removedChanges('courses', rows) });
+    await this.store.remove(unique); // registrations go with it (ON DELETE CASCADE)
+    await this.storage.removeMany(rows.map((r) => r.images[0] ?? null));
+    await this.audit.log({ category: 'training', action: 'delete', description: `حذف ${rows.length} دورة`, actorId: actor.id, entityType: 'courses', details: { ids: unique }, changes: removedChanges('courses', rows.map((r) => this.view(r))) });
     return { deleted: rows.length };
   }
 
@@ -171,13 +189,13 @@ export class TrainingService {
     if (q.to) qb.andWhere('r.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('r.name ILIKE :like', { like }).orWhere('r.email ILIKE :like', { like }).orWhere('r.phone ILIKE :like', { like }).orWhere('c.nameAr ILIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('r.name ILIKE :like', { like }).orWhere('r.email ILIKE :like', { like }).orWhere('r.phone ILIKE :like', { like }).orWhere('c.title ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { courseName: 'c.nameAr', name: 'r.name', email: 'r.email', phone: 'r.phone', organization: 'r.organization', createdAt: 'CAST(r.createdAt AS TEXT)' });
+    applyColumnFilters(qb, q.cf, { courseName: 'c.title', name: 'r.name', email: 'r.email', phone: 'r.phone', organization: 'r.organization', createdAt: 'CAST(r.createdAt AS TEXT)' });
     return qb.orderBy('r.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('r.id', 'DESC');
   }
   private presentReg(r: CourseRegistration) {
-    return { id: r.id, courseId: Number(r.courseId), courseName: r.course?.nameAr ?? '', name: r.name, email: r.email, phone: r.phone, organization: r.organization ?? '', createdAt: r.createdAt };
+    return { id: r.id, courseId: Number(r.courseId), courseName: r.course?.title ?? '', name: r.name, email: r.email, phone: r.phone, organization: r.organization ?? '', createdAt: r.createdAt };
   }
   async listRegistrations(q: RegistrationsAdminQueryDto) {
     const p = adminPage(q);
@@ -198,71 +216,72 @@ export class TrainingService {
   }
 
   // ---------------------------------------------------------------- public
-  private card(c: Course, registered: number, en: boolean, today: string) {
-    const pick = (ar: string | null, e: string | null) => (en && e) || ar || '';
-    const t = c.trainer;
+  private card(c: ReturnType<TrainingService['view']>, registered: number, en: boolean, today: string, trainers: Map<number, Rec>) {
+    const t = c.trainerId != null ? trainers.get(c.trainerId) : undefined;
     return {
-      id: Number(c.id), kind: c.kind, name: pick(c.nameAr, c.nameEn), field: pick(c.fieldAr, c.fieldEn), audience: pick(c.audienceAr, c.audienceEn),
-      topics: lines(en && c.topicsEn ? c.topicsEn : c.topicsAr), trainer: t ? { id: Number(t.id), name: pick(t.nameAr, t.nameEn), bio: pick(t.bioAr, t.bioEn) } : null,
-      startDate: c.startDate, endDate: c.endDate, hours: c.hours, location: pick(c.locationAr, c.locationEn), fee: pick(c.feeAr, c.feeEn),
+      id: c.id, kind: c.kind, name: pick(c.nameAr, c.nameEn, en), field: pick(c.fieldAr, c.fieldEn, en), audience: pick(c.audienceAr, c.audienceEn, en),
+      topics: lines(en && c.topicsEn ? c.topicsEn : c.topicsAr), trainer: t ? { id: t.id, name: pick(t.title, t.x.nameEn, en), bio: pick(t.body, t.x.bioEn, en) } : null,
+      startDate: c.startDate, endDate: c.endDate, hours: c.hours, location: pick(c.locationAr, c.locationEn, en), fee: pick(c.feeAr, c.feeEn, en),
       seatsLeft: c.capacity != null ? Math.max(0, c.capacity - registered) : null, status: registrationStatus(c, registered, today), imageUrl: this.storage.url(c.image),
     };
   }
 
-  private publicBase(scope: 'current' | 'archive'): SelectQueryBuilder<Course> {
-    const qb = this.courses.createQueryBuilder('c').leftJoinAndSelect('c.trainer', 't').where('c.isActive = true');
-    qb.andWhere(scope === 'archive' ? 'COALESCE(c.endDate, c.startDate) < :today' : 'COALESCE(c.endDate, c.startDate) >= :today', { today: todayStr() });
-    return qb;
+  private async publicBase(scope: 'current' | 'archive') {
+    const today = todayStr();
+    return (await this.store.list(CC.COURSE)).filter(isActive).map((r) => this.view(r)).filter((c) => (scope === 'archive' ? (c.endDate ?? c.startDate) < today : (c.endDate ?? c.startDate) >= today));
   }
 
   async publicList(q: PublicCoursesQueryDto) {
     const scope = q.scope === 'archive' ? 'archive' : 'current';
     const p = publicPage(q, 12, 50);
-    const qb = this.publicBase(scope);
-    if (q.kind) qb.andWhere('c.kind = :kind', { kind: q.kind });
-    if (q.trainerId) qb.andWhere('c.trainerId = :tid', { tid: q.trainerId });
-    if (q.year) qb.andWhere('EXTRACT(YEAR FROM c.startDate) = :year', { year: q.year });
-    if (q.field?.trim()) qb.andWhere('(c.fieldAr = :field OR c.fieldEn = :field)', { field: q.field.trim() });
-    if (q.q?.trim()) {
-      const like = `%${escapeLike(q.q.trim())}%`;
-      qb.andWhere(new Brackets((b) => b.where('c.nameAr ILIKE :like', { like }).orWhere('c.nameEn ILIKE :like', { like }).orWhere('c.topicsAr ILIKE :like', { like }).orWhere('c.topicsEn ILIKE :like', { like })));
-    }
-    qb.orderBy('c.startDate', scope === 'archive' ? 'DESC' : 'ASC').addOrderBy('c.id', 'ASC');
-    const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();
-    const n = await this.counts(rows.map((r) => r.id));
+    let rows = await this.publicBase(scope);
+    if (q.kind) rows = rows.filter((c) => c.kind === q.kind);
+    if (q.trainerId) rows = rows.filter((c) => c.trainerId === Number(q.trainerId));
+    if (q.year) rows = rows.filter((c) => Number(c.startDate.slice(0, 4)) === Number(q.year));
+    if (q.field?.trim()) rows = rows.filter((c) => c.fieldAr === q.field!.trim() || c.fieldEn === q.field!.trim());
+    if (q.q?.trim()) rows = rows.filter((c) => matches([c.nameAr, c.nameEn, c.topicsAr, c.topicsEn], q.q!));
+    rows.sort((a, b) => (a.startDate === b.startDate ? a.id - b.id : (a.startDate < b.startDate ? -1 : 1) * (scope === 'archive' ? -1 : 1)));
+    const page = rows.slice(p.skip, p.skip + p.limit);
+    const n = await this.counts(page.map((r) => r.id));
     const today = todayStr();
     const en = q.lang === 'en';
-    return paged(rows.map((r) => this.card(r, n.get(Number(r.id)) ?? 0, en, today)), total, p);
+    const trainers = await this.trainerMap();
+    return paged(page.map((r) => this.card(r, n.get(r.id) ?? 0, en, today, trainers)), rows.length, p);
   }
 
   /** Values for the archive search boxes (only what exists in archived courses). */
   async publicFilters(lang: string) {
     const en = lang === 'en';
-    const rows = await this.publicBase('archive').select(['c.id', 'c.kind', 'c.fieldAr', 'c.fieldEn', 'c.startDate', 'c.trainerId', 't.id', 't.nameAr', 't.nameEn']).getMany();
+    const rows = await this.publicBase('archive');
+    const trainers = await this.trainerMap();
     const years = [...new Set(rows.map((r) => Number(r.startDate.slice(0, 4))))].sort((a, b) => b - a);
     const fields = [...new Set(rows.map((r) => (en && r.fieldEn) || r.fieldAr).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, lang));
     const kinds = [...new Set(rows.map((r) => r.kind))];
     const tr = new Map<number, string>();
-    rows.forEach((r) => r.trainer && tr.set(Number(r.trainer.id), (en && r.trainer.nameEn) || r.trainer.nameAr));
-    const trainers = [...tr.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, lang));
-    return { years, fields, kinds, trainers };
+    rows.forEach((r) => {
+      const t = r.trainerId != null ? trainers.get(r.trainerId) : undefined;
+      if (t) tr.set(t.id, pick(t.title, t.x.nameEn, en));
+    });
+    const list = [...tr.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, lang));
+    return { years, fields, kinds, trainers: list };
   }
 
   async publicOne(id: number, lang: string) {
-    const c = await this.courses.findOne({ where: { id, isActive: true }, relations: { trainer: true } });
-    if (!c) throw new NotFoundException('الدورة غير موجودة');
+    const r = await this.store.get(id, CC.COURSE);
+    if (!r || !isActive(r)) throw new NotFoundException('الدورة غير موجودة');
     const n = await this.counts([id]);
-    return this.card(c, n.get(Number(id)) ?? 0, lang === 'en', todayStr());
+    return this.card(this.view(r), n.get(id) ?? 0, lang === 'en', todayStr(), await this.trainerMap());
   }
 
   async register(courseId: number, dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
-    let course!: Course;
+    let course!: ReturnType<TrainingService['view']>;
     try {
       await this.ds.transaction(async (m) => {
         // the lock keeps two people from taking the last seat at the same moment
-        const c = await m.findOne(Course, { where: { id: courseId, isActive: true }, lock: { mode: 'pessimistic_write' } });
-        if (!c) throw new NotFoundException('الدورة غير موجودة');
+        const row = await m.findOne(News, { where: { id: courseId, mainCategory: CC.COURSE }, lock: { mode: 'pessimistic_write' } });
+        if (!row || row.extra?.isActive === false) throw new NotFoundException('الدورة غير موجودة');
+        const c = this.view({ id: Number(row.id), code: row.mainCategory, title: row.title, body: row.body ?? null, images: row.images ?? [], pdf: row.pdf ?? null, x: (row.extra ?? {}) as Record<string, any>, createdAt: row.createdAt, updatedAt: row.updatedAt });
         course = c;
         const registered = await m.count(CourseRegistration, { where: { courseId } });
         const st = registrationStatus(c, registered);
@@ -282,7 +301,7 @@ export class TrainingService {
   }
 
   /** E-mail to the training officer (setting training.officer_email, else the chamber's contact e-mail). Never fails the registration. */
-  private async notifyOfficer(course: Course, dto: RegisterDto, email: string) {
+  private async notifyOfficer(course: { nameAr: string; startDate: string }, dto: RegisterDto, email: string) {
     try {
       const get = async (category: string, key: string) => ((await this.settings.findOne({ where: { category, key } }))?.value ?? '').toString().trim();
       const to = (await get('training', 'officer_email')) || (await get('contact', 'email'));

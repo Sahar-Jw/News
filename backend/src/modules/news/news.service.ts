@@ -13,6 +13,7 @@ import {
   createPermissionFor,
   newsPerm,
 } from '../../common/constants';
+import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
@@ -101,7 +102,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     } else {
       qb.andWhere(
         new Brackets((b) => {
-          if (ok.regular) b.where(`n.mainCategory NOT IN (:...allSections)`, { allSections: SPECIAL_CATEGORY_CODES });
+          if (ok.regular) b.where(`n.mainCategory NOT IN (:...allSections)`, { allSections: RESERVED_CATEGORY_CODES });
           else b.where('1 = 0');
           if (ok.sections.length) b.orWhere('n.mainCategory IN (:...okSections)', { okSections: ok.sections });
         }),
@@ -150,7 +151,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   /** Internal: no permission check (used right after create/update, whose own permission was already verified). */
   private async load(id: number) {
     const n = await this.repo.findOne({ where: { id }, relations: { createdBy: true }, select: { createdBy: { id: true, fullName: true } } as any });
-    if (!n) throw new NotFoundException('السجل غير موجود');
+    // FAQ, documents, board ... are news rows too, but they are managed from their own screens
+    if (!n || CONTENT_CATEGORY_CODES.includes(n.mainCategory)) throw new NotFoundException('السجل غير موجود');
     return n;
   }
 
@@ -175,13 +177,14 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const main = await this.repo
       .createQueryBuilder('n')
       .select('DISTINCT n.mainCategory', 'v')
-      .where('n.mainCategory NOT IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES })
+      .where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
       .orderBy('v', 'ASC')
       .getRawMany();
     const sub = await this.repo
       .createQueryBuilder('n')
       .select('DISTINCT n.subcategory', 'v')
       .where('n.subcategory IS NOT NULL')
+      .andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
       .orderBy('v', 'ASC')
       .getRawMany();
     return { main: main.map((r) => r.v), sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
@@ -219,7 +222,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       } else {
         if (!input.mainCategory) throw new BadRequestException('الفئة الرئيسية مطلوبة');
         const norm = normalizeLabel(input.mainCategory);
-        if (SPECIAL_CATEGORY_CODES.includes(codeKey(norm))) throw new BadRequestException('هذه القيمة رمز محجوز لقسم خاص ولا تُستخدم في نموذج الأخبار العادية');
+        if (RESERVED_CATEGORY_CODES.includes(codeKey(norm))) throw new BadRequestException('هذه القيمة رمز محجوز لقسم خاص ولا تُستخدم في نموذج الأخبار العادية');
         main = await this.regularValue('main', norm, perms);
       }
     } else {
@@ -376,7 +379,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
   async update(id: number, dto: UpdateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFile?: Express.Multer.File) {
     const n = await this.repo.findOne({ where: { id } });
-    if (!n) throw new NotFoundException('السجل غير موجود');
+    if (!n || CONTENT_CATEGORY_CODES.includes(n.mainCategory)) throw new NotFoundException('السجل غير موجود');
     const perms = actor.permissions;
     this.assertMay('update', n.mainCategory, perms); // update permission of the record's CURRENT kind
 
@@ -452,7 +455,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   async removeMany(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
     const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, subject: true, images: true, pdf: true, mainCategory: true, subcategory: true, status: true, language: true, visibility: true, publishAt: true } });
-    if (rows.length !== unique.length) throw new NotFoundException('بعض السجلات غير موجودة');
+    if (rows.length !== unique.length || rows.some((r) => CONTENT_CATEGORY_CODES.includes(r.mainCategory))) throw new NotFoundException('بعض السجلات غير موجودة');
     // every record must be of a kind the user may delete; otherwise nothing is deleted
     for (const r of rows) this.assertMay('delete', r.mainCategory, actor.permissions);
     await this.repo.delete(unique);

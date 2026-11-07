@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
+import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -113,7 +114,7 @@ export class NewsPublicService {
 
   async detail(id: number, v: Viewer, ip: string, ua: string) {
     // no language filter: a record stays reachable in its own language (SRS 26)
-    const n = await this.base(undefined, v).andWhere('n.id = :id', { id }).getOne();
+    const n = await this.base(undefined, v).andWhere('n.id = :id', { id }).andWhere('n.mainCategory NOT IN (:...content)', { content: CONTENT_CATEGORY_CODES }).getOne();
     if (!n) throw new NotFoundException('الصفحة غير موجودة');
     if (this.views.shouldCount(id, ip, ua)) {
       await this.repo.increment({ id }, 'viewCount', 1);
@@ -124,7 +125,7 @@ export class NewsPublicService {
 
   /** Data for the link-preview page behind the share buttons. Anonymous viewer: members-only news only exposes a generic page. */
   async shareData(id: number, apiOrigin: string) {
-    const n = await this.base(undefined, { authenticated: false }).andWhere('n.id = :id', { id }).getOne();
+    const n = await this.base(undefined, { authenticated: false }).andWhere('n.id = :id', { id }).andWhere('n.mainCategory NOT IN (:...content)', { content: CONTENT_CATEGORY_CODES }).getOne();
     const img = n?.images?.[0] ? this.storage.url(n.images[0]) : '';
     return {
       title: n?.title ?? 'News',
@@ -159,7 +160,7 @@ export class NewsPublicService {
     const L = lang ?? Language.AR;
     const [mainRows, subRows] = await Promise.all([
       onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).getRawMany(),
-      this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
+      this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
     ]);
     const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
     return { main: sort(mainRows), sub: sort(subRows) };

@@ -18,7 +18,7 @@ export class News extends TimestampedEntity {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ length: 255 })
+  @Column({ length: 500 })
   title: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
@@ -44,7 +44,7 @@ export class News extends TimestampedEntity {
   images: string[] | null;
 
   /** One optional PDF per record (relative storage path), shown on its own on the detail page. */
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   pdf: string | null;
 
   /** Optional YouTube video (canonical watch URL), embedded on the detail page of regular news. */
@@ -72,6 +72,10 @@ export class News extends TimestampedEntity {
 
   @Column({ type: 'enum', enum: Visibility, default: Visibility.PUBLIC })
   visibility: Visibility;
+
+  /** content types only (FAQ, documents, board ...): their own fields, see common/content-categories.ts and modules/content */
+  @Column({ type: 'jsonb', nullable: true })
+  extra: Record<string, any> | null;
 
   @Column({ name: 'view_count', type: 'int', default: 0 })
   viewCount: number;

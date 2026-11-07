@@ -11,32 +11,16 @@ export class MembershipSettings extends TimestampedEntity {
   id: number;
 
   /** sanitized HTML: membership conditions */
-  @Column({ name: 'conditions_ar', type: 'text', nullable: true })
-  conditionsAr: string | null;
 
-  @Column({ name: 'conditions_en', type: 'text', nullable: true })
-  conditionsEn: string | null;
 
   /** sanitized HTML: required documents */
-  @Column({ name: 'documents_ar', type: 'text', nullable: true })
-  documentsAr: string | null;
 
-  @Column({ name: 'documents_en', type: 'text', nullable: true })
-  documentsEn: string | null;
 
   /** sanitized HTML: the approved fee table */
-  @Column({ name: 'fees_ar', type: 'text', nullable: true })
-  feesAr: string | null;
 
-  @Column({ name: 'fees_en', type: 'text', nullable: true })
-  feesEn: string | null;
 
   /** one step per line, shown as the numbered path (apply > upload > pay > review > receive) */
-  @Column({ name: 'steps_ar', type: 'text', nullable: true })
-  stepsAr: string | null;
 
-  @Column({ name: 'steps_en', type: 'text', nullable: true })
-  stepsEn: string | null;
 
   /** receives an e-mail for every new application */
   @Column({ name: 'notify_email', type: 'varchar', length: 190, nullable: true })

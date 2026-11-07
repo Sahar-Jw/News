@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Course } from './course.entity';
+import { News } from '../news/news.entity';
 
 /** One participant registered for one course. The same e-mail can register for a course only once (unique with the course). */
 @Entity('course_registrations')
@@ -10,9 +10,10 @@ export class CourseRegistration {
 
   @Column({ name: 'course_id', type: 'bigint' })
   courseId: number;
-  @ManyToOne(() => Course, { onDelete: 'CASCADE' })
+  /** the course is a news row (main category COURSE) */
+  @ManyToOne(() => News, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'course_id' })
-  course?: Course;
+  course?: News;
 
   @Column({ length: 150 })
   name: string;
