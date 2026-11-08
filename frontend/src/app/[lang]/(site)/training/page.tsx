@@ -89,7 +89,7 @@ export default function TrainingPage() {
         !news ? <Center><Spinner /></Center> : news.data.length === 0 ? <Center>{t('tr.noNews')}</Center> : (
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{news.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>
-            <div className="text-center"><Link href={href(`/news?topics=${encodeURIComponent(newsTopic)}`)} className="text-sm font-semibold text-primary hover:underline">{t('tr.moreNews')}</Link></div>
+            <div className="text-center"><Link href={href(`/media?topics=${encodeURIComponent(newsTopic)}`)} className="text-sm font-semibold text-primary hover:underline">{t('tr.moreNews')}</Link></div>
           </>
         )
       ) : !data ? <Center><Spinner /></Center> : data.data.length === 0 ? <Center>{t(tab === 'current' ? 'tr.noCurrent' : 'tr.noArchive')}</Center> : (

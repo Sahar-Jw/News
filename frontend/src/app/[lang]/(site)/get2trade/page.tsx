@@ -143,7 +143,7 @@ export default function Get2TradePage() {
         {!news ? <Center><Spinner /></Center> : news.data.length === 0 ? <p className="text-sm text-gray-500">{t('gt.noNews')}</p> : (
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{news.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>
-            <div className="mt-4 text-center"><Link href={href(`/news?topics=${encodeURIComponent(page.newsTopic)}`)} className="text-sm font-semibold text-primary hover:underline">{t('gt.allNews')}</Link></div>
+            <div className="mt-4 text-center"><Link href={href(`/media?topics=${encodeURIComponent(page.newsTopic)}`)} className="text-sm font-semibold text-primary hover:underline">{t('gt.allNews')}</Link></div>
           </>
         )}
       </Section>

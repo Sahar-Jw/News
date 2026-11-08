@@ -9,6 +9,7 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
+import { AllNews } from '@/components/site/news-all';
 
 const TABS = ['news', 'statements', 'photos', 'video', 'interviews', 'coverage', 'press', 'kit'] as const;
 type Tab = (typeof TABS)[number];
@@ -19,6 +20,7 @@ interface Paged<T> { data: T[]; meta: { totalPages: number } }
 interface Gallery { id: number; title: string; images: string[] }
 interface Doc { id: number; title: string; summary: string; docDate: string | null; fileUrl: string | null }
 
+/** statements / interviews / coverage / video: news filtered by a label or by having a video (the plain "news" tab is the full list, AllNews) */
 function NewsTab({ tab }: { tab: Tab }) {
   const { lang, t, href } = useI18n();
   const { s } = useSite();
@@ -41,7 +43,6 @@ function NewsTab({ tab }: { tab: Tab }) {
     <>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{res.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>
       <Pager page={page} totalPages={res.meta.totalPages} onPage={setPage} />
-      {tab === 'news' && <div className="mt-4 text-center"><Link href={href('/news')} className="text-sm font-semibold text-primary hover:underline">{t('md.allNews')} ›</Link></div>}
     </>
   );
 }
@@ -121,7 +122,7 @@ function MediaCenter() {
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${tab === k ? 'border-primary bg-primary text-white' : 'bg-white text-gray-700 hover:border-primary'}`}>{t(`md.tab.${k}`)}</button>
         ))}
       </div>
-      {tab === 'photos' ? <PhotosTab /> : tab === 'press' ? <DocsTab kind="press" /> : tab === 'kit' ? <DocsTab kind="mediakit" /> : <NewsTab tab={tab} />}
+      {tab === 'photos' ? <PhotosTab /> : tab === 'press' ? <DocsTab kind="press" /> : tab === 'kit' ? <DocsTab kind="mediakit" /> : tab === 'news' ? <AllNews /> : <NewsTab tab={tab} />}
     </div>
   );
 }

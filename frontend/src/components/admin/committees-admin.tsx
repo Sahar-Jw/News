@@ -20,7 +20,7 @@ type Draft = Omit<Row, 'id' | 'sortOrder'> & { id?: number; sortOrder: string };
 
 const KINDS = ['sector', 'women'];
 const ROLES = ['chair', 'vice', 'member'];
-const ACTS = ['meeting', 'visit', 'recommendation', 'initiative'];
+const ACTS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative'];
 const EMPTY: Draft = { kind: 'sector', nameAr: '', nameEn: '', summaryAr: '', summaryEn: '', dutiesAr: '', dutiesEn: '', chairNameAr: '', chairNameEn: '', activityTagsAr: '', activityTagsEn: '', logoUrl: null, sortOrder: '0', isActive: true };
 const EMPTY_MEMBER = { role: 'member', nameAr: '', nameEn: '', titleAr: '', titleEn: '', sortOrder: '0' };
 const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyEn: '', eventDate: '' };

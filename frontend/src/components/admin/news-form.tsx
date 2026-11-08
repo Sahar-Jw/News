@@ -7,6 +7,7 @@ import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { SECTIONS, newsPerm, toLocalInput } from '@/lib/utils';
+import { CONTENT_TYPES, contentTypeLabel, contentTypeUrl } from '@/lib/content-types';
 import { Button, Center, Field, FilePicker, Modal, Spinner, Stars, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { parseYoutubeId } from '@/lib/youtube';
@@ -182,11 +183,20 @@ function Form() {
             <Field label={t('f.mainCategory')}>
               {mayChangeCategory ? (
                 <>
-                  <select required className={inputCls} value={f.mainCategory} onChange={(e) => set('mainCategory', e.target.value)}>
+                  <select required className={inputCls} value={f.mainCategory} onChange={(e) => {
+                    const ct = CONTENT_TYPES.find((c) => `type:${c.code}` === e.target.value);
+                    if (ct) { toast(t('f.contentTypeHint'), 'ok'); router.push(href(contentTypeUrl(ct))); return; } // these types have their own editor
+                    set('mainCategory', e.target.value);
+                  }}>
                     <option value="" disabled>—</option>
                     {sectionOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                     {f.mainCategory && f.mainCategory !== NEW && !sectionOptions.includes(f.mainCategory) && <option value={f.mainCategory}>{f.mainCategory}</option>}
                     {mayCreateCategory && <option value={NEW}>＋ {t('f.newCategory')}</option>}
+                    {!isEdit && (
+                      <optgroup label={t('f.contentTypes')}>
+                        {CONTENT_TYPES.map((c) => <option key={c.code} value={`type:${c.code}`} disabled={!can(...c.perms)}>{contentTypeLabel(c, lang)}</option>)}
+                      </optgroup>
+                    )}
                   </select>
                   {f.mainCategory === NEW && <input required maxLength={100} className={`${inputCls} mt-2`} placeholder={t('f.newCategory')} value={f.newMain} onChange={(e) => set('newMain', e.target.value)} />}
                 </>

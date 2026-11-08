@@ -62,7 +62,7 @@ export default function HomePage() {
       case 'hero': return <HeroSlider key={k} />;
       case 'shortcuts': return <SectionWrap key={k} code={k} title={title(k)} compact><ShortcutsGrid /></SectionWrap>;
       case 'featured': return home.featured.length ? <SectionWrap key={k} code={k} title={title(k)}><FeaturedCarousel items={home.featured} /></SectionWrap> : null;
-      case 'news': return <SectionWrap key={k} code={k} title={title(k)} action={<Link href={href('/news')} className="text-sm font-semibold text-primary">{t('site.allNews')} →</Link>}><RegularNews items={home.news} /></SectionWrap>;
+      case 'news': return <SectionWrap key={k} code={k} title={title(k)} action={<Link href={href('/media')} className="text-sm font-semibold text-primary">{t('site.allNews')} →</Link>}><RegularNews items={home.news} /></SectionWrap>;
       case 'agenda': return <AgendaSection key={k} code={k} title={title(k)} />;
       case 'women': return <WomenCommitteeSection key={k} code={k} title={title(k)} />;
       case 'gallery': return <GallerySection key={k} code={k} title={title(k)} />;

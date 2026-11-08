@@ -43,6 +43,7 @@ const ar: Record<string, string> = {
   'section.BREAKING': 'الأخبار العاجلة', 'section.SERVICES': 'الخدمات', 'section.TEAM': 'الفريق', 'section.TESTIMONIALS': 'آراء العملاء', 'section.PARTNERS': 'الشركاء',
   'section.EXPERTS': 'الخبراء', 'section.STATISTICS': 'الإحصائيات', 'section.COMPANY_OVERVIEW': 'الشركات الشريكة',
   // admin nav
+  'adm.contentTypes': 'أنواع المحتوى', 'f.contentTypes': 'أنواع المحتوى (تُدار من شاشتها)', 'f.contentTypeHint': 'هذا النوع له شاشة إدارة خاصة بحقوله، فتمّ نقلك إليها.',
   'adm.title': 'لوحة الإدارة', 'adm.dashboard': 'الرئيسية', 'adm.content': 'المحتوى', 'adm.news': 'الأخبار العادية', 'adm.security': 'الإعدادات والأمان', 'adm.users': 'المستخدمون',
   'adm.roles': 'الأدوار', 'adm.permissions': 'الصلاحيات', 'adm.settings': 'إعدادات الموقع', 'adm.audit': 'سجل التدقيق', 'adm.cities': 'المدن', 'adm.messages': 'رسائل التواصل',
   'adm.welcome': 'مرحباً', 'adm.noAccess': 'ليست لديك صلاحية لهذه الصفحة', 'adm.visitSite': 'زيارة الموقع',
@@ -103,7 +104,7 @@ const ar: Record<string, string> = {
   'cm.activity': 'النشاط التجاري', 'cm.tagsAr': 'الأنشطة التجارية بالعربية', 'cm.tagsEn': 'الأنشطة التجارية بالإنجليزية (اختياري)', 'cm.tagsHint': 'افصل بين الأنشطة بفاصلة؛ يبحث الزائر بها عن لجنته',
   'cm.summaryAr': 'تعريف مختصر بالعربية', 'cm.summaryEn': 'تعريف مختصر بالإنجليزية (اختياري)', 'cm.dutiesAr': 'الاختصاصات بالعربية', 'cm.dutiesEn': 'الاختصاصات بالإنجليزية (اختياري)', 'cm.logo': 'صورة أو شعار اللجنة',
   'cm.search': 'ابحث عن لجنة أو نشاط تجاري', 'cm.empty': 'لا توجد لجان مطابقة', 'cm.noContent': 'لا يوجد محتوى بعد',
-  'cm.tab.overview': 'نظرة عامة', 'cm.tab.members': 'الأعضاء', 'cm.tab.duties': 'الاختصاصات', 'cm.tab.news': 'الأخبار', 'cm.tab.meetings': 'الاجتماعات والزيارات', 'cm.tab.recommendations': 'التوصيات والمخرجات', 'cm.tab.initiatives': 'المبادرات',
+  'cm.tab.overview': 'نظرة عامة', 'cm.tab.members': 'الأعضاء', 'cm.tab.duties': 'الاختصاصات', 'cm.tab.news': 'الأخبار', 'cm.tab.meetings': 'الاجتماعات', 'cm.tab.visits': 'الزيارات', 'cm.tab.outputs': 'المخرجات', 'cm.tab.events': 'الفعاليات', 'cm.tab.videos': 'الفيديوهات', 'cm.act.output': 'مخرج', 'cm.act.event': 'فعالية', 'cm.allActivities': 'كل الأنشطة', 'cm.byActivity': 'ابحث حسب النشاط التجاري', 'cm.count': 'لجنة', 'cm.tab.recommendations': 'التوصيات', 'cm.tab.initiatives': 'المبادرات',
   'cm.latestNews': 'آخر أخبار اللجنة', 'cm.upcomingMeetings': 'الاجتماعات القادمة', 'cm.upcoming': 'قادم', 'cm.archiveNote': 'كل خبر يُربط باللجنة يظهر هنا تلقائياً وفي أرشيف نشاطها',
   'cm.role.chair': 'الرئيس', 'cm.role.vice': 'نائب الرئيس', 'cm.role.member': 'عضو', 'cm.act.meeting': 'اجتماع', 'cm.act.visit': 'زيارة', 'cm.act.recommendation': 'توصية / مخرج', 'cm.act.initiative': 'مبادرة',
   'cm.manage.details': 'البيانات', 'cm.manage.members': 'الأعضاء', 'cm.manage.activities': 'الأنشطة', 'cm.manage.news': 'الأخبار المرتبطة', 'cm.saveFirst': 'احفظ بيانات اللجنة أولاً ثم أضف الأعضاء والأنشطة والأخبار.', 'cm.addMore': 'يمكنك الآن إضافة الأعضاء والأنشطة والأخبار',
@@ -120,7 +121,7 @@ const ar: Record<string, string> = {
   // wireframe gaps: linked news
   'ln.title': 'الأخبار المرتبطة', 'ln.hint': 'الأخبار المرتبطة تظهر تلقائياً في الصفحة العامة لهذا العنصر دون إعادة كتابتها.', 'ln.search': 'ابحث عن خبر بالعنوان …', 'ln.attach': 'ربط', 'ln.detach': 'فك الربط', 'ln.none': 'لا توجد أخبار مرتبطة', 'board.news': 'الأخبار والأنشطة المرتبطة',
   // wireframe gaps: committee photos
-  'cm.tab.media': 'الصور والفيديو', 'gl.committee': 'اللجنة (اختياري)', 'gl.committeeHint': 'عند اختيار لجنة يظهر هذا الألبوم في تبويب «الصور والفيديو» في صفحتها.', 'gl.noCommittee': 'بدون لجنة',
+  'cm.tab.media': 'الصور', 'gl.committee': 'اللجنة (اختياري)', 'gl.committeeHint': 'عند اختيار لجنة يظهر هذا الألبوم في تبويب «الصور والفيديو» في صفحتها.', 'gl.noCommittee': 'بدون لجنة',
   // wireframe gaps: home agenda + gallery strip
   'sec.agenda': 'أجندة الغرفة', 'sec.women': 'لجنة سيدات الأعمال', 'women.tagline': 'ريادة نسائية... بجذور دمشقية', 'women.cta': 'تعرّف على اللجنة', 'home.expoCta': 'اكتشف المعرض', 'home.expoSoon': 'قريباً', 'sec.gallery': 'معرض الصور', 'home.allEvents': 'كل المناسبات القادمة', 'home.allPhotos': 'كل الألبومات',
   // main menu editor + merged admin dropdown
@@ -242,6 +243,7 @@ const en: Record<string, string> = {
   'sec.partners': 'Our partners', 'sec.experts': 'Our experts', 'sec.statistics': 'Our statistics', 'sec.company': 'Partner companies', 'sec.contact': 'Contact us',
   'section.BREAKING': 'Breaking news', 'section.SERVICES': 'Services', 'section.TEAM': 'Team', 'section.TESTIMONIALS': 'Testimonials', 'section.PARTNERS': 'Partners',
   'section.EXPERTS': 'Experts', 'section.STATISTICS': 'Statistics', 'section.COMPANY_OVERVIEW': 'Partner companies',
+  'adm.contentTypes': 'Content types', 'f.contentTypes': 'Content types (managed on their own screen)', 'f.contentTypeHint': 'This type has its own editor for its fields, so you were taken there.',
   'adm.title': 'Admin panel', 'adm.dashboard': 'Dashboard', 'adm.content': 'Content', 'adm.news': 'Regular news', 'adm.security': 'Settings & security', 'adm.users': 'Users',
   'adm.roles': 'Roles', 'adm.permissions': 'Permissions', 'adm.settings': 'Site settings', 'adm.audit': 'Audit log', 'adm.cities': 'Cities', 'adm.messages': 'Contact messages',
   'adm.welcome': 'Welcome', 'adm.noAccess': "You don't have permission for this page", 'adm.visitSite': 'Visit site',
@@ -297,7 +299,7 @@ const en: Record<string, string> = {
   'cm.activity': 'Business activity', 'cm.tagsAr': 'Business activities (Arabic)', 'cm.tagsEn': 'Business activities (English, optional)', 'cm.tagsHint': 'Separate activities with a comma; visitors search them to find their committee',
   'cm.summaryAr': 'Short description (Arabic)', 'cm.summaryEn': 'Short description (English, optional)', 'cm.dutiesAr': 'Terms of reference (Arabic)', 'cm.dutiesEn': 'Terms of reference (English, optional)', 'cm.logo': 'Committee picture or logo',
   'cm.search': 'Search a committee or business activity', 'cm.empty': 'No matching committees', 'cm.noContent': 'Nothing here yet',
-  'cm.tab.overview': 'Overview', 'cm.tab.members': 'Members', 'cm.tab.duties': 'Terms of reference', 'cm.tab.news': 'News', 'cm.tab.meetings': 'Meetings & visits', 'cm.tab.recommendations': 'Recommendations & outputs', 'cm.tab.initiatives': 'Initiatives',
+  'cm.tab.overview': 'Overview', 'cm.tab.members': 'Members', 'cm.tab.duties': 'Terms of reference', 'cm.tab.news': 'News', 'cm.tab.meetings': 'Meetings', 'cm.tab.visits': 'Visits', 'cm.tab.outputs': 'Outputs', 'cm.tab.events': 'Events', 'cm.tab.videos': 'Videos', 'cm.act.output': 'Output', 'cm.act.event': 'Event', 'cm.allActivities': 'All activities', 'cm.byActivity': 'Find by business activity', 'cm.count': 'committees', 'cm.tab.recommendations': 'Recommendations', 'cm.tab.initiatives': 'Initiatives',
   'cm.latestNews': 'Latest committee news', 'cm.upcomingMeetings': 'Upcoming meetings', 'cm.upcoming': 'Upcoming', 'cm.archiveNote': 'Every news item linked to the committee appears here automatically and in its activity archive',
   'cm.role.chair': 'Chair', 'cm.role.vice': 'Vice chair', 'cm.role.member': 'Member', 'cm.act.meeting': 'Meeting', 'cm.act.visit': 'Visit', 'cm.act.recommendation': 'Recommendation / output', 'cm.act.initiative': 'Initiative',
   'cm.manage.details': 'Details', 'cm.manage.members': 'Members', 'cm.manage.activities': 'Activities', 'cm.manage.news': 'Linked news', 'cm.saveFirst': 'Save the committee details first, then add members, activities and news.', 'cm.addMore': 'You can now add members, activities and news',
@@ -314,7 +316,7 @@ const en: Record<string, string> = {
   // wireframe gaps: linked news
   'ln.title': 'Linked news', 'ln.hint': 'Linked news appear automatically on the public page of this item, without retyping them.', 'ln.search': 'Search news by title …', 'ln.attach': 'Link', 'ln.detach': 'Unlink', 'ln.none': 'No linked news', 'board.news': 'Related news and activities',
   // wireframe gaps: committee photos
-  'cm.tab.media': 'Photos & video', 'gl.committee': 'Committee (optional)', 'gl.committeeHint': 'When a committee is chosen, this album appears in the "Photos & video" tab of its page.', 'gl.noCommittee': 'No committee',
+  'cm.tab.media': 'Photos', 'gl.committee': 'Committee (optional)', 'gl.committeeHint': 'When a committee is chosen, this album appears in the "Photos & video" tab of its page.', 'gl.noCommittee': 'No committee',
   // wireframe gaps: home agenda + gallery strip
   'sec.agenda': 'Chamber agenda', 'sec.women': 'Women Business Committee', 'women.tagline': "Women's leadership... rooted in Damascus", 'women.cta': 'Discover the committee', 'home.expoCta': 'Discover the Expo', 'home.expoSoon': 'Coming soon', 'sec.gallery': 'Photo gallery', 'home.allEvents': 'All upcoming occasions', 'home.allPhotos': 'All albums',
   // main menu editor + merged admin dropdown

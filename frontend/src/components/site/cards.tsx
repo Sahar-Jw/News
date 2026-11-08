@@ -157,7 +157,7 @@ export function NewsCard({ n }: { n: Card }) {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden="true" />
         {n.hasVideo && <span className="absolute end-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-xs text-white" aria-label="video">▶</span>}
         <div className="absolute start-3 top-3 z-10 flex items-center gap-1.5">
-          <Link href={href(`/news?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--primary)_14%,white)] px-2.5 py-1 text-xs font-semibold text-primary shadow-sm`}>
+          <Link href={href(`/media?category=${encodeURIComponent(n.mainCategory)}`)} className={`${chip} flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--primary)_14%,white)] px-2.5 py-1 text-xs font-semibold text-primary shadow-sm`}>
             <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />{n.mainCategory}
           </Link>
         </div>
@@ -182,7 +182,7 @@ export function NewsCard({ n }: { n: Card }) {
         </div>
         <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
           {n.subcategory ? (
-            <Link href={href(`/news?subcategory=${encodeURIComponent(n.subcategory)}`)} className={`${chip} relative min-w-0 truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary`}>{n.subcategory}</Link>
+            <Link href={href(`/media?subcategory=${encodeURIComponent(n.subcategory)}`)} className={`${chip} relative min-w-0 truncate rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary`}>{n.subcategory}</Link>
           ) : <span />}
           <div className="relative z-10 shrink-0"><ShareRow id={n.id} title={n.title} /></div>
         </div>

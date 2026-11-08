@@ -49,7 +49,7 @@ export const DEFAULT_BRANDED_PAGE_LINKS: Record<'expo' | 'women', BrandedPageLin
 
 export const BRANDED_DESTINATIONS: BrandedPageLink[] = [
   { labelAr: 'الصفحة الرئيسية', labelEn: 'Home', href: '/' },
-  { labelAr: 'الأخبار', labelEn: 'News', href: '/news' },
+  { labelAr: 'الأخبار', labelEn: 'News', href: '/media' },
   { labelAr: 'المركز الإعلامي', labelEn: 'Media center', href: '/media' },
   { labelAr: 'معرض الصور', labelEn: 'Gallery', href: '/gallery' },
   { labelAr: 'اللجان', labelEn: 'Committees', href: '/committees' },

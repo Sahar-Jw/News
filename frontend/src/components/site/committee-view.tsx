@@ -11,10 +11,11 @@ import { NotFoundContent } from '@/components/site/not-found-content';
 interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 interface Activity { id: number; kind: string; title: string; body: string; eventDate: string | null; upcoming: boolean }
 interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
+interface Video { id: number; title: string; youtubeId: string; cover: string | null }
 interface Album { id: number; title: string; cover: string | null; count: number }
 export interface CommitteeData {
   id: number; kind: string; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null; duties: string;
-  members: Member[]; meetings: Activity[]; recommendations: Activity[]; initiatives: Activity[]; news: NewsItem[]; gallery: Album[];
+  members: Member[]; meetings: Activity[]; visits?: Activity[]; recommendations: Activity[]; outputs?: Activity[]; events?: Activity[]; initiatives: Activity[]; news: NewsItem[]; gallery: Album[]; videos?: Video[];
 }
 
 const Heading = ({ children }: { children: React.ReactNode }) => <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{children}</h2>;
@@ -35,6 +36,26 @@ function MemberGrid({ members }: { members: Member[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** click-to-play YouTube card: the player (privacy domain) is only loaded when the visitor presses play */
+function VideoCard({ v }: { v: Video }) {
+  const [play, setPlay] = useState(false);
+  return (
+    <figure className="overflow-hidden rounded-xl ring-1 ring-line">
+      <div className="relative aspect-video bg-black">
+        {play ? (
+          <iframe src={`https://www.youtube-nocookie.com/embed/${v.youtubeId}?rel=0&modestbranding=1&autoplay=1`} title={v.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="absolute inset-0 h-full w-full border-0" />
+        ) : (
+          <button type="button" onClick={() => setPlay(true)} aria-label={v.title} className="group absolute inset-0">
+            <img src={v.cover ? fileUrl(v.cover) : `https://img.youtube.com/vi/${v.youtubeId}/hqdefault.jpg`} alt="" loading="lazy" className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100" />
+            <span className="absolute inset-0 m-auto grid h-14 w-14 place-items-center rounded-full bg-red-600 text-white shadow-lg transition group-hover:scale-105"><svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M8 5v14l11-7z" /></svg></span>
+          </button>
+        )}
+      </div>
+      <figcaption className="px-3 py-2 text-sm font-semibold text-secondary">{v.title}</figcaption>
+    </figure>
   );
 }
 
@@ -102,7 +123,7 @@ export function CommitteeView({ path }: { path: string }) {
     const syncHash = () => {
       const hash = window.location.hash.slice(1);
       const next = hash === 'about' ? 'overview' : hash;
-      if (['overview', 'members', 'duties', 'news', 'meetings', 'recommendations', 'initiatives', 'media'].includes(next)) {
+      if (['overview', 'members', 'duties', 'news', 'meetings', 'visits', 'recommendations', 'outputs', 'events', 'initiatives', 'media', 'videos'].includes(next)) {
         setTab(next);
         requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       }
@@ -120,15 +141,19 @@ export function CommitteeView({ path }: { path: string }) {
       { key: 'duties', show: !!c.duties },
       { key: 'news', show: c.news.length > 0 },
       { key: 'meetings', show: c.meetings.length > 0 },
+      { key: 'visits', show: (c.visits ?? []).length > 0 },
       { key: 'recommendations', show: c.recommendations.length > 0 },
+      { key: 'outputs', show: (c.outputs ?? []).length > 0 },
+      { key: 'events', show: (c.events ?? []).length > 0 },
       { key: 'initiatives', show: c.kind === 'women' },
       { key: 'media', show: (c.gallery ?? []).length > 0 },
+      { key: 'videos', show: (c.videos ?? []).length > 0 },
     ].filter((x) => x.show);
   }, [c]);
 
   if (state === 'load') return <Center><Spinner /></Center>;
   if (state === '404' || !c) return <NotFoundContent lang={lang} />;
-  const upcoming = c.meetings.filter((m) => m.upcoming);
+  const upcoming = [...c.meetings, ...(c.events ?? [])].filter((m) => m.upcoming).sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
   const women = c.kind === 'women';
 
   return (
@@ -198,6 +223,14 @@ export function CommitteeView({ path }: { path: string }) {
       {tab === 'duties' && <div id="duties" className="scroll-mt-24"><Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box></div>}
       {tab === 'news' && <div id="news" className="scroll-mt-24"><Box><NewsList items={c.news} /></Box></div>}
       {tab === 'meetings' && <div id="meetings" className="scroll-mt-24"><Box><ActivityList items={c.meetings} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'visits' && <div id="visits" className="scroll-mt-24"><Box><ActivityList items={c.visits ?? []} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'outputs' && <div id="outputs" className="scroll-mt-24"><Box><ActivityList items={c.outputs ?? []} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'events' && <div id="events" className="scroll-mt-24"><Box><ActivityList items={c.events ?? []} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'videos' && (
+        <div id="videos" className="scroll-mt-24"><Box>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{(c.videos ?? []).map((v) => <VideoCard key={v.id} v={v} />)}</div>
+        </Box></div>
+      )}
       {tab === 'recommendations' && <div id="recommendations" className="scroll-mt-24"><Box><ActivityList items={c.recommendations} empty={t('cm.noContent')} /></Box></div>}
       {tab === 'media' && (
         <div id="media" className="scroll-mt-24"><Box>

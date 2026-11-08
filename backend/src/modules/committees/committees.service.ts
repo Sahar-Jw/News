@@ -4,6 +4,7 @@ import { In, Not, Repository } from 'typeorm';
 import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
+import { parseYoutubeId } from '../../common/utils/youtube';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentLinksService } from '../content-links/content-links.service';
@@ -22,7 +23,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const COMMITTEE_CODES = [CC.COMMITTEE, CC.WOMEN_COMMITTEE] as string[];
 const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE : CC.COMMITTEE);
 const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
-const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_INITIATIVE] as string[];
+const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE] as string[];
 const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
 const activityKind = (code: string) => code.replace(/^COMMITTEE_/, '').toLowerCase() as ActivityKind;
 
@@ -313,17 +314,27 @@ export class CommitteesService {
       qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(30);
       newsList = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
     }
-    const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 24 });
-    const gallery = albums.map((g) => ({ id: g.id, title: (en && g.titleEn) || g.titleAr, cover: this.storage.url((g.images ?? [])[0] ?? null), count: (g.images ?? []).length }));
+    const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 48 });
+    const title = (g: (typeof albums)[number]) => (en && g.titleEn) || g.titleAr;
+    const gallery = albums.filter((g) => g.kind !== 'video').slice(0, 24).map((g) => ({ id: g.id, title: title(g), cover: this.storage.url((g.images ?? [])[0] ?? null), count: (g.images ?? []).length }));
+    // YouTube videos of the committee (gallery items of kind "video" assigned to it)
+    const videos = albums.filter((g) => g.kind === 'video').flatMap((g) => {
+      const youtubeId = parseYoutubeId(g.youtubeUrl);
+      return youtubeId ? [{ id: g.id, title: title(g), youtubeId, cover: this.storage.url((g.images ?? [])[0] ?? null) }] : [];
+    });
     const byKind = (k: ActivityKind) => acts.filter((a) => a.v.kind === k).map(act);
     return {
       ...this.card(c, en), duties: pick(c.x.dutiesAr, c.x.dutiesEn, en),
       members: [...members].sort((a, b) => rank(a.x.role) - rank(b.x.role)).map((m) => ({ id: m.id, role: m.x.role, name: pick(m.title, m.x.nameEn, en), title: pick(m.x.titleAr, m.x.titleEn, en), photoUrl: this.storage.url(m.images[0] ?? null) })),
-      meetings: [...byKind('meeting'), ...byKind('visit')].sort((a, b) => (b.eventDate ?? '').localeCompare(a.eventDate ?? '')),
+      meetings: byKind('meeting'),
+      visits: byKind('visit'),
       recommendations: byKind('recommendation'),
+      outputs: byKind('output'),
+      events: byKind('event'),
       initiatives: byKind('initiative'),
       news: newsList,
       gallery,
+      videos,
     };
   }
 }

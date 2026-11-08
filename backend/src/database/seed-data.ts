@@ -93,7 +93,7 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
 
 /** Default quick links of the home page (all point to pages that already exist). */
 export const SHORTCUT_DEFAULTS: { ar: string; en: string; link: string }[] = [
-  { ar: 'آخر الأخبار', en: 'Latest news', link: '/news' },
+  { ar: 'آخر الأخبار', en: 'Latest news', link: '/media' },
   { ar: 'معرض الصور', en: 'Photo gallery', link: '/gallery' },
   { ar: 'المناسبات القادمة', en: 'Upcoming occasions', link: '/occasions/upcoming' },
   { ar: 'المناسبات السابقة', en: 'Previous occasions', link: '/occasions/previous' },
@@ -110,7 +110,6 @@ export const NAV_DEFAULTS: { ar: string; en: string; items: { ar: string; en: st
     { ar: 'لجنة سيدات الأعمال', en: 'Businesswomen committee', url: '/committees/women' },
   ] },
   { ar: 'الأخبار والإعلام', en: 'News & media', items: [
-    { ar: 'كل الأخبار', en: 'All news', url: '/news' },
     { ar: 'المركز الإعلامي', en: 'Media center', url: '/media' },
     { ar: 'معرض الصور', en: 'Image gallery', url: '/gallery' },
     { ar: 'النشرة البريدية', en: 'Newsletter', url: '/subscribe' },

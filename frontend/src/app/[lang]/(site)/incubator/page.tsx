@@ -136,7 +136,7 @@ export default function IncubatorPage() {
         <section>
           <h2 className="mb-4 text-xl font-extrabold text-secondary">{t('inc.news')}</h2>
           <div className="grid gap-4 md:grid-cols-3">{news.map((n) => <NewsCard key={n.id} n={n} />)}</div>
-          <div className="mt-3 text-center"><Link href={href(`/news?topics=${encodeURIComponent(topic)}`)} className="text-sm font-bold text-primary hover:underline">{t('tr.moreNews')} →</Link></div>
+          <div className="mt-3 text-center"><Link href={href(`/media?topics=${encodeURIComponent(topic)}`)} className="text-sm font-bold text-primary hover:underline">{t('tr.moreNews')} →</Link></div>
         </section>
       )}
 

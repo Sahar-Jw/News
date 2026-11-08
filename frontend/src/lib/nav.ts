@@ -22,7 +22,6 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'media',
     label: 'nav.media',
     items: [
-      { label: 'site.allNews', to: '/news', ready: true },
       { label: 'nav.mediaCenter', to: '/media', ready: true },
       { label: 'pub.gallery', to: '/gallery', ready: true },
       { label: 'nav.newsletter', to: '/subscribe', ready: true },

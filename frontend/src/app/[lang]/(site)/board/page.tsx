@@ -42,7 +42,7 @@ export default function BoardPage() {
     [items, pos, termSel, needle],
   );
   const filtered = !!(pos || termSel || needle);
-  const presentPos = POSITIONS.filter((p) => (items ?? []).some((m) => m.position === p));
+  const countOf = (p: string) => (items ?? []).filter((m) => !p || m.position === p).length;
   const term = termSel || items?.find((m) => m.termLabel)?.termLabel;
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -53,11 +53,11 @@ export default function BoardPage() {
           <span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" />
         </div>
       </header>
-      {items && items.length > 1 && (
+      {items && items.length > 0 && (
         <div className="mb-8 space-y-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line">
           <div className="flex flex-wrap items-center gap-3">
             <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('board.searchPh')} aria-label={t('app.search')} className="min-w-[12rem] flex-1 rounded-xl border border-line bg-white px-4 py-2 text-sm outline-none focus:border-primary" />
-            {terms.length > 1 && (
+            {terms.length > 0 && (
               <select value={termSel} onChange={(e) => setTermSel(e.target.value)} aria-label={t('board.term')} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
                 <option value="">{t('board.term')}: {t('app.all')}</option>
                 {terms.map((x) => <option key={x} value={x}>{x}</option>)}
@@ -66,11 +66,14 @@ export default function BoardPage() {
             {filtered && <button type="button" onClick={() => { setQ(''); setPos(''); setTermSel(''); }} className="rounded-xl px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10">{t('app.reset')}</button>}
           </div>
           <div role="group" aria-label={t('board.position')} className="flex flex-wrap gap-2">
-            {['', ...presentPos].map((p) => (
-              <button key={p || 'all'} type="button" aria-pressed={pos === p} onClick={() => setPos(p)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${pos === p ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}>
-                {p ? t(`board.pos.${p}`) : t('app.all')}
-              </button>
-            ))}
+            {['', ...POSITIONS].map((p) => {
+              const n = countOf(p);
+              return (
+                <button key={p || 'all'} type="button" aria-pressed={pos === p} onClick={() => setPos(p)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${pos === p ? 'bg-secondary text-white shadow-card' : n ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                  {p ? t(`board.pos.${p}`) : t('app.all')} <span className="text-xs opacity-70">({n})</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
