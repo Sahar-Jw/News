@@ -80,6 +80,7 @@ const ar: Record<string, string> = {
   'board.jobTitle': 'الصفة المهنية', 'board.jobTitleAr': 'الصفة المهنية بالعربية', 'board.jobTitleEn': 'الصفة المهنية بالإنجليزية (اختياري)', 'board.term': 'الدورة', 'board.termHint': 'مثال: 2024 - 2028',
   'board.photo': 'الصورة', 'board.photoHint': 'JPG أو PNG أو WEBP، حتى 5 ميغابايت', 'board.removePhoto': 'حذف الصورة', 'board.photoRemoved': 'ستُحذف الصورة عند الحفظ', 'board.imageOnly': 'صور فقط',
   'board.bioAr': 'النبذة المهنية بالعربية', 'board.bioEn': 'النبذة المهنية بالإنجليزية (اختياري)', 'board.dutiesAr': 'اللجان والمهام بالعربية', 'board.dutiesEn': 'اللجان والمهام بالإنجليزية (اختياري)',
+  'board.searchPh': 'ابحث باسم العضو أو صفته…', 'board.noMatch': 'لا يوجد أعضاء مطابقون للتصفية',
   'board.bio': 'نبذة مهنية', 'board.duties': 'اللجان والمهام', 'board.back': 'العودة إلى مجلس الإدارة', 'board.empty': 'لم تتم إضافة أعضاء بعد',
   // documents
   'adm.documents': 'الوثائق والمكتبة', 'mod.documents': 'الوثائق والمكتبة', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
@@ -273,6 +274,7 @@ const en: Record<string, string> = {
   'board.jobTitle': 'Job title', 'board.jobTitleAr': 'Job title (Arabic)', 'board.jobTitleEn': 'Job title (English, optional)', 'board.term': 'Term', 'board.termHint': 'Example: 2024 - 2028',
   'board.photo': 'Picture', 'board.photoHint': 'JPG, PNG or WEBP, up to 5 MB', 'board.removePhoto': 'Remove picture', 'board.photoRemoved': 'The picture will be removed on save', 'board.imageOnly': 'Images only',
   'board.bioAr': 'Biography (Arabic)', 'board.bioEn': 'Biography (English, optional)', 'board.dutiesAr': 'Committees and duties (Arabic)', 'board.dutiesEn': 'Committees and duties (English, optional)',
+  'board.searchPh': 'Search by member name or title…', 'board.noMatch': 'No members match the filters',
   'board.bio': 'Biography', 'board.duties': 'Committees and duties', 'board.back': 'Back to the board', 'board.empty': 'No members added yet',
   // documents
   'adm.documents': 'Documents & library', 'mod.documents': 'Documents & library', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',

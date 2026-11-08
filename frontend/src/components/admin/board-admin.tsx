@@ -90,6 +90,7 @@ export function BoardAdmin() {
         columns={cols}
         refreshKey={key}
         exportable={false}
+        filters={[{ key: 'position', label: t('board.position'), options: ['president', 'vice_president', 'secretary', 'treasurer', 'member'].map((p) => ({ value: p, label: t(`board.pos.${p}`) })) }]}
         bulkDelete={{ path: '/admin/board/bulk-delete', can: can('board.delete') }}
         toolbar={can('board.create') && <Button onClick={() => open()}>＋ {t('board.add')}</Button>}
         rowActions={(r, reload) => (
