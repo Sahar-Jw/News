@@ -1,6 +1,6 @@
 'use client';
-import { GalleryAdmin } from '@/components/admin/gallery-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <GalleryAdmin />;
+  return <HubRedirect hub="media" tab="gallery" />;
 }

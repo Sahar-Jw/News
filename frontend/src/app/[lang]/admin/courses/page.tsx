@@ -1,6 +1,6 @@
 'use client';
-import { CoursesAdmin } from '@/components/admin/courses-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <CoursesAdmin />;
+  return <HubRedirect hub="training" tab="courses" />;
 }

@@ -1,6 +1,6 @@
 'use client';
-import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <SubscribersAdmin />;
+  return <HubRedirect hub="audience" tab="subscribers" />;
 }

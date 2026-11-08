@@ -1,6 +1,6 @@
 'use client';
-import { AdsAdmin } from '@/components/admin/ads-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <AdsAdmin />;
+  return <HubRedirect hub="audience" tab="ads" />;
 }

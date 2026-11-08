@@ -1,6 +1,6 @@
 'use client';
-import { FooterAdmin } from '@/components/admin/footer-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <FooterAdmin />;
+  return <HubRedirect hub="identity" tab="footer" />;
 }

@@ -138,3 +138,6 @@ export function MembershipAdmin() {
     </RequirePerm>
   );
 }
+
+/** the two screens of the page, also used as separate tabs of the Settings hub */
+export { Applications as MembershipApplications, Content as MembershipContent };

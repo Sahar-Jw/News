@@ -10,6 +10,7 @@ import { useNavGroups } from './use-nav';
 import { useFooterGroups, type FooterLinkItem } from './use-footer';
 import { FooterNewsletter } from './footer-newsletter';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
+import { HUB_PERMS } from '@/lib/hubs-meta';
 import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean; newTab?: boolean };
@@ -110,7 +111,7 @@ function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; 
 }
 
 /**
- * The one Admin dropdown (Content / Tools / Settings & security as sub-dropdowns). On large screens each sub-dropdown opens beside the panel (to the right in
+ * The one Admin dropdown (Content / Settings & security as sub-dropdowns). On large screens each sub-dropdown opens beside the panel (to the right in
  * Arabic, to the left in English, so it never runs off the screen) while the pointer or keyboard focus is on its row; on small screens
  * the groups collapse as an accordion (one at a time, or at once when there is only one). Every sub-dropdown shows at most 8 rows
  * and scrolls after that. Items appear only for holders of their permission (UI hint only - the API enforces every permission).
@@ -249,42 +250,14 @@ export function Navbar() {
     ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can(newsPerm('read', s)) })),
     { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
   ];
-  // Tools: each item shows only for users holding its own permission (technical_admin holds all); the dropdown hides when none applies.
-  const toolsItems: NavItem[] = [
-    { label: t('adm.occasions'), to: '/admin/occasions', show: can('occasions.read') },
-    { label: t('adm.gallery'), to: '/admin/gallery', show: can('gallery.read') },
-    { label: t('adm.board'), to: '/admin/board', show: can('board.read') },
-    { label: t('adm.committees'), to: '/admin/committees', show: can('committees.read') },
-    { label: t('adm.membership'), to: '/admin/membership', show: can('membership.read') },
-    { label: t('adm.incubatorProjects'), to: '/admin/incubator-projects', show: can('incubator.read') },
-    { label: t('adm.incubatorApplications'), to: '/admin/incubator-applications', show: can('incubator.applications.read') },
-    { label: t('adm.get2trade'), to: '/admin/get2trade', show: can('get2trade.read') },
-    { label: t('adm.documents'), to: '/admin/documents', show: can('documents.read') },
-    { label: t('adm.services'), to: '/admin/services', show: can('services.read') },
-    { label: t('adm.courses'), to: '/admin/courses', show: can('courses.read') },
-    { label: t('adm.trainers'), to: '/admin/trainers', show: can('courses.read') },
-    { label: t('adm.courseRegs'), to: '/admin/course-registrations', show: can('registrations.read') },
-    { label: t('adm.expoExhibitors'), to: '/admin/expo-exhibitors', show: can('expo.read') },
-    { label: t('adm.expoSponsors'), to: '/admin/expo-sponsors', show: can('expo.read') },
-    { label: t('adm.expoSessions'), to: '/admin/expo-sessions', show: can('expo.read') },
-    { label: t('adm.expoApplications'), to: '/admin/expo-applications', show: can('expo.applications.read') },
-    { label: t('adm.pages'), to: '/admin/pages', show: can('pages.read') },
-    { label: t('adm.faqs'), to: '/admin/faqs', show: can('faqs.read') },
-    { label: t('adm.subscribers'), to: '/admin/subscribers', show: can('subscribers.read') },
-    { label: t('adm.ads'), to: '/admin/ads', show: can('ads.read') },
-    { label: t('adm.customers'), to: '/admin/customers', show: can('customers.read') },
-    { label: t('adm.dates'), to: '/admin/dates', show: can('appointments.read') },
-    { label: t('adm.datesDashboard'), to: '/admin/dates-dashboard', show: can('appointments.dashboard') },
-  ];
   // Public dropdowns: managed in Settings -> Main menu (loaded from the API).
   const navGroups = useNavGroups(lang, t);
   const groups = (navGroups ?? []).map((g) => ({ key: String(g.id), label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) }));
+  // Settings is the hub of every page of the site (courses, trainers, trainees, expo, membership ...): it is listed for anyone who can open at least one of its tabs.
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
     { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
-    { label: t('adm.settings'), to: '/admin/settings', show: can('settings.read') },
-    { label: t('nav.editor'), to: '/admin/nav', show: can('nav.read') },
-    { label: t('ft.editor'), to: '/admin/footer', show: can('footer.read') },
+    { label: t('adm.settings'), to: '/admin/settings', show: can(...HUB_PERMS) },
     { label: t('adm.cities'), to: '/admin/cities', show: can('cities.read') },
     { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
   ];
@@ -375,7 +348,7 @@ export function Navbar() {
           <Link href={href('/contact')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${/\/contact\/?$/.test(pathname) ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('contact.title')}</Link>
 
 
-          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
+          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
 
           {me && (
             <div className="flex flex-col gap-1 xl:hidden">

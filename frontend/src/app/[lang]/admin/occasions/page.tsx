@@ -1,6 +1,6 @@
 'use client';
-import { OccasionsAdmin } from '@/components/admin/occasions-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <OccasionsAdmin />;
+  return <HubRedirect hub="media" tab="occasions" />;
 }

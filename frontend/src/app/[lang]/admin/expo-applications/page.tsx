@@ -1,6 +1,6 @@
 'use client';
-import { ExpoApplicationsAdmin } from '@/components/admin/expo-applications-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <ExpoApplicationsAdmin />;
+  return <HubRedirect hub="expo" tab="applications" />;
 }

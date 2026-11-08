@@ -1,6 +1,6 @@
 'use client';
-import { CommitteesAdmin } from '@/components/admin/committees-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <CommitteesAdmin />;
+  return <HubRedirect hub="committees" tab="committees" />;
 }

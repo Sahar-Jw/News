@@ -1,6 +1,6 @@
 'use client';
-import { FaqsAdmin } from '@/components/admin/faqs-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <FaqsAdmin />;
+  return <HubRedirect hub="pages" tab="faqs" />;
 }

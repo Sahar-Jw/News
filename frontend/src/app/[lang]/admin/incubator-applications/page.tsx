@@ -1,6 +1,6 @@
 'use client';
-import { IncubatorApplicationsAdmin } from '@/components/admin/incubator-applications-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <IncubatorApplicationsAdmin />;
+  return <HubRedirect hub="incubator" tab="applications" />;
 }

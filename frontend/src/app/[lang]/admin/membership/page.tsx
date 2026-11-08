@@ -1,6 +1,6 @@
 'use client';
-import { MembershipAdmin } from '@/components/admin/membership-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <MembershipAdmin />;
+  return <HubRedirect hub="membership" tab="applications" />;
 }

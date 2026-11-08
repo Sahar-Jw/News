@@ -1,6 +1,6 @@
 'use client';
-import { BoardAdmin } from '@/components/admin/board-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <BoardAdmin />;
+  return <HubRedirect hub="board" tab="board" />;
 }

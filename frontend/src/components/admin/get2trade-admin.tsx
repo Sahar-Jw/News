@@ -345,3 +345,6 @@ export function Get2TradeAdmin() {
     </RequirePerm>
   );
 }
+
+/** the four screens of the page, also used as separate tabs of the Settings hub */
+export { Bookings as G2tBookings, Spaces as G2tSpaces, Packages as G2tPackages, Content as G2tContent };

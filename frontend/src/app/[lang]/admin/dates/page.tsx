@@ -1,6 +1,6 @@
 'use client';
-import { AppointmentsAdmin } from '@/components/admin/appointments-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <AppointmentsAdmin />;
+  return <HubRedirect hub="services" tab="dates" />;
 }

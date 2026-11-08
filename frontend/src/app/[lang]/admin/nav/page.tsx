@@ -1,6 +1,6 @@
 'use client';
-import { NavAdmin } from '@/components/admin/nav-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <NavAdmin />;
+  return <HubRedirect hub="identity" tab="menu" />;
 }

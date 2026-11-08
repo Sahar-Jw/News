@@ -1,6 +1,6 @@
 'use client';
-import { DocumentsAdmin } from '@/components/admin/documents-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <DocumentsAdmin />;
+  return <HubRedirect hub="documents" tab="documents" />;
 }

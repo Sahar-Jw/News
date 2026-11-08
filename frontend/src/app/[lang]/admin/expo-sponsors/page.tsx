@@ -1,6 +1,6 @@
 'use client';
-import { ExpoAdmin } from '@/components/admin/expo-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <ExpoAdmin kind="sponsor" />;
+  return <HubRedirect hub="expo" tab="sponsors" />;
 }

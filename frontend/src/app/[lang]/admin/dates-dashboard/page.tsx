@@ -1,6 +1,6 @@
 'use client';
-import { DatesDashboard } from '@/components/admin/dates-dashboard';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <DatesDashboard />;
+  return <HubRedirect hub="services" tab="dashboard" />;
 }

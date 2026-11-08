@@ -1,6 +1,6 @@
 'use client';
-import { ServicesAdmin } from '@/components/admin/services-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <ServicesAdmin />;
+  return <HubRedirect hub="services" tab="services" />;
 }

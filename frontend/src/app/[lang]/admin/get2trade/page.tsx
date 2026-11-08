@@ -1,6 +1,6 @@
 'use client';
-import { Get2TradeAdmin } from '@/components/admin/get2trade-admin';
+import { HubRedirect } from '@/components/admin/hub-redirect';
 
 export default function Page() {
-  return <Get2TradeAdmin />;
+  return <HubRedirect hub="get2trade" tab="bookings" />;
 }
