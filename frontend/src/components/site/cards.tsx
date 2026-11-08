@@ -24,6 +24,8 @@ export interface Card {
   body?: string | null;
   /** attached PDF (detail page only) */
   pdf?: string | null;
+  /** every attached PDF (detail page only); `pdf` is the first one */
+  pdfs?: string[];
   language: string;
 }
 

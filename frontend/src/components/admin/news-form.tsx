@@ -15,7 +15,7 @@ import { RichEditor } from './rich-editor';
 
 interface Existing {
   id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[] | null; body: string | null;
-  images: string[] | null; imageUrls: string[]; pdf: string | null; youtubeUrl: string | null; rating: number | null; isFeatured: boolean; publishAt: string | null; status: string; language: string; visibility: string;
+  images: string[] | null; imageUrls: string[]; pdf: string | null; pdfs?: string[]; youtubeUrl: string | null; rating: number | null; isFeatured: boolean; publishAt: string | null; status: string; language: string; visibility: string;
 }
 interface NewImg { file: File; url: string }
 const NEW = '__new__';
@@ -40,9 +40,9 @@ function Form() {
   const [existing, setExisting] = useState<string[]>([]);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [fresh, setFresh] = useState<NewImg[]>([]);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfOld, setPdfOld] = useState<string | null>(null); // path of the saved PDF
-  const [pdfGone, setPdfGone] = useState(false);
+  const [pdfFiles, setPdfFiles] = useState<File[]>([]); // new PDFs, uploaded on save
+  const [pdfOld, setPdfOld] = useState<string[]>([]); // paths of the saved PDFs
+  const [pdfGone, setPdfGone] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState('');
   const [preview, setPreview] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -68,13 +68,14 @@ function Form() {
         body: n.body ?? '', youtubeUrl: n.youtubeUrl ?? '', rating: n.rating ? String(n.rating) : '', isFeatured: n.isFeatured, publishAt: toLocalInput(n.publishAt), status: n.status, language: n.language, visibility: n.visibility,
       });
       setExisting(asList(n.images));
-      setPdfOld(n.pdf ?? null);
+      setPdfOld(n.pdfs?.length ? n.pdfs : n.pdf ? [n.pdf] : []);
       setEditorKey((k) => k + 1);
     }).catch((e) => toast(e.message, 'err')).finally(() => setLoading(false));
     // eslint-disable-next-line
   }, [id]);
 
   const urlOf = (p: string) => fileUrl(`/api/files/${p}`);
+  const MAX_PDFS = 10; // same limit as the API
   const isPdf = (x: File) => x.type === 'application/pdf' || /\.pdf$/i.test(x.name);
   // one picker for pictures and the PDF: the PDF goes to its own slot, pictures to the gallery
   const addFiles = (all: FileList | null) => {
@@ -83,7 +84,7 @@ function Form() {
     const list = [...all].filter((x) => !isPdf(x));
     if (pdfs.length) {
       if (special) toast('JPG/PNG/WEBP/GIF', 'err');
-      else addPdf(pdfs[0]);
+      else addPdfs(pdfs);
     }
     if (!list.length) return;
     const next = list.filter((x) => /^image\//.test(x.type) && x.size <= 5 * 1024 * 1024);
@@ -99,10 +100,14 @@ function Form() {
     setFresh((s) => [...s, ...next.map((file) => ({ file, url: URL.createObjectURL(file) }))]);
   };
 
-  const addPdf = (file: File) => {
-    if (file.size > 25 * 1024 * 1024) return toast('PDF ≤ 25MB', 'err');
-    setPdfFile(file);
-    setPdfGone(false);
+  const addPdfs = (files: File[]) => {
+    const ok = files.filter((x) => x.size <= 25 * 1024 * 1024);
+    if (ok.length !== files.length) toast('PDF ≤ 25MB', 'err');
+    // the same file chosen twice is added once
+    const fresh = ok.filter((x) => !pdfFiles.some((y) => y.name === x.name && y.size === x.size));
+    const room = MAX_PDFS - (pdfOld.length - pdfGone.size) - pdfFiles.length;
+    if (fresh.length > room) toast(`PDF ≤ ${MAX_PDFS}`, 'err');
+    if (room > 0 && fresh.length) setPdfFiles((s) => [...s, ...fresh.slice(0, room)]);
   };
 
   const ytId = parseYoutubeId(f.youtubeUrl);
@@ -136,8 +141,8 @@ function Form() {
     if (isEdit) fd.set('keepImages', JSON.stringify(existing.filter((p) => !removed.has(p))));
     fresh.forEach((i) => fd.append('images', i.file));
     if (!special) {
-      if (pdfFile) fd.append('pdf', pdfFile);
-      else if (isEdit && pdfGone) fd.set('removePdf', 'true');
+      pdfFiles.forEach((p) => fd.append('pdf', p));
+      if (isEdit) fd.set('keepPdfs', JSON.stringify(pdfOld.filter((p) => !pdfGone.has(p))));
     }
 
     setBusy(true);
@@ -263,23 +268,26 @@ function Form() {
               <button type="button" onClick={() => { URL.revokeObjectURL(i.url); setFresh(fresh.filter((_, j) => j !== k)); }} className="absolute -end-2 -top-2 rounded-full bg-red-600 px-1.5 text-xs text-white">✕</button>
             </div>
           ))}
-          {existing.length + fresh.length === 0 && !pdfFile && !(pdfOld && !special) && <span className="text-sm text-gray-400">—</span>}
+          {existing.length + fresh.length === 0 && pdfFiles.length === 0 && !(pdfOld.length && !special) && <span className="text-sm text-gray-400">—</span>}
         </div>
         {!special && (
           <>
 <div className="mt-3 space-y-2 text-sm">
-            {pdfFile && (
-              <div className="flex items-center justify-between gap-2 rounded-lg border-2 border-emerald-500 px-3 py-2">
-                <span className="min-w-0 truncate" dir="ltr">📄 {pdfFile.name} <span className="text-xs text-gray-500">({(pdfFile.size / 1048576).toFixed(1)} MB)</span></span>
-                <button type="button" onClick={() => setPdfFile(null)} className="shrink-0 rounded-full bg-red-600 px-1.5 text-xs text-white">✕</button>
+            {pdfOld.map((p, i) => {
+              const gone = pdfGone.has(p);
+              return (
+                <div key={p} className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 ${gone ? 'opacity-40' : ''}`}>
+                  <a href={urlOf(p)} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-primary" dir="ltr">📄 {t('f.pdfNote')}{pdfOld.length > 1 ? ` ${i + 1}` : ''}</a>
+                  <button type="button" onClick={() => { const n = new Set(pdfGone); gone ? n.delete(p) : n.add(p); setPdfGone(n); }} className={`shrink-0 rounded-full px-1.5 text-xs text-white ${gone ? 'bg-gray-600' : 'bg-red-600'}`} title={gone ? t('f.undo') : t('f.removePdf')}>{gone ? '↺' : '✕'}</button>
+                </div>
+              );
+            })}
+            {pdfFiles.map((p, k) => (
+              <div key={`${p.name}-${p.size}`} className="flex items-center justify-between gap-2 rounded-lg border-2 border-emerald-500 px-3 py-2">
+                <span className="min-w-0 truncate" dir="ltr">📄 {p.name} <span className="text-xs text-gray-500">({(p.size / 1048576).toFixed(1)} MB)</span></span>
+                <button type="button" onClick={() => setPdfFiles(pdfFiles.filter((_, j) => j !== k))} className="shrink-0 rounded-full bg-red-600 px-1.5 text-xs text-white">✕</button>
               </div>
-            )}
-            {pdfOld && !pdfFile && (
-              <div className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 ${pdfGone ? 'opacity-40' : ''}`}>
-                <a href={urlOf(pdfOld)} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-primary" dir="ltr">📄 {t('f.pdfNote')}</a>
-                <button type="button" onClick={() => setPdfGone((g) => !g)} className={`shrink-0 rounded-full px-1.5 text-xs text-white ${pdfGone ? 'bg-gray-600' : 'bg-red-600'}`} title={pdfGone ? t('f.undo') : t('f.removePdf')}>{pdfGone ? '↺' : '✕'}</button>
-              </div>
-            )}
+            ))}
           </div>
           </>
         )}

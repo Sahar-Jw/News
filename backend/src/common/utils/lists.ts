@@ -18,3 +18,9 @@ export function toStringArray(v: unknown): string[] {
   }
   return [];
 }
+
+/** All PDFs of a news record: the `pdfs` list, or the single legacy `pdf` when the list is empty (e.g. rows written by the documents module). */
+export function pdfList(n: { pdf?: string | null; pdfs?: unknown }): string[] {
+  const l = toStringArray(n.pdfs);
+  return l.length ? l : n.pdf ? [n.pdf] : [];
+}

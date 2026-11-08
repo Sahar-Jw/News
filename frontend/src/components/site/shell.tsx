@@ -366,7 +366,7 @@ export function Navbar() {
         </div>
 
         <div id={menuPanelId} data-open={menu} className="grid w-full grid-rows-[0fr] -translate-y-2 opacity-0 pointer-events-none invisible transition-[grid-template-rows,opacity,transform,visibility] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] delay-[0ms,0ms,0ms,350ms] data-[open=true]:grid-rows-[1fr] data-[open=true]:translate-y-0 data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:delay-[0ms] xl:contents xl:translate-y-0 xl:opacity-100 xl:pointer-events-auto xl:visible xl:transition-none">
-          <div className="min-h-0 overflow-hidden xl:contents">
+          <div className="min-h-0 max-h-[calc(100dvh-5rem)] overflow-y-auto overflow-x-hidden overscroll-contain pb-3 xl:contents xl:max-h-none xl:overflow-visible xl:pb-0">
         <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:shrink-0 xl:flex-row xl:items-center xl:gap-1">
           <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('site.home')}</Link>
 

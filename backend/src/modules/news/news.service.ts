@@ -1,10 +1,11 @@
-import { toStringArray } from '../../common/utils/lists';
+import { pdfList, toStringArray } from '../../common/utils/lists';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, LessThanOrEqual, Repository } from 'typeorm';
 import {
   Language,
   MAX_IMAGES_PER_RECORD,
+  MAX_PDFS_PER_RECORD,
   NewsStatus,
   PERM,
   SPECIAL_CATEGORY_CODES,
@@ -87,7 +88,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   present(n: News) {
     const { createdBy, ...rest } = n as any;
     const images = toStringArray(n.images);
-    return { ...rest, images, topics: toStringArray(n.topics), imageUrls: images.map((p) => this.storage.url(p)), pdfUrl: n.pdf ? this.storage.url(n.pdf) : null, createdByName: createdBy?.fullName };
+    return { ...rest, images, topics: toStringArray(n.topics), imageUrls: images.map((p) => this.storage.url(p)), pdfUrl: n.pdf ? this.storage.url(n.pdf) : null, pdfs: pdfList(n), pdfUrls: pdfList(n).map((p) => this.storage.url(p)), createdByName: createdBy?.fullName };
   }
 
   // ---------------------------------------------------------------- listing
@@ -327,8 +328,9 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ---------------------------------------------------------------- create / update / delete
-  async create(dto: CreateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFile?: Express.Multer.File) {
+  async create(dto: CreateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFiles: Express.Multer.File[] = []) {
     const perms = actor.permissions;
+    if (pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms);
     this.assertMayCreate(main, perms);
@@ -338,14 +340,14 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const rating = this.resolveRating(main, dto.rating);
     const youtubeUrl = this.resolveYoutube(dto.youtubeUrl, main) ?? null;
 
-    if (pdfFile && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
+    if (pdfFiles.length && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
 
     const imagePaths = await this.storage.saveImages(files ?? [], 'news'); // validated first, rolled back on failure
-    let pdfPath: string | null = null;
+    const pdfPaths: string[] = [];
     try {
-      pdfPath = pdfFile ? await this.storage.savePdf(pdfFile, 'news') : null;
+      for (const f of pdfFiles) pdfPaths.push(await this.storage.savePdf(f, 'news'));
     } catch (e) {
-      await this.storage.removeMany(imagePaths);
+      await this.storage.removeMany([...imagePaths, ...pdfPaths]);
       throw e;
     }
     try {
@@ -358,7 +360,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
           topics: this.normalizeTopics(dto.topics) ?? [],
           body: sanitizeRichText(dto.body),
           images: imagePaths,
-          pdf: pdfPath,
+          pdf: pdfPaths[0] ?? null,
+          pdfs: pdfPaths,
           youtubeUrl,
           rating,
           isFeatured: dto.isFeatured ?? false,
@@ -372,12 +375,12 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       await this.audit.log({ category: 'news', action: 'create', description: `إنشاء سجل: ${saved.title}`, actorId: actor.id, entityType: 'news', entityId: saved.id, details: { mainCategory: main, status: pub.status } });
       return this.present(await this.load(saved.id));
     } catch (e) {
-      await this.storage.removeMany([...imagePaths, pdfPath]);
+      await this.storage.removeMany([...imagePaths, ...pdfPaths]);
       throw e;
     }
   }
 
-  async update(id: number, dto: UpdateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFile?: Express.Multer.File) {
+  async update(id: number, dto: UpdateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFiles: Express.Multer.File[] = []) {
     const n = await this.repo.findOne({ where: { id } });
     if (!n || CONTENT_CATEGORY_CODES.includes(n.mainCategory)) throw new NotFoundException('السجل غير موجود');
     const perms = actor.permissions;
@@ -399,17 +402,22 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const removed = existingImgs.filter((p) => !keep.includes(p));
     if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && keep.length + (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
-    if (pdfFile && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
+    if (pdfFiles.length && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
+    // PDF reconciliation (same idea as the images): keepPdfs ⊆ existing, new files are appended, the dropped ones are deleted AFTER the save
+    const existingPdfs = pdfList(n);
+    const keepPdfs = SPECIAL_CATEGORY_CODES.includes(main) || dto.removePdf ? [] : dto.keepPdfs ?? existingPdfs;
+    if (keepPdfs.some((p) => !existingPdfs.includes(p))) throw new BadRequestException('مسار ملف PDF غير موجود في السجل');
+    if (keepPdfs.length + pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
+    const removedPdfs = existingPdfs.filter((p) => !keepPdfs.includes(p));
     const added = await this.storage.saveImages(files ?? [], 'news');
-    let newPdf: string | null = null;
+    const newPdfs: string[] = [];
     try {
-      newPdf = pdfFile ? await this.storage.savePdf(pdfFile, 'news') : null;
+      for (const f of pdfFiles) newPdfs.push(await this.storage.savePdf(f, 'news'));
     } catch (e) {
-      await this.storage.removeMany(added);
+      await this.storage.removeMany([...added, ...newPdfs]);
       throw e;
     }
-    const oldPdf = n.pdf;
-    const nextPdf = newPdf ?? (dto.removePdf || SPECIAL_CATEGORY_CODES.includes(main) ? null : oldPdf);
+    const nextPdfs = [...keepPdfs, ...newPdfs];
 
     try {
       const topics = this.normalizeTopics(dto.topics);
@@ -427,16 +435,17 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
         status: pub.status,
         publishAt: pub.publishAt,
         images: [...keep, ...added],
-        pdf: nextPdf,
+        pdf: nextPdfs[0] ?? null,
+        pdfs: nextPdfs,
         youtubeUrl: SPECIAL_CATEGORY_CODES.includes(main) ? null : youtube !== undefined ? youtube : n.youtubeUrl,
       });
       await this.repo.save(n);
     } catch (e) {
-      await this.storage.removeMany([...added, newPdf]); // change cancelled completely
+      await this.storage.removeMany([...added, ...newPdfs]); // change cancelled completely
       throw e;
     }
     await this.removeFilesIfUnreferenced(removed);
-    if (oldPdf && oldPdf !== nextPdf) await this.storage.remove(oldPdf);
+    await this.storage.removeMany(removedPdfs);
     await this.audit.log({ category: 'news', action: 'update', description: `تعديل سجل: ${n.title}`, actorId: actor.id, entityType: 'news', entityId: id, details: { status: n.status, removedImages: removed.length, addedImages: added.length } });
     return this.present(await this.load(id));
   }
@@ -454,13 +463,13 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
   async removeMany(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, subject: true, images: true, pdf: true, mainCategory: true, subcategory: true, status: true, language: true, visibility: true, publishAt: true } });
+    const rows = await this.repo.find({ where: { id: In(unique) }, select: { id: true, title: true, subject: true, images: true, pdf: true, pdfs: true, mainCategory: true, subcategory: true, status: true, language: true, visibility: true, publishAt: true } });
     if (rows.length !== unique.length || rows.some((r) => CONTENT_CATEGORY_CODES.includes(r.mainCategory))) throw new NotFoundException('بعض السجلات غير موجودة');
     // every record must be of a kind the user may delete; otherwise nothing is deleted
     for (const r of rows) this.assertMay('delete', r.mainCategory, actor.permissions);
     await this.repo.delete(unique);
     await this.removeFilesIfUnreferenced(rows.flatMap((r) => r.images ?? []));
-    await this.storage.removeMany(rows.map((r) => r.pdf)); // a PDF belongs to exactly one record
+    await this.storage.removeMany(rows.flatMap((r) => pdfList(r))); // a PDF belongs to exactly one record
     for (const r of rows) {
       await this.audit.log({ category: 'news', action: 'delete', description: `حذف سجل: ${r.title}`, actorId: actor.id, entityType: 'news', entityId: r.id, changes: removedChanges('news', [r]) });
     }

@@ -47,6 +47,10 @@ export class News extends TimestampedEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   pdf: string | null;
 
+  /** All PDFs of the record (relative storage paths, in display order); `pdf` always mirrors the first one. Empty = fall back to `pdf`. */
+  @Column({ type: 'jsonb', nullable: true })
+  pdfs: string[] | null;
+
   /** Optional YouTube video (canonical watch URL), embedded on the detail page of regular news. */
   @Column({ name: 'youtube_url', type: 'varchar', length: 255, nullable: true })
   youtubeUrl: string | null;

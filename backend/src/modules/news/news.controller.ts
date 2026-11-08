@@ -3,7 +3,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_FILES_PER_UPLOAD, MAX_PDF_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
+import { MAX_FILES_PER_UPLOAD, MAX_PDFS_PER_RECORD, MAX_PDF_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
@@ -17,14 +17,14 @@ import { SettingsService } from '../settings/settings.service';
 
 type Uploads = { images?: Express.Multer.File[]; pdf?: Express.Multer.File[] };
 
-/** Fields: "images" (up to 20) and "pdf" (1). The per-file limit is the PDF one; images are re-checked against their own 5 MB limit in FileStorageService. */
+/** Fields: "images" (up to 20) and "pdf" (up to 10). The per-file limit is the PDF one; images are re-checked against their own 5 MB limit in FileStorageService. */
 const upload = () =>
   FileFieldsInterceptor(
     [
       { name: 'images', maxCount: MAX_FILES_PER_UPLOAD },
-      { name: 'pdf', maxCount: 1 },
+      { name: 'pdf', maxCount: MAX_PDFS_PER_RECORD },
     ],
-    { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 } },
+    { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_FILES_PER_UPLOAD + MAX_PDFS_PER_RECORD, fieldSize: 2 * 1024 * 1024 } },
   );
 
 const cols = (ar: boolean): ExportColumn[] => [
@@ -85,7 +85,7 @@ export class NewsAdminController {
   @Permissions(...NEWS_CREATE_PERMISSIONS)
   @UseInterceptors(upload())
   create(@Body() dto: CreateNewsDto, @UploadedFiles() files: Uploads, @CurrentUser() u: AuthUser) {
-    return this.service.create(dto, files?.images ?? [], u, files?.pdf?.[0]);
+    return this.service.create(dto, files?.images ?? [], u, files?.pdf ?? []);
   }
 
   @Get(':id')
@@ -98,7 +98,7 @@ export class NewsAdminController {
   @Permissions(...NEWS_UPDATE_PERMISSIONS)
   @UseInterceptors(upload())
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateNewsDto, @UploadedFiles() files: Uploads, @CurrentUser() u: AuthUser) {
-    return this.service.update(id, dto, files?.images ?? [], u, files?.pdf?.[0]);
+    return this.service.update(id, dto, files?.images ?? [], u, files?.pdf ?? []);
   }
 
   @Delete(':id')

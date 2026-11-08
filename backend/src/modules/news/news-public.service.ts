@@ -1,4 +1,4 @@
-import { toStringArray } from '../../common/utils/lists';
+import { pdfList, toStringArray } from '../../common/utils/lists';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -49,7 +49,7 @@ export class NewsPublicService {
       language: n.language,
       viewCount: n.viewCount,
       hasVideo: !!n.youtubeUrl,
-      ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null, youtubeId: parseYoutubeId(n.youtubeUrl) }),
+      ...(withBody && { body: n.body, pdf: n.pdf ? this.storage.url(n.pdf) : null, pdfs: pdfList(n).map((p) => this.storage.url(p)), youtubeId: parseYoutubeId(n.youtubeUrl) }),
     };
   }
 
@@ -169,7 +169,7 @@ export class NewsPublicService {
   async section(code: string, lang: Language | undefined, v: Viewer) {
     const sec = codeKey(code);
     if (!SPECIAL_CATEGORY_CODES.includes(sec)) throw new NotFoundException('القسم غير موجود');
-    const rows = await this.order(this.slim(this.base(lang ?? Language.AR, v), sec === SpecialCategory.COMPANY_OVERVIEW ? ['body', 'pdf'] : [])).andWhere('n.mainCategory = :sec', { sec }).take(100).getMany();
+    const rows = await this.order(this.slim(this.base(lang ?? Language.AR, v), sec === SpecialCategory.COMPANY_OVERVIEW ? ['body', 'pdf', 'pdfs'] : [])).andWhere('n.mainCategory = :sec', { sec }).take(100).getMany();
     return rows.map((r) => this.card(r, sec === SpecialCategory.COMPANY_OVERVIEW));
   }
 
