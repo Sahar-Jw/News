@@ -1,13 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { categoryLabel, keyLabel } from '@/lib/setting-labels';
+import { SETTING_GROUPS, groupOf, type GroupId } from '@/lib/setting-groups';
 import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 interface Row { id: number; category: string; key: string; valueType: 'text' | 'number' | 'boolean' | 'url' | 'color' | 'file' | 'json'; value: any; fileUrl?: string }
@@ -26,7 +26,10 @@ export default function SettingsPage() {
   const { t, lang, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
-  const [cats, setCats] = useState<{ category: string }[]>([]);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [loadErr, setLoadErr] = useState('');
+  const [query, setQuery] = useState('');
+  const [openIds, setOpenIds] = useState<GroupId[]>(['home']);
   const [edit, setEdit] = useState<Row | null>(null);
   const [val, setVal] = useState<any>('');
   const [key, setKey] = useState(0);
@@ -40,20 +43,19 @@ export default function SettingsPage() {
   newFileRef.current = newFile;
   useEffect(() => () => { if (newFileRef.current) URL.revokeObjectURL(newFileRef.current.url); }, []);
 
-  useEffect(() => { api<{ category: string }[]>('/admin/settings/categories').then(setCats).catch(() => {}); }, []);
+  const load = useCallback(() => {
+    api<{ data: Row[] }>('/admin/settings', { params: { limit: 'all' }, cache: 'no-store' }).then((r) => { setRows(r.data); setLoadErr(''); }).catch((e) => setLoadErr(e.message));
+  }, []);
+  useEffect(() => { load(); }, [load, key]);
+  // remember which groups the admin left open (per browser; the page works without it)
+  useEffect(() => { try { const v = JSON.parse(localStorage.getItem('settings-open') || 'null'); if (Array.isArray(v)) setOpenIds(v); } catch { /* ignore */ } }, []);
+  const setOpen = (ids: GroupId[]) => { setOpenIds(ids); try { localStorage.setItem('settings-open', JSON.stringify(ids)); } catch { /* ignore */ } };
   const resetFile = () => {
     if (newFileRef.current) URL.revokeObjectURL(newFileRef.current.url);
     setNewFile(null); setRemoveSaved(false); setFileErr(''); setPickerKey((k) => k + 1);
   };
   const closeEdit = () => { resetFile(); setEdit(null); };
   const open = (r: Row) => { resetFile(); setEdit(r); setVal(r.valueType === 'json' ? (r.value ? JSON.stringify(r.value, null, 2) : '') : r.value ?? (r.valueType === 'boolean' ? false : '')); };
-
-  const cols: Col<Row>[] = [
-    // Arabic labels are display-only; the per-column search box matches the stored English names, so it is off in Arabic
-    { key: 'category', label: t('s.category'), exportable: false, searchable: lang !== 'ar', render: (r) => <span>{categoryLabel(r.category, lang)}</span> },
-    { key: 'key', label: t('s.key'), exportable: false, searchable: lang !== 'ar', render: (r) => lang === 'ar' ? <span>{keyLabel(r.category, r.key, lang)}</span> : <span dir="ltr" className="font-mono text-xs">{r.key}</span> },
-    { key: 'value', label: t('s.value'), exportable: false, render: (r) => r.valueType === 'boolean' ? <input type="checkbox" checked={r.value === true || r.value === 'true'} disabled={!can('settings.update')} onChange={(e) => toggle(r, e.target.checked)} aria-label={keyLabel(r.category, r.key, lang)} className="h-5 w-5 cursor-pointer accent-primary disabled:cursor-default" /> : r.valueType === 'color' && r.value ? <span className="flex items-center gap-2"><span className="inline-block h-4 w-4 rounded border" style={{ background: r.value }} />{r.value}</span> : r.valueType === 'file' && r.fileUrl ? <img src={fileUrl(r.fileUrl)} alt="" className="h-8 w-auto" /> : <span className="line-clamp-1">{show(r)}</span> },
-  ];
 
   const toggle = async (r: Row, checked: boolean) => {
     try { await api(`/admin/settings/${r.id}`, { method: 'PATCH', body: { value: checked } }); toast(t('app.saved')); setKey((k) => k + 1); } catch (err: any) { toast(err.message, 'err'); }
@@ -103,9 +105,42 @@ export default function SettingsPage() {
     } finally { setBusy(false); }
   };
 
+  const ar = lang === 'ar';
+  const T = ar
+    ? { search: 'ابحث في كل الإعدادات…', all: 'فتح الكل', none: 'طي الكل', settings: 'إعداد', filled: 'معبأ', empty: 'فارغ', noMatch: 'لا توجد إعدادات مطابقة', open: 'فتح', hint: 'اضغط على أي قسم لعرض كل إعداداته وتعديلها.', matches: 'نتيجة' }
+    : { search: 'Search all settings…', all: 'Expand all', none: 'Collapse all', settings: 'settings', filled: 'filled', empty: 'empty', noMatch: 'No matching settings', open: 'Open', hint: 'Click any section to see and edit all of its settings.', matches: 'matches' };
+
+  const needle = query.trim().toLowerCase();
+  const labelOf = (r: Row) => keyLabel(r.category, r.key, lang);
+  const matchRow = (r: Row) => !needle || [labelOf(r), r.key, categoryLabel(r.category, lang), typeof r.value === 'string' ? r.value : ''].some((x) => String(x).toLowerCase().includes(needle));
+  const isFilled = (r: Row) => !(r.value === null || r.value === '' || r.value === undefined);
+
+  const groups = useMemo(() => {
+    const m = new Map<GroupId, Map<string, Row[]>>();
+    for (const r of rows ?? []) {
+      const g = groupOf(r.category);
+      if (!m.has(g)) m.set(g, new Map());
+      const cm = m.get(g)!;
+      if (!cm.has(r.category)) cm.set(r.category, []);
+      cm.get(r.category)!.push(r);
+    }
+    return SETTING_GROUPS.filter((g) => m.has(g.id)).map((g) => ({ ...g, cats: [...m.get(g.id)!.entries()].map(([category, list]) => ({ category, list })) }));
+  }, [rows]);
+
+  const totalMatches = needle ? (rows ?? []).filter(matchRow).length : 0;
+  const toggleGroup = (id: GroupId) => setOpen(openIds.includes(id) ? openIds.filter((x) => x !== id) : [...openIds, id]);
+
+  const valueCell = (r: Row) => {
+    if (r.valueType === 'boolean') return <input type="checkbox" className="h-4 w-4" checked={r.value === true || r.value === 'true'} disabled={!can('settings.update')} onChange={(e) => toggle(r, e.target.checked)} aria-label={labelOf(r)} />;
+    if (r.valueType === 'color') return r.value ? <span className="inline-flex items-center gap-2" dir="ltr"><span className="h-5 w-5 rounded border border-line" style={{ backgroundColor: String(r.value) }} /><span className="font-mono text-xs">{String(r.value)}</span></span> : <span className="text-gray-400">—</span>;
+    if (r.valueType === 'file') return r.fileUrl && r.value ? <img src={fileUrl(r.fileUrl)} alt="" className="h-9 max-w-[90px] rounded border border-line bg-white object-contain p-0.5" /> : <span className="text-gray-400">—</span>;
+    return <span className={`line-clamp-2 break-words ${isFilled(r) ? 'text-gray-800' : 'text-gray-400'}`} dir="auto">{show(r)}</span>;
+  };
+
   return (
     <RequirePerm any={['settings.read']}>
-      <h1 className="mb-4 text-2xl font-bold">{t('adm.settings')}</h1>
+      <h1 className="mb-1 text-2xl font-bold">{t('adm.settings')}</h1>
+      <p className="mb-4 text-sm text-gray-500">{T.hint}</p>
       {can('nav.read') && (
         <Link href={href('/admin/nav')} className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-l from-primary/10 to-white p-4 shadow-card ring-1 ring-line transition hover:ring-primary/50">
           <span className="flex items-center gap-3">
@@ -117,11 +152,82 @@ export default function SettingsPage() {
           <span className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white">{t('nv.open')} →</span>
         </Link>
       )}
-      <DataTable<Row>
-        endpoint="/admin/settings" columns={cols} refreshKey={key} exportable={false}
-        filters={[{ key: 'category', label: t('s.category'), options: cats.map((c) => ({ value: c.category, label: categoryLabel(c.category, lang) })) }]}
-        rowActions={(r) => can('settings.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}
-      />
+
+      {loadErr && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p>}
+      {!rows && !loadErr && <p className="py-10 text-center text-gray-500">{t('app.loading')}</p>}
+
+      {rows && (
+        <>
+          {/* dashboard tiles: one per site section; click opens it */}
+          <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+            {groups.map((g) => {
+              const all = g.cats.flatMap((c) => c.list);
+              const filled = all.filter(isFilled).length;
+              const on = openIds.includes(g.id);
+              return (
+                <button key={g.id} type="button" onClick={() => { if (!on) setOpen([...openIds, g.id]); document.getElementById(`set-${g.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+                  className={`rounded-2xl bg-white p-3 text-start shadow-card ring-1 transition hover:-translate-y-0.5 ${on ? 'ring-primary' : 'ring-line'}`}>
+                  <span className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl text-lg" style={{ backgroundColor: `${g.color}22`, color: g.color }} aria-hidden="true">{g.icon}</span>
+                    <span className="min-w-0 truncate text-sm font-bold text-secondary">{ar ? g.ar : g.en}</span>
+                  </span>
+                  <span className="mt-2 block text-xs text-gray-500">{all.length} {T.settings} · {filled} {T.filled}</span>
+                  <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-gray-100"><span className="block h-full rounded-full" style={{ width: `${all.length ? Math.round((filled / all.length) * 100) : 0}%`, backgroundColor: g.color }} /></span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} className={`${inputCls} max-w-md flex-1`} aria-label={T.search} />
+            {needle && <span className="text-sm text-gray-500">{totalMatches} {T.matches}</span>}
+            <span className="flex-1" />
+            <Button type="button" size="sm" variant="outline" onClick={() => setOpen(groups.map((g) => g.id))}>{T.all}</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setOpen([])}>{T.none}</Button>
+          </div>
+
+          <div className="space-y-3">
+            {groups.map((g) => {
+              const cats = g.cats.map((c) => ({ ...c, list: c.list.filter(matchRow) })).filter((c) => c.list.length);
+              if (needle && !cats.length) return null;
+              const isOpen = needle ? true : openIds.includes(g.id);
+              const count = g.cats.reduce((n, c) => n + c.list.length, 0);
+              return (
+                <section key={g.id} id={`set-${g.id}`} className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
+                  <button type="button" onClick={() => toggleGroup(g.id)} aria-expanded={isOpen} className="flex w-full items-center gap-3 p-4 text-start hover:bg-gray-50">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ backgroundColor: `${g.color}22`, color: g.color }} aria-hidden="true">{g.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-bold text-secondary">{ar ? g.ar : g.en}</span>
+                      <span className="block text-xs text-gray-500">{ar ? g.hintAr : g.hintEn}</span>
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-600">{count}</span>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                  {isOpen && (
+                    <div className="space-y-5 border-t border-line p-4">
+                      {cats.map((c) => (
+                        <div key={c.category}>
+                          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-primary"><span className="h-4 w-1 rounded-full bg-accent" />{categoryLabel(c.category, lang)}<span className="text-xs font-normal text-gray-400">({c.list.length})</span></h3>
+                          <ul className="divide-y divide-line overflow-hidden rounded-xl ring-1 ring-line">
+                            {c.list.map((r) => (
+                              <li key={r.id} className="grid grid-cols-1 items-center gap-2 bg-white px-3 py-2 text-sm hover:bg-gray-50 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]">
+                                <span className="min-w-0 font-medium text-gray-700">{labelOf(r)}{ar && <span dir="ltr" className="ms-2 font-mono text-[10px] text-gray-400">{r.key}</span>}</span>
+                                <span className="min-w-0">{valueCell(r)}</span>
+                                <span className="justify-self-end">{can('settings.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+            {needle && totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
+          </div>
+        </>
+      )}
       <Modal open={!!edit} onClose={closeEdit} title={edit ? (lang === 'ar' ? `${categoryLabel(edit.category, lang)} — ${keyLabel(edit.category, edit.key, lang)}` : `${edit.category}.${edit.key}`) : ''}>
         {edit && (
           <form onSubmit={save} className="space-y-3">

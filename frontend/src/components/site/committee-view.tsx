@@ -116,6 +116,7 @@ export function CommitteeView({ path }: { path: string }) {
   const women = c.kind === 'women';
 
   return (
+    <div className={women ? 'women-theme' : undefined}>
     <div className="mx-auto max-w-6xl px-4 py-6">
       <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
         <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
@@ -124,6 +125,26 @@ export function CommitteeView({ path }: { path: string }) {
         <span className="text-ink">{c.name}</span>
       </nav>
 
+      {women ? (
+        <header className="relative overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
+          <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
+          <div className="relative grid items-center gap-6 p-6 md:grid-cols-[auto,1fr] md:p-10">
+            <img src={c.logoUrl ? fileUrl(c.logoUrl) : '/brand/women-committee-icon.svg'} alt={c.name} className="mx-auto h-40 w-auto max-w-[12rem] object-contain md:h-48" />
+            <div className="min-w-0 text-center md:text-start">
+              <h1 className="text-2xl font-extrabold leading-snug md:text-4xl">{c.name}</h1>
+              <p className="mt-2 text-base font-semibold text-accent">{t('women.tagline')}</p>
+              {c.chairName && <p className="mt-3 text-sm text-white/75">{t('cm.chair')}: <b className="text-white">{c.chairName}</b></p>}
+              {c.tags.length > 0 && (
+                <p className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs md:justify-start">
+                  {c.tags.map((x) => <span key={x} className="rounded-full bg-accent/20 px-2.5 py-0.5 font-semibold text-white ring-1 ring-accent/50">{x}</span>)}
+                </p>
+              )}
+              {c.summary && <p className="mt-4 max-w-3xl leading-7 text-white/85">{c.summary}</p>}
+            </div>
+          </div>
+          <div className="h-1.5 bg-gradient-to-r from-transparent via-accent to-transparent" aria-hidden="true" />
+        </header>
+      ) : (
       <header className="flex flex-col-reverse items-stretch gap-5 rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:flex-row md:items-center">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{c.name}</h1>
@@ -140,6 +161,7 @@ export function CommitteeView({ path }: { path: string }) {
           ? <img src={fileUrl(c.logoUrl)} alt="" className="h-36 w-full shrink-0 rounded-2xl bg-canvas object-contain p-2 md:w-52" />
           : <span className="flex h-36 w-full shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-4xl text-primary md:w-52" aria-hidden="true">🏛</span>}
       </header>
+      )}
 
       <div role="tablist" className="my-5 flex flex-wrap gap-2">
         {tabs.map((x) => (
@@ -176,6 +198,7 @@ export function CommitteeView({ path }: { path: string }) {
       {tab === 'initiatives' && <Box><ActivityList items={c.initiatives} empty={t('cm.noContent')} /></Box>}
 
       <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>
+    </div>
     </div>
   );
 }
