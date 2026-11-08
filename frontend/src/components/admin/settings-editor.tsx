@@ -31,6 +31,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loadErr, setLoadErr] = useState('');
   const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [valueFilter, setValueFilter] = useState<'all' | 'filled' | 'empty'>('all');
   const [openIds, setOpenIds] = useState<GroupId[]>(['home']);
   const [edit, setEdit] = useState<Row | null>(null);
   const [val, setVal] = useState<any>('');
@@ -109,13 +111,21 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
 
   const ar = lang === 'ar';
   const T = ar
-    ? { search: 'ابحث في كل الإعدادات…', all: 'فتح الكل', none: 'طي الكل', settings: 'إعداد', filled: 'معبأ', empty: 'فارغ', noMatch: 'لا توجد إعدادات مطابقة', open: 'فتح', hint: 'اضغط على أي قسم لعرض كل إعداداته وتعديلها.', matches: 'نتيجة' }
-    : { search: 'Search all settings…', all: 'Expand all', none: 'Collapse all', settings: 'settings', filled: 'filled', empty: 'empty', noMatch: 'No matching settings', open: 'Open', hint: 'Click any section to see and edit all of its settings.', matches: 'matches' };
+    ? { search: 'ابحث في الإعدادات…', all: 'فتح الكل', none: 'طي الكل', settings: 'إعداد', filled: 'معبأ', empty: 'فارغ', noMatch: 'لا توجد إعدادات مطابقة', open: 'فتح', hint: 'اضغط على أي قسم لعرض كل إعداداته وتعديلها.', matches: 'نتيجة', category: 'كل الفئات', value: 'كل القيم', clear: 'مسح المرشحات' }
+    : { search: 'Search settings…', all: 'Expand all', none: 'Collapse all', settings: 'settings', filled: 'filled', empty: 'empty', noMatch: 'No matching settings', open: 'Open', hint: 'Click any section to see and edit all of its settings.', matches: 'matches', category: 'All categories', value: 'Any value', clear: 'Clear filters' };
 
   const needle = query.trim().toLowerCase();
   const labelOf = (r: Row) => keyLabel(r.category, r.key, lang);
-  const matchRow = (r: Row) => !needle || [labelOf(r), r.key, categoryLabel(r.category, lang), typeof r.value === 'string' ? r.value : ''].some((x) => String(x).toLowerCase().includes(needle));
   const isFilled = (r: Row) => !(r.value === null || r.value === '' || r.value === undefined);
+  const matchRow = (r: Row) => {
+    const textMatch = !needle || [labelOf(r), r.key, categoryLabel(r.category, lang), typeof r.value === 'string' ? r.value : ''].some((x) => String(x).toLowerCase().includes(needle));
+    const categoryMatch = !categoryFilter || r.category === categoryFilter;
+    const valueMatch = valueFilter === 'all' || (valueFilter === 'filled' ? isFilled(r) : !isFilled(r));
+    return textMatch && categoryMatch && valueMatch;
+  };
+  const eligibleRows = (rows ?? []).filter((r) => only ? only.includes(groupOf(r.category)) : r.category !== 'pages');
+  const categories = [...new Set(eligibleRows.map((r) => r.category))].sort();
+  const hasFilters = !!needle || !!categoryFilter || valueFilter !== 'all';
 
   const groups = useMemo(() => {
     const m = new Map<GroupId, Map<string, Row[]>>();
@@ -131,8 +141,23 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     return SETTING_GROUPS.filter((g) => m.has(g.id)).map((g) => ({ ...g, cats: [...m.get(g.id)!.entries()].map(([category, list]) => ({ category, list })) }));
   }, [rows, only]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalMatches = needle ? (rows ?? []).filter(matchRow).length : 0;
+  const totalMatches = hasFilters ? eligibleRows.filter(matchRow).length : 0;
   const toggleGroup = (id: GroupId) => setOpen(openIds.includes(id) ? openIds.filter((x) => x !== id) : [...openIds, id]);
+  const filterBar = (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} className={`${inputCls} min-w-48 max-w-md flex-1`} aria-label={T.search} />
+      <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputCls} w-auto min-w-40`}>
+        <option value="">{T.category}</option>
+        {categories.map((category) => <option key={category} value={category}>{categoryLabel(category, lang)}</option>)}
+      </select>
+      <select value={valueFilter} onChange={(e) => setValueFilter(e.target.value as typeof valueFilter)} className={`${inputCls} w-auto min-w-36`}>
+        <option value="all">{T.value}</option>
+        <option value="filled">{T.filled}</option>
+        <option value="empty">{T.empty}</option>
+      </select>
+      {hasFilters && <><span className="text-sm text-gray-500">{totalMatches} {T.matches}</span><Button type="button" size="sm" variant="outline" onClick={() => { setQuery(''); setCategoryFilter(''); setValueFilter('all'); }}>{T.clear}</Button></>}
+    </div>
+  );
 
   const valueCell = (r: Row) => {
     if (r.valueType === 'boolean') return <input type="checkbox" className="h-4 w-4" checked={r.value === true || r.value === 'true'} disabled={!can('settings.update')} onChange={(e) => toggle(r, e.target.checked)} aria-label={labelOf(r)} />;
@@ -162,10 +187,13 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
       {!rows && !loadErr && <p className="py-10 text-center text-gray-500">{t('app.loading')}</p>}
 
       {rows && only && (
+        <>
+        {filterBar}
         <div className="space-y-6">
-          {groups.flatMap((g) => g.cats).map(catBlock)}
-          {groups.length === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
+          {groups.flatMap((g) => g.cats).map((cat) => ({ ...cat, list: cat.list.filter(matchRow) })).filter((cat) => cat.list.length > 0).map(catBlock)}
+          {totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
         </div>
+        </>
       )}
 
       {rows && !only && (
@@ -190,9 +218,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
             })}
           </div>
 
+          {filterBar}
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} className={`${inputCls} max-w-md flex-1`} aria-label={T.search} />
-            {needle && <span className="text-sm text-gray-500">{totalMatches} {T.matches}</span>}
             <span className="flex-1" />
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen(groups.map((g) => g.id))}>{T.all}</Button>
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen([])}>{T.none}</Button>
@@ -201,8 +228,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
           <div className="space-y-3">
             {groups.map((g) => {
               const cats = g.cats.map((c) => ({ ...c, list: c.list.filter(matchRow) })).filter((c) => c.list.length);
-              if (needle && !cats.length) return null;
-              const isOpen = needle ? true : openIds.includes(g.id);
+              if (hasFilters && !cats.length) return null;
+              const isOpen = hasFilters ? true : openIds.includes(g.id);
               const count = g.cats.reduce((n, c) => n + c.list.length, 0);
               return (
                 <section key={g.id} id={`set-${g.id}`} className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
@@ -223,7 +250,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
                 </section>
               );
             })}
-            {needle && totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
+            {hasFilters && totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
           </div>
         </>
       )}

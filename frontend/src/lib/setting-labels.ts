@@ -107,12 +107,14 @@ const EXPO_AR: Record<string, string> = {
   name: 'اسم المعرض', tagline: 'الشعار النصي (العنوان الرئيسي)', about: 'عن المعرض', why: 'لماذا تشارك؟ (كل نقطة في سطر)',
   start_date: 'تاريخ البداية (YYYY-MM-DD)', end_date: 'تاريخ النهاية (YYYY-MM-DD)', venue: 'مكان المعرض', hero_image: 'صورة الواجهة', logo: 'شعار المعرض',
   primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص', floor_plan: 'مخطط المعرض أو معلومات المكان', footer_text: 'نص التذييل',
+  page_links: 'روابط قائمة المعرض وتذييله',
   news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
 };
 
 const WOMEN_AR: Record<string, string> = {
   name: 'اسم الصفحة', tagline: 'الشعار النصي', logo: 'شعار اللجنة', primary_color: 'اللون الأساسي', accent_color: 'لون التمييز',
   header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص',
+  footer_text: 'نص التذييل', page_links: 'روابط قائمة اللجنة وتذييلها',
 };
 
 /** labels of the "incubator" settings category */

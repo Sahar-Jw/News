@@ -32,11 +32,11 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'العارضون والرعاة والبرنامج والطلبات ومعلومات المعرض', hintEn: 'Exhibitors, sponsors, programme, requests and expo info', icon: '◈', color: '#4b1d7a',
-    tabs: [{ key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, settings(['expo'])],
+    tabs: [{ key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, settings(['expo']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
   },
   {
     key: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'محتوى اللجنة وهوية صفحتها المستقلة', hintEn: 'Committee content and its separate page identity', icon: '✿', color: '#8b3d63',
-    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, settings(['women'])],
+    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
   },
   {
     key: 'membership', ar: 'الانتساب', en: 'Membership', hintAr: 'طلبات الانتساب ومحتوى الصفحة', hintEn: 'Membership requests and page content', icon: '☑', color: '#0f766e',

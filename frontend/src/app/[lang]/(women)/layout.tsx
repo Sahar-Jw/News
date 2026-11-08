@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { SiteProvider, useSite } from '@/components/site/site-context';
 import { BackToTop } from '@/components/site/shell';
+import { readBrandedPageLinks } from '@/lib/branded-page-links';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -39,17 +40,15 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
     '--header-bg': header,
     '--footer-bg': footer,
   } as React.CSSProperties;
-  const links: [string, string][] = [
-    ['/committees/women#about', lang === 'ar' ? 'عن اللجنة' : 'About'],
-    ['/committees/women#members', lang === 'ar' ? 'الأعضاء' : 'Members'],
-    ['/committees/women#meetings', lang === 'ar' ? 'الاجتماعات والزيارات' : 'Meetings & visits'],
-    ['/committees/women#initiatives', lang === 'ar' ? 'المبادرات' : 'Initiatives'],
-    ['/committees/women#media', lang === 'ar' ? 'الوسائط' : 'Media'],
-  ];
+  const links = readBrandedPageLinks(s('women', 'page_links'), 'women');
   const logo = img('women', 'logo');
   const name = loc('women', 'name') || (lang === 'ar' ? 'لجنة سيدات الأعمال' : 'Women Business Committee');
   const tagline = loc('women', 'tagline');
-  const active = (to: string) => pathname.includes('/committees/women') && activeSection === to.slice(to.indexOf('#') + 1);
+  const footerText = loc('women', 'footer_text');
+  const active = (to: string) => {
+    const [path, hash] = to.split('#');
+    return pathname.endsWith(path) && (hash ? activeSection === hash : activeSection === 'about');
+  };
 
   return (
     <div style={theme} className="min-h-screen bg-canvas text-ink">
@@ -60,7 +59,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
           <nav aria-label={name} className="hidden items-center gap-1 lg:flex">
-            {links.map(([to, label]) => <Link key={to} href={href(to)} className={`rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-white/15 ${active(to) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{label}</Link>)}
+            {links.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} className="hidden rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold hover:bg-white/15 md:inline-block">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
@@ -69,7 +68,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {open && <nav className="border-t border-white/15 px-4 pb-3 lg:hidden" onClick={() => setOpen(false)}>
-          {links.map(([to, label]) => <Link key={to} href={href(to)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{label}</Link>)}
+          {links.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
         </nav>}
       </header>
@@ -80,9 +79,10 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
           <div>
             <div className="font-extrabold text-white">{name}</div>
             {tagline && <p className="mt-1 text-white/75">{tagline}</p>}
+            {footerText && <p className="mt-2 max-w-xl leading-6 text-white/75">{footerText}</p>}
           </div>
           <div className="flex flex-wrap gap-4">
-            {links.map(([to, label]) => <Link key={to} href={href(to)} className="hover:text-accent">{label}</Link>)}
+            {links.footer.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
             <Link href={href('/')} className="text-accent hover:underline">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { SettingsEditor } from '@/components/admin/settings-editor';
 import { AdsAdmin } from '@/components/admin/ads-admin';
 import { AppointmentsAdmin } from '@/components/admin/appointments-admin';
 import { BoardAdmin } from '@/components/admin/board-admin';
+import { BrandedPageLinksAdmin } from '@/components/admin/branded-page-links-admin';
 import { CommitteesAdmin } from '@/components/admin/committees-admin';
 import { CourseRegistrationsAdmin } from '@/components/admin/course-registrations-admin';
 import { CoursesAdmin } from '@/components/admin/courses-admin';
@@ -37,6 +38,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />,
   'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <ExpoApplicationsAdmin />,
   'expo.faqs': () => <FaqsAdmin scope="expo" />,
+  'expo.links': () => <BrandedPageLinksAdmin page="expo" />,
   'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
@@ -44,6 +46,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin />,
   'media.gallery': () => <GalleryAdmin />, 'media.occasions': () => <OccasionsAdmin />,
   'women.content': () => <CommitteesAdmin kind="women" />,
+  'women.links': () => <BrandedPageLinksAdmin page="women" />,
   'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
   'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,

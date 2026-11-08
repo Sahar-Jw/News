@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, inputCls } from '@/components/ui/ui';
 import { useSite } from '@/components/site/site-context';
+import { readBrandedPageLinks } from '@/lib/branded-page-links';
 import { EMAIL_RE, PHONE_RE } from '@/components/site/training-shared';
 
 export interface ExpoBase { id: number; name: string; description: string; website: string | null; logoUrl: string | null }
@@ -44,6 +45,7 @@ export function useExpoInfo() {
     name: L('name') || 'DCC EXPO', tagline: L('tagline'), venue: L('venue'),
     logo: img('expo', 'logo'), hero: img('expo', 'hero_image'),
     floorPlan: L('floor_plan'), footerText: L('footer_text'),
+    pageLinks: readBrandedPageLinks(s('expo', 'page_links'), 'expo'),
     email: String(s('expo', 'contact_email') ?? ''), phone: String(s('expo', 'contact_phone') ?? ''),
     newsTopic: L('news_topic'), registerOpen: s('expo', 'register_open') !== false && s('expo', 'register_open') !== 'false',
   };
