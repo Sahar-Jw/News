@@ -7,9 +7,10 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { ImageSlider } from './image-slider';
+import { YoutubeEmbed } from './youtube-embed';
 import { NotFoundContent } from './not-found-content';
 
-interface Item { id: number; title: string; images: string[]; date?: string }
+interface Item { id: number; title: string; images: string[]; date?: string; youtubeId?: string | null }
 
 function View({ endpoint, back, backLabel }: { endpoint: string; back: string; backLabel: string }) {
   const { lang, t, href } = useI18n();
@@ -30,6 +31,7 @@ function View({ endpoint, back, backLabel }: { endpoint: string; back: string; b
       <article className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:p-10">
         {item.date && <p className="text-sm font-semibold text-primary">{fmtDay(lang, item.date)}</p>}
         <h1 className="mt-2 text-2xl font-extrabold leading-snug md:text-3xl">{item.title}</h1>
+        {item.youtubeId && <YoutubeEmbed id={item.youtubeId} title={item.title} />}
         {item.images.length > 0 && <ImageSlider images={item.images} title={item.title} />}
         <div className="mt-6"><Link href={href(back)} className="text-sm text-primary">← {t(backLabel)}</Link></div>
       </article>

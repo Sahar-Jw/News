@@ -206,9 +206,9 @@ export function WomenCommitteeSection({ code, title }: { code: string; title: st
   );
 }
 
-interface AlbumItem { id: number; title: string; images: string[] }
+interface AlbumItem { id: number; title: string; kind: 'photos' | 'video'; thumb: string | null }
 
-/** Photo strip (wireframe W01): the latest 5 albums, each opens its slider page. */
+/** Photo and video strip (wireframe W01): the latest 5 items (albums and videos), each opens its page; a video shows a play badge. */
 export function GallerySection({ code, title }: { code: string; title: string }) {
   const { lang, t, href } = useI18n();
   const [items, setItems] = useState<AlbumItem[] | null>(null);
@@ -221,7 +221,12 @@ export function GallerySection({ code, title }: { code: string; title: string })
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {items.map((g) => (
           <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group relative block overflow-hidden rounded-2xl ring-1 ring-line transition hover:ring-accent">
-            <Thumb src={g.images[0]} alt={g.title} className="h-32 w-full md:h-36" />
+            <Thumb src={g.thumb} alt={g.title} className="h-32 w-full md:h-36" />
+            {g.kind === 'video' && (
+              <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white ring-2 ring-white/70 transition group-hover:scale-110 group-hover:bg-primary/90"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></span>
+              </span>
+            )}
             <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-secondary/85 to-transparent px-3 pb-2 pt-6 text-xs font-bold text-white">{g.title}</span>
           </Link>
         ))}
@@ -574,6 +579,28 @@ export function Company({ items }: { items: Card[] }) {
         </Link>
       ))}
     </Stagger>
+  );
+}
+
+/** Home: a short card that opens the contact page (the full details and the form moved to /contact). */
+export function ContactTeaser() {
+  const { t, href } = useI18n();
+  const { s } = useSite();
+  const phone = s('contact', 'phone');
+  const email = s('contact', 'email');
+  return (
+    <Reveal className="flex flex-col items-center gap-4 rounded-2xl bg-white p-6 text-center shadow-card ring-1 ring-line md:flex-row md:justify-between md:text-start">
+      <div>
+        <p className="text-sm leading-7 text-gray-700">{t('ct.teaser')}</p>
+        {(phone || email) && (
+          <p className="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm font-semibold text-secondary md:justify-start">
+            {phone && <a href={telHref(phone)} className="hover:text-primary"><bdi dir="ltr">{phone}</bdi></a>}
+            {email && <a href={`mailto:${email}`} className="hover:text-primary"><bdi dir="ltr">{email}</bdi></a>}
+          </p>
+        )}
+      </div>
+      <Link href={href('/contact')} className="shrink-0 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('ct.open')}</Link>
+    </Reveal>
   );
 }
 

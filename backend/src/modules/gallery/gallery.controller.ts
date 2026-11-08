@@ -58,6 +58,13 @@ export class GalleryPublicController {
     return this.service.publicList(q);
   }
 
+  // declared before ":id" so "categories" is not parsed as an id
+  @Public()
+  @Get('categories')
+  categories(@Query('type') type?: string) {
+    return this.service.publicCategories(type === 'photos' || type === 'video' ? type : undefined);
+  }
+
   @Public()
   @Get(':id')
   one(@Param('id', ParseIntPipe) id: number, @Query('lang') lang?: string) {

@@ -16,9 +16,18 @@ const CATEGORY_AR: Record<string, string> = {
   media: 'المركز الإعلامي',
   expo: 'DCC EXPO (المعرض)',
   incubator: 'حاضنة الأعمال',
+  footer: 'التذييل (Footer)',
 };
 
 const BASE_AR: Record<string, string> = {
+  // footer
+  contact_title: 'عنوان قسم التواصل',
+  social_title: 'عنوان منصات التواصل',
+  newsletter_title: 'عنوان النشرة البريدية',
+  newsletter_text: 'نص النشرة البريدية',
+  tagline: 'السطر السفلي (الشعار)',
+  rights: 'سطر الحقوق',
+  show_newsletter: 'إظهار صندوق النشرة البريدية في التذييل',
   // branding
   site_name: 'اسم الموقع',
   site_description: 'وصف الموقع',

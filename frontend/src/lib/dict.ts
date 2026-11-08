@@ -144,6 +144,13 @@ const ar: Record<string, string> = {
   'mb.status.new': 'جديد', 'mb.status.in_review': 'قيد المراجعة', 'mb.status.accepted': 'مقبول', 'mb.status.rejected': 'مرفوض',
   'mb.adm.apps': 'الطلبات', 'mb.adm.content': 'محتوى الصفحة', 'mb.adm.status': 'الحالة', 'mb.adm.statusHint': 'عند اختيار «مقبول» أو «مرفوض» يصل مقدّم الطلب بريد بالنتيجة', 'mb.adm.date': 'التاريخ', 'mb.adm.open': 'فتح', 'mb.adm.files': 'المرفقات', 'mb.adm.noFiles': 'لا توجد مرفقات', 'mb.adm.download': 'تنزيل',
   'mb.adm.notes': 'ملاحظات داخلية', 'mb.adm.notesHint': 'لا تظهر لمقدّم الطلب', 'mb.adm.ar': 'العربية', 'mb.adm.en': 'الإنجليزية (اختياري)', 'mb.adm.stepsHint': 'خطوة في كل سطر', 'mb.adm.notifyEmail': 'بريد استقبال الطلبات', 'mb.adm.notifyHint': 'يصله بريد عند كل طلب جديد', 'mb.adm.open2': 'استقبال الطلبات مفتوح',
+  // footer editor, contact page, gallery
+  'ft.title': 'روابط التذييل', 'ft.editor': 'التذييل (Footer)', 'ft.subtitle': 'عدّل أعمدة التذييل وروابطها: أضف الروابط وعدّلها واحذفها وانقلها بين الأعمدة. بيانات التواصل والمنصات وعناوين الأقسام ونص النشرة والسطر السفلي تُعدَّل من جدول الإعدادات (التذييل، التواصل، وسائل التواصل).',
+  'ft.kind': 'نوع المجموعة', 'ft.kind.links': 'عمود روابط', 'ft.kind.official': 'روابط رسمية (تحت بيانات التواصل)', 'ft.kind.legal': 'روابط سفلية (قانونية)', 'ft.columns': 'عدد الأسطر', 'ft.columns.1': 'سطر واحد (عمود عادي)', 'ft.columns.2': 'سطران متجاوران (عمود عريض)',
+  'ct.subtitle': 'يسعدنا تواصلكم معنا واستفساراتكم ومقترحاتكم', 'ct.teaser': 'للتواصل مع الغرفة وإرسال استفساراتكم ومقترحاتكم، تفضّلوا بزيارة صفحة التواصل.', 'ct.open': 'صفحة التواصل', 'ct.map': 'الموقع على الخريطة',
+  'gl.type': 'النوع', 'gl.kind.photos': 'صور', 'gl.kind.video': 'فيديو', 'gl.all': 'الكل', 'gl.category': 'التصنيف', 'gl.noCategory': 'بدون تصنيف', 'gl.allCategories': 'كل التصنيفات',
+  'gl.cat.meeting': 'اجتماعات', 'gl.cat.event': 'فعاليات', 'gl.cat.exhibition': 'معارض', 'gl.cat.conference': 'مؤتمرات', 'gl.cat.visit': 'زيارات', 'gl.cat.committee': 'لجان', 'gl.cat.course': 'دورات',
+  'gl.youtubeUrl': 'رابط فيديو يوتيوب', 'gl.youtubeHint': 'الصق رابط الفيديو من يوتيوب', 'gl.youtubeInvalid': 'رابط يوتيوب غير صالح', 'gl.cover': 'صورة الغلاف (اختيارية للفيديو)', 'gl.add': 'إضافة صور أو فيديو', 'gl.edit': 'تعديل العنصر', 'gl.video': 'فيديو', 'gl.play': 'تشغيل',
   // faq + home quick links
   'adm.faqs': 'الأسئلة الشائعة', 'mod.faqs': 'الأسئلة الشائعة', 'site.faq': 'الأسئلة الشائعة', 'sec.shortcuts': 'اختصارات سريعة',
   'faq.question': 'السؤال', 'faq.questionAr': 'السؤال بالعربية', 'faq.questionEn': 'السؤال بالإنجليزية (اختياري)', 'faq.answerAr': 'الجواب بالعربية', 'faq.answerEn': 'الجواب بالإنجليزية (اختياري)',
@@ -330,6 +337,13 @@ const en: Record<string, string> = {
   'mb.status.new': 'New', 'mb.status.in_review': 'In review', 'mb.status.accepted': 'Accepted', 'mb.status.rejected': 'Rejected',
   'mb.adm.apps': 'Applications', 'mb.adm.content': 'Page content', 'mb.adm.status': 'Status', 'mb.adm.statusHint': 'Choosing "Accepted" or "Rejected" e-mails the result to the applicant', 'mb.adm.date': 'Date', 'mb.adm.open': 'Open', 'mb.adm.files': 'Attachments', 'mb.adm.noFiles': 'No attachments', 'mb.adm.download': 'Download',
   'mb.adm.notes': 'Internal notes', 'mb.adm.notesHint': 'Never shown to the applicant', 'mb.adm.ar': 'Arabic', 'mb.adm.en': 'English (optional)', 'mb.adm.stepsHint': 'One step per line', 'mb.adm.notifyEmail': 'Applications e-mail', 'mb.adm.notifyHint': 'Receives an e-mail for every new application', 'mb.adm.open2': 'Accepting applications',
+  // footer editor, contact page, gallery
+  'ft.title': 'Footer links', 'ft.editor': 'Footer', 'ft.subtitle': 'Edit the footer columns and their links: add, edit, delete and move links between columns. Contact details, social links, section titles, the newsletter text and the bottom line are edited in the Settings table (Footer, Contact, Social).',
+  'ft.kind': 'Group type', 'ft.kind.links': 'Links column', 'ft.kind.official': 'Official links (under the contact details)', 'ft.kind.legal': 'Bottom links (legal)', 'ft.columns': 'Lines', 'ft.columns.1': 'One line (normal column)', 'ft.columns.2': 'Two lines side by side (wide column)',
+  'ct.subtitle': 'We are glad to hear from you: questions, ideas and suggestions', 'ct.teaser': 'To reach the chamber and send your questions or suggestions, visit the contact page.', 'ct.open': 'Contact page', 'ct.map': 'Find us on the map',
+  'gl.type': 'Type', 'gl.kind.photos': 'Photos', 'gl.kind.video': 'Video', 'gl.all': 'All', 'gl.category': 'Category', 'gl.noCategory': 'No category', 'gl.allCategories': 'All categories',
+  'gl.cat.meeting': 'Meetings', 'gl.cat.event': 'Events', 'gl.cat.exhibition': 'Exhibitions', 'gl.cat.conference': 'Conferences', 'gl.cat.visit': 'Visits', 'gl.cat.committee': 'Committees', 'gl.cat.course': 'Courses',
+  'gl.youtubeUrl': 'YouTube video link', 'gl.youtubeHint': 'Paste the video link from YouTube', 'gl.youtubeInvalid': 'Not a valid YouTube link', 'gl.cover': 'Cover picture (optional for a video)', 'gl.add': 'Add photos or a video', 'gl.edit': 'Edit item', 'gl.video': 'Video', 'gl.play': 'Play',
   // faq + home quick links
   'adm.faqs': 'FAQs', 'mod.faqs': 'FAQs', 'site.faq': 'FAQ', 'sec.shortcuts': 'Quick links',
   'faq.question': 'Question', 'faq.questionAr': 'Question (Arabic)', 'faq.questionEn': 'Question (English, optional)', 'faq.answerAr': 'Answer (Arabic)', 'faq.answerEn': 'Answer (English, optional)',

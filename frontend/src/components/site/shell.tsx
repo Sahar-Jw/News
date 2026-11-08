@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { useNavGroups } from './use-nav';
+import { useFooterGroups, type FooterLinkItem } from './use-footer';
+import { FooterNewsletter } from './footer-newsletter';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { ContactIcon, SocialIcon } from './icons';
 
@@ -277,12 +279,12 @@ export function Navbar() {
   // Public dropdowns: managed in Settings -> Main menu (loaded from the API).
   const navGroups = useNavGroups(lang, t);
   const groups = (navGroups ?? []).map((g) => ({ key: String(g.id), label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) }));
-  const contactHref = isHome ? '#sec-contact' : `${href('/')}#sec-contact`;
   const securityItems: NavItem[] = [
     { label: t('adm.users'), to: '/admin/users', show: can('users.read') },
     { label: `${t('adm.roles')} / ${t('adm.permissions')}`, to: '/admin/roles', show: can('roles.read', 'permissions.read', 'permissions.assign') },
     { label: t('adm.settings'), to: '/admin/settings', show: can('settings.read') },
     { label: t('nav.editor'), to: '/admin/nav', show: can('nav.read') },
+    { label: t('ft.editor'), to: '/admin/footer', show: can('footer.read') },
     { label: t('adm.cities'), to: '/admin/cities', show: can('cities.read') },
     { label: t('adm.audit'), to: '/admin/audit', show: can('audit.read') },
   ];
@@ -370,7 +372,7 @@ export function Navbar() {
 
           {groups.map((g) => <NavDropdown key={g.key} label={g.label} items={g.items} href={href} />)}
 
-          <a href={contactHref} className="w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold text-ink/80 transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto">{t('contact.title')}</a>
+          <Link href={href('/contact')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${/\/contact\/?$/.test(pathname) ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('contact.title')}</Link>
 
 
           {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'tools', label: t('adm.tools'), items: toolsItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
@@ -437,71 +439,93 @@ export function Navbar() {
   );
 }
 
+const FOOT_LINK = 'transition hover:text-white';
+const SPAN: Record<number, string> = { 1: 'lg:col-span-1', 2: 'sm:col-span-2 lg:col-span-2' };
+
+function FootTitle({ children }: { children: React.ReactNode }) {
+  return <h4 className="mb-4 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{children}</h4>;
+}
+
+/** One link of the footer: a site path stays in the site (language prefix added), a full address opens as given. */
+function FootLink({ item, href }: { item: FooterLinkItem; href: (p: string) => string }) {
+  if (/^https?:\/\//i.test(item.url)) return <a href={item.url} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} className={FOOT_LINK}>{item.title}</a>;
+  return <Link href={href(item.url)} target={item.newTab ? '_blank' : undefined} className={FOOT_LINK}>{item.title}</Link>;
+}
+
+/**
+ * Footer: the link columns (and the official links / legal links) come from Settings -> Footer, the contact column from Settings ->
+ * Contact / Social, and the titles, newsletter text, tagline and rights line from Settings -> Footer (texts). A column with
+ * "two lines" is wider and lays its links out in two columns side by side, so a long list does not make the footer tall.
+ */
 export function Footer() {
   const { lang, t, href } = useI18n();
-  const { s, loc, img } = useSite();
-  const [services, setServices] = useState<{ id: number; title: string }[]>([]);
-  const [pages, setPages] = useState<{ id: number; slug: string; title: string }[]>([]);
-  useEffect(() => {
-    import('@/lib/api').then(({ api }) => {
-      api('/public/sections/SERVICES', { params: { lang } }).then((r: any) => setServices(r.slice(0, 6))).catch(() => {});
-      api('/public/pages', { params: { lang, footer: 'true' } }).then((r: any) => setPages(r)).catch(() => {});
-    });
-  }, [lang]);
-  const logo = img('branding', 'logo');
+  const { s, loc } = useSite();
+  const groups = useFooterGroups(lang) ?? [];
+  const columns = groups.filter((g) => g.kind === 'links');
+  const official = groups.find((g) => g.kind === 'official');
+  const legal = groups.filter((g) => g.kind === 'legal').flatMap((g) => g.items);
+  const hasSocial = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'].some((k) => s('social', k));
+  const showNewsletter = String(s('footer', 'show_newsletter')) !== 'false';
+  const tagline = loc('footer', 'tagline');
+  const rights = loc('footer', 'rights');
+  const phone = s('contact', 'phone');
+  const mobile = s('contact', 'mobile');
+  const email = s('contact', 'email');
+  const address = loc('contact', 'address');
+  const hours = loc('contact', 'working_hours');
+
   return (
     <footer className="no-print relative mt-10 overflow-hidden rounded-t-[2rem] text-stone-200" style={{ background: 'var(--footer-bg, color-mix(in srgb, var(--secondary) 94%, black))' }}>
       <div className="h-1 bg-gradient-to-r from-primary via-accent to-transparent" aria-hidden="true" />
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />
       <div className="sheen" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 md:grid-cols-4">
-        <div>
-          {logo && <img src={logo} alt="" className="mb-3 h-16 w-16 rounded-full border-2 border-white bg-white object-cover shadow-md ring-1 ring-accent/60" />}
-          <div className="mb-2 font-display text-lg font-bold text-white">{loc('branding', 'site_name')}</div>
-          <p className="max-w-xs text-sm leading-7 text-stone-300">{loc('branding', 'site_description')}</p>
-          <div className="mt-4"><SocialLinks /></div>
-        </div>
-        <div>
-          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.quickLinks')}</h4>
+      <div className="relative mx-auto grid max-w-7xl gap-x-8 gap-y-9 px-4 py-10 sm:grid-cols-2 lg:grid-cols-6">
+        {columns.map((g) => (
+          <div key={g.id} className={SPAN[g.columns] ?? SPAN[1]}>
+            <FootTitle>{g.title}</FootTitle>
+            <ul className={`text-sm text-stone-300 ${g.columns === 2 ? 'grid grid-cols-2 gap-x-6 gap-y-2.5' : 'space-y-2.5'}`}>
+              {g.items.map((i) => <li key={i.id}><FootLink item={i} href={href} /></li>)}
+            </ul>
+          </div>
+        ))}
+
+        <div className="sm:col-span-2 lg:col-span-2">
+          <FootTitle>{loc('footer', 'contact_title') || t('site.contact')}</FootTitle>
           <ul className="space-y-2.5 text-sm text-stone-300">
-            <li><Link href={href('/')} className="transition hover:text-white">{t('site.home')}</Link></li>
-            <li><Link href={href('/news')} className="transition hover:text-white">{t('site.allNews')}</Link></li>
-            {pages.map((p) => <li key={p.id}><Link href={href(`/pages/view?slug=${encodeURIComponent(p.slug)}`)} className="transition hover:text-white">{p.title}</Link></li>)}
-            <li><Link href={href('/board')} className="transition hover:text-white">{t('site.board')}</Link></li>
-            <li><Link href={href('/committees')} className="transition hover:text-white">{t('cm.title')}</Link></li>
-            <li><Link href={href('/documents')} className="transition hover:text-white">{t('site.documents')}</Link></li>
-            <li><Link href={href('/library')} className="transition hover:text-white">{t('nav.library')}</Link></li>
-            <li><Link href={href('/media')} className="transition hover:text-white">{t('nav.mediaCenter')}</Link></li>
-            <li><Link href={href('/faq')} className="transition hover:text-white">{t('site.faq')}</Link></li>
-            <li><Link href={href('/sitemap')} className="transition hover:text-white">{t('site.sitemap')}</Link></li>
+            {address && <li className="flex items-start gap-2"><ContactIcon name="address" /><span>{address}</span></li>}
+            {phone && <li><a href={telHref(phone)} className={`flex items-center gap-2 ${FOOT_LINK}`}><ContactIcon name="phone" /><bdi dir="ltr">{phone}</bdi></a></li>}
+            {mobile && <li><a href={telHref(mobile)} className={`flex items-center gap-2 ${FOOT_LINK}`}><ContactIcon name="mobile" /><bdi dir="ltr">{mobile}</bdi></a></li>}
+            {email && <li><a href={`mailto:${email}`} className={`flex items-center gap-2 ${FOOT_LINK}`}><ContactIcon name="email" /><bdi dir="ltr">{email}</bdi></a></li>}
+            {hours && <li className="flex items-start gap-2"><ContactIcon name="hours" /><span>{hours}</span></li>}
           </ul>
-        </div>
-        <div>
-          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.services')}</h4>
-          <ul className="space-y-2.5 text-sm text-stone-300">{services.map((x) => <li key={x.id}>{x.title}</li>)}</ul>
-        </div>
-        <div>
-          <h4 className="mb-5 flex items-center gap-2 text-base font-bold text-white"><span className="h-4 w-1 rounded-full bg-accent" />{t('site.contact')}</h4>
-          <ul className="space-y-2.5 text-sm text-stone-300">
-            {s('contact', 'phone') && <li><a href={telHref(s('contact', 'phone'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="phone" /><bdi dir="ltr">{s('contact', 'phone')}</bdi></a></li>}
-            {s('contact', 'mobile') && <li><a href={telHref(s('contact', 'mobile'))} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="mobile" /><bdi dir="ltr">{s('contact', 'mobile')}</bdi></a></li>}
-            {s('contact', 'fax') && <li className="flex items-center gap-2"><ContactIcon name="fax" /><bdi dir="ltr">{s('contact', 'fax')}</bdi></li>}
-            {s('contact', 'email') && <li><a href={`mailto:${s('contact', 'email')}`} className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="email" /><bdi dir="ltr">{s('contact', 'email')}</bdi></a></li>}
-            {s('contact', 'website_url') && <li><a href={s('contact', 'website_url')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 transition hover:text-white"><ContactIcon name="website" /><bdi dir="ltr">{prettyUrl(s('contact', 'website_url'))}</bdi></a></li>}
-            {loc('contact', 'address') && <li className="flex items-center gap-2"><ContactIcon name="address" />{loc('contact', 'address')}</li>}
-            {loc('contact', 'working_hours') && <li className="flex items-center gap-2"><ContactIcon name="hours" />{loc('contact', 'working_hours')}</li>}
-          </ul>
+          {hasSocial && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="text-xs font-bold text-white">{loc('footer', 'social_title')}</span>
+              <SocialLinks />
+            </div>
+          )}
+          {official && (
+            <div className="mt-4">
+              <div className="mb-1.5 text-xs font-bold text-white">{official.title}</div>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-stone-300">{official.items.map((i) => <li key={i.id}><FootLink item={i} href={href} /></li>)}</ul>
+            </div>
+          )}
+          {showNewsletter && (
+            <div className="mt-4">
+              <div className="text-xs font-bold text-white">{loc('footer', 'newsletter_title')}</div>
+              {loc('footer', 'newsletter_text') && <p className="mb-2 mt-0.5 text-xs text-stone-400">{loc('footer', 'newsletter_text')}</p>}
+              <FooterNewsletter />
+            </div>
+          )}
         </div>
       </div>
-      <div className="border-t border-white/10 py-3 text-center text-xs">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4">
-          <span>© {new Date().getFullYear()} {loc('branding', 'site_name')} — {t('site.rights')}</span>
-          <div className="flex gap-4">
-            <Link href={href('/privacy')} className="hover:text-white">{t('site.privacy')}</Link>
-            <Link href={href('/terms')} className="hover:text-white">{t('site.terms')}</Link>
-            <Link href={href('/sitemap')} className="hover:text-white">{t('site.sitemap')}</Link>
-          </div>
+
+      <div className="relative border-t border-white/10 py-4 text-center text-xs">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-1 px-4">
+          {tagline && <span className="text-sm font-bold text-white">{tagline}</span>}
+          {rights && <span className="text-stone-300">{rights}</span>}
+          {legal.length > 0 && <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1">{legal.map((i) => <FootLink key={i.id} item={i} href={href} />)}</div>}
         </div>
       </div>
     </footer>

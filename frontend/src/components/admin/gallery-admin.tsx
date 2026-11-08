@@ -4,17 +4,19 @@ import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
+import { parseYoutubeId } from '@/lib/youtube';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
-interface Row { id: number; titleAr: string; titleEn: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
-interface Draft { id?: number; titleAr: string; titleEn: string; committeeId: string; imgs: ImageSet }
+const CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'];
+interface Row { id: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
+interface Draft { id?: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet }
 interface CommitteeOpt { id: number; name: string }
 
-/** Image galleries: a titled set of pictures, shown on the site with the same slider as news. */
+/** Image and video gallery: a titled photo album or a YouTube video, optionally classified (meetings, events, exhibitions ...) and attached to a committee. */
 export function GalleryAdmin() {
   const { t, lang } = useI18n();
   const { can } = useAuth();
@@ -30,12 +32,14 @@ export function GalleryAdmin() {
 
   const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
   const open = (r?: Row) => setDraft(r
-    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }
-    : { titleAr: '', titleEn: '', committeeId: '', imgs: emptyImageSet() });
+    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, kind: r.kind, youtubeUrl: r.youtubeUrl, category: r.category, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }
+    : { titleAr: '', titleEn: '', kind: 'photos', youtubeUrl: '', category: '', committeeId: '', imgs: emptyImageSet() });
 
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
     { key: 'titleEn', label: t('oc.titleEn') },
+    { key: 'kind', searchable: false, label: t('gl.type'), render: (r) => t(`gl.kind.${r.kind}`), text: (r) => t(`gl.kind.${r.kind}`) },
+    { key: 'category', searchable: false, label: t('gl.category'), render: (r) => (r.category ? t(`gl.cat.${r.category}`) : '—'), text: (r) => (r.category ? t(`gl.cat.${r.category}`) : '') },
     {
       key: 'imageCount', searchable: false, label: t('oc.imageCount'),
       render: (r) => (
@@ -51,10 +55,14 @@ export function GalleryAdmin() {
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft) return;
-    if (imageTotal(draft.imgs) < 1) return toast(t('oc.imagesRequired'), 'err');
+    if (draft.kind === 'photos' && imageTotal(draft.imgs) < 1) return toast(t('oc.imagesRequired'), 'err');
+    if (draft.kind === 'video' && !parseYoutubeId(draft.youtubeUrl)) return toast(t('gl.youtubeInvalid'), 'err');
     const fd = new FormData();
     fd.append('titleAr', draft.titleAr.trim());
     fd.append('titleEn', draft.titleEn.trim());
+    fd.append('kind', draft.kind);
+    fd.append('youtubeUrl', draft.kind === 'video' ? draft.youtubeUrl.trim() : '');
+    fd.append('category', draft.category);
     fd.append('committeeId', draft.committeeId);
     appendImages(fd, draft.imgs, !!draft.id);
     setBusy(true);
@@ -86,7 +94,7 @@ export function GalleryAdmin() {
         exportable={false}
         refreshKey={key}
         bulkDelete={{ path: '/admin/gallery/bulk-delete', can: can('gallery.delete') }}
-        toolbar={can('gallery.create') && <Button onClick={() => open()}>＋ {t('oc.addGallery')}</Button>}
+        toolbar={can('gallery.create') && <Button onClick={() => open()}>＋ {t('gl.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <a href={`/${lang}/gallery/view/?id=${r.id}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{t('app.view')}</Button></a>
@@ -95,12 +103,33 @@ export function GalleryAdmin() {
           </div>
         )}
       />
-      <Modal open={!!draft} onClose={close} title={draft?.id ? t('oc.editGallery') : t('oc.addGallery')} wide>
+      <Modal open={!!draft} onClose={close} title={draft?.id ? t('gl.edit') : t('gl.add')} wide>
         {draft && (
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
+              <Field label={t('gl.type')}>
+                <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Draft['kind'] })}>
+                  <option value="photos">{t('gl.kind.photos')}</option><option value="video">{t('gl.kind.video')}</option>
+                </select>
+              </Field>
+              <Field label={t('gl.category')}>
+                <select className={inputCls} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
+                  <option value="">{t('gl.noCategory')}</option>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(`gl.cat.${c}`)}</option>)}
+                </select>
+              </Field>
+              {draft.kind === 'video' && (
+                <div className="md:col-span-2">
+                  <Field label={t('gl.youtubeUrl')} hint={t('gl.youtubeHint')}>
+                    <input required dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={draft.youtubeUrl} onChange={(e) => setDraft({ ...draft, youtubeUrl: e.target.value })} />
+                  </Field>
+                  {draft.youtubeUrl.trim() && (parseYoutubeId(draft.youtubeUrl)
+                    ? <img src={`https://i.ytimg.com/vi/${parseYoutubeId(draft.youtubeUrl)}/mqdefault.jpg`} alt="" className="mt-2 h-24 rounded-lg object-cover ring-1 ring-line" />
+                    : <p className="mt-1 text-xs text-red-600">{t('gl.youtubeInvalid')}</p>)}
+                </div>
+              )}
               {committees.length > 0 && (
                 <Field label={t('gl.committee')} hint={t('gl.committeeHint')}>
                   <select className={inputCls} value={draft.committeeId} onChange={(e) => setDraft({ ...draft, committeeId: e.target.value })}>
@@ -110,7 +139,7 @@ export function GalleryAdmin() {
                 </Field>
               )}
             </div>
-            <Field label={t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
+            <Field label={draft.kind === 'video' ? t('gl.cover') : t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}

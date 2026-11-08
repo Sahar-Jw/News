@@ -132,6 +132,8 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'settings.update', module: 'settings', nameAr: 'تعديل الإعدادات', nameEn: 'Update settings' },
   // main menu (navigation dropdowns)
   { code: 'nav.read', module: 'nav', nameAr: 'عرض قائمة التنقل', nameEn: 'View the main menu' },
+  { code: 'footer.read', module: 'footer', nameAr: 'عرض روابط التذييل', nameEn: 'View the footer links' },
+  { code: 'footer.update', module: 'footer', nameAr: 'تعديل روابط التذييل', nameEn: 'Edit the footer links' },
   { code: 'nav.update', module: 'nav', nameAr: 'تعديل قائمة التنقل', nameEn: 'Edit the main menu' },
   // cities
   { code: 'cities.read', module: 'cities', nameAr: 'عرض المدن', nameEn: 'View cities' },
@@ -275,6 +277,8 @@ export const PERM = {
   SETTINGS_READ: 'settings.read',
   SETTINGS_UPDATE: 'settings.update',
   NAV_READ: 'nav.read',
+  FOOTER_READ: 'footer.read',
+  FOOTER_UPDATE: 'footer.update',
   NAV_UPDATE: 'nav.update',
   CITIES_READ: 'cities.read',
   CITIES_CREATE: 'cities.create',
