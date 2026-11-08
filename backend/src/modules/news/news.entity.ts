@@ -68,6 +68,10 @@ export class News extends TimestampedEntity {
   @Column({ name: 'publish_at', type: 'timestamptz', nullable: true })
   publishAt: Date | null;
 
+  /** Optional event finish date; required for OCCASION rows by a database constraint. */
+  @Column({ name: 'finish_at', type: 'date', nullable: true })
+  finishAt: string | null;
+
   @Column({ type: 'enum', enum: NewsStatus, default: NewsStatus.PUBLISHED })
   status: NewsStatus;
 

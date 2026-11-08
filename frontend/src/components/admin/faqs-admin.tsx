@@ -14,7 +14,7 @@ interface Draft { id?: number; scope: string; questionAr: string; questionEn: st
 const EMPTY: Draft = { scope: 'general', questionAr: '', questionEn: '', answerAr: '', answerEn: '', sortOrder: '0', isActive: true };
 
 /** Frequently asked questions: Arabic is required, English is optional; the public page shows only the visible ones, in the given order. */
-export function FaqsAdmin() {
+export function FaqsAdmin({ scope }: { scope?: string } = {}) {
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -23,7 +23,7 @@ export function FaqsAdmin() {
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
 
-  const open = (r?: Row) => setDraft(r ? { id: r.id, scope: r.scope, questionAr: r.questionAr, questionEn: r.questionEn, answerAr: r.answerAr, answerEn: r.answerEn, sortOrder: String(r.sortOrder), isActive: r.isActive } : { ...EMPTY });
+  const open = (r?: Row) => setDraft(r ? { id: r.id, scope: r.scope, questionAr: r.questionAr, questionEn: r.questionEn, answerAr: r.answerAr, answerEn: r.answerEn, sortOrder: String(r.sortOrder), isActive: r.isActive } : { ...EMPTY, ...(scope ? { scope } : {}) });
 
   const cols: Col<Row>[] = [
     { key: 'questionAr', label: t('faq.questionAr') },
@@ -66,13 +66,14 @@ export function FaqsAdmin() {
 
   return (
     <RequirePerm any={['faqs.read']}>
-      <h1 className="mb-4 text-2xl font-bold">{t('adm.faqs')}</h1>
+      <h1 className="mb-4 text-2xl font-bold">{t(scope === 'expo' ? 'ex.faq' : 'adm.faqs')}</h1>
       <DataTable<Row>
         endpoint="/admin/faqs"
+        baseParams={scope ? { scope } : undefined}
         columns={cols}
         refreshKey={key}
         exportable={false}
-        filters={[{ key: 'scope', label: t('faq.scope'), options: SCOPES.map((s) => ({ value: s, label: t(`faq.scope.${s}`) })) }]}
+        filters={!scope ? [{ key: 'scope', label: t('faq.scope'), options: SCOPES.map((s) => ({ value: s, label: t(`faq.scope.${s}`) })) }] : []}
         bulkDelete={{ path: '/admin/faqs/bulk-delete', can: can('faqs.delete') }}
         toolbar={can('faqs.create') && <Button onClick={() => open()}>＋ {t('faq.add')}</Button>}
         rowActions={(r, reload) => (
@@ -86,11 +87,11 @@ export function FaqsAdmin() {
         {draft && (
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-3">
-              <Field label={t('faq.scope')}>
+              {!scope && <Field label={t('faq.scope')}>
                 <select className={inputCls} value={draft.scope} onChange={(e) => setDraft({ ...draft, scope: e.target.value })}>
                   {SCOPES.map((s) => <option key={s} value={s}>{t(`faq.scope.${s}`)}</option>)}
                 </select>
-              </Field>
+              </Field>}
               <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
               <label className="flex items-end gap-2 pb-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => setDraft({ ...draft, isActive: e.target.checked })} />{t('faq.active')}</label>
             </div>

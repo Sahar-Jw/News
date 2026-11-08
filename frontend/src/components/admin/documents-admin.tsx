@@ -15,7 +15,7 @@ const KINDS = ['circular', 'decision', 'law', 'guide', 'study', 'report', 'bulle
 const EMPTY: Draft = { kind: 'circular', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
 
 /** Decisions, circulars and library files. Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. */
-export function DocumentsAdmin() {
+export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
   const { t, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -29,7 +29,7 @@ export function DocumentsAdmin() {
     setPdf(null);
     setDraft(r
       ? { id: r.id, kind: r.kind, docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl }
-      : { ...EMPTY });
+      : { ...EMPTY, ...(kind ? { kind } : {}) });
   };
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
@@ -80,9 +80,10 @@ export function DocumentsAdmin() {
 
   return (
     <RequirePerm any={['documents.read']}>
-      <h1 className="mb-4 text-2xl font-bold">{t('adm.documents')}</h1>
+      <h1 className="mb-4 text-2xl font-bold">{t(kind ? 'adm.library' : 'adm.documents')}</h1>
       <DataTable<Row>
         endpoint="/admin/documents"
+        baseParams={kind ? { kind } : undefined}
         columns={cols}
         refreshKey={key}
         exportable={false}
@@ -100,9 +101,9 @@ export function DocumentsAdmin() {
         {draft && (
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label={t('doc.kind')}>
+              {!kind && <Field label={t('doc.kind')}>
                 <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.map((k) => <option key={k} value={k}>{t(`doc.kind.${k}`)}</option>)}</select>
-              </Field>
+              </Field>}
               <Field label={t('doc.number')}><input maxLength={50} dir="ltr" className={inputCls} value={draft.docNumber} onChange={(e) => setDraft({ ...draft, docNumber: e.target.value })} /></Field>
               <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>

@@ -18,7 +18,9 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'id', label: '#', value: (r) => r.id },
   { key: 'titleAr', label: ar ? 'العنوان بالعربية' : 'Arabic title', value: (r) => r.titleAr },
   { key: 'titleEn', label: ar ? 'العنوان بالإنجليزية' : 'English title', value: (r) => r.titleEn },
-  { key: 'eventDate', label: ar ? 'التاريخ' : 'Date', value: (r) => r.eventDate },
+  { key: 'eventDate', label: ar ? 'تاريخ البداية' : 'Start date', value: (r) => r.eventDate },
+  { key: 'finishDate', label: ar ? 'تاريخ النهاية' : 'Finish date', value: (r) => r.finishDate },
+  { key: 'type', label: ar ? 'النوع' : 'Type', value: (r) => r.type },
   { key: 'imageCount', label: ar ? 'عدد الصور' : 'Images', value: (r) => r.imageCount },
 ];
 

@@ -219,9 +219,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'services.delete', module: 'services', nameAr: 'حذف خدمة', nameEn: 'Delete services' },
   // static pages (about the chamber, ...)
   { code: 'pages.read', module: 'pages', nameAr: 'عرض الصفحات الثابتة', nameEn: 'View static pages' },
-  { code: 'pages.create', module: 'pages', nameAr: 'إضافة صفحة ثابتة', nameEn: 'Create static pages' },
   { code: 'pages.update', module: 'pages', nameAr: 'تعديل صفحة ثابتة', nameEn: 'Update static pages' },
-  { code: 'pages.delete', module: 'pages', nameAr: 'حذف صفحة ثابتة', nameEn: 'Delete static pages' },
   // tools: image gallery
   { code: 'gallery.read', module: 'gallery', nameAr: 'عرض معرض الصور', nameEn: 'View image gallery' },
   { code: 'gallery.create', module: 'gallery', nameAr: 'إضافة معرض صور', nameEn: 'Create galleries' },
@@ -349,9 +347,7 @@ export const PERM = {
   SERVICES_UPDATE: 'services.update',
   SERVICES_DELETE: 'services.delete',
   PAGES_READ: 'pages.read',
-  PAGES_CREATE: 'pages.create',
   PAGES_UPDATE: 'pages.update',
-  PAGES_DELETE: 'pages.delete',
   GALLERY_READ: 'gallery.read',
   GALLERY_CREATE: 'gallery.create',
   GALLERY_UPDATE: 'gallery.update',

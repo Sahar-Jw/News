@@ -26,7 +26,7 @@ const EMPTY_MEMBER = { role: 'member', nameAr: '', nameEn: '', titleAr: '', titl
 const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyEn: '', eventDate: '' };
 
 /** Committees (sector + businesswomen): details, members, activities (meetings, visits, recommendations, initiatives) and linked news. */
-export function CommitteesAdmin() {
+export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
   const { t, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -56,7 +56,7 @@ export function CommitteesAdmin() {
   };
   const open = async (r?: Row) => {
     setLogo(null); setDropLogo(false); setTab('details'); setMDraft(null); setADraft(null); setFound([]); setNq(''); setFull(null);
-    if (!r) { setDraft({ ...EMPTY }); return; }
+    if (!r) { setDraft({ ...EMPTY, ...(kind ? { kind } : {}) }); return; }
     setDraft({ ...r, sortOrder: String(r.sortOrder) });
     try { await loadFull(r.id); } catch (err: any) { toast(err.message, 'err'); }
   };
@@ -65,7 +65,7 @@ export function CommitteesAdmin() {
   const cols: Col<Row>[] = [
     { key: 'nameAr', label: t('pg.titleAr'), render: (r) => <span className="flex items-center gap-2">{r.logoUrl && <img src={fileUrl(r.logoUrl)} alt="" className="h-8 w-8 rounded object-contain" />}{r.nameAr}</span>, text: (r) => r.nameAr },
     { key: 'nameEn', label: t('pg.titleEn') },
-    { key: 'kind', searchable: false, label: t('cm.kind'), render: (r) => t(`cm.kind.${r.kind}`), text: (r) => t(`cm.kind.${r.kind}`) },
+    ...(!kind ? [{ key: 'kind', searchable: false, label: t('cm.kind'), render: (r: Row) => t(`cm.kind.${r.kind}`), text: (r: Row) => t(`cm.kind.${r.kind}`) }] as Col<Row>[] : []),
     { key: 'chairNameAr', label: t('cm.chair') },
     { key: 'sortOrder', searchable: false, label: t('faq.order'), render: (r) => r.sortOrder, text: (r) => String(r.sortOrder) },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
@@ -170,11 +170,12 @@ export function CommitteesAdmin() {
       <h1 className="mb-4 text-2xl font-bold">{t('adm.committees')}</h1>
       <DataTable<Row>
         endpoint="/admin/committees"
+        baseParams={kind ? { kind } : undefined}
         columns={cols}
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/committees/bulk-delete', can: can('committees.delete') }}
-        toolbar={can('committees.create') && <Button onClick={() => open()}>＋ {t('cm.add')}</Button>}
+        toolbar={!kind && can('committees.create') && <Button onClick={() => open()}>＋ {t('cm.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
@@ -198,7 +199,7 @@ export function CommitteesAdmin() {
             {tab === 'details' && (
               <form onSubmit={saveDetails} className="space-y-3">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Field label={t('cm.kind')}><select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.map((k) => <option key={k} value={k}>{t(`cm.kind.${k}`)}</option>)}</select></Field>
+                  {!kind && <Field label={t('cm.kind')}><select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.map((k) => <option key={k} value={k}>{t(`cm.kind.${k}`)}</option>)}</select></Field>}
                   <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
                   <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
                   <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>

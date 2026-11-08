@@ -10,8 +10,8 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, releaseImages } from '@/components/admin/image-set-field';
 
-interface Row { id: number; titleAr: string; titleEn: string; eventDate: string; isUpcoming: boolean; images: string[]; imageUrls: string[]; imageCount: number }
-interface Draft { id?: number; titleAr: string; titleEn: string; eventDate: string; imgs: ImageSet }
+interface Row { id: number; titleAr: string; titleEn: string; eventDate: string; finishDate: string; type: 'occasion' | 'exhibition'; isUpcoming: boolean; images: string[]; imageUrls: string[]; imageCount: number }
+interface Draft { id?: number; titleAr: string; titleEn: string; eventDate: string; finishDate: string; type: 'occasion' | 'exhibition'; imgs: ImageSet }
 
 /** All occasions; the status filter shows only the upcoming ones (date today or later) or only the previous ones. */
 export function OccasionsAdmin() {
@@ -25,13 +25,15 @@ export function OccasionsAdmin() {
 
   const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
   const open = (r?: Row) => setDraft(r
-    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, eventDate: r.eventDate.slice(0, 10), imgs: imageSetOf(r.images, r.imageUrls) }
-    : { titleAr: '', titleEn: '', eventDate: '', imgs: emptyImageSet() });
+    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, eventDate: r.eventDate.slice(0, 10), finishDate: r.finishDate.slice(0, 10), type: r.type, imgs: imageSetOf(r.images, r.imageUrls) }
+    : { titleAr: '', titleEn: '', eventDate: '', finishDate: '', type: 'occasion', imgs: emptyImageSet() });
 
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
     { key: 'titleEn', label: t('oc.titleEn') },
     { key: 'eventDate', type: 'date', label: t('oc.date'), render: (r) => fmtDay(lang, r.eventDate), text: (r) => r.eventDate.slice(0, 10) },
+    { key: 'finishDate', type: 'date', label: t('oc.finishDate'), render: (r) => fmtDay(lang, r.finishDate), text: (r) => r.finishDate.slice(0, 10) },
+    { key: 'type', searchable: false, label: t('oc.type'), render: (r) => t(`oc.${r.type}`), text: (r) => t(`oc.${r.type}`) },
     {
       key: 'status', searchable: false, exportable: false, label: t('oc.status'),
       render: (r) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${r.isUpcoming ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(r.isUpcoming ? 'oc.upcoming' : 'oc.previous')}</span>,
@@ -55,6 +57,8 @@ export function OccasionsAdmin() {
     fd.append('titleAr', draft.titleAr.trim());
     fd.append('titleEn', draft.titleEn.trim());
     fd.append('eventDate', draft.eventDate);
+    fd.append('finishDate', draft.finishDate);
+    fd.append('type', draft.type);
     appendImages(fd, draft.imgs, !!draft.id);
     setBusy(true);
     try {
@@ -86,7 +90,10 @@ export function OccasionsAdmin() {
         refreshKey={key}
         exportable={can('occasions.export')}
         exportName="occasions"
-        filters={[{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'previous', label: t('oc.previous') }] }]}
+        filters={[
+          { key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'current', label: t('oc.current') }, { value: 'previous', label: t('oc.previous') }, { value: 'exhibitions', label: t('oc.exhibitions') }] },
+          { key: 'type', label: t('oc.type'), options: [{ value: 'occasion', label: t('oc.occasion') }, { value: 'exhibition', label: t('oc.exhibition') }] },
+        ]}
         bulkDelete={{ path: '/admin/occasions/bulk-delete', can: can('occasions.delete') }}
         toolbar={can('occasions.create') && <Button onClick={() => open()}>＋ {t('oc.addOccasion')}</Button>}
         rowActions={(r, reload) => (
@@ -102,7 +109,9 @@ export function OccasionsAdmin() {
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
+              <Field label={t('oc.type')}><select className={inputCls} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as Draft['type'] })}><option value="occasion">{t('oc.occasion')}</option><option value="exhibition">{t('oc.exhibition')}</option></select></Field>
               <Field label={t('oc.date')}><input required type="date" className={inputCls} value={draft.eventDate} onChange={(e) => setDraft({ ...draft, eventDate: e.target.value })} /></Field>
+              <Field label={t('oc.finishDate')}><input required type="date" min={draft.eventDate || undefined} className={inputCls} value={draft.finishDate} onChange={(e) => setDraft({ ...draft, finishDate: e.target.value })} /></Field>
             </div>
             <Field label={t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>

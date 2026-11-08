@@ -17,6 +17,7 @@ export interface Rec {
   body: string | null;
   images: string[];
   pdf: string | null;
+  finishAt: string | null;
   x: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +28,7 @@ export interface RecInput {
   body?: string | null;
   images?: string[];
   pdf?: string | null;
+  finishAt?: string | null;
   x?: Record<string, any>;
 }
 
@@ -45,7 +47,7 @@ export class ContentStore {
   private toRec(n: News): Rec {
     return {
       id: Number(n.id), code: n.mainCategory, title: n.title, body: n.body ?? null, images: n.images ?? [], pdf: n.pdf ?? null,
-      x: (n.extra ?? {}) as Record<string, any>, createdAt: n.createdAt, updatedAt: n.updatedAt,
+      finishAt: n.finishAt ?? null, x: (n.extra ?? {}) as Record<string, any>, createdAt: n.createdAt, updatedAt: n.updatedAt,
     };
   }
 
@@ -75,7 +77,7 @@ export class ContentStore {
   async create(code: string, input: RecInput): Promise<Rec> {
     const saved = await this.repo.save(
       this.repo.create({
-        title: input.title, mainCategory: code, subcategory: null, subject: null, body: input.body ?? null, images: input.images ?? [], pdf: input.pdf ?? null,
+        title: input.title, mainCategory: code, subcategory: null, subject: null, body: input.body ?? null, images: input.images ?? [], pdf: input.pdf ?? null, finishAt: input.finishAt ?? null,
         extra: input.x ?? {}, language: Language.AR, status: NewsStatus.PUBLISHED, visibility: Visibility.PUBLIC, publishAt: new Date(), isFeatured: false,
       }),
     );
@@ -92,6 +94,7 @@ export class ContentStore {
     if (patch.body !== undefined) n.body = patch.body;
     if (patch.images !== undefined) n.images = patch.images;
     if (patch.pdf !== undefined) n.pdf = patch.pdf;
+    if (patch.finishAt !== undefined) n.finishAt = patch.finishAt;
     if (patch.x) {
       const next = { ...(n.extra ?? {}) } as Record<string, any>;
       for (const [k, v] of Object.entries(patch.x)) if (v !== undefined) next[k] = v;

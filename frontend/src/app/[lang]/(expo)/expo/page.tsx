@@ -95,10 +95,10 @@ export default function ExpoHome() {
         </section>
       )}
 
-      <section className="mx-auto max-w-5xl px-4 pt-14">
+      {x.floorPlan && <section className="mx-auto max-w-5xl px-4 pt-14">
         <Heading>{t('ex.floorPlan')}</Heading>
-        <div className="grid h-40 place-items-center rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 text-sm font-semibold text-primary/70">{t('ex.mapSoon')}</div>
-      </section>
+        <div className="whitespace-pre-line rounded-2xl bg-white p-6 text-sm leading-7 text-gray-700 shadow-card ring-1 ring-line">{x.floorPlan}</div>
+      </section>}
 
       {exhibitors.length > 0 && (
         <section className="mx-auto max-w-5xl px-4 pt-14">

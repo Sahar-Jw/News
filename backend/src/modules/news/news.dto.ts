@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Language, NewsStatus, SPECIAL_CATEGORY_CODES, Visibility } from '../../common/constants';
 import { AdminListQueryDto, PublicListQueryDto } from '../../common/dto/list-query.dto';
 
@@ -45,6 +45,7 @@ export class CreateNewsDto {
   @IsOptional() @emptyToNull() @Type(() => Number) @IsInt() @Min(1) @Max(5) rating?: number | null;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @emptyToNull() @IsDateString() publishAt?: string | null;
+  @IsOptional() @emptyToNull() @Matches(/^\d{4}-\d{2}-\d{2}$/) finishAt?: string | null;
   @IsOptional() @IsIn(Object.values(NewsStatus)) status?: NewsStatus;
   /** Defaults to Arabic when omitted. */
   @IsOptional() @IsIn(Object.values(Language)) language?: Language;
@@ -64,6 +65,7 @@ export class UpdateNewsDto {
   @IsOptional() @emptyToNull() @Type(() => Number) @IsInt() @Min(1) @Max(5) rating?: number | null;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @emptyToNull() @IsDateString() publishAt?: string | null;
+  @IsOptional() @emptyToNull() @Matches(/^\d{4}-\d{2}-\d{2}$/) finishAt?: string | null;
   @IsOptional() @IsIn(Object.values(NewsStatus)) status?: NewsStatus;
   @IsOptional() @IsIn(Object.values(Language)) language?: Language;
   @IsOptional() @IsIn(Object.values(Visibility)) visibility?: Visibility;

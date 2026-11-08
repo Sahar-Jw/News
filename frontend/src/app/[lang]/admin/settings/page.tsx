@@ -36,13 +36,15 @@ import { TrainersAdmin } from '@/components/admin/trainers-admin';
 const SCREENS: Record<string, () => React.ReactNode> = {
   'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />,
   'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <ExpoApplicationsAdmin />,
+  'expo.faqs': () => <FaqsAdmin scope="expo" />,
   'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
-  'documents.documents': () => <DocumentsAdmin />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin />,
+  'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin />,
   'media.gallery': () => <GalleryAdmin />, 'media.occasions': () => <OccasionsAdmin />,
-  'pages.pages': () => <PagesAdmin />, 'pages.faqs': () => <FaqsAdmin />,
+  'women.content': () => <CommitteesAdmin kind="women" />,
+  'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
   'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,
 };

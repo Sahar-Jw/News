@@ -32,7 +32,11 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'العارضون والرعاة والبرنامج والطلبات ومعلومات المعرض', hintEn: 'Exhibitors, sponsors, programme, requests and expo info', icon: '◈', color: '#4b1d7a',
-    tabs: [{ key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] }, settings(['expo'])],
+    tabs: [{ key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, settings(['expo'])],
+  },
+  {
+    key: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'محتوى اللجنة وهوية صفحتها المستقلة', hintEn: 'Committee content and its separate page identity', icon: '✿', color: '#8b3d63',
+    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, settings(['women'])],
   },
   {
     key: 'membership', ar: 'الانتساب', en: 'Membership', hintAr: 'طلبات الانتساب ومحتوى الصفحة', hintEn: 'Membership requests and page content', icon: '☑', color: '#0f766e',
@@ -53,7 +57,7 @@ export const HUBS: HubMeta[] = [
       { key: 'dashboard', ar: 'لوحة المواعيد', en: 'Appointments dashboard', perms: ['appointments.dashboard'] }, { key: 'customers', ar: 'العملاء', en: 'Customers', perms: ['customers.read'] }, settings(['services']),
     ],
   },
-  { key: 'documents', ar: 'القرارات والتعاميم', en: 'Documents', hintAr: 'الوثائق والمكتبة', hintEn: 'Documents and library', icon: '▤', color: '#7c3aed', tabs: [{ key: 'documents', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }] },
+  { key: 'documents', ar: 'القرارات والتعاميم والمكتبة', en: 'Documents & digital archive', hintAr: 'الوثائق والمكتبة والأرشيف الرقمي', hintEn: 'Documents, library and digital archive', icon: '▤', color: '#7c3aed', tabs: [{ key: 'documents', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }, { key: 'library', ar: 'المكتبة والأرشيف الرقمي', en: 'Library & digital archive', perms: ['documents.read'] }] },
   { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },
   { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }] },
   {
@@ -62,7 +66,7 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'pages', ar: 'الصفحات الثابتة', en: 'Static pages', hintAr: 'الصفحات والأسئلة الشائعة', hintEn: 'Pages and FAQs', icon: '▦', color: '#475569',
-    tabs: [{ key: 'pages', ar: 'الصفحات', en: 'Pages', perms: ['pages.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, settings(['pages'])],
+    tabs: [{ key: 'about', ar: 'عن الغرفة', en: 'About', perms: ['pages.read'] }, { key: 'privacy', ar: 'سياسة الخصوصية', en: 'Privacy policy', perms: ['pages.read'] }, { key: 'terms', ar: 'الشروط والأحكام', en: 'Terms & conditions', perms: ['pages.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }],
   },
   { key: 'audience', ar: 'المشتركون والإعلانات', en: 'Subscribers & ads', hintAr: 'نشرة الغرفة والإعلانات', hintEn: 'Newsletter and ads', icon: '◎', color: '#ea580c', tabs: [{ key: 'subscribers', ar: 'المشتركون', en: 'Subscribers', perms: ['subscribers.read'] }, { key: 'ads', ar: 'الإعلانات', en: 'Ads', perms: ['ads.read'] }] },
   { key: 'all', ar: 'كل الإعدادات', en: 'All settings', hintAr: 'بحث في كل إعدادات الموقع', hintEn: 'Search every site setting', icon: '⚙', color: '#64748b', tabs: [{ key: 'all', ar: 'كل الإعدادات', en: 'All settings', perms: S, settingsGroups: [] }] },

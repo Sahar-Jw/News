@@ -120,6 +120,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const groups = useMemo(() => {
     const m = new Map<GroupId, Map<string, Row[]>>();
     for (const r of rows ?? []) {
+      if (!only && r.category === 'pages') continue;
       const g = groupOf(r.category);
       if (only && only.length && !only.includes(g)) continue;
       if (!m.has(g)) m.set(g, new Map());

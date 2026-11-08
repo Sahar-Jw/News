@@ -18,6 +18,7 @@ import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/co
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
+import { isYmd } from '../../common/utils/dates';
 import { applyColumnFilters } from '../../common/utils/column-filters';
 import { codeKey, escapeLike, normalizeLabel, sanitizeRichText } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -32,7 +33,7 @@ type Action = 'read' | 'update' | 'delete';
 
 const LIST_COLUMNS = [
   'id', 'title', 'subject', 'mainCategory', 'subcategory', 'topics', 'images', 'rating', 'isFeatured',
-  'publishAt', 'status', 'language', 'visibility', 'viewCount', 'createdAt', 'updatedAt', 'createdById',
+  'publishAt', 'finishAt', 'status', 'language', 'visibility', 'viewCount', 'createdAt', 'updatedAt', 'createdById',
 ];
 
 /** 'regular' for ordinary news, otherwise the section code. */
@@ -330,6 +331,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   // ---------------------------------------------------------------- create / update / delete
   async create(dto: CreateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFiles: Express.Multer.File[] = []) {
     const perms = actor.permissions;
+    if (dto.finishAt && !isYmd(dto.finishAt)) throw new BadRequestException('تاريخ النهاية غير صالح');
     if (pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms);
@@ -366,6 +368,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
           rating,
           isFeatured: dto.isFeatured ?? false,
           publishAt: pub.publishAt,
+          finishAt: dto.finishAt ?? null,
           status: pub.status,
           language: dto.language ?? Language.AR,
           visibility: dto.visibility,
@@ -383,6 +386,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   async update(id: number, dto: UpdateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFiles: Express.Multer.File[] = []) {
     const n = await this.repo.findOne({ where: { id } });
     if (!n || CONTENT_CATEGORY_CODES.includes(n.mainCategory)) throw new NotFoundException('السجل غير موجود');
+    if (dto.finishAt && !isYmd(dto.finishAt)) throw new BadRequestException('تاريخ النهاية غير صالح');
     const perms = actor.permissions;
     this.assertMay('update', n.mainCategory, perms); // update permission of the record's CURRENT kind
 
@@ -434,6 +438,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
         rating,
         status: pub.status,
         publishAt: pub.publishAt,
+        ...(dto.finishAt !== undefined && { finishAt: dto.finishAt }),
         images: [...keep, ...added],
         pdf: nextPdfs[0] ?? null,
         pdfs: nextPdfs,

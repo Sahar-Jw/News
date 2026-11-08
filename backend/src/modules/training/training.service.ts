@@ -281,7 +281,7 @@ export class TrainingService {
         // the lock keeps two people from taking the last seat at the same moment
         const row = await m.findOne(News, { where: { id: courseId, mainCategory: CC.COURSE }, lock: { mode: 'pessimistic_write' } });
         if (!row || row.extra?.isActive === false) throw new NotFoundException('الدورة غير موجودة');
-        const c = this.view({ id: Number(row.id), code: row.mainCategory, title: row.title, body: row.body ?? null, images: row.images ?? [], pdf: row.pdf ?? null, x: (row.extra ?? {}) as Record<string, any>, createdAt: row.createdAt, updatedAt: row.updatedAt });
+        const c = this.view({ id: Number(row.id), code: row.mainCategory, title: row.title, body: row.body ?? null, images: row.images ?? [], pdf: row.pdf ?? null, finishAt: row.finishAt ?? null, x: (row.extra ?? {}) as Record<string, any>, createdAt: row.createdAt, updatedAt: row.updatedAt });
         course = c;
         const registered = await m.count(CourseRegistration, { where: { courseId } });
         const st = registrationStatus(c, registered);

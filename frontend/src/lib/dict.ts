@@ -83,7 +83,7 @@ const ar: Record<string, string> = {
   'board.searchPh': 'ابحث باسم العضو أو صفته…', 'board.noMatch': 'لا يوجد أعضاء مطابقون للتصفية',
   'board.bio': 'نبذة مهنية', 'board.duties': 'اللجان والمهام', 'board.back': 'العودة إلى مجلس الإدارة', 'board.empty': 'لم تتم إضافة أعضاء بعد',
   // documents
-  'adm.documents': 'الوثائق والمكتبة', 'mod.documents': 'الوثائق والمكتبة', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
+  'adm.documents': 'الوثائق والمكتبة', 'adm.library': 'المكتبة والأرشيف الرقمي', 'mod.documents': 'الوثائق والمكتبة', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
   'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'وثائق ومواد أخرى', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
   'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
   'doc.fileHint': 'مطلوب، حتى 25 ميغابايت', 'doc.fileKeep': 'اتركه فارغاً للإبقاء على الملف الحالي', 'doc.current': 'عرض الملف الحالي', 'doc.pdfOnly': 'ملف PDF فقط', 'doc.pdfRequired': 'اختر ملف PDF',
@@ -159,12 +159,12 @@ const ar: Record<string, string> = {
   'faq.scope.general': 'عام', 'faq.scope.one_stop': 'النافذة الواحدة', 'faq.scope.membership': 'الانتساب', 'faq.scope.training': 'التدريب', 'faq.scope.expo': 'المعرض',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.gallery': 'معرض الصور',
-  'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'التاريخ', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
+  'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'تاريخ البداية', 'oc.finishDate': 'تاريخ النهاية', 'oc.type': 'النوع', 'oc.occasion': 'مناسبة', 'oc.exhibition': 'معرض', 'oc.exhibitions': 'المعارض', 'oc.current': 'حالية', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
   'oc.imageCount': 'عدد الصور', 'oc.addOccasion': 'إضافة مناسبة', 'oc.editOccasion': 'تعديل مناسبة', 'oc.addGallery': 'إضافة معرض صور', 'oc.editGallery': 'تعديل معرض صور',
   'oc.images': 'الصور', 'oc.addImages': 'إضافة صور', 'oc.imagesHint': 'JPG أو PNG أو WEBP أو GIF، بحد أقصى 5MB للصورة و20 صورة', 'oc.imagesRequired': 'أضف صورة واحدة على الأقل', 'oc.tooMany': 'الحد الأقصى 20 صورة',
   'oc.removeImage': 'إزالة الصورة', 'oc.created': 'تاريخ الإضافة', 'oc.noImages': 'بلا صور',
   // public: services menu
-  'pub.upcoming': 'المناسبات القادمة', 'pub.previous': 'المناسبات السابقة', 'pub.gallery': 'معرض الصور', 'pub.noOccasions': 'لا توجد مناسبات', 'pub.noGalleries': 'لا توجد معارض صور',
+  'pub.upcoming': 'المناسبات القادمة', 'pub.current': 'المناسبات الحالية', 'pub.exhibitions': 'المعارض', 'pub.previous': 'المناسبات السابقة', 'pub.gallery': 'معرض الصور', 'pub.noOccasions': 'لا توجد مناسبات', 'pub.noGalleries': 'لا توجد معارض صور',
   'pub.photos': 'صورة', 'pub.backGallery': 'كل المعارض',
   // newsletter + ads
   'adm.subscribers': 'المشتركون', 'adm.ads': 'الإعلانات', 'sec.subscribe': 'اشترك في نشرتنا',
@@ -277,7 +277,7 @@ const en: Record<string, string> = {
   'board.searchPh': 'Search by member name or title…', 'board.noMatch': 'No members match the filters',
   'board.bio': 'Biography', 'board.duties': 'Committees and duties', 'board.back': 'Back to the board', 'board.empty': 'No members added yet',
   // documents
-  'adm.documents': 'Documents & library', 'mod.documents': 'Documents & library', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
+  'adm.documents': 'Documents', 'adm.library': 'Library & digital archive', 'mod.documents': 'Documents & library', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
   'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Other documents', 'doc.number': 'Number', 'doc.date': 'Date',
   'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
   'doc.fileHint': 'Required, up to 25 MB', 'doc.fileKeep': 'Leave empty to keep the current file', 'doc.current': 'View current file', 'doc.pdfOnly': 'PDF files only', 'doc.pdfRequired': 'Choose a PDF file',
@@ -353,12 +353,12 @@ const en: Record<string, string> = {
   'faq.scope.general': 'General', 'faq.scope.one_stop': 'One-stop window', 'faq.scope.membership': 'Membership', 'faq.scope.training': 'Training', 'faq.scope.expo': 'Expo',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.gallery': 'Image gallery',
-  'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Date', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
+  'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Start date', 'oc.finishDate': 'Finish date', 'oc.type': 'Type', 'oc.occasion': 'Occasion', 'oc.exhibition': 'Exhibition', 'oc.exhibitions': 'Exhibitions', 'oc.current': 'Current', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
   'oc.imageCount': 'Images', 'oc.addOccasion': 'Add occasion', 'oc.editOccasion': 'Edit occasion', 'oc.addGallery': 'Add gallery', 'oc.editGallery': 'Edit gallery',
   'oc.images': 'Images', 'oc.addImages': 'Add images', 'oc.imagesHint': 'JPG, PNG, WEBP or GIF, up to 5MB each and 20 images', 'oc.imagesRequired': 'Add at least one image', 'oc.tooMany': 'Up to 20 images',
   'oc.removeImage': 'Remove image', 'oc.created': 'Added on', 'oc.noImages': 'No images',
   // public: services menu
-  'pub.upcoming': 'Upcoming occasions', 'pub.previous': 'Previous occasions', 'pub.gallery': 'Image gallery', 'pub.noOccasions': 'No occasions found', 'pub.noGalleries': 'No galleries found',
+  'pub.upcoming': 'Upcoming occasions', 'pub.current': 'Current occasions', 'pub.exhibitions': 'Exhibitions', 'pub.previous': 'Previous occasions', 'pub.gallery': 'Image gallery', 'pub.noOccasions': 'No occasions found', 'pub.noGalleries': 'No galleries found',
   'pub.photos': 'photos', 'pub.backGallery': 'All galleries',
   // newsletter + ads
   'adm.subscribers': 'Subscribers', 'adm.ads': 'Ads', 'sec.subscribe': 'Subscribe to our newsletter',

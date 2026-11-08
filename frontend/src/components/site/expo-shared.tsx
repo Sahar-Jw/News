@@ -43,6 +43,7 @@ export function useExpoInfo() {
     lang, L, lines, start, end, daysLeft, phase,
     name: L('name') || 'DCC EXPO', tagline: L('tagline'), venue: L('venue'),
     logo: img('expo', 'logo'), hero: img('expo', 'hero_image'),
+    floorPlan: L('floor_plan'), footerText: L('footer_text'),
     email: String(s('expo', 'contact_email') ?? ''), phone: String(s('expo', 'contact_phone') ?? ''),
     newsTopic: L('news_topic'), registerOpen: s('expo', 'register_open') !== false && s('expo', 'register_open') !== 'false',
   };

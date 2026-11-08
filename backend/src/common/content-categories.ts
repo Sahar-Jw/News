@@ -30,6 +30,7 @@ export const CC = {
   G2T_INFO: 'G2T_INFO',
   MEMBERSHIP_INFO: 'MEMBERSHIP_INFO',
   INCUBATOR_PROJECT: 'INCUBATOR_PROJECT',
+  OCCASION: 'OCCASION',
 } as const;
 
 export const docCode = (kind: string) => `DOC_${kind.toUpperCase()}`;
@@ -64,6 +65,7 @@ export const CONTENT_CATEGORY_LABELS: Record<string, { ar: string; en: string }>
   G2T_INFO: { ar: 'تعريف غيت تو تريد', en: 'Get2Trade info' },
   MEMBERSHIP_INFO: { ar: 'معلومات الانتساب', en: 'Membership info' },
   INCUBATOR_PROJECT: { ar: 'مشاريع الحاضنة', en: 'Incubator projects' },
+  OCCASION: { ar: 'المناسبات والمعارض', en: 'Occasions & exhibitions' },
   DOC_CIRCULAR: { ar: 'التعاميم', en: 'Circulars' },
   DOC_DECISION: { ar: 'القرارات', en: 'Decisions' },
   DOC_LAW: { ar: 'القوانين والأنظمة', en: 'Laws & regulations' },

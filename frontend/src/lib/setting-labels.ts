@@ -15,6 +15,7 @@ const CATEGORY_AR: Record<string, string> = {
   promo: 'البانر الترويجي (DCC EXPO)',
   media: 'المركز الإعلامي',
   expo: 'DCC EXPO (المعرض)',
+  women: 'لجنة سيدات الأعمال',
   incubator: 'حاضنة الأعمال',
   footer: 'التذييل (Footer)',
 };
@@ -105,8 +106,13 @@ const HOME_SECTION_AR: Record<string, string> = {
 const EXPO_AR: Record<string, string> = {
   name: 'اسم المعرض', tagline: 'الشعار النصي (العنوان الرئيسي)', about: 'عن المعرض', why: 'لماذا تشارك؟ (كل نقطة في سطر)',
   start_date: 'تاريخ البداية (YYYY-MM-DD)', end_date: 'تاريخ النهاية (YYYY-MM-DD)', venue: 'مكان المعرض', hero_image: 'صورة الواجهة', logo: 'شعار المعرض',
-  primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', contact_email: 'بريد المعرض (يصله إشعار عند كل طلب)', contact_phone: 'هاتف المعرض',
+  primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص', floor_plan: 'مخطط المعرض أو معلومات المكان', footer_text: 'نص التذييل',
   news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
+};
+
+const WOMEN_AR: Record<string, string> = {
+  name: 'اسم الصفحة', tagline: 'الشعار النصي', logo: 'شعار اللجنة', primary_color: 'اللون الأساسي', accent_color: 'لون التمييز',
+  header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص',
 };
 
 /** labels of the "incubator" settings category */
@@ -138,6 +144,7 @@ export function keyLabel(category: string, key: string, lang: string): string {
   }
   if (category === 'incubator' && INCUBATOR_AR[base]) return `${INCUBATOR_AR[base]}${suffix}`;
   if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;
+  if (category === 'women' && WOMEN_AR[base]) return `${WOMEN_AR[base]}${suffix}`;
   if (category === 'promo') {
     const p = /^(title|text|button)_(ar|en)$/.exec(base);
     if (p) return `البانر — ${{ title: 'العنوان', text: 'النص', button: 'نص الزر' }[p[1] as 'title' | 'text' | 'button']}${suffix}`;

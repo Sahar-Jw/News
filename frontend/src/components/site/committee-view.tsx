@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { useSite } from '@/components/site/site-context';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
@@ -87,14 +88,29 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
  */
 export function CommitteeView({ path }: { path: string }) {
   const { lang, t, href } = useI18n();
+  const { loc } = useSite();
   const [c, setC] = useState<CommitteeData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   const [tab, setTab] = useState('overview');
 
   useEffect(() => {
     setState('load');
-    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); setTab('overview'); }).catch(() => setState('404'));
+    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); }).catch(() => setState('404'));
   }, [path, lang]);
+
+  useEffect(() => {
+    const syncHash = () => {
+      const hash = window.location.hash.slice(1);
+      const next = hash === 'about' ? 'overview' : hash;
+      if (['overview', 'members', 'duties', 'news', 'meetings', 'recommendations', 'initiatives', 'media'].includes(next)) {
+        setTab(next);
+        requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }
+    };
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
 
   const tabs = useMemo(() => {
     if (!c) return [];
@@ -126,13 +142,13 @@ export function CommitteeView({ path }: { path: string }) {
       </nav>
 
       {women ? (
-        <header className="relative overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
+        <header id="about" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
           <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
           <div className="relative grid items-center gap-6 p-6 md:grid-cols-[auto,1fr] md:p-10">
             <img src={c.logoUrl ? fileUrl(c.logoUrl) : '/brand/women-committee-icon.svg'} alt={c.name} className="mx-auto h-40 w-auto max-w-[12rem] object-contain md:h-48" />
             <div className="min-w-0 text-center md:text-start">
               <h1 className="text-2xl font-extrabold leading-snug md:text-4xl">{c.name}</h1>
-              <p className="mt-2 text-base font-semibold text-accent">{t('women.tagline')}</p>
+              <p className="mt-2 text-base font-semibold text-accent">{loc('women', 'tagline') || t('women.tagline')}</p>
               {c.chairName && <p className="mt-3 text-sm text-white/75">{t('cm.chair')}: <b className="text-white">{c.chairName}</b></p>}
               {c.tags.length > 0 && (
                 <p className="mt-3 flex flex-wrap items-center justify-center gap-1.5 text-xs md:justify-start">
@@ -165,12 +181,12 @@ export function CommitteeView({ path }: { path: string }) {
 
       <div role="tablist" className="my-5 flex flex-wrap gap-2">
         {tabs.map((x) => (
-          <button key={x.key} role="tab" aria-selected={tab === x.key} onClick={() => setTab(x.key)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === x.key ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-ink/80 hover:bg-primary/20'}`}>{t(`cm.tab.${x.key}`)}</button>
+          <button key={x.key} role="tab" aria-selected={tab === x.key} onClick={() => { setTab(x.key); if (women) window.history.replaceState(null, '', `#${x.key === 'overview' ? 'about' : x.key}`); }} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === x.key ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-ink/80 hover:bg-primary/20'}`}>{t(`cm.tab.${x.key}`)}</button>
         ))}
       </div>
 
       {tab === 'overview' && (
-        <div className="space-y-5">
+        <div id={women ? 'overview' : undefined} className="scroll-mt-24 space-y-5">
           <div className="grid gap-5 md:grid-cols-2">
             <Box><Heading>{t('cm.latestNews')}</Heading><NewsList items={c.news} limit={3} /></Box>
             <Box><Heading>{t('cm.upcomingMeetings')}</Heading><ActivityList items={upcoming.slice(0, 3)} empty={t('cm.noContent')} /></Box>
@@ -178,13 +194,13 @@ export function CommitteeView({ path }: { path: string }) {
           {c.members.length > 0 && <Box><Heading>{t('cm.tab.members')}</Heading><MemberGrid members={c.members.slice(0, 6)} /></Box>}
         </div>
       )}
-      {tab === 'members' && <Box><MemberGrid members={c.members} /></Box>}
-      {tab === 'duties' && <Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box>}
-      {tab === 'news' && <Box><NewsList items={c.news} /></Box>}
-      {tab === 'meetings' && <Box><ActivityList items={c.meetings} empty={t('cm.noContent')} /></Box>}
-      {tab === 'recommendations' && <Box><ActivityList items={c.recommendations} empty={t('cm.noContent')} /></Box>}
+      {tab === 'members' && <div id="members" className="scroll-mt-24"><Box><MemberGrid members={c.members} /></Box></div>}
+      {tab === 'duties' && <div id="duties" className="scroll-mt-24"><Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box></div>}
+      {tab === 'news' && <div id="news" className="scroll-mt-24"><Box><NewsList items={c.news} /></Box></div>}
+      {tab === 'meetings' && <div id="meetings" className="scroll-mt-24"><Box><ActivityList items={c.meetings} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'recommendations' && <div id="recommendations" className="scroll-mt-24"><Box><ActivityList items={c.recommendations} empty={t('cm.noContent')} /></Box></div>}
       {tab === 'media' && (
-        <Box>
+        <div id="media" className="scroll-mt-24"><Box>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {c.gallery.map((g) => (
               <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">
@@ -193,9 +209,9 @@ export function CommitteeView({ path }: { path: string }) {
               </Link>
             ))}
           </div>
-        </Box>
+        </Box></div>
       )}
-      {tab === 'initiatives' && <Box><ActivityList items={c.initiatives} empty={t('cm.noContent')} /></Box>}
+      {tab === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><ActivityList items={c.initiatives} empty={t('cm.noContent')} /></Box></div>}
 
       <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>
     </div>

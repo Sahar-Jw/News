@@ -7,22 +7,29 @@ export class CreateOccasionDto {
   @IsString() @MinLength(1) @MaxLength(255) titleAr: string;
   @IsString() @MinLength(1) @MaxLength(255) titleEn: string;
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD' }) eventDate: string;
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'تاريخ النهاية يجب أن يكون بصيغة YYYY-MM-DD' }) finishDate: string;
+  @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
 }
 
 export class UpdateOccasionDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleAr?: string;
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleEn?: string;
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD' }) eventDate?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'تاريخ النهاية يجب أن يكون بصيغة YYYY-MM-DD' }) finishDate?: string;
+  @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
   /** saved images to keep (JSON string in multipart); omitted = keep all */
   @IsOptional() @Transform(parseStringList) @IsArray() @IsString({ each: true }) keepImages?: string[];
 }
 
 export class OccasionsAdminQueryDto extends AdminListQueryDto {
   /** optional filter of the occasions table: only upcoming (date today or later) or only previous */
-  @IsOptional() @IsIn(['upcoming', 'previous']) status?: string;
+  @IsOptional() @IsIn(['upcoming', 'current', 'previous', 'exhibitions']) status?: string;
+  @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
 }
 
 export class PublicOccasionsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsIn(['ar', 'en']) lang?: string;
-  @IsOptional() @IsIn(['upcoming', 'previous']) scope?: string;
+  @IsOptional() @IsIn(['upcoming', 'current', 'previous', 'exhibitions']) scope?: string;
+  @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/) month?: string;
 }
