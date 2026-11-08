@@ -254,16 +254,6 @@ export function Navbar() {
   const navGroups = useNavGroups(lang, t);
   const groups = [
     ...(navGroups ?? []).map((g) => ({ key: String(g.id), label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) })),
-    {
-      key: 'occasions',
-      label: lang === 'ar' ? 'المناسبات والمعارض' : 'Occasions & exhibitions',
-      items: [
-        { label: lang === 'ar' ? 'المناسبات القادمة' : 'Upcoming occasions', to: '/occasions/upcoming', show: true },
-        { label: lang === 'ar' ? 'المناسبات الحالية' : 'Current occasions', to: '/occasions/current', show: true },
-        { label: lang === 'ar' ? 'المعارض' : 'Exhibitions', to: '/occasions/exhibitions', show: true },
-        { label: lang === 'ar' ? 'المناسبات السابقة' : 'Previous occasions', to: '/occasions/previous', show: true },
-      ],
-    },
   ];
   // Settings is the hub of every page of the site (courses, trainers, trainees, expo, membership ...): it is listed for anyone who can open at least one of its tabs.
   const securityItems: NavItem[] = [

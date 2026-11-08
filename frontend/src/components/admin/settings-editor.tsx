@@ -9,6 +9,7 @@ import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 
 interface Row { id: number; category: string; key: string; valueType: 'text' | 'number' | 'boolean' | 'url' | 'color' | 'file' | 'json'; value: any; fileUrl?: string }
+const SETTINGS_PAGE_SIZE = 20;
 
 const show = (r: Row) => {
   if (r.value === null || r.value === '') return '—';
@@ -32,7 +33,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const [loadErr, setLoadErr] = useState('');
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [valueFilter, setValueFilter] = useState<'all' | 'filled' | 'empty'>('all');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [page, setPage] = useState(1);
   const [openIds, setOpenIds] = useState<GroupId[]>(['home']);
   const [edit, setEdit] = useState<Row | null>(null);
   const [val, setVal] = useState<any>('');
@@ -111,8 +113,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
 
   const ar = lang === 'ar';
   const T = ar
-    ? { search: 'ابحث في الإعدادات…', all: 'فتح الكل', none: 'طي الكل', settings: 'إعداد', filled: 'معبأ', empty: 'فارغ', noMatch: 'لا توجد إعدادات مطابقة', open: 'فتح', hint: 'اضغط على أي قسم لعرض كل إعداداته وتعديلها.', matches: 'نتيجة', category: 'كل الفئات', value: 'كل القيم', clear: 'مسح المرشحات' }
-    : { search: 'Search settings…', all: 'Expand all', none: 'Collapse all', settings: 'settings', filled: 'filled', empty: 'empty', noMatch: 'No matching settings', open: 'Open', hint: 'Click any section to see and edit all of its settings.', matches: 'matches', category: 'All categories', value: 'Any value', clear: 'Clear filters' };
+    ? { search: 'ابحث في الإعدادات…', all: 'فتح الكل', none: 'طي الكل', settings: 'إعداد', filled: 'معبأ', empty: 'فارغ', noMatch: 'لا توجد إعدادات مطابقة', open: 'فتح', hint: 'اضغط على أي قسم لعرض إعداداته وتعديلها.', matches: 'نتيجة', category: 'كل الفئات', type: 'كل الأنواع', previous: 'السابق', next: 'التالي', page: 'صفحة', of: 'من', clear: 'مسح المرشحات' }
+    : { search: 'Search settings…', all: 'Expand all', none: 'Collapse all', settings: 'settings', filled: 'filled', empty: 'empty', noMatch: 'No matching settings', open: 'Open', hint: 'Click any section to see and edit its settings.', matches: 'matches', category: 'All categories', type: 'All types', previous: 'Previous', next: 'Next', page: 'Page', of: 'of', clear: 'Clear filters' };
 
   const needle = query.trim().toLowerCase();
   const labelOf = (r: Row) => keyLabel(r.category, r.key, lang);
@@ -120,17 +122,27 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const matchRow = (r: Row) => {
     const textMatch = !needle || [labelOf(r), r.key, categoryLabel(r.category, lang), typeof r.value === 'string' ? r.value : ''].some((x) => String(x).toLowerCase().includes(needle));
     const categoryMatch = !categoryFilter || r.category === categoryFilter;
-    const valueMatch = valueFilter === 'all' || (valueFilter === 'filled' ? isFilled(r) : !isFilled(r));
-    return textMatch && categoryMatch && valueMatch;
+    const typeMatch = !typeFilter || r.valueType === typeFilter;
+    return textMatch && categoryMatch && typeMatch;
   };
-  const eligibleRows = (rows ?? []).filter((r) => only ? only.includes(groupOf(r.category)) : r.category !== 'pages');
+  const eligibleRows = (rows ?? []).filter((r) =>
+    r.key !== 'page_links' && (only ? only.includes(groupOf(r.category)) : r.category !== 'pages'),
+  );
   const categories = [...new Set(eligibleRows.map((r) => r.category))].sort();
-  const hasFilters = !!needle || !!categoryFilter || valueFilter !== 'all';
+  const typeRows = eligibleRows.filter((r) => !categoryFilter || r.category === categoryFilter);
+  const valueTypes = [...new Set(typeRows.map((r) => r.valueType))].sort();
+  const filteredRows = eligibleRows.filter(matchRow);
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / SETTINGS_PAGE_SIZE));
+  const visibleRows = filteredRows.slice((page - 1) * SETTINGS_PAGE_SIZE, page * SETTINGS_PAGE_SIZE);
+  const visibleIds = new Set(visibleRows.map((r) => r.id));
+  const hasFilters = !!needle || !!categoryFilter || !!typeFilter;
+  const totalMatches = filteredRows.length;
+  useEffect(() => { setPage((current) => Math.min(current, totalPages)); }, [totalPages]);
 
   const groups = useMemo(() => {
     const m = new Map<GroupId, Map<string, Row[]>>();
     for (const r of rows ?? []) {
-      if (!only && r.category === 'pages') continue;
+      if (r.key === 'page_links' || (!only && r.category === 'pages')) continue;
       const g = groupOf(r.category);
       if (only && only.length && !only.includes(g)) continue;
       if (!m.has(g)) m.set(g, new Map());
@@ -141,21 +153,32 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     return SETTING_GROUPS.filter((g) => m.has(g.id)).map((g) => ({ ...g, cats: [...m.get(g.id)!.entries()].map(([category, list]) => ({ category, list })) }));
   }, [rows, only]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalMatches = hasFilters ? eligibleRows.filter(matchRow).length : 0;
   const toggleGroup = (id: GroupId) => setOpen(openIds.includes(id) ? openIds.filter((x) => x !== id) : [...openIds, id]);
+  const pagination = (
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+      <span>{totalMatches} {T.matches}{totalMatches > 0 ? ` · ${T.page} ${page} ${T.of} ${totalPages}` : ''}</span>
+      {totalPages > 1 && <div className="flex gap-2">
+        <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>{T.previous}</Button>
+        <Button type="button" size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>{T.next}</Button>
+      </div>}
+    </div>
+  );
   const filterBar = (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} className={`${inputCls} min-w-48 max-w-md flex-1`} aria-label={T.search} />
-      <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={`${inputCls} w-auto min-w-40`}>
-        <option value="">{T.category}</option>
-        {categories.map((category) => <option key={category} value={category}>{categoryLabel(category, lang)}</option>)}
-      </select>
-      <select value={valueFilter} onChange={(e) => setValueFilter(e.target.value as typeof valueFilter)} className={`${inputCls} w-auto min-w-36`}>
-        <option value="all">{T.value}</option>
-        <option value="filled">{T.filled}</option>
-        <option value="empty">{T.empty}</option>
-      </select>
-      {hasFilters && <><span className="text-sm text-gray-500">{totalMatches} {T.matches}</span><Button type="button" size="sm" variant="outline" onClick={() => { setQuery(''); setCategoryFilter(''); setValueFilter('all'); }}>{T.clear}</Button></>}
+      <input type="search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder={T.search} className={`${inputCls} min-w-48 max-w-md flex-1`} aria-label={T.search} />
+      {categories.length > 1 && (
+        <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setTypeFilter(''); setPage(1); }} className={`${inputCls} w-auto min-w-40`} aria-label={T.category}>
+          <option value="">{T.category}</option>
+          {categories.map((category) => <option key={category} value={category}>{categoryLabel(category, lang)}</option>)}
+        </select>
+      )}
+      {valueTypes.length > 1 && (
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={`${inputCls} w-auto min-w-36`} aria-label={T.type}>
+          <option value="">{T.type}</option>
+          {valueTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+      )}
+      {hasFilters && <Button type="button" size="sm" variant="outline" onClick={() => { setQuery(''); setCategoryFilter(''); setTypeFilter(''); setPage(1); }}>{T.clear}</Button>}
     </div>
   );
 
@@ -189,10 +212,12 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
       {rows && only && (
         <>
         {filterBar}
+        {pagination}
         <div className="space-y-6">
-          {groups.flatMap((g) => g.cats).map((cat) => ({ ...cat, list: cat.list.filter(matchRow) })).filter((cat) => cat.list.length > 0).map(catBlock)}
+          {groups.flatMap((g) => g.cats).map((cat) => ({ ...cat, list: cat.list.filter((r) => visibleIds.has(r.id)) })).filter((cat) => cat.list.length > 0).map(catBlock)}
           {totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
         </div>
+        {pagination}
         </>
       )}
 
@@ -201,7 +226,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
           {/* dashboard tiles: one per site section; click opens it */}
           <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
             {groups.map((g) => {
-              const all = g.cats.flatMap((c) => c.list);
+              const all = g.cats.flatMap((c) => c.list.filter((r) => eligibleRows.some((eligible) => eligible.id === r.id)));
               const filled = all.filter(isFilled).length;
               const on = openIds.includes(g.id);
               return (
@@ -219,6 +244,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
           </div>
 
           {filterBar}
+          {pagination}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="flex-1" />
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen(groups.map((g) => g.id))}>{T.all}</Button>
@@ -227,10 +253,10 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
 
           <div className="space-y-3">
             {groups.map((g) => {
-              const cats = g.cats.map((c) => ({ ...c, list: c.list.filter(matchRow) })).filter((c) => c.list.length);
+              const cats = g.cats.map((c) => ({ ...c, list: c.list.filter((r) => visibleIds.has(r.id)) })).filter((c) => c.list.length);
               if (hasFilters && !cats.length) return null;
               const isOpen = hasFilters ? true : openIds.includes(g.id);
-              const count = g.cats.reduce((n, c) => n + c.list.length, 0);
+              const count = cats.reduce((n, c) => n + c.list.length, 0);
               return (
                 <section key={g.id} id={`set-${g.id}`} className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
                   <button type="button" onClick={() => toggleGroup(g.id)} aria-expanded={isOpen} className="flex w-full items-center gap-3 p-4 text-start hover:bg-gray-50">
@@ -250,8 +276,9 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
                 </section>
               );
             })}
-            {hasFilters && totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
+            {totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
           </div>
+          {pagination}
         </>
       )}
       <Modal open={!!edit} onClose={closeEdit} title={edit ? (lang === 'ar' ? `${categoryLabel(edit.category, lang)} — ${keyLabel(edit.category, edit.key, lang)}` : `${edit.category}.${edit.key}`) : ''}>

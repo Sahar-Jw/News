@@ -53,8 +53,10 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'events',
     label: 'nav.events',
     items: [
-      { label: 'nav.exhibitions', to: '/occasions/previous', ready: true },
-      { label: 'nav.agenda', to: '/occasions/upcoming', ready: true },
+      { label: 'nav.upcomingOccasions', to: '/occasions/upcoming', ready: true },
+      { label: 'nav.currentOccasions', to: '/occasions/current', ready: true },
+      { label: 'nav.exhibitionsOnly', to: '/occasions/exhibitions', ready: true },
+      { label: 'nav.previousOccasions', to: '/occasions/previous', ready: true },
       { label: 'nav.expo', to: '/expo', ready: true },
     ],
   },

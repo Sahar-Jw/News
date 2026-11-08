@@ -61,15 +61,15 @@ export const HUBS: HubMeta[] = [
   { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },
   { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }] },
   {
-    key: 'media', ar: 'المركز الإعلامي', en: 'Media center', hintAr: 'الألبومات والمناسبات والأجندة', hintEn: 'Albums, occasions and agenda', icon: '✉', color: '#be123c',
-    tabs: [{ key: 'gallery', ar: 'الألبومات', en: 'Albums', perms: ['gallery.read'] }, { key: 'occasions', ar: 'المناسبات والأجندة', en: 'Occasions & agenda', perms: ['occasions.read'] }, settings(['media'])],
+    key: 'media', ar: 'المركز الإعلامي', en: 'Media center', hintAr: 'الألبومات وإعدادات المركز الإعلامي', hintEn: 'Albums and media center settings', icon: '✉', color: '#be123c',
+    tabs: [{ key: 'gallery', ar: 'الألبومات', en: 'Albums', perms: ['gallery.read'] }, settings(['media'])],
   },
+  { key: 'occasions', ar: 'المناسبات والأجندة', en: 'Occasions & agenda', hintAr: 'إدارة المناسبات والمعارض والأجندة فقط، مستقلة عن الأخبار', hintEn: 'Manage occasions, exhibitions and agenda separately from news', icon: '▦', color: '#be123c', tabs: [{ key: 'events', ar: 'المناسبات والمعارض', en: 'Occasions & exhibitions', perms: ['occasions.read'] }] },
   {
     key: 'pages', ar: 'الصفحات الثابتة', en: 'Static pages', hintAr: 'الصفحات والأسئلة الشائعة', hintEn: 'Pages and FAQs', icon: '▦', color: '#475569',
     tabs: [{ key: 'about', ar: 'عن الغرفة', en: 'About', perms: ['pages.read'] }, { key: 'privacy', ar: 'سياسة الخصوصية', en: 'Privacy policy', perms: ['pages.read'] }, { key: 'terms', ar: 'الشروط والأحكام', en: 'Terms & conditions', perms: ['pages.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }],
   },
   { key: 'audience', ar: 'المشتركون والإعلانات', en: 'Subscribers & ads', hintAr: 'نشرة الغرفة والإعلانات', hintEn: 'Newsletter and ads', icon: '◎', color: '#ea580c', tabs: [{ key: 'subscribers', ar: 'المشتركون', en: 'Subscribers', perms: ['subscribers.read'] }, { key: 'ads', ar: 'الإعلانات', en: 'Ads', perms: ['ads.read'] }] },
-  { key: 'all', ar: 'كل الإعدادات', en: 'All settings', hintAr: 'بحث في كل إعدادات الموقع', hintEn: 'Search every site setting', icon: '⚙', color: '#64748b', tabs: [{ key: 'all', ar: 'كل الإعدادات', en: 'All settings', perms: S, settingsGroups: [] }] },
 ];
 
 /** every permission that opens something in the hub: the navbar shows "Settings" to anyone holding at least one */

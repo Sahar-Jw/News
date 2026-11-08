@@ -41,7 +41,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold tracking-wide">{x.name}</span>
           </Link>
           <nav aria-label="EXPO" className="hidden items-center gap-1 lg:flex">
-            {x.pageLinks.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`rounded-full px-3 py-1.5 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {x.pageLinks.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`rounded-full px-3 py-1.5 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} title={t('ex.backToChamber')} className="hidden items-center gap-1 rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 md:inline-flex"><span aria-hidden="true" className="rtl:rotate-180">←</span>{t('ex.backToChamber')}</Link>
@@ -52,7 +52,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
         </div>
         {open && (
           <nav className="border-t border-white/15 px-4 pb-3 lg:hidden" onClick={() => setOpen(false)}>
-            {x.pageLinks.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {x.pageLinks.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
             <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10">← {t('ex.backToChamber')}</Link>
             {x.registerOpen && <Link href={href('/expo/register')} className="mt-2 block rounded-full bg-accent px-4 py-2 text-center text-sm font-extrabold text-secondary">{t('ex.registerExhibitor')}</Link>}
           </nav>
@@ -72,7 +72,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
           </div>
           <div className="space-y-1.5">
             <Link href={href('/')} className="block text-accent hover:underline">← {t('ex.backToChamber')}</Link>
-            {x.pageLinks.footer.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {x.pageLinks.footer.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           </div>
         </div>
       </footer>

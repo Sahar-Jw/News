@@ -2,6 +2,7 @@ export interface BrandedPageLink {
   labelAr: string;
   labelEn: string;
   href: string;
+  isActive?: boolean;
 }
 
 export interface BrandedPageLinks {
@@ -46,6 +47,18 @@ export const DEFAULT_BRANDED_PAGE_LINKS: Record<'expo' | 'women', BrandedPageLin
   },
 };
 
+export const BRANDED_DESTINATIONS: BrandedPageLink[] = [
+  { labelAr: 'الصفحة الرئيسية', labelEn: 'Home', href: '/' },
+  { labelAr: 'الأخبار', labelEn: 'News', href: '/news' },
+  { labelAr: 'المركز الإعلامي', labelEn: 'Media center', href: '/media' },
+  { labelAr: 'معرض الصور', labelEn: 'Gallery', href: '/gallery' },
+  { labelAr: 'اللجان', labelEn: 'Committees', href: '/committees' },
+  { labelAr: 'تواصل معنا', labelEn: 'Contact', href: '/contact' },
+  ...DEFAULT_BRANDED_PAGE_LINKS.expo.navigation,
+  { labelAr: 'التسجيل في المعرض', labelEn: 'Expo registration', href: '/expo/register' },
+  ...DEFAULT_BRANDED_PAGE_LINKS.women.navigation,
+];
+
 const isInternalHref = (href: unknown): href is string =>
   typeof href === 'string' && /^\/(?!\/)[^\s\\]*$/.test(href);
 
@@ -55,7 +68,7 @@ function readList(value: unknown, fallback: BrandedPageLink[]): BrandedPageLink[
     if (!item || typeof item !== 'object') return [];
     const link = item as Record<string, unknown>;
     if (typeof link.labelAr !== 'string' || typeof link.labelEn !== 'string' || !isInternalHref(link.href)) return [];
-    return [{ labelAr: link.labelAr, labelEn: link.labelEn, href: link.href }];
+    return [{ labelAr: link.labelAr, labelEn: link.labelEn, href: link.href, isActive: link.isActive !== false }];
   });
 }
 

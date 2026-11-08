@@ -59,7 +59,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
           <nav aria-label={name} className="hidden items-center gap-1 lg:flex">
-            {links.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {links.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} className="hidden rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold hover:bg-white/15 md:inline-block">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
@@ -68,7 +68,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {open && <nav className="border-t border-white/15 px-4 pb-3 lg:hidden" onClick={() => setOpen(false)}>
-          {links.navigation.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+          {links.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
           <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
         </nav>}
       </header>
@@ -82,7 +82,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             {footerText && <p className="mt-2 max-w-xl leading-6 text-white/75">{footerText}</p>}
           </div>
           <div className="flex flex-wrap gap-4">
-            {links.footer.map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {links.footer.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
             <Link href={href('/')} className="text-accent hover:underline">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
           </div>
         </div>

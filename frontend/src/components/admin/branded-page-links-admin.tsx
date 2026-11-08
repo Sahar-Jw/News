@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { isValidBrandedLink, readBrandedPageLinks, type BrandedPageLink, type BrandedPageLinks } from '@/lib/branded-page-links';
+import { BRANDED_DESTINATIONS, isValidBrandedLink, readBrandedPageLinks, type BrandedPageLink, type BrandedPageLinks } from '@/lib/branded-page-links';
 
 interface SettingRow { id: number; key: string; value: BrandedPageLinks | null }
 interface LinkDraft extends BrandedPageLink { uid: number }
@@ -56,11 +56,8 @@ export function BrandedPageLinksAdmin({ page }: { page: 'expo' | 'women' }) {
   const addLink = (section: keyof Draft) => {
     setDraft((current) => current && ({
       ...current,
-      [section]: [...current[section], { uid: ++nextUid, labelAr: '', labelEn: '', href: '/' }],
+      [section]: [...current[section], { uid: ++nextUid, labelAr: '', labelEn: '', href: '/', isActive: true }],
     }));
-  };
-  const removeLink = (section: keyof Draft, uid: number) => {
-    setDraft((current) => current && ({ ...current, [section]: current[section].filter((link) => link.uid !== uid) }));
   };
   const moveLink = (section: keyof Draft, uid: number, offset: -1 | 1) => {
     setDraft((current) => {
@@ -78,8 +75,8 @@ export function BrandedPageLinksAdmin({ page }: { page: 'expo' | 'women' }) {
     event.preventDefault();
     if (!draft || settingId === null || !editable || busy) return;
     const links: BrandedPageLinks = {
-      navigation: draft.navigation.map(({ uid: _uid, ...link }) => link),
-      footer: draft.footer.map(({ uid: _uid, ...link }) => link),
+      navigation: draft.navigation.map(({ uid: _uid, ...link }) => ({ ...link, isActive: link.isActive !== false })),
+      footer: draft.footer.map(({ uid: _uid, ...link }) => ({ ...link, isActive: link.isActive !== false })),
     };
     if ([...links.navigation, ...links.footer].some((link) => !isValidBrandedLink(link))) {
       toast(ar ? 'أدخل اسماً بالعربية أو الإنجليزية ورابطاً داخلياً يبدأ بـ / لكل رابط.' : 'Each link needs a label and an internal path starting with /.', 'err');
@@ -111,13 +108,19 @@ export function BrandedPageLinksAdmin({ page }: { page: 'expo' | 'women' }) {
             <input maxLength={150} dir="ltr" className={inputCls} value={link.labelEn} disabled={!editable || busy} onChange={(event) => updateLink(key, link.uid, { labelEn: event.target.value })} />
           </Field>
           <Field label={ar ? 'الرابط الداخلي' : 'Internal path'}>
-            <input maxLength={500} dir="ltr" className={inputCls} value={link.href} disabled={!editable || busy} placeholder="/page or /page#section" onChange={(event) => updateLink(key, link.uid, { href: event.target.value })} />
+            <select className={inputCls} value={link.href} disabled={!editable || busy} onChange={(event) => updateLink(key, link.uid, { href: event.target.value })}>
+              {!BRANDED_DESTINATIONS.some((destination) => destination.href === link.href) && <option value={link.href}>{ar ? 'الوجهة الحالية' : 'Current destination'}</option>}
+              {BRANDED_DESTINATIONS.map((destination, optionIndex) => <option key={`${destination.href}-${optionIndex}`} value={destination.href}>{ar ? destination.labelAr : destination.labelEn}</option>)}
+            </select>
           </Field>
           {editable && (
             <div className="flex items-end gap-1">
+              <label className="flex items-center gap-1 text-xs text-gray-600">
+                <input type="checkbox" className="h-4 w-4" checked={link.isActive !== false} disabled={busy} onChange={(event) => updateLink(key, link.uid, { isActive: event.target.checked })} />
+                {ar ? 'ظاهر' : 'Active'}
+              </label>
               <Button type="button" size="sm" variant="outline" disabled={busy || index === 0} aria-label={ar ? 'تحريك لأعلى' : 'Move up'} onClick={() => moveLink(key, link.uid, -1)}>↑</Button>
               <Button type="button" size="sm" variant="outline" disabled={busy || index === draft[key].length - 1} aria-label={ar ? 'تحريك لأسفل' : 'Move down'} onClick={() => moveLink(key, link.uid, 1)}>↓</Button>
-              <Button type="button" size="sm" variant="danger" disabled={busy} aria-label={ar ? 'حذف الرابط' : 'Remove link'} onClick={() => removeLink(key, link.uid)}>×</Button>
             </div>
           )}
         </div>

@@ -44,6 +44,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
       PERM.USERS_READ, PERM.USERS_UPDATE, PERM.USERS_ROLE_CHANGE, PERM.USERS_DELETE, PERM.USERS_ACTIVATE, PERM.USERS_EXPORT, PERM.USERS_PASSWORD_RESET, PERM.USERS_CV_DOWNLOAD,
       PERM.SETTINGS_READ, PERM.SETTINGS_UPDATE,
       PERM.NAV_READ, PERM.NAV_UPDATE, PERM.FOOTER_READ, PERM.FOOTER_UPDATE,
+      PERM.OCCASIONS_READ,
       PERM.EXPO_READ, PERM.EXPO_CREATE, PERM.EXPO_UPDATE, PERM.EXPO_DELETE,
       PERM.EXPO_APPLICATIONS_READ, PERM.EXPO_APPLICATIONS_UPDATE, PERM.EXPO_APPLICATIONS_EXPORT, PERM.EXPO_APPLICATIONS_DELETE,
       PERM.FAQS_READ, PERM.FAQS_CREATE, PERM.FAQS_UPDATE, PERM.FAQS_DELETE,
@@ -124,8 +125,10 @@ export const NAV_DEFAULTS: { ar: string; en: string; items: { ar: string; en: st
     { ar: 'مركز التدريب الإداري', en: 'Management training center', url: '/training' },
   ] },
   { ar: 'المعارض والفعاليات', en: 'Exhibitions & events', items: [
-    { ar: 'المعارض والفعاليات', en: 'Exhibitions & events', url: '/occasions/previous' },
-    { ar: 'أجندة الغرفة', en: 'Chamber agenda', url: '/occasions/upcoming' },
+    { ar: 'المناسبات القادمة', en: 'Upcoming occasions', url: '/occasions/upcoming' },
+    { ar: 'المناسبات الحالية', en: 'Current occasions', url: '/occasions/current' },
+    { ar: 'المعارض', en: 'Exhibitions', url: '/occasions/exhibitions' },
+    { ar: 'المناسبات السابقة', en: 'Previous occasions', url: '/occasions/previous' },
   ] },
 ];
 

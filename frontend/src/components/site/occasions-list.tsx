@@ -92,41 +92,46 @@ export function OccasionsList({ scope }: { scope: OccasionScope }) {
       {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {!data && !error ? <Center><Spinner /></Center> : data && (
         <>
-          <div className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-            <div className="grid grid-cols-7 border-b border-line bg-gray-50 text-center text-xs font-semibold text-gray-600">
-              {weekDays.map((day) => <div key={day} className="px-1 py-3">{day}</div>)}
-            </div>
-            <div className="grid grid-cols-7">
-              {days.map((date, index) => {
-                const events = date ? byDay.get(date) ?? [] : [];
-                return (
-                  <div key={`${date || 'empty'}-${index}`} className={`min-h-24 border-b border-e border-line p-1.5 sm:min-h-28 sm:p-2 ${date ? '' : 'bg-gray-50/60'}`}>
-                    {date && <span className={`text-xs font-semibold ${events.length ? 'text-primary' : 'text-gray-500'}`}>{Number(date.slice(-2))}</span>}
-                    <div className="mt-1 space-y-1">
-                      {events.slice(0, 2).map((event) => <Link key={event.id} href={href(`/occasions/view?id=${event.id}`)} title={event.title} className={`block truncate rounded px-1 py-0.5 text-[10px] font-semibold ${event.type === 'exhibition' ? 'bg-accent/20 text-secondary' : 'bg-primary/10 text-primary'}`}>{event.title}</Link>)}
-                      {events.length > 2 && <span className="block text-[10px] text-gray-500">+{events.length - 2}</span>}
+          <div dir="ltr" className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <section dir={ar ? 'rtl' : 'ltr'}>
+              <h2 className="mb-4 text-xl font-bold text-secondary">{ar ? 'فعاليات هذا الشهر' : 'This month'}</h2>
+              {data.data.length === 0 ? <Center>{t('pub.noOccasions')}</Center> : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {data.data.map((event) => (
+                    <Link key={event.id} href={href(`/occasions/view?id=${event.id}`)} className="group overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
+                      <Thumb src={event.images[0]} alt={event.title} className="h-36 w-full" />
+                      <div className="p-4">
+                        <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}</p>
+                        <span className="mt-2 inline-block rounded-full bg-accent/20 px-2.5 py-0.5 text-[10px] font-bold text-secondary">{ar ? (event.type === 'exhibition' ? 'معرض' : 'مناسبة') : (event.type === 'exhibition' ? 'Exhibition' : 'Occasion')}</span>
+                        <h3 className="mt-1 line-clamp-2 font-bold group-hover:text-primary">{event.title}</h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {data.meta.totalPages > 1 && <div className="mt-5 flex justify-center gap-3"><button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.first')}</button><span className="self-center text-sm">{page} / {data.meta.totalPages}</span><button type="button" disabled={page >= data.meta.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.last')}</button></div>}
+            </section>
+            <aside dir={ar ? 'rtl' : 'ltr'} className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
+              <div className="grid grid-cols-7 border-b border-line bg-gray-50 text-center text-[10px] font-semibold text-gray-600">
+                {weekDays.map((day) => <div key={day} className="px-0.5 py-2">{ar ? day.slice(0, 1) : day}</div>)}
+              </div>
+              <div className="grid grid-cols-7">
+                {days.map((date, index) => {
+                  const events = date ? byDay.get(date) ?? [] : [];
+                  return (
+                    <div key={`${date || 'empty'}-${index}`} aria-label={date ? `${date}${events.length ? `: ${events.map((event) => event.title).join(', ')}` : ''}` : undefined}
+                      className={`min-h-12 border-b border-e border-line p-1 text-center ${date ? '' : 'bg-gray-50/60'}`}>
+                      {date && <span className={`text-[11px] font-semibold ${events.length ? 'text-primary' : 'text-gray-500'}`}>{Number(date.slice(-2))}</span>}
+                      {events.length > 0 && <span className="mt-0.5 flex justify-center gap-0.5" aria-hidden="true">
+                        {events.slice(0, 3).map((event) => <span key={event.id} className={`h-1.5 w-1.5 rounded-full ${event.type === 'exhibition' ? 'bg-accent' : 'bg-primary'}`} />)}
+                        {events.length > 3 && <span className="text-[8px] leading-none text-gray-500">+{events.length - 3}</span>}
+                      </span>}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </aside>
           </div>
-          <h2 className="mb-4 mt-8 text-xl font-bold text-secondary">{ar ? 'فعاليات هذا الشهر' : 'This month'}</h2>
-          {data.data.length === 0 ? <Center>{t('pub.noOccasions')}</Center> : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {data.data.map((event) => (
-                <Link key={event.id} href={href(`/occasions/view?id=${event.id}`)} className="group overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
-                  <Thumb src={event.images[0]} alt={event.title} className="h-44 w-full" />
-                  <div className="p-4">
-                    <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}</p>
-                    <span className="mt-2 inline-block rounded-full bg-accent/20 px-2.5 py-0.5 text-[10px] font-bold text-secondary">{ar ? (event.type === 'exhibition' ? 'معرض' : 'مناسبة') : (event.type === 'exhibition' ? 'Exhibition' : 'Occasion')}</span>
-                    <h3 className="mt-1 line-clamp-2 font-bold group-hover:text-primary">{event.title}</h3>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-          {data.meta.totalPages > 1 && <div className="mt-5 flex justify-center gap-3"><button type="button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.first')}</button><span className="self-center text-sm">{page} / {data.meta.totalPages}</span><button type="button" disabled={page >= data.meta.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.last')}</button></div>}
         </>
       )}
     </div>

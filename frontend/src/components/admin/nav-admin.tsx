@@ -264,6 +264,10 @@ export function NavAdmin() {
                           )}
                           {edit && (
                             <div className="flex shrink-0 items-center">
+                              <label className="me-1 flex flex-col items-center gap-0.5 text-[10px] text-gray-500">
+                                <Switch on={it.isActive} onChange={(v) => setI(g.uid, it.uid, { isActive: v })} label={t('nv.visible')} disabled={!edit} />
+                                <span>{t(it.isActive ? 'nv.visible' : 'nv.hidden')}</span>
+                              </label>
                               <IconBtn label={t('nv.up')} onClick={() => shiftItem(g.uid, it.uid, -1)} disabled={ii === 0}>↑</IconBtn>
                               <IconBtn label={t('nv.down')} onClick={() => shiftItem(g.uid, it.uid, 1)} disabled={ii === g.items.length - 1}>↓</IconBtn>
                             </div>

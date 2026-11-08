@@ -96,7 +96,7 @@ const ar: Record<string, string> = {
   'nav.media': 'الأخبار والإعلام', 'nav.mediaCenter': 'المركز الإعلامي', 'nav.newsletter': 'النشرة البريدية',
   'nav.servicesList': 'خدمات الغرفة', 'nav.oneStop': 'النافذة الواحدة', 'nav.membership': 'للانتساب', 'nav.library': 'المكتبة والأرشيف الرقمي',
   'nav.dev': 'التطوير والأعمال', 'nav.training': 'مركز التدريب الإداري', 'nav.incubator': 'حاضنة الأعمال', 'nav.get2trade': 'غيت تو تريد',
-  'nav.events': 'المعارض والفعاليات', 'nav.exhibitions': 'المعارض والفعاليات', 'nav.agenda': 'أجندة الغرفة', 'nav.expo': 'DCC EXPO',
+  'nav.events': 'المعارض والفعاليات', 'nav.exhibitions': 'المعارض والفعاليات', 'nav.agenda': 'أجندة الغرفة', 'nav.upcomingOccasions': 'المناسبات القادمة', 'nav.currentOccasions': 'المناسبات الحالية', 'nav.exhibitionsOnly': 'المعارض', 'nav.previousOccasions': 'المناسبات السابقة', 'nav.expo': 'DCC EXPO',
   // committees (sector + businesswomen)
   'adm.committees': 'اللجان والقطاعات', 'mod.committees': 'اللجان والقطاعات', 'cm.title': 'اللجان والقطاعات', 'cm.add': 'إضافة لجنة', 'cm.edit': 'تعديل اللجنة',
   'cm.kind': 'نوع اللجنة', 'cm.kind.sector': 'لجنة قطاعية', 'cm.kind.women': 'لجنة سيدات الأعمال', 'cm.chair': 'رئيس اللجنة', 'cm.chairAr': 'رئيس اللجنة بالعربية', 'cm.chairEn': 'رئيس اللجنة بالإنجليزية (اختياري)',
@@ -290,7 +290,7 @@ const en: Record<string, string> = {
   'nav.media': 'News & media', 'nav.mediaCenter': 'Media center', 'nav.newsletter': 'Newsletter',
   'nav.servicesList': 'Chamber services', 'nav.oneStop': 'One-stop window', 'nav.membership': 'Membership', 'nav.library': 'Library & digital archive',
   'nav.dev': 'Development & business', 'nav.training': 'Management training center', 'nav.incubator': 'Business incubator', 'nav.get2trade': 'Get2Trade',
-  'nav.events': 'Exhibitions & events', 'nav.exhibitions': 'Exhibitions & events', 'nav.agenda': 'Chamber agenda', 'nav.expo': 'DCC EXPO',
+  'nav.events': 'Exhibitions & events', 'nav.exhibitions': 'Exhibitions & events', 'nav.agenda': 'Chamber agenda', 'nav.upcomingOccasions': 'Upcoming occasions', 'nav.currentOccasions': 'Current occasions', 'nav.exhibitionsOnly': 'Exhibitions', 'nav.previousOccasions': 'Previous occasions', 'nav.expo': 'DCC EXPO',
   // committees (sector + businesswomen)
   'adm.committees': 'Committees & sectors', 'mod.committees': 'Committees & sectors', 'cm.title': 'Committees & sectors', 'cm.add': 'Add committee', 'cm.edit': 'Edit committee',
   'cm.kind': 'Committee type', 'cm.kind.sector': 'Sector committee', 'cm.kind.women': 'Businesswomen committee', 'cm.chair': 'Committee chair', 'cm.chairAr': 'Chair (Arabic)', 'cm.chairEn': 'Chair (English, optional)',
