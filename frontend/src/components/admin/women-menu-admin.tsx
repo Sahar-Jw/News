@@ -175,7 +175,14 @@ export function WomenMenuAdmin() {
         onDragEnd={() => { setDrag(null); setDropTarget(null); }}
         className="flex h-8 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-gray-400 hover:bg-primary/10 hover:text-primary active:cursor-grabbing"
         title={ar ? 'اسحب لترتيب الصفحة' : 'Drag to move this page'} aria-hidden="true">⠿</span>}
-      <span className="min-w-0 flex-1 text-sm font-medium text-secondary">{ar ? page.labelAr : page.labelEn}</span>
+      {part === 'footer' ? <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+        <Field label={ar ? 'اسم رابط التذييل بالعربية' : 'Footer link name (Arabic)'}>
+          <input maxLength={150} dir="rtl" className={`${inputCls} py-1.5 text-sm`} value={page.labelAr} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { labelAr: event.target.value })} />
+        </Field>
+        <Field label={ar ? 'اسم رابط التذييل بالإنجليزية' : 'Footer link name (English)'}>
+          <input maxLength={150} dir="ltr" className={`${inputCls} py-1.5 text-sm`} value={page.labelEn} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { labelEn: event.target.value })} />
+        </Field>
+      </div> : <span className="min-w-0 flex-1 text-sm font-medium text-secondary">{ar ? page.labelAr : page.labelEn}</span>}
       {editable && <select aria-label={ar ? 'نقل الصفحة إلى قائمة' : 'Move page to dropdown'} className={`${inputCls} w-auto max-w-48 py-1.5 text-xs`} value={parent === undefined ? 'single' : String(parent)} disabled={busy}
         onChange={(event) => movePage(part, page.slug, event.target.value === 'single' ? undefined : Number(event.target.value))}>
         <option value="single">{ar ? 'رابط مستقل' : 'Standalone link'}</option>

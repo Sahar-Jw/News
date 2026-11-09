@@ -82,6 +82,8 @@ function readPage(value: unknown): WomenMenuPage | null {
   if (!knownPage) return null;
   return {
     ...knownPage,
+    labelAr: typeof item.labelAr === 'string' ? item.labelAr : knownPage.labelAr,
+    labelEn: typeof item.labelEn === 'string' ? item.labelEn : knownPage.labelEn,
     isActive: item.isActive !== false,
   };
 }
@@ -95,7 +97,12 @@ function fromLegacy(items: unknown, fallback: WomenMenuEntry[]): WomenMenuEntry[
     const path = old.href.split('#')[1] || old.href.split('?')[0].split('/').filter(Boolean).pop() || '';
     const slug = path === 'overview' ? 'about' : path;
     const knownPage = WOMEN_PAGE_CATALOG.find((candidate) => candidate.slug === slug);
-    return knownPage ? [{ ...knownPage, isActive: old.isActive !== false }] : [];
+    return knownPage ? [{
+      ...knownPage,
+      labelAr: old.labelAr,
+      labelEn: old.labelEn,
+      isActive: old.isActive !== false,
+    }] : [];
   });
   const single = pages.filter((entry) => ['news', 'contact', 'archive'].includes(entry.slug));
   const nested = pages.filter((entry) => !['news', 'contact', 'archive'].includes(entry.slug));

@@ -152,7 +152,7 @@ export function IntroSplash() {
       const e = easeIn(u);
       if (u > 0 && !unblocked) { unblocked = true; setBlocking(false); }
       const s = 1 + (MAX_SCALE - 1) * e;
-      holeRef.current?.setAttribute('transform', `translate(${geo.cx} ${geo.baseY - geo.fs * 0.35}) scale(${s}) translate(${-geo.cx} ${-(geo.baseY - geo.fs * 0.35)})`);
+      holeRef.current?.setAttribute('transform', `translate(${geo.textCx} ${geo.baseY - geo.fs * 0.35}) scale(${s}) translate(${-geo.textCx} ${-(geo.baseY - geo.fs * 0.35)})`);
       underRef.current?.setAttribute('opacity', String(1 - clamp01(u / 0.22)));
       coverRef.current?.setAttribute('opacity', String(1 - clamp01((u - 0.72) / 0.28)));
       if (logoRef.current) {

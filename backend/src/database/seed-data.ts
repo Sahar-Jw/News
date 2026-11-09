@@ -236,6 +236,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('women', 'text_color', 'color', '#34232c'),
   s('women', 'footer_text_ar', 'text'),
   s('women', 'footer_text_en', 'text'),
+  s('women', 'rights_ar', 'text', '© جميع الحقوق محفوظة للجنة سيدات الأعمال'),
+  s('women', 'rights_en', 'text', '© All rights reserved to the Women Business Committee'),
   s('women', 'vision_ar', 'text'),
   s('women', 'vision_en', 'text'),
   s('women', 'mission_ar', 'text'),

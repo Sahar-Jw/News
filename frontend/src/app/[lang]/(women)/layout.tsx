@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -12,33 +12,43 @@ import { SocialIcon } from '@/components/site/icons';
 import { readWomenMenu, womenPageHref, type WomenMenuEntry } from '@/lib/women-menu';
 
 const HEX = /^#[0-9a-f]{6}$/i;
-let dropdownDismissedByClick = false;
 
-function WomenDropdown({ label, trigger, children, align = 'start' }: { label: string; trigger?: React.ReactNode; children: React.ReactNode; align?: 'start' | 'end' }) {
-  const [dismissed, setDismissed] = useState(() => dropdownDismissedByClick);
-  const openClasses = dismissed ? '' : 'group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-focus-within:pointer-events-auto';
+function WomenActivePageSync({ onChange }: { onChange: (slug: string) => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const slug = searchParams.get('slug');
+  useEffect(() => {
+    onChange(pathname.replace(/\/+$/, '').endsWith('/section') ? slug ?? 'home' : 'home');
+  }, [onChange, pathname, slug]);
+  return null;
+}
+
+function WomenDropdown({ label, trigger, children, align = 'start', active = false }: { label: string; trigger?: React.ReactNode; children: React.ReactNode; align?: 'start' | 'end'; active?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [closedByClick, setClosedByClick] = useState(false);
+  const expanded = open || (hovering && !closedByClick);
+  const openClasses = expanded ? 'visible translate-y-0 scale-100 opacity-100 pointer-events-auto' : '';
   return (
     <div className="group relative hidden xl:block"
-      onMouseEnter={() => { dropdownDismissedByClick = false; setDismissed(false); }}
-      onFocusCapture={(event) => {
-        if ((event.target as HTMLElement).matches?.(':focus-visible')) {
-          dropdownDismissedByClick = false;
-          setDismissed(false);
-        }
-      }}>
+      onMouseEnter={() => { setHovering(true); setClosedByClick(false); }}
+      onMouseLeave={() => { setHovering(false); setClosedByClick(false); }}
+      onFocusCapture={() => setOpen(true)}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
       {trigger ?? (
-        <button type="button" aria-haspopup="true" className="flex cursor-default items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold text-white/90 transition duration-200 hover:bg-white/15 hover:text-accent">
+        <button type="button" aria-haspopup="true" aria-expanded={expanded} onClick={() => { setOpen((value) => !value); setClosedByClick(expanded); }} className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200 hover:bg-white/15 hover:text-accent ${active || expanded ? 'bg-white/15 text-accent' : 'text-white/90'}`}>
           {label}
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover:rotate-180 group-focus-within:rotate-180">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}>
             <path d="m3 6 5 5 5-5" />
           </svg>
         </button>
       )}
+      {trigger && <button type="button" aria-label={label} aria-haspopup="true" aria-expanded={expanded} onClick={() => { setOpen((value) => !value); setClosedByClick(expanded); }} className="absolute inset-0 z-10 rounded-full" />}
       <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${openClasses} ${align === 'end' ? 'end-0 min-w-52' : 'start-0 min-w-52'}`}>
         <div onClickCapture={(event) => {
           if ((event.target as HTMLElement).closest('[data-keep-open]')) return;
-          dropdownDismissedByClick = true;
-          setDismissed(true);
+          setOpen(false);
+          setClosedByClick(true);
           (document.activeElement as HTMLElement | null)?.blur?.();
         }} className="max-h-72 overflow-y-auto overscroll-contain rounded-2xl bg-white/95 p-2 text-ink shadow-lift ring-1 ring-line backdrop-blur-xl">
           {children}
@@ -55,6 +65,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { s, loc, img } = useSite();
   const [open, setOpen] = useState(false);
+  const [activeSlug, setActiveSlug] = useState('home');
   const color = (key: string, fallback: string) => {
     const value = String(s('women', key) ?? '');
     return HEX.test(value) ? value : fallback;
@@ -79,6 +90,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const name = loc('women', 'name') || (lang === 'ar' ? 'لجنة سيدات الأعمال' : 'Women Business Committee');
   const tagline = loc('women', 'tagline');
   const footerText = loc('women', 'footer_text');
+  const footerRights = loc('women', 'rights');
   const socialKeys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'] as const;
   const adminUrl = can('committees.read') ? '/admin/settings?page=women&tab=content' : '/admin/settings?page=women&tab=settings';
   const canManage = can('committees.read', 'settings.read');
@@ -88,9 +100,11 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   };
   const label = (entry: Extract<WomenMenuEntry, { type: 'page' }>) => (lang === 'ar' ? entry.labelAr : entry.labelEn) || entry.labelAr || entry.labelEn;
   const pageLink = (entry: Extract<WomenMenuEntry, { type: 'page' }>, className: string) => (
-    <Link href={href(womenPageHref(entry.slug))} target={entry.newTab ? '_blank' : undefined} rel={entry.newTab ? 'noopener noreferrer' : undefined} onClick={() => setOpen(false)} key={entry.slug} className={className}>{label(entry)}</Link>
+    <Link href={href(womenPageHref(entry.slug))} target={entry.newTab ? '_blank' : undefined} rel={entry.newTab ? 'noopener noreferrer' : undefined} aria-current={activeSlug === entry.slug ? 'page' : undefined} onClick={() => { setOpen(false); setActiveSlug(entry.slug); }} key={entry.slug} className={className}>{label(entry)}</Link>
   );
   const footerClass = 'rounded-lg px-2 py-1 text-sm text-white/80 transition hover:text-accent';
+  const navPageClass = (entry: Extract<WomenMenuEntry, { type: 'page' }>) =>
+    `shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition ${activeSlug === entry.slug ? 'bg-white/15 text-accent ring-1 ring-white/20' : 'text-white/90 hover:bg-white/15 hover:text-accent'}`;
   const visibleEntries = (entries: WomenMenuEntry[]) => entries.filter((entry) =>
     entry.isActive !== false && (entry.type === 'page' || entry.items.some((item) => item.isActive !== false)),
   );
@@ -99,17 +113,18 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={theme} className="min-h-screen bg-canvas text-ink">
+      <Suspense fallback={null}><WomenActivePageSync onChange={setActiveSlug} /></Suspense>
       <header className="sticky top-0 z-40 text-white shadow-lg" style={{ backgroundColor: 'var(--header-bg)' }}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link href={href('/committees/women')} className="flex items-center gap-3">
             <img src={logo || '/brand/women-committee-icon.svg'} alt="" className="h-10 w-10 rounded-full bg-white object-contain p-1" />
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
-          <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 overflow-x-auto xl:flex">
+          <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 xl:flex">
             {navEntries.map((entry, index) => entry.type === 'page'
-              ? <div key={`nav-page-${entry.slug}`}>{pageLink(entry, 'shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-accent')}</div>
-              : <WomenDropdown key={`nav-group-${index}`} label={lang === 'ar' ? entry.titleAr : entry.titleEn}>
-                {entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary'))}
+              ? <div key={`nav-page-${entry.slug}`}>{pageLink(entry, navPageClass(entry))}</div>
+              : <WomenDropdown key={`nav-group-${index}`} label={lang === 'ar' ? entry.titleAr : entry.titleEn} active={entry.items.some((item) => item.isActive !== false && item.slug === activeSlug)}>
+                {entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, `block rounded-xl px-3 py-2 text-sm transition ${activeSlug === item.slug ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-primary/10 hover:text-primary'}`))}
               </WomenDropdown>)}
           </nav>
           <div className="flex items-center gap-2">
@@ -133,10 +148,10 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
         </div>
         {open && <nav className="border-t border-white/15 px-4 pb-3 xl:hidden">
           {navEntries.map((entry, index) => entry.type === 'page'
-            ? pageLink(entry, 'block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10')
+            ? pageLink(entry, `block rounded-lg px-3 py-2 text-sm font-semibold ${activeSlug === entry.slug ? 'bg-white/15 text-accent' : 'hover:bg-white/10'}`)
             : <details key={`mobile-group-${index}`} className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{lang === 'ar' ? entry.titleAr : entry.titleEn}<span aria-hidden="true">⌄</span></summary>
-              <div className="ps-3">{entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-lg px-3 py-2 text-sm hover:bg-white/10'))}</div>
+              <summary className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${entry.items.some((item) => item.isActive !== false && item.slug === activeSlug) ? 'bg-white/15 text-accent' : 'hover:bg-white/10'}`}>{lang === 'ar' ? entry.titleAr : entry.titleEn}<span aria-hidden="true">⌄</span></summary>
+              <div className="ps-3">{entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, `block rounded-lg px-3 py-2 text-sm ${activeSlug === item.slug ? 'bg-white/10 font-semibold text-accent' : 'hover:bg-white/10'}`))}</div>
             </details>)}
           <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
           {me && <div className="mt-2 border-t border-white/15 pt-2">
@@ -178,6 +193,9 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             })}
           </div>}
         </div>
+        {footerRights && <div className="border-t border-white/15">
+          <div className="mx-auto max-w-7xl px-4 py-4 text-xs text-white/70">{footerRights}</div>
+        </div>}
       </footer>
       <BackToTop />
     </div>
