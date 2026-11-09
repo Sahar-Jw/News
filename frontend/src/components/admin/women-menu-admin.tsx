@@ -11,8 +11,16 @@ interface Row { id: number; key: string; value: unknown }
 type Part = 'navigation' | 'footer';
 type DragPage = { part: Part; slug: string };
 
-const withSlug = (page: WomenMenuPage): WomenMenuPage => ({ ...page, slug: page.slug || `page-${Date.now()}` });
 const clonePage = (page: WomenMenuPage) => ({ ...page });
+
+function VisibilitySwitch({ checked, label, disabled, onChange }: { checked: boolean; label: string; disabled: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} title={label} disabled={disabled} onClick={() => onChange(!checked)}
+      className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? 'bg-primary' : 'bg-gray-300'} disabled:opacity-50`}>
+      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'start-[1.125rem]' : 'start-0.5'}`} />
+    </button>
+  );
+}
 
 export function WomenMenuAdmin() {
   const { lang } = useI18n();
@@ -49,22 +57,6 @@ export function WomenMenuAdmin() {
     setPart(part, [...menu[part], { type: 'dropdown', titleAr: '', titleEn: '', isActive: true, items: [] }]);
   };
 
-  const addPage = (part: Part, parent?: number) => {
-    if (!menu) return;
-    const allPages: WomenMenuPage[] = [];
-    menu[part].forEach((entry) => {
-      if (entry.type === 'page') allPages.push(entry);
-      else allPages.push(...entry.items);
-    });
-    let number = allPages.length + 1;
-    while (allPages.some((item) => item.slug === `page-${number}`)) number++;
-    const page: WomenMenuPage = { type: 'page', slug: `page-${number}`, labelAr: '', labelEn: '', isActive: true, newTab: false, bodyAr: '', bodyEn: '' };
-    if (parent === undefined) return setPart(part, [...menu[part], page]);
-    setPart(part, menu[part].map((entry, index) => entry.type === 'dropdown' && index === parent
-      ? { ...entry, items: [...entry.items, page] }
-      : entry));
-  };
-
   const changeGroup = (part: Part, index: number, patch: Partial<WomenMenuEntry>) => {
     if (!menu) return;
     setPart(part, menu[part].map((entry, i) => i === index && entry.type === 'dropdown' ? { ...entry, ...patch } as WomenMenuEntry : entry));
@@ -77,28 +69,26 @@ export function WomenMenuAdmin() {
       : { ...entry, items: entry.items.map((page) => page.slug === slug ? { ...page, ...patch } : page) }));
   };
 
-  const removePage = (part: Part, slug: string) => {
-    if (!menu) return;
-    const entries: WomenMenuEntry[] = [];
-    menu[part].forEach((entry) => {
-      if (entry.type === 'page') {
-        if (entry.slug !== slug) entries.push(entry);
-      } else {
-        entries.push({ ...entry, items: entry.items.filter((page) => page.slug !== slug) });
-      }
-    });
-    setPart(part, entries);
-  };
-
   const removeGroup = (part: Part, index: number) => {
     if (!menu) return;
     const entries = [...menu[part]];
-    const [removed] = entries.splice(index, 1);
-    setPart(part, removed.type === 'dropdown' ? [...entries, ...removed.items] : entries);
+    if (entries[index]?.type !== 'dropdown' || entries[index].items.length > 0) return;
+    entries.splice(index, 1);
+    setPart(part, entries);
+  };
+
+  const reorderGroup = (part: Part, index: number, offset: -1 | 1) => {
+    if (!menu) return;
+    const entries = [...menu[part]];
+    const target = index + offset;
+    if (target < 0 || target >= entries.length) return;
+    [entries[index], entries[target]] = [entries[target], entries[index]];
+    setPart(part, entries);
   };
 
   const movePage = (part: Part, slug: string, targetGroup?: number, beforeSlug?: string) => {
     if (!menu) return;
+    if (slug === beforeSlug) return;
     let moved: WomenMenuPage | undefined;
     let sourceRootIndex = -1;
     let sourceWasTopLevel = false;
@@ -124,7 +114,7 @@ export function WomenMenuAdmin() {
       without.push({ ...entry, items });
     });
     if (!moved) return;
-    if (!targetGroup) {
+    if (targetGroup === undefined) {
       const at = beforeSlug ? without.findIndex((entry) => entry.type === 'page' && entry.slug === beforeSlug) : -1;
       without.splice(at < 0 ? without.length : at, 0, moved);
     } else {
@@ -155,12 +145,11 @@ export function WomenMenuAdmin() {
       navigation: menu.navigation.map(stripIds),
       footer: menu.footer.map(stripIds),
     };
-    const pages = [...normalized.navigation, ...normalized.footer].flatMap((entry) => entry.type === 'page' ? [entry] : entry.items);
-    if (pages.some((page) => !page.slug.trim() || !/^[a-z0-9-]{1,60}$/.test(page.slug) || !page.labelAr.trim() || !page.labelEn.trim())) {
-      toast(ar ? 'أدخل اسماً بالعربية والإنجليزية لكل صفحة، ورابطاً مختصراً صالحاً.' : 'Every page needs Arabic and English names and a valid page slug.', 'err');
-      return;
-    }
     for (const part of ['navigation', 'footer'] as const) {
+      if (menu[part].some((entry) => entry.type === 'dropdown' && (!entry.titleAr.trim() || !entry.titleEn.trim()))) {
+        toast(ar ? 'أدخل اسم كل قائمة منسدلة بالعربية والإنجليزية.' : 'Every dropdown needs Arabic and English names.', 'err');
+        return;
+      }
       const slugs = menu[part].flatMap((entry) => entry.type === 'page' ? [entry.slug] : entry.items.map((page) => page.slug));
       if (new Set(slugs).size !== slugs.length) {
         toast(ar ? 'لا يمكن تكرار الصفحة في القائمة نفسها.' : 'A page cannot appear more than once in the same list.', 'err');
@@ -177,73 +166,76 @@ export function WomenMenuAdmin() {
   };
 
   const renderPage = (part: Part, page: WomenMenuPage, parent?: number) => (
-    <article key={page.slug} draggable={editable && !busy}
-      onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', page.slug); setDrag({ part, slug: page.slug }); }}
-      onDragEnd={() => { setDrag(null); setDropTarget(null); }}
+    <article key={page.slug}
       onDragOver={(event) => { if (drag?.part === part) event.preventDefault(); }}
       onDrop={(event) => handleDrop(event, part, parent, page.slug)}
-      className="space-y-3 rounded-xl border border-line bg-gray-50 p-3">
-      <div className="grid gap-3 md:grid-cols-2">
-        <Field label={ar ? 'اسم الصفحة بالعربية' : 'Page name (Arabic)'}>
-          <input maxLength={150} dir="rtl" className={inputCls} value={page.labelAr} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { labelAr: event.target.value })} />
-        </Field>
-        <Field label={ar ? 'اسم الصفحة بالإنجليزية' : 'Page name (English)'}>
-          <input maxLength={150} dir="ltr" className={inputCls} value={page.labelEn} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { labelEn: event.target.value })} />
-        </Field>
-        <Field label={ar ? 'الرابط المختصر' : 'Page slug'}>
-          <input maxLength={60} pattern="[a-z0-9-]+" dir="ltr" className={inputCls} value={page.slug} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { slug: event.target.value })} />
-        </Field>
-        <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={page.isActive} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { isActive: event.target.checked })} />{ar ? 'ظاهر في القائمة' : 'Visible in menu'}</label>
+      className={`flex items-center gap-3 rounded-xl border bg-white p-2 transition ${page.isActive ? 'border-line' : 'border-line bg-gray-50 opacity-70'} ${dropTarget?.part === part && dropTarget.group === String(parent ?? '') ? 'border-primary' : ''}`}>
+      {editable && <span draggable={!busy}
+        onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', page.slug); setDrag({ part, slug: page.slug }); }}
+        onDragEnd={() => { setDrag(null); setDropTarget(null); }}
+        className="flex h-8 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-gray-400 hover:bg-primary/10 hover:text-primary active:cursor-grabbing"
+        title={ar ? 'اسحب لترتيب الصفحة' : 'Drag to move this page'} aria-hidden="true">⠿</span>}
+      <span className="min-w-0 flex-1 text-sm font-medium text-secondary">{ar ? page.labelAr : page.labelEn}</span>
+      {editable && <select aria-label={ar ? 'نقل الصفحة إلى قائمة' : 'Move page to dropdown'} className={`${inputCls} w-auto max-w-48 py-1.5 text-xs`} value={parent === undefined ? 'single' : String(parent)} disabled={busy}
+        onChange={(event) => movePage(part, page.slug, event.target.value === 'single' ? undefined : Number(event.target.value))}>
+        <option value="single">{ar ? 'رابط مستقل' : 'Standalone link'}</option>
+        {menu?.[part].map((entry, index) => entry.type === 'dropdown' && <option key={`group-option-${index}`} value={index}>{ar ? entry.titleAr || 'قائمة منسدلة' : entry.titleEn || 'Dropdown'}</option>)}
+      </select>}
+      <div className="flex shrink-0 items-center gap-2 text-xs text-gray-600">
+        <VisibilitySwitch checked={page.isActive} label={ar ? 'إظهار الصفحة' : 'Show page'} disabled={!editable || busy} onChange={(value) => changePage(part, page.slug, { isActive: value })} />
+        {ar ? 'ظاهر' : 'Active'}
       </div>
-      {(page.bodyAr !== undefined || page.bodyEn !== undefined) && <>
-        <Field label={ar ? 'محتوى الصفحة بالعربية' : 'Page content (Arabic)'}>
-          <textarea rows={4} maxLength={20000} dir="rtl" className={inputCls} value={page.bodyAr ?? ''} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { bodyAr: event.target.value })} />
-        </Field>
-        <Field label={ar ? 'محتوى الصفحة بالإنجليزية' : 'Page content (English)'}>
-          <textarea rows={4} maxLength={20000} dir="ltr" className={inputCls} value={page.bodyEn ?? ''} disabled={!editable || busy} onChange={(event) => changePage(part, page.slug, { bodyEn: event.target.value })} />
-        </Field>
-      </>}
-      {editable && <div className="flex justify-end"><Button type="button" variant="danger" size="sm" disabled={busy} onClick={() => removePage(part, page.slug)}>{ar ? 'حذف الصفحة' : 'Remove page'}</Button></div>}
     </article>
   );
 
   const renderPart = (part: Part, title: string) => (
-    <section key={part} className="space-y-3 rounded-2xl border border-line bg-white p-4 shadow-card">
+    <section key={part} className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold text-secondary">{title}</h2>
+        <h2 className="text-xl font-bold text-secondary">{title}</h2>
         {editable && <div className="flex gap-2">
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => addGroup(part)}>{ar ? '＋ قائمة منسدلة' : '＋ Add dropdown'}</Button>
-          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => addPage(part)}>{ar ? '＋ صفحة مستقلة' : '＋ Add single page'}</Button>
         </div>}
       </header>
-      <div className={`space-y-3 rounded-xl border-2 border-dashed p-3 ${dropTarget?.part === part && !dropTarget.group ? 'border-primary bg-primary/5' : 'border-transparent'}`}
+      <div className={`grid items-start gap-5 xl:grid-cols-2 ${dropTarget?.part === part && dropTarget.group === undefined ? 'rounded-xl bg-primary/5' : ''}`}
         onDragOver={(event) => { if (drag?.part === part) { event.preventDefault(); setDropTarget({ part }); } }}
         onDrop={(event) => handleDrop(event, part)}>
-        {menu?.[part].map((entry, index) => entry.type === 'page' ? renderPage(part, entry) : (
-          <section key={`${part}-${index}-${entry.titleAr}`} className="space-y-3 rounded-xl border border-primary/25 p-3"
+        {menu?.[part].some((entry) => entry.type === 'page') && <section className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
+          <header className="border-b border-line bg-gradient-to-l from-primary/5 to-transparent px-3 py-2 text-sm font-bold text-secondary">{ar ? 'روابط مستقلة' : 'Standalone links'}</header>
+          <div className="space-y-2 p-3" onDragOver={(event) => { if (drag?.part === part) { event.preventDefault(); event.stopPropagation(); setDropTarget({ part }); } }} onDrop={(event) => handleDrop(event, part)}>
+            {menu[part].filter((entry): entry is WomenMenuPage => entry.type === 'page').map((page) => renderPage(part, page))}
+          </div>
+        </section>}
+        {menu?.[part].map((entry, index) => entry.type === 'dropdown' && (
+          <section key={`${part}-${index}-${entry.titleAr}`} className={`overflow-hidden rounded-2xl bg-white shadow-card ring-1 transition ${dropTarget?.part === part && dropTarget.group === String(index) ? 'ring-2 ring-primary' : 'ring-line'} ${entry.isActive ? '' : 'opacity-75'}`}
             onDragOver={(event) => { if (drag?.part === part) { event.preventDefault(); event.stopPropagation(); setDropTarget({ part, group: String(index) }); } }}
             onDrop={(event) => handleDrop(event, part, index)}>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label={ar ? 'اسم القائمة المنسدلة بالعربية' : 'Dropdown name (Arabic)'}>
-                <input maxLength={150} dir="rtl" className={inputCls} value={entry.titleAr} disabled={!editable || busy} onChange={(event) => changeGroup(part, index, { titleAr: event.target.value })} />
-              </Field>
-              <Field label={ar ? 'اسم القائمة المنسدلة بالإنجليزية' : 'Dropdown name (English)'}>
-                <input maxLength={150} dir="ltr" className={inputCls} value={entry.titleEn} disabled={!editable || busy} onChange={(event) => changeGroup(part, index, { titleEn: event.target.value })} />
-              </Field>
-            </div>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={entry.isActive} disabled={!editable || busy} onChange={(event) => changeGroup(part, index, { isActive: event.target.checked })} />{ar ? 'القائمة ظاهرة' : 'Dropdown visible'}</label>
-            <div className={`space-y-2 rounded-lg border-2 border-dashed p-2 ${dropTarget?.part === part && dropTarget.group === String(index) ? 'border-primary bg-primary/5' : 'border-transparent'}`}
+            <header className="flex items-start gap-2 border-b border-line bg-gradient-to-l from-primary/5 to-transparent p-3">
+              <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+                <Field label={ar ? 'اسم القائمة بالعربية' : 'Dropdown name (Arabic)'}>
+                  <input maxLength={150} dir="rtl" className={`${inputCls} font-bold`} value={entry.titleAr} disabled={!editable || busy} onChange={(event) => changeGroup(part, index, { titleAr: event.target.value })} />
+                </Field>
+                <Field label={ar ? 'اسم القائمة بالإنجليزية' : 'Dropdown name (English)'}>
+                  <input maxLength={150} dir="ltr" className={`${inputCls} font-bold`} value={entry.titleEn} disabled={!editable || busy} onChange={(event) => changeGroup(part, index, { titleEn: event.target.value })} />
+                </Field>
+              </div>
+              <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
+                <VisibilitySwitch checked={entry.isActive} label={ar ? 'إظهار القائمة' : 'Show dropdown'} disabled={!editable || busy} onChange={(value) => changeGroup(part, index, { isActive: value })} />
+                <span className="text-[10px] text-gray-500">{ar ? 'ظاهر' : 'Active'}</span>
+              </div>
+              {editable && <div className="flex shrink-0 items-center">
+                <Button type="button" size="sm" variant="outline" disabled={busy || index === 0} aria-label={ar ? 'تحريك لأعلى' : 'Move up'} onClick={() => reorderGroup(part, index, -1)}>↑</Button>
+                <Button type="button" size="sm" variant="outline" disabled={busy || index === menu[part].length - 1} aria-label={ar ? 'تحريك لأسفل' : 'Move down'} onClick={() => reorderGroup(part, index, 1)}>↓</Button>
+                <Button type="button" size="sm" variant="danger" disabled={busy || entry.items.length > 0} aria-label={ar ? 'حذف القائمة' : 'Delete dropdown'} onClick={() => removeGroup(part, index)}>✕</Button>
+              </div>}
+            </header>
+            <div className={`space-y-2 p-3 ${dropTarget?.part === part && dropTarget.group === String(index) ? 'bg-primary/5' : ''}`}
               onDragOver={(event) => { if (drag?.part === part) { event.preventDefault(); event.stopPropagation(); setDropTarget({ part, group: String(index) }); } }}
               onDrop={(event) => handleDrop(event, part, index)}>
               {entry.items.map((page) => renderPage(part, page, index))}
+              {!entry.items.length && <p className="rounded-xl border border-dashed border-line px-3 py-4 text-center text-xs text-gray-500">{ar ? 'اسحب صفحة موجودة هنا أو اختر القائمة من خيار نقل الصفحة.' : 'Drag an existing page here or choose this dropdown in the page move menu.'}</p>}
             </div>
-            {editable && <div className="flex justify-between">
-              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => addPage(part, index)}>{ar ? '＋ صفحة داخل القائمة' : '＋ Add page to dropdown'}</Button>
-              <Button type="button" size="sm" variant="danger" disabled={busy} onClick={() => removeGroup(part, index)}>{ar ? 'حذف القائمة' : 'Remove dropdown'}</Button>
-            </div>}
           </section>
         ))}
-        {!menu?.[part].length && <p className="py-2 text-sm text-gray-500">{ar ? 'أضف صفحة أو قائمة منسدلة، أو اسحب صفحة إلى هنا.' : 'Add a page or dropdown, or drag a page here.'}</p>}
       </div>
     </section>
   );
@@ -252,7 +244,7 @@ export function WomenMenuAdmin() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">{ar ? 'قائمة سيدات الأعمال وتذييلها' : "Women's navigation & footer"}</h1>
-        <p className="mt-1 text-sm text-gray-500">{ar ? 'أضف صفحات مستقلة أو قوائم منسدلة، واسحب الصفحات بين القوائم. هذه الوجهات خاصة بصفحة سيدات الأعمال فقط.' : "Create standalone pages or dropdowns and drag pages between them. These destinations belong only to the Women's Business page."}</p>
+        <p className="mt-1 text-sm text-gray-500">{ar ? 'رتّب صفحات سيدات الأعمال الموجودة في روابط مستقلة أو قوائم منسدلة، واسحبها بين القوائم أو استخدم خيار النقل. لا يمكن إنشاء صفحات جديدة؛ يمكنك إظهارها أو إخفاؤها.' : "Arrange existing Women's pages as standalone links or in dropdowns. Drag pages between groups or use the move selector. Pages cannot be added or deleted; you can show or hide them."}</p>
       </div>
       {loadErr ? <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p> : !menu ? (
         <p role="status" className="py-8 text-center text-sm text-gray-500">{ar ? 'جارٍ التحميل…' : 'Loading…'}</p>
@@ -269,12 +261,12 @@ export function WomenMenuAdmin() {
 }
 
 function stripIds(entry: WomenMenuEntry): WomenMenuEntry {
-  if (entry.type === 'page') return withSlug(entry);
+  if (entry.type === 'page') return clonePage(entry);
   return { ...entry, items: entry.items.map(clonePage) };
 }
 
 function addInitialIds(entries: WomenMenuEntry[]): WomenMenuEntry[] {
   return entries.map((entry) => entry.type === 'page'
-    ? withSlug(entry)
-    : { ...entry, items: entry.items.map(withSlug) });
+    ? clonePage(entry)
+    : { ...entry, items: entry.items.map(clonePage) });
 }

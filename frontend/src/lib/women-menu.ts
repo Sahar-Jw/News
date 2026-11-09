@@ -20,6 +20,18 @@ export interface WomenMenuDropdown {
 export type WomenMenuEntry = WomenMenuPage | WomenMenuDropdown;
 export interface WomenMenu { navigation: WomenMenuEntry[]; footer: WomenMenuEntry[] }
 
+export const WOMEN_PAGE_CATALOG: WomenMenuPage[] = [
+  { type: 'page', slug: 'about', labelAr: 'عن اللجنة', labelEn: 'About the committee', isActive: true, newTab: false },
+  { type: 'page', slug: 'organization', labelAr: 'الهيكلية التنظيمية', labelEn: 'Organizational structure', isActive: true, newTab: false },
+  { type: 'page', slug: 'initiatives', labelAr: 'المبادرات والمشاريع', labelEn: 'Initiatives & projects', isActive: true, newTab: false },
+  { type: 'page', slug: 'activities', labelAr: 'الأنشطة والفعاليات', labelEn: 'Activities & events', isActive: true, newTab: false },
+  { type: 'page', slug: 'success', labelAr: 'قصص النجاح', labelEn: 'Success stories', isActive: true, newTab: false },
+  { type: 'page', slug: 'news', labelAr: 'الأخبار', labelEn: 'News', isActive: true, newTab: false },
+  { type: 'page', slug: 'contact', labelAr: 'تواصل معنا', labelEn: 'Contact us', isActive: true, newTab: false },
+  { type: 'page', slug: 'archive', labelAr: 'الأرشيف', labelEn: 'Archive', isActive: true, newTab: false },
+  { type: 'page', slug: 'media', labelAr: 'الوسائط', labelEn: 'Media', isActive: true, newTab: false },
+];
+
 export const WOMEN_BUILT_IN_PAGES = new Set([
   'home', 'about', 'organization', 'initiatives', 'activities', 'success',
   'news', 'archive', 'media', 'contact',
@@ -66,16 +78,11 @@ function readPage(value: unknown): WomenMenuPage | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const item = value as Record<string, unknown>;
   if (typeof item.slug !== 'string' || !/^[a-z0-9-]{1,60}$/.test(item.slug)) return null;
-  if (typeof item.labelAr !== 'string' || typeof item.labelEn !== 'string') return null;
+  const knownPage = WOMEN_PAGE_CATALOG.find((candidate) => candidate.slug === item.slug);
+  if (!knownPage) return null;
   return {
-    type: 'page',
-    slug: item.slug,
-    labelAr: item.labelAr,
-    labelEn: item.labelEn,
+    ...knownPage,
     isActive: item.isActive !== false,
-    newTab: item.newTab === true,
-    ...(!WOMEN_BUILT_IN_PAGES.has(item.slug) || typeof item.bodyAr === 'string' ? { bodyAr: typeof item.bodyAr === 'string' ? item.bodyAr : '' } : {}),
-    ...(!WOMEN_BUILT_IN_PAGES.has(item.slug) || typeof item.bodyEn === 'string' ? { bodyEn: typeof item.bodyEn === 'string' ? item.bodyEn : '' } : {}),
   };
 }
 
@@ -85,13 +92,10 @@ function fromLegacy(items: unknown, fallback: WomenMenuEntry[]): WomenMenuEntry[
     if (!item || typeof item !== 'object') return [];
     const old = item as Record<string, unknown>;
     if (typeof old.href !== 'string' || typeof old.labelAr !== 'string' || typeof old.labelEn !== 'string') return [];
-    const hash = old.href.split('#')[1];
-    const slug = hash === 'about' || hash === 'overview' ? (hash === 'overview' ? 'home' : 'about') : hash || (old.href.includes('/contact') ? 'contact' : 'custom');
-    return [{
-      ...page(slug, old.labelAr, old.labelEn),
-      isActive: old.isActive !== false,
-      ...(!WOMEN_BUILT_IN_PAGES.has(slug) ? { bodyAr: '', bodyEn: '' } : {}),
-    }];
+    const path = old.href.split('#')[1] || old.href.split('?')[0].split('/').filter(Boolean).pop() || '';
+    const slug = path === 'overview' ? 'about' : path;
+    const knownPage = WOMEN_PAGE_CATALOG.find((candidate) => candidate.slug === slug);
+    return knownPage ? [{ ...knownPage, isActive: old.isActive !== false }] : [];
   });
   const single = pages.filter((entry) => ['news', 'contact', 'archive'].includes(entry.slug));
   const nested = pages.filter((entry) => !['news', 'contact', 'archive'].includes(entry.slug));
@@ -124,6 +128,25 @@ function readEntries(value: unknown, fallback: WomenMenuEntry[]): WomenMenuEntry
   return entries;
 }
 
+function completeMenu(entries: WomenMenuEntry[]): WomenMenuEntry[] {
+  const seen = new Set<string>();
+  const completed = entries.flatMap((entry): WomenMenuEntry[] => {
+    if (entry.type === 'page') {
+      if (seen.has(entry.slug)) return [];
+      seen.add(entry.slug);
+      return [entry];
+    }
+    const items = entry.items.filter((item) => {
+      if (seen.has(item.slug)) return false;
+      seen.add(item.slug);
+      return true;
+    });
+    return [{ ...entry, items }];
+  });
+  const missing = WOMEN_PAGE_CATALOG.filter((item) => !seen.has(item.slug)).map((item) => ({ ...item, isActive: false }));
+  return [...completed, ...missing];
+}
+
 export function readWomenMenu(value: unknown): WomenMenu {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return DEFAULT_WOMEN_MENU;
   const saved = value as Record<string, unknown>;
@@ -132,12 +155,12 @@ export function readWomenMenu(value: unknown): WomenMenu {
     !!item && typeof item === 'object' && !Array.isArray(item) && 'href' in item,
   );
   return {
-    navigation: Array.isArray(saved.navigation)
+    navigation: completeMenu(Array.isArray(saved.navigation)
       ? legacy(saved.navigation) ? fromLegacy(saved.navigation, DEFAULT_WOMEN_MENU.navigation) : readEntries(saved.navigation, DEFAULT_WOMEN_MENU.navigation)
-      : fromLegacy(saved.navigation, DEFAULT_WOMEN_MENU.navigation),
-    footer: Array.isArray(saved.footer)
+      : fromLegacy(saved.navigation, DEFAULT_WOMEN_MENU.navigation)),
+    footer: completeMenu(Array.isArray(saved.footer)
       ? legacy(saved.footer) ? fromLegacy(saved.footer, DEFAULT_WOMEN_MENU.footer) : readEntries(saved.footer, DEFAULT_WOMEN_MENU.footer)
-      : fromLegacy(saved.footer, DEFAULT_WOMEN_MENU.footer),
+      : fromLegacy(saved.footer, DEFAULT_WOMEN_MENU.footer)),
   };
 }
 

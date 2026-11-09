@@ -12,6 +12,41 @@ import { SocialIcon } from '@/components/site/icons';
 import { readWomenMenu, womenPageHref, type WomenMenuEntry } from '@/lib/women-menu';
 
 const HEX = /^#[0-9a-f]{6}$/i;
+let dropdownDismissedByClick = false;
+
+function WomenDropdown({ label, trigger, children, align = 'start' }: { label: string; trigger?: React.ReactNode; children: React.ReactNode; align?: 'start' | 'end' }) {
+  const [dismissed, setDismissed] = useState(() => dropdownDismissedByClick);
+  const openClasses = dismissed ? '' : 'group-hover:visible group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-focus-within:pointer-events-auto';
+  return (
+    <div className="group relative hidden xl:block"
+      onMouseEnter={() => { dropdownDismissedByClick = false; setDismissed(false); }}
+      onFocusCapture={(event) => {
+        if ((event.target as HTMLElement).matches?.(':focus-visible')) {
+          dropdownDismissedByClick = false;
+          setDismissed(false);
+        }
+      }}>
+      {trigger ?? (
+        <button type="button" aria-haspopup="true" className="flex cursor-default items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold text-white/90 transition duration-200 hover:bg-white/15 hover:text-accent">
+          {label}
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover:rotate-180 group-focus-within:rotate-180">
+            <path d="m3 6 5 5 5-5" />
+          </svg>
+        </button>
+      )}
+      <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${openClasses} ${align === 'end' ? 'end-0 min-w-52' : 'start-0 min-w-52'}`}>
+        <div onClickCapture={(event) => {
+          if ((event.target as HTMLElement).closest('[data-keep-open]')) return;
+          dropdownDismissedByClick = true;
+          setDismissed(true);
+          (document.activeElement as HTMLElement | null)?.blur?.();
+        }} className="max-h-72 overflow-y-auto overscroll-contain rounded-2xl bg-white/95 p-2 text-ink shadow-lift ring-1 ring-line backdrop-blur-xl">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function WomenChrome({ children }: { children: React.ReactNode }) {
   const { lang, href, otherLangHref } = useI18n();
@@ -20,7 +55,6 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { s, loc, img } = useSite();
   const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const color = (key: string, fallback: string) => {
     const value = String(s('women', key) ?? '');
     return HEX.test(value) ? value : fallback;
@@ -56,10 +90,12 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const pageLink = (entry: Extract<WomenMenuEntry, { type: 'page' }>, className: string) => (
     <Link href={href(womenPageHref(entry.slug))} target={entry.newTab ? '_blank' : undefined} rel={entry.newTab ? 'noopener noreferrer' : undefined} onClick={() => setOpen(false)} key={entry.slug} className={className}>{label(entry)}</Link>
   );
-  const navClass = 'shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-accent';
   const footerClass = 'rounded-lg px-2 py-1 text-sm text-white/80 transition hover:text-accent';
-  const navEntries = links.navigation.filter((entry) => entry.isActive !== false);
-  const footerEntries = links.footer.filter((entry) => entry.isActive !== false);
+  const visibleEntries = (entries: WomenMenuEntry[]) => entries.filter((entry) =>
+    entry.isActive !== false && (entry.type === 'page' || entry.items.some((item) => item.isActive !== false)),
+  );
+  const navEntries = visibleEntries(links.navigation);
+  const footerEntries = visibleEntries(links.footer);
 
   return (
     <div style={theme} className="min-h-screen bg-canvas text-ink">
@@ -69,34 +105,33 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <img src={logo || '/brand/women-committee-icon.svg'} alt="" className="h-10 w-10 rounded-full bg-white object-contain p-1" />
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
-          <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 overflow-x-auto lg:flex">
+          <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 overflow-x-auto xl:flex">
             {navEntries.map((entry, index) => entry.type === 'page'
-              ? pageLink(entry, navClass)
-              : <div key={`nav-group-${index}`} className="group relative">
-                <button type="button" className={`${navClass} flex items-center gap-1`}>{lang === 'ar' ? entry.titleAr : entry.titleEn}<span aria-hidden="true">⌄</span></button>
-                <div className="invisible absolute start-0 top-full z-50 min-w-56 translate-y-1 rounded-xl bg-white p-2 text-ink opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  {entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-lg px-3 py-2 text-sm hover:bg-primary/10 hover:text-primary'))}
-                </div>
-              </div>)}
+              ? <div key={`nav-page-${entry.slug}`}>{pageLink(entry, 'shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-accent')}</div>
+              : <WomenDropdown key={`nav-group-${index}`} label={lang === 'ar' ? entry.titleAr : entry.titleEn}>
+                {entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary'))}
+              </WomenDropdown>)}
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} className="hidden rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold hover:bg-white/15 md:inline-block">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
-            {me && <div className="relative hidden md:block">
-              <button type="button" aria-label={me.fullName} aria-expanded={profileOpen} onClick={() => setProfileOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white">
+            {me && <WomenDropdown label={me.fullName} align="end" trigger={
+              <span title={me.fullName} aria-label={me.fullName} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white">
                 {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-full w-full object-cover" /> : me.fullName.slice(0, 1)}
-              </button>
-              {profileOpen && <div className="absolute end-0 top-full z-50 mt-2 min-w-48 rounded-xl bg-white p-2 text-sm text-ink shadow-xl">
-                <div className="border-b border-line px-3 py-2 font-semibold">{me.fullName}</div>
-                <Link href={href('/profile')} onClick={() => setProfileOpen(false)} className="block rounded-lg px-3 py-2 hover:bg-primary/10">{lang === 'ar' ? 'الملف الشخصي' : 'Profile'}</Link>
-                {canManage && <Link href={href(adminUrl)} onClick={() => setProfileOpen(false)} className="block rounded-lg px-3 py-2 hover:bg-primary/10">{lang === 'ar' ? 'إدارة الصفحة' : 'Manage page'}</Link>}
-                <button type="button" onClick={logoutUser} className="w-full rounded-lg px-3 py-2 text-start text-red-600 hover:bg-red-50">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
-              </div>}
-            </div>}
+              </span>
+            }>
+              <div className="mb-1 border-b border-line px-3 py-2 text-sm font-semibold text-ink">{me.fullName}</div>
+              <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{lang === 'ar' ? 'الملف الشخصي' : 'Profile'}</Link>
+              {canManage && <Link href={href(adminUrl)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{lang === 'ar' ? 'إدارة الصفحة' : 'Manage page'}</Link>}
+              <button type="button" onClick={logoutUser} className="w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
+            </WomenDropdown>}
             <Link href={otherLangHref(pathname)} onClick={() => { try { localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar'); } catch {} }} className="rounded-full border border-white/30 px-3 py-1.5 text-xs font-bold hover:bg-white/15">{lang === 'ar' ? 'English' : 'العربية'}</Link>
-            <button type="button" aria-label="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-lg border border-white/30 px-2.5 py-1.5 text-lg leading-none lg:hidden">☰</button>
+            {me && <Link href={href('/profile')} aria-label={lang === 'ar' ? 'الملف الشخصي' : 'Profile'} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white xl:hidden">
+              {me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-full w-full object-cover" /> : me.fullName.slice(0, 1)}
+            </Link>}
+            <button type="button" aria-label="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-lg border border-white/30 px-2.5 py-1.5 text-lg leading-none xl:hidden">☰</button>
           </div>
         </div>
-        {open && <nav className="border-t border-white/15 px-4 pb-3 lg:hidden">
+        {open && <nav className="border-t border-white/15 px-4 pb-3 xl:hidden">
           {navEntries.map((entry, index) => entry.type === 'page'
             ? pageLink(entry, 'block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10')
             : <details key={`mobile-group-${index}`} className="group">

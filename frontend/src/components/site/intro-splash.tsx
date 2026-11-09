@@ -5,10 +5,10 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 /**
- * Opening animation, shown only on the visitor's first visit to this browser.
+ * Opening animation, shown once per new browser tab, but not on reloads in that tab.
  *
  *  1. On a first visit, a full-page cover in the main colour hides the site while its branding loads.
- *  2. Once the logo, the site name and the font are ready: the logo fades in and the name is written slowly in the middle.
+ *  2. Once the logo, site name and font are ready: the logo and name animate together across the center.
  *  3. The name (and logo) then expand. The name is a cut-out in the cover, so the site shows through the gaps of the
  *     letters while they grow, and in the end the cover clears completely.
  *
@@ -24,15 +24,14 @@ const HOLD_MS = 250;
 const EXPAND_MS = 900;
 const MAX_SCALE = 20;
 const MAX_WAIT_MS = 4500; // never keep the visitor waiting for assets longer than this
-const SEEN_KEY = 'news-site-intro-seen';
-
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeIn = (t: number) => t * t * t;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-interface Geo { W: number; H: number; fs: number; tw: number; cx: number; baseY: number; logoR: number; logoCy: number }
+interface Geo { W: number; H: number; fs: number; cx: number; textCx: number; baseY: number; logoR: number; logoCx: number; logoCy: number }
+interface PublicSettings { branding?: Record<string, unknown> }
 
 function loadImage(src: string) {
   return new Promise<boolean>((resolve) => {
@@ -43,26 +42,33 @@ function loadImage(src: string) {
   });
 }
 
-function layout(name: string, hasLogo: boolean): Geo {
+function layout(name: string, hasLogo: boolean, rtl: boolean): Geo {
   const W = window.innerWidth;
   const H = window.innerHeight;
   let fs = Math.min(56, Math.max(26, W * 0.075));
   const ctx = document.createElement('canvas').getContext('2d');
   const measure = (size: number) => {
-    if (!ctx || !name) return 0;
+    if (!name) return 0;
+    if (!ctx) return size * name.length * 0.6;
     ctx.font = `700 ${size}px "Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif`;
     return ctx.measureText(name).width;
   };
-  let tw = measure(fs);
-  if (tw > W * 0.86) { fs *= (W * 0.86) / tw; tw = W * 0.86; }
   const logoR = hasLogo ? Math.min(64, Math.max(38, W * 0.09)) : 0;
-  const gap = hasLogo && name ? 26 : 0;
-  const block = (hasLogo ? logoR * 2 : 0) + gap + (name ? fs * 1.25 : 0);
-  const top = H / 2 - block / 2;
+  const gap = hasLogo && name ? 20 : 0;
+  const maxTextWidth = Math.max(80, W * 0.86 - (hasLogo ? logoR * 2 + gap : 0));
+  let tw = measure(fs);
+  if (tw > maxTextWidth) { fs *= maxTextWidth / tw; tw = maxTextWidth; }
+  const textWidth = name ? tw : 0;
+  const blockWidth = (hasLogo ? logoR * 2 : 0) + gap + textWidth;
+  const left = (W - blockWidth) / 2;
+  const logoCx = rtl ? left + blockWidth - logoR : left + logoR;
+  const textCx = rtl
+    ? left + textWidth / 2
+    : left + (hasLogo ? logoR * 2 + gap : 0) + textWidth / 2;
   return {
-    W, H, fs, tw, cx: W / 2,
-    logoR, logoCy: top + logoR,
-    baseY: top + (hasLogo ? logoR * 2 : 0) + gap + fs,
+    W, H, fs, cx: W / 2, textCx,
+    logoR, logoCx, logoCy: H / 2,
+    baseY: H / 2 + fs * 0.35,
   };
 }
 
@@ -85,13 +91,7 @@ export function IntroSplash() {
   // 1. wait for the colours, the settings, the logo and the font; then decide how to play
   useEffect(() => {
     let dead = false;
-    let seen = false;
-    try {
-      seen = localStorage.getItem(SEEN_KEY) === 'true';
-    } catch (error) {
-      console.error('Unable to check whether the intro animation was already shown.', error);
-    }
-    if (seen) {
+    if (!document.documentElement.hasAttribute('data-intro-pending')) {
       setDone(true);
       return;
     }
@@ -101,12 +101,14 @@ export function IntroSplash() {
     document.documentElement.style.overflow = 'hidden';
     (async () => {
       const started = Date.now();
-      // first-ever visit: the brand colours are not known yet (see theme.ts), wait until they are
+      // On a new tab, wait for the theme colors if this browser has not cached them yet.
       while (document.documentElement.hasAttribute('data-theme-pending') && Date.now() - started < 2500) await wait(40);
-      const settings = await Promise.race([api<any>('/public/settings', { cache: 'no-store' }).catch(() => null), wait(3000).then(() => null)]);
+      const settings = await Promise.race([api<PublicSettings>('/public/settings', { cache: 'no-store' }).catch(() => null), wait(3000).then(() => null)]);
       const b = settings?.branding ?? {};
-      const name = String(b[`site_name_${lang}`] ?? '').trim();
-      const logo = fileUrl(b.logo);
+      const rawName = b[`site_name_${lang}`];
+      const name = typeof rawName === 'string' ? rawName.trim() : '';
+      const rawLogo = typeof b.logo_url === 'string' && b.logo_url ? b.logo_url : b.logo;
+      const logo = typeof rawLogo === 'string' ? fileUrl(rawLogo) : '';
       const left = () => Math.max(300, MAX_WAIT_MS - (Date.now() - started));
       const [logoOk] = await Promise.all([
         logo ? Promise.race([loadImage(logo), wait(left()).then(() => false)]) : Promise.resolve(false),
@@ -115,19 +117,10 @@ export function IntroSplash() {
       if (dead) return;
       if (reduce || (!name && !logoOk)) { setFade(true); return; }
       setAssets({ name, logo: logoOk ? logo : '' });
-      setGeo(layout(name, logoOk));
+      setGeo(layout(name, logoOk, lang === 'ar'));
     })();
     return () => { dead = true; document.documentElement.style.overflow = ''; };
   }, [lang]);
-
-  useEffect(() => {
-    if (!done || !started) return;
-    try {
-      localStorage.setItem(SEEN_KEY, 'true');
-    } catch (error) {
-      console.error('Unable to remember that the intro animation was shown.', error);
-    }
-  }, [done, started]);
 
   // the cover just fades (reduced motion / nothing to show)
   useEffect(() => {
@@ -164,7 +157,7 @@ export function IntroSplash() {
       coverRef.current?.setAttribute('opacity', String(1 - clamp01((u - 0.72) / 0.28)));
       if (logoRef.current) {
         const ls = (0.7 + 0.3 * li) * (1 + 5 * easeIn(u));
-        logoRef.current.setAttribute('transform', `translate(${geo.cx} ${geo.logoCy}) scale(${ls})`);
+        logoRef.current.setAttribute('transform', `translate(${geo.logoCx} ${geo.logoCy}) scale(${ls})`);
         logoRef.current.setAttribute('opacity', String(li * (1 - clamp01(u / 0.45))));
       }
       if (t < total) raf = requestAnimationFrame(frame);
@@ -175,7 +168,10 @@ export function IntroSplash() {
   }, [geo, lang]);
 
   useEffect(() => {
-    if (done) document.documentElement.style.overflow = '';
+    if (done) {
+      document.documentElement.style.overflow = '';
+      document.documentElement.removeAttribute('data-intro-pending');
+    }
   }, [done]);
 
   if (done) return null;
@@ -189,7 +185,7 @@ export function IntroSplash() {
   }
 
   const rtl = lang === 'ar';
-  const { W, H, fs, cx, baseY, logoR } = geo;
+  const { W, H, fs, cx, textCx, baseY, logoR, logoCx, logoCy } = geo;
   return (
     <div id="splash" aria-hidden="true" className={common} style={{ pointerEvents: style.pointerEvents }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
@@ -205,7 +201,7 @@ export function IntroSplash() {
             <g ref={holeRef}>
               {assets.name && (
                 // black = cut out of the cover; the gradient is black behind the "pen" and white ahead of it, so the name is written
-                <text x={cx} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
+                <text x={textCx} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
               )}
             </g>
           </mask>
@@ -215,7 +211,7 @@ export function IntroSplash() {
         <rect ref={underRef} x="0" y="0" width={W} height={H} fill="#fff" />
         <rect ref={coverRef} x="0" y="0" width={W} height={H} mask="url(#sp-hole)" style={{ fill: 'var(--primary)' }} />
         {assets.logo && (
-          <g ref={logoRef} opacity="0" transform={`translate(${cx} ${geo.logoCy}) scale(0.7)`}>
+          <g ref={logoRef} opacity="0" transform={`translate(${logoCx} ${logoCy}) scale(0.7)`}>
             <circle r={logoR + 3} fill="#fff" />
             <image href={assets.logo} x={-logoR} y={-logoR} width={logoR * 2} height={logoR * 2} preserveAspectRatio="xMidYMid slice" clipPath="url(#sp-logo-clip)" />
           </g>

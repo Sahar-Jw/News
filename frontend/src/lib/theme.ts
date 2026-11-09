@@ -4,12 +4,15 @@
  * (localStorage) and applied by THEME_BOOT_SCRIPT inside <head> - before the first paint, before React starts.
  * The values from the API still win as soon as they arrive (see applyTheme, called by SiteProvider).
  *
- * The very first visit has nothing remembered yet. Then a page skeleton is shown (html[data-theme-pending] + #boot-skeleton,
- * see globals.css and [lang]/layout.tsx) until the colours arrive from the API, so the default colours never show. A safety timer lifts the
- * skeleton after THEME_PENDING_MAX_MS even if the API is slow or down.
+ * When no colors are remembered yet, data-theme-pending keeps the default palette hidden until the API responds. The new-tab
+ * intro cover stays above that fallback, and a safety timer lifts the pending state if the API is slow or down.
  */
 // v2: the palette changed to the logo's green / gold, so colours remembered by older visits are dropped instead of flashing blue first
 export const THEME_STORAGE_KEY = 'site-theme-v2';
+export const INTRO_SESSION_KEY = 'news-site-intro-seen';
+
+/** Runs before paint so the main-color intro cover appears on a new tab, but not on reloads. */
+export const INTRO_BOOT_SCRIPT = `(function(){try{var d=document.documentElement,k=${JSON.stringify(INTRO_SESSION_KEY)};if(sessionStorage.getItem(k)==="true")return;sessionStorage.setItem(k,"true");d.setAttribute("data-intro-pending","")}catch(e){document.documentElement.setAttribute("data-intro-pending","")}})();`;
 
 /** setting key -> CSS variable (+ values that count as "not customised", they keep the built-in look) */
 const THEME_VARS: Record<string, { cssVar: string; fg?: string }> = {

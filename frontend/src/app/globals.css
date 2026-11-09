@@ -161,11 +161,21 @@ input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
 .card-accent:hover::before { transform: scaleX(1); }
 [dir='rtl'] .card-accent { --origin: right; }
 
-/* first visit ever: no colours remembered yet, so a page skeleton is shown until the API answers (see lib/theme.ts) */
+/* Keep the first paint covered until the saved theme and new-tab intro state are known. */
 html[data-theme-pending] body { background: #f8f5ee !important; }
-html[data-theme-pending] body > *:not(#boot-skeleton) { visibility: hidden; }
+html[data-theme-pending] body > *:not(#boot-skeleton):not(#intro-boot-cover) { visibility: hidden; }
 #boot-skeleton { display: none; }
 html[data-theme-pending] #boot-skeleton { display: block; }
+html[data-theme-pending][data-intro-pending] #boot-skeleton { display: none; }
+#intro-boot-cover { display: none; }
+html[data-intro-pending] #intro-boot-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: block;
+  background: var(--primary, #0a5c3d);
+}
+html[data-intro-pending] body > *:not(#intro-boot-cover):not(#splash) { visibility: hidden; }
 
 /* Businesswomen committee page: its own palette from the committee logo (rose #C7878D, charcoal #231F20).
    Every text-primary / bg-primary/10 / border-accent … inside simply picks these variables up. */
