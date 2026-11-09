@@ -112,7 +112,6 @@ export const NAV_DEFAULTS: { ar: string; en: string; items: { ar: string; en: st
   { ar: 'الأخبار والإعلام', en: 'News & media', items: [
     { ar: 'المركز الإعلامي', en: 'Media center', url: '/media' },
     { ar: 'معرض الصور', en: 'Image gallery', url: '/gallery' },
-    { ar: 'النشرة البريدية', en: 'Newsletter', url: '/subscribe' },
   ] },
   { ar: 'الخدمات', en: 'Services', items: [
     { ar: 'النافذة الواحدة', en: 'One-stop window', url: '/one-stop' },

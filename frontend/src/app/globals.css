@@ -170,8 +170,9 @@ html[data-theme-pending] #boot-skeleton { display: block; }
 /* Businesswomen committee page: its own palette from the committee logo (rose #C7878D, charcoal #231F20).
    Every text-primary / bg-primary/10 / border-accent … inside simply picks these variables up. */
 .women-theme {
-  --primary: #a8636b; /* deeper rose, readable as text on white */
-  --secondary: #231f20;
+  primary: #c7878d;
+   /* deeper rose, readable as text on white a8636b  */
+  --secondary: #231f20; 
   --accent: #c7878d;
   --canvas: #fbf5f5;
   --line: color-mix(in srgb, #c7878d 30%, white);

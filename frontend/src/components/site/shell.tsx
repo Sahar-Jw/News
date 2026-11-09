@@ -500,10 +500,13 @@ export function Footer() {
       </div>
 
       <div className="relative border-t border-white/10 py-4 text-center text-xs">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-1 px-4">
-          {tagline && <span className="text-sm font-bold text-white">{tagline}</span>}
-          {rights && <span className="text-stone-300">{rights}</span>}
-          {legal.length > 0 && <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-1">{legal.map((i) => <FootLink key={i.id} item={i} href={href} />)}</div>}
+        {/* tagline, rights and legal links on one line, each one kept whole and divided by a thin separator (wraps only on narrow screens) */}
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-4">
+          {[
+            tagline && <span key="tagline" className="whitespace-nowrap text-sm font-bold text-white">{tagline}</span>,
+            rights && <span key="rights" className="whitespace-nowrap text-stone-300">{rights}</span>,
+            ...legal.map((i) => <span key={i.id} className="whitespace-nowrap"><FootLink item={i} href={href} /></span>),
+          ].filter(Boolean).flatMap((el, n) => (n === 0 ? [el] : [<span key={`sep${n}`} className="h-3 w-px bg-white/25" aria-hidden="true" />, el]))}
         </div>
       </div>
     </footer>

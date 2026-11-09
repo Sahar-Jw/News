@@ -24,7 +24,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'nav.mediaCenter', to: '/media', ready: true },
       { label: 'pub.gallery', to: '/gallery', ready: true },
-      { label: 'nav.newsletter', to: '/subscribe', ready: true },
     ],
   },
   {

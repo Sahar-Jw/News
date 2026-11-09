@@ -12,6 +12,7 @@ import { ToastProvider } from '@/components/ui/toast';
 import { NavigationLoader } from '@/components/site/navigation-loader';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import { PageSkeletonOverlay } from '@/components/ui/page-skeleton';
+import { IntroSplash } from '@/components/site/intro-splash';
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -35,6 +36,8 @@ export default async function LangLayout({ children, params }: { children: React
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>
+              {/* opening animation: covers the page in the main colour on every (re)open, then reveals the site */}
+              <IntroSplash />
               <Suspense fallback={null}><NavigationLoader /></Suspense>
               {children}
             </ToastProvider>
