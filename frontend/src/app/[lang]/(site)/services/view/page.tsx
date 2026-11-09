@@ -52,7 +52,8 @@ function View() {
           {d.steps.length > 0 && <Block title={t('svc.steps')}><ol className="list-decimal space-y-1 ps-5 text-sm leading-7 text-gray-700">{d.steps.map((x, i) => <li key={i}>{x}</li>)}</ol></Block>}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => setInquiry(true)}>{t('os.inquiry')}</Button>
-            {d.formUrl && <a href={d.formUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">{t('svc.form')}</a>}
+            {d.formUrl && <a href={fileUrl(d.formUrl)} {...(d.formIsFile ? { download: true } : {})} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">⬇ {t(d.formIsFile ? 'svc.formDownload' : 'svc.form')}</a>}
+            <button type="button" disabled title={t('os.soon')} className="cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-500">{t('os.applyOnlineSoon')}</button>
           </div>
           <p className="mt-4 rounded-xl border border-dashed border-accent/70 px-4 py-2 text-center text-xs text-gray-600">{t('os.future')}</p>
         </div>

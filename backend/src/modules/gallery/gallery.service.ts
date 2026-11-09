@@ -118,11 +118,12 @@ export class GalleryService {
 
   async publicList(q: PublicGalleryQueryDto) {
     const p = publicPage(q);
-    const where: Record<string, unknown> = {};
-    if (q.committeeId) where.committeeId = q.committeeId;
-    if (q.type) where.kind = q.type;
-    if (q.category) where.category = q.category;
-    const [rows, total] = await this.repo.findAndCount({ where, order: { id: 'DESC' }, skip: p.skip, take: p.limit });
+    const qb = this.repo.createQueryBuilder('g').orderBy('g.id', 'DESC').skip(p.skip).take(p.limit);
+    if (q.committeeId) qb.andWhere('g.committeeId = :cid', { cid: q.committeeId });
+    if (q.type) qb.andWhere('g.kind = :type', { type: q.type });
+    if (q.category) qb.andWhere('g.category = :cat', { cat: q.category });
+    if (q.year) qb.andWhere('EXTRACT(YEAR FROM g.createdAt) = :year', { year: q.year });
+    const [rows, total] = await qb.getManyAndCount();
     return paged(rows.map((r) => this.card(r, q.lang ?? 'ar')), total, p);
   }
 
@@ -132,6 +133,14 @@ export class GalleryService {
     if (type) qb.andWhere('g.kind = :type', { type });
     const rows = await qb.getRawMany();
     return GALLERY_CATEGORIES.filter((c) => rows.some((r) => r.category === c)).map((c) => ({ category: c, count: Number(rows.find((r) => r.category === c)!.n) }));
+  }
+
+  /** Years that have at least one item (the archive filter of the media center), newest first. */
+  async publicYears(type?: string) {
+    const qb = this.repo.createQueryBuilder('g').select('EXTRACT(YEAR FROM g.createdAt)', 'y').groupBy('y').orderBy('y', 'DESC');
+    if (type) qb.where('g.kind = :type', { type });
+    const rows = await qb.getRawMany();
+    return rows.map((r) => Number(r.y)).filter((y) => Number.isFinite(y));
   }
 
   async publicOne(id: number, lang = 'ar') {

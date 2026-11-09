@@ -66,6 +66,12 @@ export class GalleryPublicController {
   }
 
   @Public()
+  @Get('years')
+  years(@Query('type') type?: string) {
+    return this.service.publicYears(type === 'photos' || type === 'video' ? type : undefined);
+  }
+
+  @Public()
   @Get(':id')
   one(@Param('id', ParseIntPipe) id: number, @Query('lang') lang?: string) {
     return this.service.publicOne(id, lang === 'en' ? 'en' : 'ar');

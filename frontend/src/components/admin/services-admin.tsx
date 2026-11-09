@@ -12,12 +12,12 @@ import { SERVICE_KINDS } from '@/components/site/services-shared';
 
 type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'audienceAr' | 'audienceEn' | 'documentsAr' | 'documentsEn' | 'stepsAr' | 'stepsEn' | 'locationAr' | 'locationEn' | 'departmentAr' | 'departmentEn' | 'durationAr' | 'durationEn' | 'feeAr' | 'feeEn' | 'formUrl';
 type Fields = Record<Text, string>;
-interface Row extends Fields { id: number; kind: string; nameAr: string; sortOrder: number; isActive: boolean; imageUrl: string | null }
-interface Draft extends Fields { id?: number; kind: string; nameAr: string; sortOrder: string; isActive: boolean; imageUrl: string | null; removeImage: boolean }
+interface Row extends Fields { id: number; kind: string; nameAr: string; sortOrder: number; isActive: boolean; imageUrl: string | null; formFileUrl: string | null }
+interface Draft extends Fields { id?: number; kind: string; nameAr: string; sortOrder: string; isActive: boolean; imageUrl: string | null; removeImage: boolean; formFileUrl: string | null; removeForm: boolean }
 
 const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn', 'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'durationAr', 'durationEn', 'feeAr', 'feeEn', 'formUrl'];
 const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fields;
-const EMPTY: Draft = { ...blank(), kind: 'other', nameAr: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false };
+const EMPTY: Draft = { ...blank(), kind: 'other', nameAr: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false, formFileUrl: null, removeForm: false };
 const URL_RE = /^https?:\/\/\S+$/i;
 
 /** Chamber services (feeds the One-Stop page and, later, the Services page). Errors show under each field. */
@@ -27,6 +27,7 @@ export function ServicesAdmin() {
   const toast = useToast();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [image, setImage] = useState<File | null>(null);
+  const [formFile, setFormFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Partial<Record<'nameAr' | 'formUrl' | 'sortOrder' | 'image', string>>>({});
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
@@ -34,8 +35,9 @@ export function ServicesAdmin() {
 
   const open = (r?: Row) => {
     setImage(null);
+    setFormFile(null);
     setErrors({});
-    setDraft(r ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, sortOrder: String(r.sortOrder), isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false } : { ...EMPTY });
+    setDraft(r ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, sortOrder: String(r.sortOrder), isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false, formFileUrl: r.formFileUrl ?? null, removeForm: false } : { ...EMPTY });
   };
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
 
@@ -72,6 +74,8 @@ export function ServicesAdmin() {
     for (const k of TEXT) fd.set(k, draft[k].trim());
     if (draft.id) fd.set('removeImage', String(draft.removeImage));
     if (image) fd.set('image', image);
+    if (formFile) fd.set('form', formFile);
+    if (draft.id) fd.set('removeForm', String(draft.removeForm));
     setBusy(true);
     try {
       await api(draft.id ? `/admin/services/${draft.id}` : '/admin/services', { method: draft.id ? 'PATCH' : 'POST', form: fd });
@@ -140,6 +144,16 @@ export function ServicesAdmin() {
               {pair('svc.duration', 'durationAr', 'durationEn', { max: 100 })}
               {pair('svc.fee', 'feeAr', 'feeEn', { max: 150, hint: t('svc.feeHint') })}
               <Field label={t('svc.formUrl')} error={errors.formUrl}><input maxLength={500} dir="ltr" placeholder="https://" aria-invalid={!!errors.formUrl} className={`${inputCls} ${errors.formUrl ? 'border-red-500' : ''}`} value={draft.formUrl} onChange={(e) => up({ formUrl: e.target.value })} /></Field>
+              <div className="md:col-span-2">
+                <Field label={t('svc.formFile')} hint={t('svc.formFileHint')}>
+                  <input type="file" accept=".pdf,.doc,.docx,application/pdf" className={inputCls} onChange={(e) => { setFormFile(e.target.files?.[0] ?? null); e.target.value = ''; }} />
+                </Field>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm">
+                  {formFile && <span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">{formFile.name}</span>}
+                  {!formFile && draft.formFileUrl && !draft.removeForm && <a href={fileUrl(draft.formFileUrl)} target="_blank" rel="noreferrer" className="text-primary underline">{t('svc.formFileCurrent')}</a>}
+                  {!formFile && draft.formFileUrl && <label className="flex items-center gap-2"><input type="checkbox" checked={draft.removeForm} onChange={(e) => up({ removeForm: e.target.checked })} />{t('svc.removeForm')}</label>}
+                </div>
+              </div>
               <Field label={t('svc.order')} error={errors.sortOrder}><input inputMode="numeric" dir="ltr" aria-invalid={!!errors.sortOrder} className={`${inputCls} ${errors.sortOrder ? 'border-red-500' : ''}`} value={draft.sortOrder} onChange={(e) => up({ sortOrder: e.target.value })} /></Field>
             </div>
             <Field label={t('svc.image')} error={errors.image}>

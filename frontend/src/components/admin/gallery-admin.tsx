@@ -11,7 +11,8 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
-const CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'];
+const PHOTO_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'];
+const VIDEO_CATEGORIES = ['activity', 'coverage', 'encounter'];
 interface Row { id: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
 interface Draft { id?: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet }
 interface CommitteeOpt { id: number; name: string }
@@ -110,14 +111,14 @@ export function GalleryAdmin() {
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
               <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
               <Field label={t('gl.type')}>
-                <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as Draft['kind'] })}>
+                <select className={inputCls} value={draft.kind} onChange={(e) => { const kind = e.target.value as Draft['kind']; const ok = kind === 'video' ? VIDEO_CATEGORIES : PHOTO_CATEGORIES; setDraft({ ...draft, kind, category: ok.includes(draft.category) ? draft.category : '' }); }}>
                   <option value="photos">{t('gl.kind.photos')}</option><option value="video">{t('gl.kind.video')}</option>
                 </select>
               </Field>
               <Field label={t('gl.category')}>
                 <select className={inputCls} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
                   <option value="">{t('gl.noCategory')}</option>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(`gl.cat.${c}`)}</option>)}
+                  {(draft.kind === 'video' ? VIDEO_CATEGORIES : PHOTO_CATEGORIES).map((c) => <option key={c} value={c}>{t(`gl.cat.${c}`)}</option>)}
                 </select>
               </Field>
               {draft.kind === 'video' && (

@@ -37,4 +37,6 @@ export class PublicGalleryQueryDto extends PublicListQueryDto {
   /** photos | video */
   @IsOptional() @IsIn(KINDS) type?: string;
   @IsOptional() @IsIn(CATS) category?: string;
+  /** archive year (the year the album / video was added) */
+  @IsOptional() @Type(() => Number) @IsInt() year?: number;
 }

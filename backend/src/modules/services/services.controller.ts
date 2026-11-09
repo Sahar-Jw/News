@@ -1,15 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
+import { MAX_PDF_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { AuthUser } from '../../common/types';
 import { BulkDeleteDto } from '../news/news.dto';
 import { CreateServiceDto, PublicServicesQueryDto, ServicesAdminQueryDto, UpdateServiceDto } from './services.dto';
 import { ServicesService } from './services.service';
 
-/** one picture in the multipart field "image" */
-const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fieldSize: 2 * 1024 * 1024 } });
+/** a picture in the multipart field "image" and a downloadable form in "form" */
+const upload = () => FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'form', maxCount: 1 }], { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: 2, fieldSize: 2 * 1024 * 1024 } });
+export type ServiceFiles = { image?: Express.Multer.File[]; form?: Express.Multer.File[] };
 
 @Controller('admin/services')
 export class ServicesAdminController {
@@ -24,8 +25,8 @@ export class ServicesAdminController {
   @Post()
   @Permissions(PERM.SERVICES_CREATE)
   @UseInterceptors(upload())
-  create(@Body() dto: CreateServiceDto, @UploadedFile() image: Express.Multer.File | undefined, @CurrentUser() u: AuthUser) {
-    return this.service.create(dto, image, u);
+  create(@Body() dto: CreateServiceDto, @UploadedFiles() files: ServiceFiles, @CurrentUser() u: AuthUser) {
+    return this.service.create(dto, files, u);
   }
 
   @Post('bulk-delete')
@@ -37,8 +38,8 @@ export class ServicesAdminController {
   @Patch(':id')
   @Permissions(PERM.SERVICES_UPDATE)
   @UseInterceptors(upload())
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateServiceDto, @UploadedFile() image: Express.Multer.File | undefined, @CurrentUser() u: AuthUser) {
-    return this.service.update(id, dto, image, u);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateServiceDto, @UploadedFiles() files: ServiceFiles, @CurrentUser() u: AuthUser) {
+    return this.service.update(id, dto, files, u);
   }
 
   @Delete(':id')

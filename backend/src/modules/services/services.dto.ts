@@ -60,6 +60,8 @@ export class UpdateServiceDto {
   @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
   @toBool() @IsOptional() @IsBoolean() isActive?: boolean;
   @toBool() @IsOptional() @IsBoolean() removeImage?: boolean;
+  /** "true" removes the uploaded form file */
+  @toBool() @IsOptional() @IsBoolean() removeForm?: boolean;
 }
 
 export class ServicesAdminQueryDto extends AdminListQueryDto {

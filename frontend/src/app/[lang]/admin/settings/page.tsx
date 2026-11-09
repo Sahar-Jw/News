@@ -29,6 +29,7 @@ import { MembershipApplications, MembershipContent } from '@/components/admin/me
 import { NavAdmin } from '@/components/admin/nav-admin';
 import { OccasionsAdmin } from '@/components/admin/occasions-admin';
 import { PagesAdmin } from '@/components/admin/pages-admin';
+import { ScheduleAdmin } from '@/components/admin/schedule-admin';
 import { ServicesAdmin } from '@/components/admin/services-admin';
 import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
 import { TrainersAdmin } from '@/components/admin/trainers-admin';
@@ -43,7 +44,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
-  'services.services': () => <ServicesAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
+  'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
   'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin />,
   'media.gallery': () => <GalleryAdmin />,
   'occasions.events': () => <OccasionsAdmin />,

@@ -53,7 +53,7 @@ export const HUBS: HubMeta[] = [
   {
     key: 'services', ar: 'الخدمات والمواعيد', en: 'Services & appointments', hintAr: 'النافذة الواحدة والخدمات والمواعيد والعملاء', hintEn: 'One-stop window, services, appointments and customers', icon: '☰', color: '#0e7490',
     tabs: [
-      { key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'dates', ar: 'المواعيد', en: 'Appointments', perms: ['appointments.read'] },
+      { key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'hours', ar: 'أوقات الدوام', en: 'Opening hours', perms: ['settings.read'] }, { key: 'dates', ar: 'المواعيد', en: 'Appointments', perms: ['appointments.read'] },
       { key: 'dashboard', ar: 'لوحة المواعيد', en: 'Appointments dashboard', perms: ['appointments.dashboard'] }, { key: 'customers', ar: 'العملاء', en: 'Customers', perms: ['customers.read'] }, settings(['services']),
     ],
   },

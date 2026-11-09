@@ -81,6 +81,15 @@ const BASE_AR: Record<string, string> = {
   statements_category: 'تصنيف الأخبار لتبويب «البيانات الرسمية»',
   interviews_category: 'تصنيف الأخبار لتبويب «المقابلات»',
   coverage_category: 'تصنيف الأخبار لتبويب «التغطيات الإعلامية»',
+  kit_enabled: 'اعتماد Media Kit (يظهر للزوار عند التفعيل)',
+  kit_logo: 'Media Kit: شعار الغرفة (يُستعمل شعار الموقع إن تُرك فارغاً)',
+  kit_logo_alt: 'Media Kit: نسخة بديلة من الشعار (فاتحة / أحادية)',
+  kit_identity_file: 'Media Kit: ملف دليل الهوية البصرية (PDF)',
+  kit_identity_ar: 'Media Kit: وصف الهوية البصرية (عربي)',
+  kit_identity_en: 'Media Kit: وصف الهوية البصرية (إنجليزي)',
+  kit_about_ar: 'Media Kit: معلومات تعريفية بالغرفة (عربي)',
+  kit_about_en: 'Media Kit: معلومات تعريفية بالغرفة (إنجليزي)',
+  kit_hq_album: 'Media Kit: رقم ألبوم صور مقر الغرفة (من قسم الألبومات)',
   // pages
   privacy: 'سياسة الخصوصية',
   terms: 'الشروط والأحكام',
@@ -112,6 +121,11 @@ const EXPO_AR: Record<string, string> = {
   primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص', floor_plan: 'مخطط المعرض أو معلومات المكان', footer_text: 'نص التذييل',
   page_links: 'روابط قائمة المعرض وتذييله',
   news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
+};
+
+const ONE_STOP_AR: Record<string, string> = {
+  contact_phone: 'هاتف النافذة الواحدة', contact_email: 'بريد النافذة الواحدة', contact_address: 'عنوان النافذة الواحدة', contact_map_url: 'رابط موقع النافذة الواحدة على الخريطة',
+  fees_note: 'ملاحظة تحت جدول الرسوم', eservices: 'نص قسم «الخدمات الإلكترونية (قريباً)»',
 };
 
 const WOMEN_AR: Record<string, string> = {
@@ -154,6 +168,7 @@ export function keyLabel(category: string, key: string, lang: string): string {
   }
   if (category === 'incubator' && INCUBATOR_AR[base]) return `${INCUBATOR_AR[base]}${suffix}`;
   if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;
+  if (category === 'one_stop' && ONE_STOP_AR[base]) return `${ONE_STOP_AR[base]}${suffix}`;
   if (category === 'women' && WOMEN_AR[base]) return `${WOMEN_AR[base]}${suffix}`;
   if (category === 'promo') {
     const p = /^(title|text|button)_(ar|en)$/.exec(base);

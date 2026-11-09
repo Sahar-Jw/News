@@ -5,7 +5,10 @@ import { User } from '../users/user.entity';
 export const GALLERY_KINDS = ['photos', 'video'] as const;
 export type GalleryKind = (typeof GALLERY_KINDS)[number];
 /** Visual archive classification (document 6.20); empty = unclassified */
-export const GALLERY_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'] as const;
+export const PHOTO_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'] as const;
+/** Video archive classification: activities, media coverage, meetings / encounters */
+export const VIDEO_CATEGORIES = ['activity', 'coverage', 'encounter'] as const;
+export const GALLERY_CATEGORIES = [...PHOTO_CATEGORIES, ...VIDEO_CATEGORIES] as const;
 export type GalleryCategory = (typeof GALLERY_CATEGORIES)[number];
 
 @Entity('galleries')

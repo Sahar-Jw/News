@@ -7,6 +7,7 @@ import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content
 import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { ServiceKind } from './service.entity';
+import type { ServiceFiles } from './services.controller';
 import { CreateServiceDto, PublicServicesQueryDto, ServicesAdminQueryDto, UpdateServiceDto } from './services.dto';
 
 /** text fields the admin form edits that live in `extra` (the Arabic description is the news body) */
@@ -34,7 +35,7 @@ export class ServicesService {
 
   present(r: Rec) {
     const v = this.view(r);
-    const out: Record<string, unknown> = { id: v.id, kind: v.kind, nameAr: v.nameAr, sortOrder: sortOf(r), isActive: isActive(r), imageUrl: this.storage.url(r.images[0] ?? null), createdAt: r.createdAt, updatedAt: r.updatedAt };
+    const out: Record<string, unknown> = { formFileUrl: this.storage.url(r.x.formFile ?? null), id: v.id, kind: v.kind, nameAr: v.nameAr, sortOrder: sortOf(r), isActive: isActive(r), imageUrl: this.storage.url(r.images[0] ?? null), createdAt: r.createdAt, updatedAt: r.updatedAt };
     for (const f of ['nameEn', 'descriptionAr', 'descriptionEn', ...X_TEXT_FIELDS.slice(2)]) out[f] = v[f];
     return out;
   }
@@ -61,31 +62,46 @@ export class ServicesService {
     return v === undefined ? undefined : typeof v === 'string' ? v.trim() || null : null;
   }
 
-  async create(dto: CreateServiceDto, image: Express.Multer.File | undefined, actor: AuthUser) {
+  async create(dto: CreateServiceDto, files: ServiceFiles | undefined, actor: AuthUser) {
+    const image = files?.image?.[0];
+    const form = files?.form?.[0];
     const path = image ? await this.storage.saveImage(image, 'services', 1200) : null;
+    let formPath: string | null = null;
     try {
+      formPath = form ? await this.storage.saveDocument(form, 'services') : null;
       const x = this.xOf(dto);
-      const r = await this.store.create(CC.SERVICE, { title: dto.nameAr.trim(), body: this.descriptionOf(dto) ?? null, images: path ? [path] : [], x: { ...x, sortOrder: x.sortOrder ?? 0, isActive: x.isActive ?? true } });
+      const r = await this.store.create(CC.SERVICE, { title: dto.nameAr.trim(), body: this.descriptionOf(dto) ?? null, images: path ? [path] : [], x: { ...x, formFile: formPath, sortOrder: x.sortOrder ?? 0, isActive: x.isActive ?? true } });
       await this.audit.log({ category: 'services', action: 'create', description: `إضافة خدمة: ${r.title}`, actorId: actor.id, entityType: 'services', entityId: r.id });
       return this.present(r);
     } catch (e) {
       await this.storage.remove(path); // nothing saved: do not leave an orphan file
+      await this.storage.remove(formPath);
       throw e;
     }
   }
 
-  async update(id: number, dto: UpdateServiceDto, image: Express.Multer.File | undefined, actor: AuthUser) {
+  async update(id: number, dto: UpdateServiceDto, files: ServiceFiles | undefined, actor: AuthUser) {
     const cur = await this.store.get(id, CC.SERVICE);
     if (!cur) throw new NotFoundException('الخدمة غير موجودة');
+    const image = files?.image?.[0];
+    const form = files?.form?.[0];
     const newPath = image ? await this.storage.saveImage(image, 'services', 1200) : null;
     const oldPath = cur.images[0] ?? null;
+    const oldForm: string | null = cur.x.formFile ?? null;
+    let newForm: string | null = null;
     try {
-      const r = await this.store.update(id, { title: dto.nameAr?.trim(), body: this.descriptionOf(dto), images: newPath ? [newPath] : dto.removeImage ? [] : undefined, x: this.xOf(dto) });
+      newForm = form ? await this.storage.saveDocument(form, 'services') : null;
+      const x = this.xOf(dto);
+      if (newForm) x.formFile = newForm;
+      else if (dto.removeForm) x.formFile = null;
+      const r = await this.store.update(id, { title: dto.nameAr?.trim(), body: this.descriptionOf(dto), images: newPath ? [newPath] : dto.removeImage ? [] : undefined, x });
       await this.audit.log({ category: 'services', action: 'update', description: `تعديل خدمة: ${r!.title}`, actorId: actor.id, entityType: 'services', entityId: id });
       if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
+      if (oldForm && oldForm !== (r!.x.formFile ?? null)) await this.storage.remove(oldForm);
       return this.present(r!);
     } catch (e) {
       await this.storage.remove(newPath);
+      await this.storage.remove(newForm);
       throw e;
     }
   }
@@ -100,7 +116,7 @@ export class ServicesService {
     const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض الخدمات غير موجودة'); // nothing is deleted
     await this.store.remove(unique);
-    await this.storage.removeMany(rows.map((r) => r.images[0] ?? null));
+    await this.storage.removeMany(rows.flatMap((r) => [r.images[0] ?? null, r.x.formFile ?? null]));
     await this.audit.log({ category: 'services', action: 'delete', description: `حذف ${rows.length} خدمة`, actorId: actor.id, entityType: 'services', details: { ids: unique }, changes: removedChanges('services', rows.map((r) => this.view(r))) });
     return { deleted: rows.length };
   }
@@ -111,7 +127,7 @@ export class ServicesService {
     return {
       id: r.id, kind: x.kind ?? 'other', name: pick(r.title, x.nameEn, en), description: pick(r.body, x.descriptionEn, en),
       audience: pick(x.audienceAr, x.audienceEn, en), department: pick(x.departmentAr, x.departmentEn, en), duration: pick(x.durationAr, x.durationEn, en),
-      fee: pick(x.feeAr, x.feeEn, en), location: pick(x.locationAr, x.locationEn, en), formUrl: s(x.formUrl),
+      fee: pick(x.feeAr, x.feeEn, en), location: pick(x.locationAr, x.locationEn, en), formUrl: this.storage.url(x.formFile ?? null) ?? s(x.formUrl), formIsFile: !!x.formFile,
       imageUrl: this.storage.url(r.images[0] ?? null),
       documents: lines(en && x.documentsEn ? x.documentsEn : x.documentsAr), steps: lines(en && x.stepsEn ? x.stepsEn : x.stepsAr),
     };
