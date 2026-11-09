@@ -8,9 +8,9 @@ import { useI18n } from '@/lib/i18n';
  * Opening animation, shown once per new browser tab, but not on reloads in that tab.
  *
  *  1. On a first visit, a full-page cover in the main colour hides the site while its branding loads.
- *  2. Once the logo, site name and font are ready: the logo and name animate together across the center.
- *  3. The name (and logo) then expand. The name is a cut-out in the cover, so the site shows through the gaps of the
- *     letters while they grow, and in the end the cover clears completely.
+ *  2. Once the logo, site name and font are ready: the logo and the name appear together on ONE line in the center.
+ *  3. The whole line (logo + name) then expands together. Both the name and the logo are cut-outs in the cover, so the
+ *     site shows through the letters and through the logo while they grow, and in the end the cover clears completely.
  *
  * It reads the site name / logo / colours itself (one small request) because the site shells each have their own settings
  * provider, and this component lives above all of them. With "reduce motion" on, or when nothing can be loaded, the
@@ -30,7 +30,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const easeIn = (t: number) => t * t * t;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-interface Geo { W: number; H: number; fs: number; cx: number; baseY: number; logoR: number; logoCy: number }
+interface Geo { W: number; H: number; fs: number; cx: number; cy: number; textX: number; baseY: number; logoR: number; logoX: number }
 interface PublicSettings { branding?: Record<string, unknown> }
 
 function loadImage(src: string) {
@@ -42,7 +42,7 @@ function loadImage(src: string) {
   });
 }
 
-function layout(name: string, hasLogo: boolean): Geo {
+function layout(name: string, hasLogo: boolean, rtl: boolean): Geo {
   const W = window.innerWidth;
   const H = window.innerHeight;
   let fs = Math.min(56, Math.max(26, W * 0.075));
@@ -53,20 +53,26 @@ function layout(name: string, hasLogo: boolean): Geo {
     ctx.font = `700 ${size}px "Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif`;
     return ctx.measureText(name).width;
   };
+  // everything is sized from the font size, so the logo + name line shrinks as one piece on narrow screens
+  const logoK = 0.7;
+  const gapK = 0.4;
   let tw = measure(fs);
-  if (tw > W * 0.86) { fs *= (W * 0.86) / tw; tw = W * 0.86; }
-  const logoR = hasLogo ? Math.min(64, Math.max(38, W * 0.09)) : 0;
-  const gap = hasLogo && name ? 26 : 0;
-  const block = (hasLogo ? logoR * 2 : 0) + gap + (name ? fs * 1.25 : 0);
-  const top = H / 2 - block / 2;
-  return {
-    W, H, fs, cx: W / 2, logoR, logoCy: top + logoR,
-    baseY: top + (hasLogo ? logoR * 2 : 0) + gap + fs,
-  };
+  const total = () => (hasLogo ? fs * logoK * 2 : 0) + (hasLogo && name ? fs * gapK : 0) + tw;
+  const maxW = W * 0.9;
+  if (total() > maxW) { const k = maxW / total(); fs *= k; tw *= k; }
+  const logoR = hasLogo ? fs * logoK : 0;
+  const gap = hasLogo && name ? fs * gapK : 0;
+  const line = logoR * 2 + gap + tw;
+  const left = W / 2 - line / 2;
+  const cy = H / 2;
+  // logo first in reading order: on the left in LTR, on the right in RTL
+  const logoX = rtl ? left + tw + gap + logoR : left + logoR;
+  const textX = rtl ? left + tw / 2 : left + logoR * 2 + gap + tw / 2;
+  return { W, H, fs, cx: W / 2, cy, textX: name ? textX : W / 2, logoX: hasLogo ? logoX : W / 2, logoR, baseY: cy + fs * 0.35 };
 }
 
 export function IntroSplash() {
-  const { lang } = useI18n();
+  const { lang, dir } = useI18n();
   const [geo, setGeo] = useState<Geo | null>(null);
   const [assets, setAssets] = useState<{ name: string; logo: string }>({ name: '', logo: '' });
   const [fade, setFade] = useState(false);
@@ -77,6 +83,8 @@ export function IntroSplash() {
   const underRef = useRef<SVGRectElement>(null);
   const coverRef = useRef<SVGRectElement>(null);
   const holeRef = useRef<SVGGElement>(null);
+  const logoHoleRef = useRef<SVGGElement>(null);
+  const logoWrapRef = useRef<SVGGElement>(null);
   const logoRef = useRef<SVGGElement>(null);
   const stopA = useRef<SVGStopElement>(null);
   const stopB = useRef<SVGStopElement>(null);
@@ -110,10 +118,10 @@ export function IntroSplash() {
       if (dead) return;
       if (reduce || (!name && !logoOk)) { setFade(true); return; }
       setAssets({ name, logo: logoOk ? logo : '' });
-      setGeo(layout(name, logoOk));
+      setGeo(layout(name, logoOk, dir === 'rtl'));
     })();
     return () => { dead = true; document.documentElement.style.overflow = ''; };
-  }, [lang]);
+  }, [lang, dir]);
 
   // the cover just fades (reduced motion / nothing to show)
   useEffect(() => {
@@ -145,12 +153,18 @@ export function IntroSplash() {
       const e = easeIn(u);
       if (u > 0 && !unblocked) { unblocked = true; setBlocking(false); }
       const s = 1 + (MAX_SCALE - 1) * e;
-      holeRef.current?.setAttribute('transform', `translate(${geo.cx} ${geo.baseY - geo.fs * 0.35}) scale(${s}) translate(${-geo.cx} ${-(geo.baseY - geo.fs * 0.35)})`);
+      // the whole line (logo + name) grows together around the center of the line
+      const grow = `translate(${geo.cx} ${geo.cy}) scale(${s}) translate(${-geo.cx} ${-geo.cy})`;
+      holeRef.current?.setAttribute('transform', grow);
+      logoWrapRef.current?.setAttribute('transform', grow);
       underRef.current?.setAttribute('opacity', String(1 - clamp01(u / 0.22)));
       coverRef.current?.setAttribute('opacity', String(1 - clamp01((u - 0.72) / 0.28)));
+      // the logo picture fades out as it grows, so the site shows through the logo's cut-out too
+      const ls = 0.7 + 0.3 * li;
+      logoHoleRef.current?.setAttribute('transform', `translate(${geo.logoX} ${geo.cy}) scale(${ls})`);
+      logoHoleRef.current?.setAttribute('opacity', String(li));
       if (logoRef.current) {
-        const ls = (0.7 + 0.3 * li) * (1 + 5 * easeIn(u));
-        logoRef.current.setAttribute('transform', `translate(${geo.cx} ${geo.logoCy}) scale(${ls})`);
+        logoRef.current.setAttribute('transform', `translate(${geo.logoX} ${geo.cy}) scale(${ls})`);
         logoRef.current.setAttribute('opacity', String(li * (1 - clamp01(u / 0.45))));
       }
       if (t < total) raf = requestAnimationFrame(frame);
@@ -177,7 +191,7 @@ export function IntroSplash() {
     return <div id="splash" aria-hidden="true" className={`${common} transition-opacity duration-500 ${fade ? 'opacity-0' : ''}`} style={style} />;
   }
 
-  const { W, H, fs, cx, baseY, logoR, logoCy } = geo;
+  const { W, H, fs, textX, baseY, logoR, logoX, cy } = geo;
   return (
     <div id="splash" aria-hidden="true" className={common} style={{ pointerEvents: style.pointerEvents }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
@@ -193,7 +207,12 @@ export function IntroSplash() {
             <g ref={holeRef}>
               {assets.name && (
                 // black = cut out of the cover; the gradient is black behind the "pen" and white ahead of it, so the name is written
-                <text x={cx} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
+                <text x={textX} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
+              )}
+              {assets.logo && (
+                <g ref={logoHoleRef} opacity="0" transform={`translate(${logoX} ${cy}) scale(0.7)`}>
+                  <circle r={logoR + 3} cx="0" cy="0" fill="#000" />
+                </g>
               )}
             </g>
           </mask>
@@ -203,9 +222,11 @@ export function IntroSplash() {
         <rect ref={underRef} x="0" y="0" width={W} height={H} fill="#fff" />
         <rect ref={coverRef} x="0" y="0" width={W} height={H} mask="url(#sp-hole)" style={{ fill: 'var(--primary)' }} />
         {assets.logo && (
-          <g ref={logoRef} opacity="0" transform={`translate(${cx} ${logoCy}) scale(0.7)`}>
-            <circle r={logoR + 3} fill="#fff" />
-            <image href={assets.logo} x={-logoR} y={-logoR} width={logoR * 2} height={logoR * 2} preserveAspectRatio="xMidYMid slice" clipPath="url(#sp-logo-clip)" />
+          <g ref={logoWrapRef}>
+            <g ref={logoRef} opacity="0" transform={`translate(${logoX} ${cy}) scale(0.7)`}>
+              <circle r={logoR + 3} fill="#fff" />
+              <image href={assets.logo} x={-logoR} y={-logoR} width={logoR * 2} height={logoR * 2} preserveAspectRatio="xMidYMid slice" clipPath="url(#sp-logo-clip)" />
+            </g>
           </g>
         )}
       </svg>
