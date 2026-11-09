@@ -6,3 +6,5 @@ export type MemberRole = (typeof MEMBER_ROLES)[number];
 /** each activity kind is its own main category: COMMITTEE_MEETING, COMMITTEE_VISIT, COMMITTEE_RECOMMENDATION, COMMITTEE_OUTPUT, COMMITTEE_EVENT, COMMITTEE_INITIATIVE */
 export const ACTIVITY_KINDS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative', 'success'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
+/** what an "event" is, so the activities page can filter them: a get-together, a workshop or a participation in an exhibition */
+export const EVENT_TYPES = ['gathering', 'workshop', 'expo'] as const;

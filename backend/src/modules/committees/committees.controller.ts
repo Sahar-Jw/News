@@ -50,8 +50,9 @@ export class CommitteesAdminController {
 
   @Patch('activities/:id')
   @Permissions(PERM.COMMITTEES_UPDATE)
-  updateActivity(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateActivityDto, @CurrentUser() u: AuthUser) {
-    return this.service.updateActivity(id, dto, u);
+  @UseInterceptors(upload('image'))
+  updateActivity(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateActivityDto, @UploadedFile() image: Express.Multer.File | undefined, @CurrentUser() u: AuthUser) {
+    return this.service.updateActivity(id, dto, image, u);
   }
 
   @Delete('activities/:id')
@@ -75,8 +76,9 @@ export class CommitteesAdminController {
 
   @Post(':id/activities')
   @Permissions(PERM.COMMITTEES_UPDATE)
-  addActivity(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateActivityDto, @CurrentUser() u: AuthUser) {
-    return this.service.addActivity(id, dto, u);
+  @UseInterceptors(upload('image'))
+  addActivity(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateActivityDto, @UploadedFile() image: Express.Multer.File | undefined, @CurrentUser() u: AuthUser) {
+    return this.service.addActivity(id, dto, image, u);
   }
 
   @Get(':id/news-search')

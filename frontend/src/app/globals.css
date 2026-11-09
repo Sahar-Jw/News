@@ -175,7 +175,9 @@ html[data-intro-pending] #intro-boot-cover {
   display: block;
   background: var(--primary, #0a5c3d);
 }
-html[data-intro-pending] body > *:not(#intro-boot-cover):not(#splash) { visibility: hidden; }
+html[data-intro-pending]:not([data-intro-playing]) body > *:not(#intro-boot-cover):not(#splash) { visibility: hidden; }
+/* once the animated cover is on screen the plain cover goes, and the site is laid out beneath it so it shows through the cut-outs */
+html[data-intro-playing] #intro-boot-cover { display: none; }
 
 /* Businesswomen committee page: its own palette from the committee logo (rose #C7878D, charcoal #231F20).
    Every text-primary / bg-primary/10 / border-accent … inside simply picks these variables up. */

@@ -77,6 +77,7 @@ export class CommitteesService {
       id: r.id, committeeId: Number(r.x.parentId), kind: activityKind(r.code), titleAr: r.title, titleEn: s(r.x.titleEn),
       bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn), goalsAr: s(r.x.goalsAr), goalsEn: s(r.x.goalsEn),
       resultsAr: s(r.x.resultsAr), resultsEn: s(r.x.resultsEn), eventDate: (r.x.eventDate ?? null) as string | null,
+      subtitleAr: s(r.x.subtitleAr), subtitleEn: s(r.x.subtitleEn), eventType: (r.x.eventType ?? null) as string | null, archived: r.x.archived === true, imageUrl: this.storage.url(r.images[0] ?? null),
     };
   }
 
@@ -216,43 +217,65 @@ export class CommitteesService {
   }
 
   // ---------------------------------------------------------------- admin: activities
-  async addActivity(committeeId: number, dto: CreateActivityDto, actor: AuthUser) {
-    const c = await this.mustFind(committeeId);
-    const r = await this.store.create(activityCode(dto.kind), {
-      title: dto.titleAr.trim(), body: sanitizeRichText(dto.bodyAr),
-      x: {
-        parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn),
-        goalsAr: sanitizeRichText(dto.goalsAr), goalsEn: sanitizeRichText(dto.goalsEn),
-        resultsAr: sanitizeRichText(dto.resultsAr), resultsEn: sanitizeRichText(dto.resultsEn),
-        eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null,
-      },
-    });
-    await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
-    return this.activityView(r);
+  /** the optional fields of an activity as stored in `extra` (undefined = leave as it is) */
+  private activityExtras(dto: CreateActivityDto | UpdateActivityDto) {
+    const nz = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+    return { subtitleAr: nz(dto.subtitleAr), subtitleEn: nz(dto.subtitleEn), eventType: dto.eventType === undefined ? undefined : dto.eventType || null, archived: dto.archived };
   }
 
-  async updateActivity(id: number, dto: UpdateActivityDto, actor: AuthUser) {
+  async addActivity(committeeId: number, dto: CreateActivityDto, image: Express.Multer.File | undefined, actor: AuthUser) {
+    const c = await this.mustFind(committeeId);
+    const path = image ? await this.storage.saveImage(image, 'committees', 1600) : null;
+    try {
+      const r = await this.store.create(activityCode(dto.kind), {
+        title: dto.titleAr.trim(), body: sanitizeRichText(dto.bodyAr), images: path ? [path] : [],
+        x: {
+          parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn),
+          goalsAr: sanitizeRichText(dto.goalsAr), goalsEn: sanitizeRichText(dto.goalsEn),
+          resultsAr: sanitizeRichText(dto.resultsAr), resultsEn: sanitizeRichText(dto.resultsEn),
+          eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null, ...this.activityExtras(dto), archived: dto.archived ?? false,
+        },
+      });
+      await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
+      return this.activityView(r);
+    } catch (e) {
+      await this.storage.remove(path);
+      throw e;
+    }
+  }
+
+  async updateActivity(id: number, dto: UpdateActivityDto, image: Express.Multer.File | undefined, actor: AuthUser) {
     const cur = await this.store.get(id, ACTIVITY_CODES);
     if (!cur) throw new NotFoundException('النشاط غير موجود');
-    const r = await this.store.update(id, {
-      code: dto.kind !== undefined ? activityCode(dto.kind) : undefined, title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
-      x: {
-        titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
-        goalsAr: dto.goalsAr === undefined ? undefined : sanitizeRichText(dto.goalsAr),
-        goalsEn: dto.goalsEn === undefined ? undefined : sanitizeRichText(dto.goalsEn),
-        resultsAr: dto.resultsAr === undefined ? undefined : sanitizeRichText(dto.resultsAr),
-        resultsEn: dto.resultsEn === undefined ? undefined : sanitizeRichText(dto.resultsEn),
-        eventDate: dto.eventDate === undefined ? undefined : dto.eventDate ? dto.eventDate.slice(0, 10) : null,
-      },
-    });
-    await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
-    return this.activityView(r!);
+    const newPath = image ? await this.storage.saveImage(image, 'committees', 1600) : null;
+    const oldPath = cur.images[0] ?? null;
+    try {
+      const r = await this.store.update(id, {
+        code: dto.kind !== undefined ? activityCode(dto.kind) : undefined, title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
+        images: newPath ? [newPath] : dto.removeImage ? [] : undefined,
+        x: {
+          titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
+          goalsAr: dto.goalsAr === undefined ? undefined : sanitizeRichText(dto.goalsAr),
+          goalsEn: dto.goalsEn === undefined ? undefined : sanitizeRichText(dto.goalsEn),
+          resultsAr: dto.resultsAr === undefined ? undefined : sanitizeRichText(dto.resultsAr),
+          resultsEn: dto.resultsEn === undefined ? undefined : sanitizeRichText(dto.resultsEn),
+          eventDate: dto.eventDate === undefined ? undefined : dto.eventDate ? dto.eventDate.slice(0, 10) : null, ...this.activityExtras(dto),
+        },
+      });
+      await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
+      if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
+      return this.activityView(r!);
+    } catch (e) {
+      await this.storage.remove(newPath);
+      throw e;
+    }
   }
 
   async removeActivity(id: number, actor: AuthUser) {
     const a = await this.store.get(id, ACTIVITY_CODES);
     if (!a) throw new NotFoundException('النشاط غير موجود');
     await this.store.remove([id]);
+    await this.storage.remove(a.images[0] ?? null);
     await this.audit.log({ category: 'committees', action: 'update', description: `حذف نشاط لجنة: ${a.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
     return { deleted: 1 };
   }
@@ -326,7 +349,8 @@ export class CommitteesService {
     const act = ({ r, v }: { r: Rec; v: ReturnType<CommitteesService['activityView']> }) => ({
       id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en),
       goals: pick(r.x.goalsAr, r.x.goalsEn, en), results: pick(r.x.resultsAr, r.x.resultsEn, en),
-      eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t,
+      subtitle: pick(v.subtitleAr, v.subtitleEn, en), eventType: v.eventType, archived: v.archived, image: v.imageUrl,
+      eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t && !v.archived,
     });
     let newsList: unknown[] = [];
     if (newsIds.length || newsCategories?.length) {

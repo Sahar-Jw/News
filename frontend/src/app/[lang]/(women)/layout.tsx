@@ -75,12 +75,12 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
     const value = String(s('women', key) ?? '');
     return HEX.test(value) ? value : fallback;
   };
-  const primary = color('primary_color', '#8b3d63');
-  const accent = color('accent_color', '#d2a84a');
-  const header = color('header_color', '#54213d');
-  const footer = color('footer_color', '#3c172c');
+  const primary = color('primary_color', '#c7878d');
+  const accent = color('accent_color', '#34232c');
+  const header = color('header_color', '#c7878d');
+  const footer = color('footer_color', '#c7878d');
   const background = color('background_color', '#fff9fb');
-  const text = color('text_color', '#34232c');
+  const text = color('text_color', '##34232c');
   const theme = {
     '--primary': primary,
     '--secondary': `color-mix(in srgb, ${primary} 70%, black)`,
@@ -99,6 +99,13 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const socialKeys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'] as const;
   const adminUrl = can('committees.read') ? '/admin/settings?page=women&tab=content' : '/admin/settings?page=women&tab=settings';
   const canManage = can('committees.read', 'settings.read');
+  const canEdit = can('committees.update');
+  const ar = lang === 'ar';
+  const addItems = [
+    { slug: 'initiatives', add: 'initiative', label: ar ? '＋ مبادرة / مشروع' : '＋ Initiative / project' },
+    { slug: 'activities', add: 'activity', label: ar ? '＋ نشاط / فعالية' : '＋ Activity / event' },
+    { slug: 'success', add: 'success', label: ar ? '＋ قصة نجاح' : '＋ Success story' },
+  ];
   const logoutUser = async () => {
     await logout();
     router.push(href('/'));
@@ -142,6 +149,12 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
               <div className="mb-1 border-b border-line px-3 py-2 text-sm font-semibold text-ink">{me.fullName}</div>
               <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{lang === 'ar' ? 'الملف الشخصي' : 'Profile'}</Link>
               {canManage && <Link href={href(adminUrl)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{lang === 'ar' ? 'إدارة الصفحة' : 'Manage page'}</Link>}
+              {canEdit && <>
+                <div className="my-1 border-t border-line px-3 pt-2 text-xs font-bold text-gray-500">{ar ? 'إضافة محتوى جديد' : 'Add new content'}</div>
+                {addItems.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{x.label}</Link>)}
+                <Link href={href('/admin/news/edit')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? '＋ خبر' : '＋ News item'}</Link>
+                <Link href={href(womenPageHref('archive'))} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? '🗄 أرشيف المبادرات والأنشطة' : '🗄 Archive'}</Link>
+              </>}
               <button type="button" onClick={logoutUser} className="w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
             </WomenDropdown>}
             <Link href={otherLangHref(pathname)} onClick={() => { try { localStorage.setItem('lang', lang === 'ar' ? 'en' : 'ar'); } catch {} }} className="rounded-full border border-white/30 px-3 py-1.5 text-xs font-bold hover:bg-white/15">{lang === 'ar' ? 'English' : 'العربية'}</Link>
@@ -166,6 +179,10 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             </div>
             <Link href={href('/profile')} className="block rounded-lg px-3 py-2 text-sm">{lang === 'ar' ? 'الملف الشخصي' : 'Profile'}</Link>
             {canManage && <Link href={href(adminUrl)} className="block rounded-lg px-3 py-2 text-sm">{lang === 'ar' ? 'إدارة الصفحة' : 'Manage page'}</Link>}
+            {canEdit && <>
+              {addItems.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className="block rounded-lg px-3 py-2 text-sm">{x.label}</Link>)}
+              <Link href={href(womenPageHref('archive'))} className="block rounded-lg px-3 py-2 text-sm">{ar ? '🗄 الأرشيف' : '🗄 Archive'}</Link>
+            </>}
             <button type="button" onClick={logoutUser} className="w-full rounded-lg px-3 py-2 text-start text-sm text-red-200">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
           </div>}
         </nav>}

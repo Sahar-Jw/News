@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { api, fileUrl } from '@/lib/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api, fileUrl, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from '@/components/site/site-context';
 import { fmtDate, fmtDay } from '@/lib/utils';
@@ -9,10 +9,11 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 import { ContactIcon, SocialIcon } from './icons';
 import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
+import { WomenPages } from '@/components/women/women-pages';
 
-interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
-interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean }
-interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
+export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
+export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
+export interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
 interface Video { id: number; title: string; youtubeId: string; cover: string | null }
 interface Album { id: number; title: string; cover: string | null; count: number }
 export interface CommitteeData {
@@ -118,10 +119,13 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   const [tab, setTab] = useState('overview');
 
-  useEffect(() => {
-    setState('load');
-    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); }).catch(() => setState('404'));
+  const load = useCallback((quiet = false) => {
+    if (!quiet) setState('load');
+    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); }).catch(() => { if (!quiet) setState('404'); });
   }, [path, lang]);
+  useEffect(() => { load(); }, [load]);
+  // changes made from the page itself (add / edit / archive) show up without a reload
+  useEffect(() => onSiteChange(() => load(true)), [load]);
 
   useEffect(() => {
     const syncHash = () => {
@@ -175,6 +179,37 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
     .find((entry) => entry.slug === womenPage && !WOMEN_BUILT_IN_PAGES.has(entry.slug));
   const women = c.kind === 'women';
   if (women && !WOMEN_BUILT_IN_PAGES.has(womenPage) && !customPage) return <NotFoundContent lang={lang} />;
+
+  const OWN = ['home', 'about', 'organization', 'initiatives', 'activities', 'success', 'news', 'archive', 'contact'];
+  if (women && OWN.includes(womenPage)) {
+    return (
+      <div className="women-theme">
+        <div className="mx-auto max-w-6xl px-4 py-6">
+          <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
+            <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
+            <span className="mx-1.5">›</span>
+            {womenPage === 'home' ? <span className="text-ink">{c.name}</span> : <><Link href={href('/committees/women')} className="hover:text-primary">{c.name}</Link></>}
+          </nav>
+          {womenPage === 'home' && (
+            <header className="relative mb-6 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
+              <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
+              <div className="relative grid items-center gap-6 p-6 md:grid-cols-[auto,1fr] md:p-10">
+                <img src={c.logoUrl ? fileUrl(c.logoUrl) : '/brand/women-committee-icon.svg'} alt={c.name} className="mx-auto h-40 w-auto max-w-[12rem] object-contain md:h-48" />
+                <div className="min-w-0 text-center md:text-start">
+                  <h1 className="text-2xl font-extrabold leading-snug md:text-4xl">{c.name}</h1>
+                  <p className="mt-2 text-base font-semibold text-accent">{loc('women', 'tagline') || t('women.tagline')}</p>
+                  {c.chairName && <p className="mt-3 text-sm text-white/75">{t('cm.chair')}: <b className="text-white">{c.chairName}</b></p>}
+                  {c.summary && <p className="mt-4 max-w-3xl leading-7 text-white/85">{c.summary}</p>}
+                </div>
+              </div>
+              <div className="h-1.5 bg-gradient-to-r from-transparent via-accent to-transparent" aria-hidden="true" />
+            </header>
+          )}
+          <WomenPages c={c} page={womenPage} reload={() => load(true)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={women ? 'women-theme' : undefined}>
