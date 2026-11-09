@@ -5,9 +5,9 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 /**
- * Opening animation, shown every time the site is opened or reloaded (not on in-app page changes: the layout stays mounted).
+ * Opening animation, shown only on the visitor's first visit to this browser.
  *
- *  1. A full-page cover in the main colour hides everything (it is already in the server HTML, so nothing flashes).
+ *  1. On a first visit, a full-page cover in the main colour hides the site while its branding loads.
  *  2. Once the logo, the site name and the font are ready: the logo fades in and the name is written slowly in the middle.
  *  3. The name (and logo) then expand. The name is a cut-out in the cover, so the site shows through the gaps of the
  *     letters while they grow, and in the end the cover clears completely.
@@ -24,6 +24,7 @@ const HOLD_MS = 250;
 const EXPAND_MS = 900;
 const MAX_SCALE = 20;
 const MAX_WAIT_MS = 4500; // never keep the visitor waiting for assets longer than this
+const SEEN_KEY = 'news-site-intro-seen';
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -71,7 +72,8 @@ export function IntroSplash() {
   const [assets, setAssets] = useState<{ name: string; logo: string }>({ name: '', logo: '' });
   const [fade, setFade] = useState(false);
   const [done, setDone] = useState(false);
-  const [blocking, setBlocking] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   const underRef = useRef<SVGRectElement>(null);
   const coverRef = useRef<SVGRectElement>(null);
@@ -83,6 +85,18 @@ export function IntroSplash() {
   // 1. wait for the colours, the settings, the logo and the font; then decide how to play
   useEffect(() => {
     let dead = false;
+    let seen = false;
+    try {
+      seen = localStorage.getItem(SEEN_KEY) === 'true';
+    } catch (error) {
+      console.error('Unable to check whether the intro animation was already shown.', error);
+    }
+    if (seen) {
+      setDone(true);
+      return;
+    }
+    setStarted(true);
+    setBlocking(true);
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     document.documentElement.style.overflow = 'hidden';
     (async () => {
@@ -105,6 +119,15 @@ export function IntroSplash() {
     })();
     return () => { dead = true; document.documentElement.style.overflow = ''; };
   }, [lang]);
+
+  useEffect(() => {
+    if (!done || !started) return;
+    try {
+      localStorage.setItem(SEEN_KEY, 'true');
+    } catch (error) {
+      console.error('Unable to remember that the intro animation was shown.', error);
+    }
+  }, [done, started]);
 
   // the cover just fades (reduced motion / nothing to show)
   useEffect(() => {
@@ -158,6 +181,8 @@ export function IntroSplash() {
   if (done) return null;
   const common = 'fixed inset-0 z-[2147483000]';
   const style = { background: 'var(--primary)', pointerEvents: blocking ? ('auto' as const) : ('none' as const) };
+
+  if (!started) return <div id="splash" aria-hidden="true" className={`${common} pointer-events-none opacity-0`} />;
 
   if (!geo) {
     return <div id="splash" aria-hidden="true" className={`${common} transition-opacity duration-500 ${fade ? 'opacity-0' : ''}`} style={style} />;

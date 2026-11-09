@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -9,7 +9,7 @@ import { fileUrl } from '@/lib/api';
 import { SiteProvider, useSite } from '@/components/site/site-context';
 import { BackToTop } from '@/components/site/shell';
 import { SocialIcon } from '@/components/site/icons';
-import { readBrandedPageLinks } from '@/lib/branded-page-links';
+import { readWomenMenu, womenPageHref, type WomenMenuEntry } from '@/lib/women-menu';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -21,13 +21,6 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const { s, loc, img } = useSite();
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('about');
-  useEffect(() => {
-    const sync = () => setActiveSection(window.location.hash.slice(1) || 'about');
-    sync();
-    window.addEventListener('hashchange', sync);
-    return () => window.removeEventListener('hashchange', sync);
-  }, []);
   const color = (key: string, fallback: string) => {
     const value = String(s('women', key) ?? '');
     return HEX.test(value) ? value : fallback;
@@ -47,7 +40,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
     '--header-bg': header,
     '--footer-bg': footer,
   } as React.CSSProperties;
-  const links = readBrandedPageLinks(s('women', 'page_links'), 'women');
+  const links = readWomenMenu(s('women', 'page_links'));
   const logo = img('women', 'logo');
   const name = loc('women', 'name') || (lang === 'ar' ? 'لجنة سيدات الأعمال' : 'Women Business Committee');
   const tagline = loc('women', 'tagline');
@@ -59,10 +52,14 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
     await logout();
     router.push(href('/'));
   };
-  const active = (to: string) => {
-    const [path, hash] = to.split('#');
-    return pathname.endsWith(path) && (hash ? activeSection === hash : activeSection === 'about');
-  };
+  const label = (entry: Extract<WomenMenuEntry, { type: 'page' }>) => (lang === 'ar' ? entry.labelAr : entry.labelEn) || entry.labelAr || entry.labelEn;
+  const pageLink = (entry: Extract<WomenMenuEntry, { type: 'page' }>, className: string) => (
+    <Link href={href(womenPageHref(entry.slug))} target={entry.newTab ? '_blank' : undefined} rel={entry.newTab ? 'noopener noreferrer' : undefined} onClick={() => setOpen(false)} key={entry.slug} className={className}>{label(entry)}</Link>
+  );
+  const navClass = 'shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15 hover:text-accent';
+  const footerClass = 'rounded-lg px-2 py-1 text-sm text-white/80 transition hover:text-accent';
+  const navEntries = links.navigation.filter((entry) => entry.isActive !== false);
+  const footerEntries = links.footer.filter((entry) => entry.isActive !== false);
 
   return (
     <div style={theme} className="min-h-screen bg-canvas text-ink">
@@ -73,7 +70,14 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
           <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 overflow-x-auto lg:flex">
-            {links.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition hover:bg-white/15 ${active(link.href) ? 'bg-white/15 text-accent' : 'text-white/90'}`}>{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+            {navEntries.map((entry, index) => entry.type === 'page'
+              ? pageLink(entry, navClass)
+              : <div key={`nav-group-${index}`} className="group relative">
+                <button type="button" className={`${navClass} flex items-center gap-1`}>{lang === 'ar' ? entry.titleAr : entry.titleEn}<span aria-hidden="true">⌄</span></button>
+                <div className="invisible absolute start-0 top-full z-50 min-w-56 translate-y-1 rounded-xl bg-white p-2 text-ink opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                  {entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-lg px-3 py-2 text-sm hover:bg-primary/10 hover:text-primary'))}
+                </div>
+              </div>)}
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} className="hidden rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold hover:bg-white/15 md:inline-block">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
@@ -92,8 +96,13 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <button type="button" aria-label="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-lg border border-white/30 px-2.5 py-1.5 text-lg leading-none lg:hidden">☰</button>
           </div>
         </div>
-        {open && <nav className="border-t border-white/15 px-4 pb-3 lg:hidden" onClick={() => setOpen(false)}>
-          {links.navigation.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+        {open && <nav className="border-t border-white/15 px-4 pb-3 lg:hidden">
+          {navEntries.map((entry, index) => entry.type === 'page'
+            ? pageLink(entry, 'block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10')
+            : <details key={`mobile-group-${index}`} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{lang === 'ar' ? entry.titleAr : entry.titleEn}<span aria-hidden="true">⌄</span></summary>
+              <div className="ps-3">{entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, 'block rounded-lg px-3 py-2 text-sm hover:bg-white/10'))}</div>
+            </details>)}
           <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
           {me && <div className="mt-2 border-t border-white/15 pt-2">
             <div className="flex items-center gap-2 px-3 py-2 text-sm font-bold">
@@ -115,8 +124,13 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             {tagline && <p className="mt-1 text-white/75">{tagline}</p>}
             {footerText && <p className="mt-2 max-w-xl leading-6 text-white/75">{footerText}</p>}
           </div>
-          <div className="flex flex-wrap gap-4">
-            {links.footer.filter((link) => link.isActive !== false).map((link, index) => <Link key={`${link.href}-${index}`} href={href(link.href)} className="hover:text-accent">{(lang === 'ar' ? link.labelAr : link.labelEn) || link.labelAr || link.labelEn}</Link>)}
+          <div className="flex flex-wrap items-start gap-3">
+            {footerEntries.map((entry, index) => entry.type === 'page'
+              ? pageLink(entry, footerClass)
+              : <details key={`footer-group-${index}`} className="min-w-36">
+                <summary className="cursor-pointer rounded-lg px-2 py-1 text-sm font-semibold text-white hover:text-accent">{lang === 'ar' ? entry.titleAr : entry.titleEn}</summary>
+                <div className="mt-1 flex flex-col ps-2">{entry.items.filter((item) => item.isActive !== false).map((item) => pageLink(item, footerClass))}</div>
+              </details>)}
             <Link href={href('/')} className="text-accent hover:underline">{lang === 'ar' ? 'موقع الغرفة' : 'Chamber website'}</Link>
           </div>
           {(s('women', 'contact_phone') || s('women', 'contact_email') || s('women', 'contact_website') || socialKeys.some((key) => s('women', `social_${key}`))) && <div className="flex flex-wrap items-center gap-3 text-xs">

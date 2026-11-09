@@ -32,6 +32,7 @@ import { PagesAdmin } from '@/components/admin/pages-admin';
 import { ServicesAdmin } from '@/components/admin/services-admin';
 import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
 import { TrainersAdmin } from '@/components/admin/trainers-admin';
+import { WomenMenuAdmin } from '@/components/admin/women-menu-admin';
 
 /** what each tab shows: "<hub>.<tab>" (the data about hubs and tabs - names, permissions - lives in lib/hubs-meta.ts) */
 const SCREENS: Record<string, () => React.ReactNode> = {
@@ -47,7 +48,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'media.gallery': () => <GalleryAdmin />,
   'occasions.events': () => <OccasionsAdmin />,
   'women.content': () => <CommitteesAdmin kind="women" />,
-  'women.links': () => <BrandedPageLinksAdmin page="women" />,
+  'women.links': () => <WomenMenuAdmin />,
   'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
   'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,

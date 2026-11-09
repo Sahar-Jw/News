@@ -36,7 +36,7 @@ export default async function LangLayout({ children, params }: { children: React
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>
-              {/* opening animation: covers the page in the main colour on every (re)open, then reveals the site */}
+              {/* first-visit opening animation with the configured site logo */}
               <IntroSplash />
               <Suspense fallback={null}><NavigationLoader /></Suspense>
               {children}

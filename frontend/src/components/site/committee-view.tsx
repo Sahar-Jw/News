@@ -8,6 +8,7 @@ import { fmtDate, fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 import { ContactIcon, SocialIcon } from './icons';
+import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
 
 interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean }
@@ -110,7 +111,7 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
  * `path` is the API path of the committee ("/public/committees/3" or "/public/committees/women").
  * News shown here are the ones linked to the committee (content_links): nothing is typed twice.
  */
-export function CommitteeView({ path }: { path: string }) {
+export function CommitteeView({ path, womenPage = 'home' }: { path: string; womenPage?: string }) {
   const { lang, t, href } = useI18n();
   const { loc, s } = useSite();
   const [c, setC] = useState<CommitteeData | null>(null);
@@ -138,17 +139,7 @@ export function CommitteeView({ path }: { path: string }) {
 
   const tabs = useMemo(() => {
     if (!c) return [];
-    if (c.kind === 'women') return [
-      { key: 'overview', show: true },
-      { key: 'organization', show: true },
-      { key: 'initiatives', show: true },
-      { key: 'activities', show: true },
-      { key: 'success', show: true },
-      { key: 'news', show: true },
-      { key: 'archive', show: true },
-      { key: 'media', show: (c.gallery ?? []).length > 0 },
-      { key: 'contact', show: true },
-    ];
+    if (c.kind === 'women') return [];
     return [
       { key: 'overview', show: true },
       { key: 'members', show: c.members.length > 0 },
@@ -178,7 +169,12 @@ export function CommitteeView({ path }: { path: string }) {
   const womenActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? [])].filter((activity) => !isArchived(activity));
   const womenInitiatives = c.initiatives.filter((activity) => !isArchived(activity));
   const archived = allActivities.filter(isArchived);
+  const womenMenu = readWomenMenu(s('women', 'page_links'));
+  const customPage = [...womenMenu.navigation, ...womenMenu.footer]
+    .flatMap((entry) => entry.type === 'page' ? [entry] : entry.items)
+    .find((entry) => entry.slug === womenPage && !WOMEN_BUILT_IN_PAGES.has(entry.slug));
   const women = c.kind === 'women';
+  if (women && !WOMEN_BUILT_IN_PAGES.has(womenPage) && !customPage) return <NotFoundContent lang={lang} />;
 
   return (
     <div className={women ? 'women-theme' : undefined}>
@@ -228,13 +224,13 @@ export function CommitteeView({ path }: { path: string }) {
       </header>
       )}
 
-      <div role="tablist" className="my-5 flex flex-wrap gap-2">
+      {tabs.length > 0 && <div role="tablist" className="my-5 flex flex-wrap gap-2">
         {tabs.map((x) => (
           <button key={x.key} role="tab" aria-selected={tab === x.key} onClick={() => { setTab(x.key); if (women) window.history.replaceState(null, '', `#${x.key === 'overview' ? 'about' : x.key}`); }} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === x.key ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-ink/80 hover:bg-primary/20'}`}>{t(`cm.tab.${x.key}`)}</button>
         ))}
-      </div>
+      </div>}
 
-      {tab === 'overview' && (
+      {tab === 'overview' && (!women || womenPage === 'home') && (
         <div id={women ? 'overview' : undefined} className="scroll-mt-24 space-y-5">
           {women && (vision || mission || goals.length > 0) && <div className="grid gap-4 md:grid-cols-3">
             {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
@@ -248,17 +244,29 @@ export function CommitteeView({ path }: { path: string }) {
           {c.members.length > 0 && <Box><Heading>{t('cm.tab.members')}</Heading><MemberGrid members={c.members.slice(0, 6)} /></Box>}
         </div>
       )}
-      {women && tab === 'organization' && <div id="organization" className="scroll-mt-24 space-y-5">
+      {women && womenPage === 'about' && <div className="space-y-5">
+        <Box><Heading>{t('women.about')}</Heading><div className="whitespace-pre-line text-sm leading-8 text-ink/80">{c.summary}</div></Box>
+        {(vision || mission || goals.length > 0) && <div className="grid gap-4 md:grid-cols-3">
+          {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
+          {mission && <Box><Heading>{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{mission}</p></Box>}
+          {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-6 text-ink/80">{goals.map((goal, index) => <li key={`${goal}-${index}`}>{goal}</li>)}</ul></Box>}
+        </div>}
+      </div>}
+      {women && womenPage === 'organization' && <div id="organization" className="scroll-mt-24 space-y-5">
         <Box><Heading>{t('women.organization')}</Heading>
           {structure && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-ink/80">{structure}</p>}
           {c.duties && <><h3 className="mb-2 font-bold text-secondary">{t('women.duties')}</h3><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></>}
           <div className="mt-5"><MemberGrid members={c.members} /></div>
         </Box>
       </div>}
-      {women && tab === 'activities' && <div id="activities" className="scroll-mt-24"><Box><Heading>{t('women.activities')}</Heading><ActivityList items={womenActivities} empty={t('cm.noContent')} /></Box></div>}
-      {women && tab === 'success' && <div id="success" className="scroll-mt-24"><Box><Heading>{t('women.success')}</Heading><ActivityList items={c.successStories ?? []} empty={t('cm.noContent')} /></Box></div>}
-      {women && tab === 'archive' && <div id="archive" className="scroll-mt-24"><Box><Heading>{t('women.archive')}</Heading><ActivityList items={archived} empty={t('cm.noContent')} /></Box></div>}
-      {women && tab === 'contact' && <div id="contact" className="scroll-mt-24">
+      {women && womenPage === 'activities' && <div id="activities" className="scroll-mt-24"><Box><Heading>{t('women.activities')}</Heading><ActivityList items={womenActivities} empty={t('cm.noContent')} /></Box></div>}
+      {women && womenPage === 'success' && <div id="success" className="scroll-mt-24"><Box><Heading>{t('women.success')}</Heading><ActivityList items={c.successStories ?? []} empty={t('cm.noContent')} /></Box></div>}
+      {women && womenPage === 'archive' && <div id="archive" className="scroll-mt-24"><Box><Heading>{t('women.archive')}</Heading><ActivityList items={archived} empty={t('cm.noContent')} /></Box></div>}
+      {women && womenPage === 'news' && <div id="news" className="scroll-mt-24"><Box><Heading>{t('women.news')}</Heading><NewsList items={c.news} /></Box></div>}
+      {women && womenPage === 'media' && <div id="media" className="scroll-mt-24"><Box><Heading>{t('women.media')}</Heading>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{c.gallery.map((g) => <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">{g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}<span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}</span></Link>)}</div>
+      </Box></div>}
+      {women && womenPage === 'contact' && <div id="contact" className="scroll-mt-24">
         <Box><Heading>{t('women.contact')}</Heading>
           <div className="grid gap-3 sm:grid-cols-2">
             {s('women', 'contact_phone') && <a href={`tel:${String(s('women', 'contact_phone')).replace(/[^\d+]/g, '')}`} className="flex items-center gap-3 rounded-xl border border-line p-4 hover:border-primary"><ContactIcon name="phone" size={18} /><bdi dir="ltr">{s('women', 'contact_phone')}</bdi></a>}
@@ -273,6 +281,7 @@ export function CommitteeView({ path }: { path: string }) {
           </div>
         </Box>
       </div>}
+      {customPage && <Box><Heading>{lang === 'ar' ? customPage.labelAr : customPage.labelEn}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/80">{lang === 'ar' ? customPage.bodyAr : customPage.bodyEn}</p></Box>}
       {tab === 'members' && <div id="members" className="scroll-mt-24"><Box><MemberGrid members={c.members} /></Box></div>}
       {tab === 'duties' && <div id="duties" className="scroll-mt-24"><Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box></div>}
       {tab === 'news' && <div id="news" className="scroll-mt-24"><Box><NewsList items={c.news} /></Box></div>}
@@ -298,9 +307,9 @@ export function CommitteeView({ path }: { path: string }) {
           </div>
         </Box></div>
       )}
-      {tab === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><Heading>{t('women.initiatives')}</Heading><ActivityList items={womenInitiatives} empty={t('cm.noContent')} /></Box></div>}
+      {women && womenPage === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><Heading>{t('women.initiatives')}</Heading><ActivityList items={womenInitiatives} empty={t('cm.noContent')} /></Box></div>}
 
-      <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>
+      {!women && <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>}
     </div>
     </div>
   );
