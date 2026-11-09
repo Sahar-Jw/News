@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { Brackets, In, Not, Repository } from 'typeorm';
 import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
@@ -13,6 +13,7 @@ import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { Gallery } from '../gallery/gallery.entity';
 import { News } from '../news/news.entity';
+import { SiteSetting } from '../settings/site-setting.entity';
 import { applyEligibility } from '../news/news.eligibility';
 import { ActivityKind, CommitteeKind, MEMBER_ROLES, MemberRole } from './committee.entity';
 import { CommitteeAdminQueryDto, CreateActivityDto, CreateCommitteeDto, CreateMemberDto, UpdateActivityDto, UpdateCommitteeDto, UpdateMemberDto } from './committees.dto';
@@ -23,7 +24,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const COMMITTEE_CODES = [CC.COMMITTEE, CC.WOMEN_COMMITTEE] as string[];
 const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE : CC.COMMITTEE);
 const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
-const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE] as string[];
+const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE, CC.COMMITTEE_SUCCESS] as string[];
 const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
 const activityKind = (code: string) => code.replace(/^COMMITTEE_/, '').toLowerCase() as ActivityKind;
 
@@ -48,6 +49,7 @@ export class CommitteesService {
     private readonly store: ContentStore,
     @InjectRepository(News) private readonly news: Repository<News>,
     @InjectRepository(Gallery) private readonly galleries: Repository<Gallery>,
+    @InjectRepository(SiteSetting) private readonly settings: Repository<SiteSetting>,
     private readonly links: ContentLinksService,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
@@ -71,7 +73,11 @@ export class CommitteesService {
     return { id: r.id, committeeId: Number(r.x.parentId), role: (r.x.role ?? 'member') as MemberRole, nameAr: r.title, nameEn: s(r.x.nameEn), titleAr: s(r.x.titleAr), titleEn: s(r.x.titleEn), photoUrl: this.storage.url(r.images[0] ?? null), sortOrder: sortOf(r) };
   }
   private activityView(r: Rec) {
-    return { id: r.id, committeeId: Number(r.x.parentId), kind: activityKind(r.code), titleAr: r.title, titleEn: s(r.x.titleEn), bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn), eventDate: (r.x.eventDate ?? null) as string | null };
+    return {
+      id: r.id, committeeId: Number(r.x.parentId), kind: activityKind(r.code), titleAr: r.title, titleEn: s(r.x.titleEn),
+      bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn), goalsAr: s(r.x.goalsAr), goalsEn: s(r.x.goalsEn),
+      resultsAr: s(r.x.resultsAr), resultsEn: s(r.x.resultsEn), eventDate: (r.x.eventDate ?? null) as string | null,
+    };
   }
 
   private async mustFind(id: number) {
@@ -214,7 +220,12 @@ export class CommitteesService {
     const c = await this.mustFind(committeeId);
     const r = await this.store.create(activityCode(dto.kind), {
       title: dto.titleAr.trim(), body: sanitizeRichText(dto.bodyAr),
-      x: { parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn), eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null },
+      x: {
+        parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn),
+        goalsAr: sanitizeRichText(dto.goalsAr), goalsEn: sanitizeRichText(dto.goalsEn),
+        resultsAr: sanitizeRichText(dto.resultsAr), resultsEn: sanitizeRichText(dto.resultsEn),
+        eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null,
+      },
     });
     await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
     return this.activityView(r);
@@ -227,6 +238,10 @@ export class CommitteesService {
       code: dto.kind !== undefined ? activityCode(dto.kind) : undefined, title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
       x: {
         titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
+        goalsAr: dto.goalsAr === undefined ? undefined : sanitizeRichText(dto.goalsAr),
+        goalsEn: dto.goalsEn === undefined ? undefined : sanitizeRichText(dto.goalsEn),
+        resultsAr: dto.resultsAr === undefined ? undefined : sanitizeRichText(dto.resultsAr),
+        resultsEn: dto.resultsEn === undefined ? undefined : sanitizeRichText(dto.resultsEn),
         eventDate: dto.eventDate === undefined ? undefined : dto.eventDate ? dto.eventDate.slice(0, 10) : null,
       },
     });
@@ -290,7 +305,11 @@ export class CommitteesService {
   async publicWomen(lang: string) {
     const c = (await this.store.list(CC.WOMEN_COMMITTEE)).filter(isActive).sort(by((r) => sortOf(r), (r) => r.id))[0];
     if (!c) throw new NotFoundException('اللجنة غير موجودة');
-    return this.detail(c, lang);
+    const categorySetting = await this.settings.findOne({ where: { category: 'women', key: `news_category_${lang === 'en' ? 'en' : 'ar'}` } });
+    const categories = lang === 'en'
+      ? [categorySetting?.value || 'Businesswomen']
+      : [...new Set([categorySetting?.value || 'سيدات الأعمال', 'سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال'])];
+    return this.detail(c, lang, categories);
   }
 
   async publicOne(id: number, lang: string) {
@@ -299,17 +318,23 @@ export class CommitteesService {
     return this.detail(c, lang);
   }
 
-  private async detail(c: Rec, lang: string) {
+  private async detail(c: Rec, lang: string, newsCategories?: string[]) {
     const en = lang === 'en';
     const [members, acts, newsIds] = await Promise.all([this.membersOf(c.id), this.activitiesOf(c.id), this.links.newsIdsOf('committee', c.id)]);
     const rank = (r: unknown) => MEMBER_ROLES.indexOf(r as MemberRole);
     const t = today();
     const act = ({ r, v }: { r: Rec; v: ReturnType<CommitteesService['activityView']> }) => ({
-      id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en), eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t,
+      id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en),
+      goals: pick(r.x.goalsAr, r.x.goalsEn, en), results: pick(r.x.resultsAr, r.x.resultsEn, en),
+      eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t,
     });
     let newsList: unknown[] = [];
-    if (newsIds.length) {
-      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...newsIds)', { newsIds });
+    if (newsIds.length || newsCategories?.length) {
+      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']);
+      qb.where(new Brackets((b) => {
+        if (newsIds.length) b.where('n.id IN (:...newsIds)', { newsIds });
+        if (newsCategories?.length) b.orWhere('(n.mainCategory IN (:...newsCategories) AND n.mainCategory NOT IN (:...reserved))', { newsCategories, reserved: RESERVED_CATEGORY_CODES });
+      }));
       applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
       qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(30);
       newsList = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
@@ -332,6 +357,7 @@ export class CommitteesService {
       outputs: byKind('output'),
       events: byKind('event'),
       initiatives: byKind('initiative'),
+      successStories: byKind('success'),
       news: newsList,
       gallery,
       videos,

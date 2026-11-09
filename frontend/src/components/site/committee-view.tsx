@@ -7,15 +7,16 @@ import { useSite } from '@/components/site/site-context';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
+import { ContactIcon, SocialIcon } from './icons';
 
 interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
-interface Activity { id: number; kind: string; title: string; body: string; eventDate: string | null; upcoming: boolean }
+interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean }
 interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
 interface Video { id: number; title: string; youtubeId: string; cover: string | null }
 interface Album { id: number; title: string; cover: string | null; count: number }
 export interface CommitteeData {
   id: number; kind: string; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null; duties: string;
-  members: Member[]; meetings: Activity[]; visits?: Activity[]; recommendations: Activity[]; outputs?: Activity[]; events?: Activity[]; initiatives: Activity[]; news: NewsItem[]; gallery: Album[]; videos?: Video[];
+  members: Member[]; meetings: Activity[]; visits?: Activity[]; recommendations: Activity[]; outputs?: Activity[]; events?: Activity[]; initiatives: Activity[]; successStories?: Activity[]; news: NewsItem[]; gallery: Album[]; videos?: Video[];
 }
 
 const Heading = ({ children }: { children: React.ReactNode }) => <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{children}</h2>;
@@ -95,6 +96,8 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
           </div>
           <h3 className="mt-2 font-bold text-secondary">{a.title}</h3>
           {a.body && <div className="prose-news mt-2" dangerouslySetInnerHTML={{ __html: a.body }} />}
+          {a.goals && <div className="mt-3 rounded-lg bg-primary/5 p-3"><h4 className="text-sm font-bold text-secondary">{t('women.goals')}</h4><div className="prose-news mt-1" dangerouslySetInnerHTML={{ __html: a.goals }} /></div>}
+          {a.results && <div className="mt-3 rounded-lg bg-accent/10 p-3"><h4 className="text-sm font-bold text-secondary">{t('women.results')}</h4><div className="prose-news mt-1" dangerouslySetInnerHTML={{ __html: a.results }} /></div>}
         </li>
       ))}
     </ul>
@@ -109,7 +112,7 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
  */
 export function CommitteeView({ path }: { path: string }) {
   const { lang, t, href } = useI18n();
-  const { loc } = useSite();
+  const { loc, s } = useSite();
   const [c, setC] = useState<CommitteeData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   const [tab, setTab] = useState('overview');
@@ -123,7 +126,7 @@ export function CommitteeView({ path }: { path: string }) {
     const syncHash = () => {
       const hash = window.location.hash.slice(1);
       const next = hash === 'about' ? 'overview' : hash;
-      if (['overview', 'members', 'duties', 'news', 'meetings', 'visits', 'recommendations', 'outputs', 'events', 'initiatives', 'media', 'videos'].includes(next)) {
+      if (['overview', 'organization', 'duties', 'news', 'meetings', 'visits', 'recommendations', 'outputs', 'events', 'activities', 'initiatives', 'success', 'archive', 'media', 'videos', 'contact'].includes(next)) {
         setTab(next);
         requestAnimationFrame(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       }
@@ -135,6 +138,17 @@ export function CommitteeView({ path }: { path: string }) {
 
   const tabs = useMemo(() => {
     if (!c) return [];
+    if (c.kind === 'women') return [
+      { key: 'overview', show: true },
+      { key: 'organization', show: true },
+      { key: 'initiatives', show: true },
+      { key: 'activities', show: true },
+      { key: 'success', show: true },
+      { key: 'news', show: true },
+      { key: 'archive', show: true },
+      { key: 'media', show: (c.gallery ?? []).length > 0 },
+      { key: 'contact', show: true },
+    ];
     return [
       { key: 'overview', show: true },
       { key: 'members', show: c.members.length > 0 },
@@ -153,7 +167,17 @@ export function CommitteeView({ path }: { path: string }) {
 
   if (state === 'load') return <Center><Spinner /></Center>;
   if (state === '404' || !c) return <NotFoundContent lang={lang} />;
+  const allActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? []), ...c.recommendations, ...(c.outputs ?? []), ...c.initiatives, ...(c.successStories ?? [])];
   const upcoming = [...c.meetings, ...(c.events ?? [])].filter((m) => m.upcoming).sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
+  const vision = loc('women', 'vision');
+  const mission = loc('women', 'mission');
+  const goals = loc('women', 'goals').split(/\r?\n/).map((goal) => goal.trim()).filter(Boolean);
+  const structure = loc('women', 'structure');
+  const today = new Date().toISOString().slice(0, 10);
+  const isArchived = (activity: Activity) => !!activity.eventDate && activity.eventDate < today;
+  const womenActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? [])].filter((activity) => !isArchived(activity));
+  const womenInitiatives = c.initiatives.filter((activity) => !isArchived(activity));
+  const archived = allActivities.filter(isArchived);
   const women = c.kind === 'women';
 
   return (
@@ -212,6 +236,11 @@ export function CommitteeView({ path }: { path: string }) {
 
       {tab === 'overview' && (
         <div id={women ? 'overview' : undefined} className="scroll-mt-24 space-y-5">
+          {women && (vision || mission || goals.length > 0) && <div className="grid gap-4 md:grid-cols-3">
+            {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
+            {mission && <Box><Heading>{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{mission}</p></Box>}
+            {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-6 text-ink/80">{goals.map((goal, index) => <li key={`${goal}-${index}`}>{goal}</li>)}</ul></Box>}
+          </div>}
           <div className="grid gap-5 md:grid-cols-2">
             <Box><Heading>{t('cm.latestNews')}</Heading><NewsList items={c.news} limit={3} /></Box>
             <Box><Heading>{t('cm.upcomingMeetings')}</Heading><ActivityList items={upcoming.slice(0, 3)} empty={t('cm.noContent')} /></Box>
@@ -219,6 +248,31 @@ export function CommitteeView({ path }: { path: string }) {
           {c.members.length > 0 && <Box><Heading>{t('cm.tab.members')}</Heading><MemberGrid members={c.members.slice(0, 6)} /></Box>}
         </div>
       )}
+      {women && tab === 'organization' && <div id="organization" className="scroll-mt-24 space-y-5">
+        <Box><Heading>{t('women.organization')}</Heading>
+          {structure && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-ink/80">{structure}</p>}
+          {c.duties && <><h3 className="mb-2 font-bold text-secondary">{t('women.duties')}</h3><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></>}
+          <div className="mt-5"><MemberGrid members={c.members} /></div>
+        </Box>
+      </div>}
+      {women && tab === 'activities' && <div id="activities" className="scroll-mt-24"><Box><Heading>{t('women.activities')}</Heading><ActivityList items={womenActivities} empty={t('cm.noContent')} /></Box></div>}
+      {women && tab === 'success' && <div id="success" className="scroll-mt-24"><Box><Heading>{t('women.success')}</Heading><ActivityList items={c.successStories ?? []} empty={t('cm.noContent')} /></Box></div>}
+      {women && tab === 'archive' && <div id="archive" className="scroll-mt-24"><Box><Heading>{t('women.archive')}</Heading><ActivityList items={archived} empty={t('cm.noContent')} /></Box></div>}
+      {women && tab === 'contact' && <div id="contact" className="scroll-mt-24">
+        <Box><Heading>{t('women.contact')}</Heading>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {s('women', 'contact_phone') && <a href={`tel:${String(s('women', 'contact_phone')).replace(/[^\d+]/g, '')}`} className="flex items-center gap-3 rounded-xl border border-line p-4 hover:border-primary"><ContactIcon name="phone" size={18} /><bdi dir="ltr">{s('women', 'contact_phone')}</bdi></a>}
+            {s('women', 'contact_email') && <a href={`mailto:${s('women', 'contact_email')}`} className="flex items-center gap-3 rounded-xl border border-line p-4 hover:border-primary"><ContactIcon name="email" size={18} /><bdi dir="ltr">{s('women', 'contact_email')}</bdi></a>}
+            {s('women', 'contact_website') && <a href={s('women', 'contact_website')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-line p-4 hover:border-primary"><ContactIcon name="website" size={18} />{t('site.website')}</a>}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'].map((key) => {
+              const url = s('women', `social_${key}`);
+              return url ? <a key={key} href={url} target="_blank" rel="noopener noreferrer" aria-label={key.replace('_url', '')} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white"><SocialIcon name={key} size={17} /></a> : null;
+            })}
+          </div>
+        </Box>
+      </div>}
       {tab === 'members' && <div id="members" className="scroll-mt-24"><Box><MemberGrid members={c.members} /></Box></div>}
       {tab === 'duties' && <div id="duties" className="scroll-mt-24"><Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box></div>}
       {tab === 'news' && <div id="news" className="scroll-mt-24"><Box><NewsList items={c.news} /></Box></div>}
@@ -244,7 +298,7 @@ export function CommitteeView({ path }: { path: string }) {
           </div>
         </Box></div>
       )}
-      {tab === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><ActivityList items={c.initiatives} empty={t('cm.noContent')} /></Box></div>}
+      {tab === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><Heading>{t('women.initiatives')}</Heading><ActivityList items={womenInitiatives} empty={t('cm.noContent')} /></Box></div>}
 
       <p className="mt-5 text-sm text-gray-500">⟲ {t('cm.archiveNote')}</p>
     </div>

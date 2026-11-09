@@ -12,18 +12,18 @@ import { RequirePerm } from '@/components/admin/guard';
 import { RichEditor } from '@/components/admin/rich-editor';
 
 interface Member { id: number; role: string; nameAr: string; nameEn: string; titleAr: string; titleEn: string; photoUrl: string | null; sortOrder: number }
-interface Activity { id: number; kind: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; eventDate: string | null }
+interface Activity { id: number; kind: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; goalsAr: string; goalsEn: string; resultsAr: string; resultsEn: string; eventDate: string | null }
 interface LinkedNews { id: number; title: string; publishAt: string | null }
 interface Row { id: number; kind: string; nameAr: string; nameEn: string; summaryAr: string; summaryEn: string; dutiesAr: string; dutiesEn: string; chairNameAr: string; chairNameEn: string; activityTagsAr: string; activityTagsEn: string; logoUrl: string | null; sortOrder: number; isActive: boolean }
 interface Full extends Row { members: Member[]; activities: Activity[]; news: LinkedNews[] }
 type Draft = Omit<Row, 'id' | 'sortOrder'> & { id?: number; sortOrder: string };
 
 const KINDS = ['sector', 'women'];
-const ROLES = ['chair', 'vice', 'member'];
-const ACTS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative'];
+const ROLES = ['chair', 'secretary', 'vice', 'member'];
+const ACTS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative', 'success'];
 const EMPTY: Draft = { kind: 'sector', nameAr: '', nameEn: '', summaryAr: '', summaryEn: '', dutiesAr: '', dutiesEn: '', chairNameAr: '', chairNameEn: '', activityTagsAr: '', activityTagsEn: '', logoUrl: null, sortOrder: '0', isActive: true };
 const EMPTY_MEMBER = { role: 'member', nameAr: '', nameEn: '', titleAr: '', titleEn: '', sortOrder: '0' };
-const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyEn: '', eventDate: '' };
+const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyEn: '', goalsAr: '', goalsEn: '', resultsAr: '', resultsEn: '', eventDate: '' };
 
 /** Committees (sector + businesswomen): details, members, activities (meetings, visits, recommendations, initiatives) and linked news. */
 export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
@@ -134,7 +134,13 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
   const saveActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aDraft || !draft?.id) return;
-    const body = { kind: aDraft.kind, titleAr: aDraft.titleAr.trim(), titleEn: aDraft.titleEn.trim() || null, bodyAr: aDraft.bodyAr || null, bodyEn: aDraft.bodyEn || null, eventDate: aDraft.eventDate || null };
+    const body = {
+      kind: aDraft.kind, titleAr: aDraft.titleAr.trim(), titleEn: aDraft.titleEn.trim() || null,
+      bodyAr: aDraft.bodyAr || null, bodyEn: aDraft.bodyEn || null,
+      goalsAr: aDraft.goalsAr || null, goalsEn: aDraft.goalsEn || null,
+      resultsAr: aDraft.resultsAr || null, resultsEn: aDraft.resultsEn || null,
+      eventDate: aDraft.eventDate || null,
+    };
     try {
       await api(aDraft.id ? `/admin/committees/activities/${aDraft.id}` : `/admin/committees/${draft.id}/activities`, { method: aDraft.id ? 'PATCH' : 'POST', body });
       toast(t('app.saved'));
@@ -265,13 +271,19 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
                 {aDraft && (
                   <form onSubmit={saveActivity} className="space-y-3 rounded-xl border border-line p-3">
                     <div className="grid gap-3 md:grid-cols-2">
-                      <Field label={t('cm.actKind')}><select className={inputCls} value={aDraft.kind} onChange={(e) => setADraft({ ...aDraft, kind: e.target.value })}>{ACTS.filter((k) => k !== 'initiative' || draft.kind === 'women').map((k) => <option key={k} value={k}>{t(`cm.act.${k}`)}</option>)}</select></Field>
+                      <Field label={t('cm.actKind')}><select className={inputCls} value={aDraft.kind} onChange={(e) => setADraft({ ...aDraft, kind: e.target.value })}>{ACTS.filter((k) => (k !== 'initiative' && k !== 'success') || draft.kind === 'women').map((k) => <option key={k} value={k}>{t(`cm.act.${k}`)}</option>)}</select></Field>
                       <Field label={t('cm.date')}><input type="date" className={inputCls} value={aDraft.eventDate ?? ''} onChange={(e) => setADraft({ ...aDraft, eventDate: e.target.value })} /></Field>
                       <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={aDraft.titleAr} onChange={(e) => setADraft({ ...aDraft, titleAr: e.target.value })} /></Field>
                       <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={aDraft.titleEn} onChange={(e) => setADraft({ ...aDraft, titleEn: e.target.value })} /></Field>
                     </div>
                     <Field label={t('cm.bodyAr')}><RichEditor key={`aa-${aDraft.id ?? 'new'}`} value={aDraft.bodyAr} onChange={(h) => setADraft((d) => (d ? { ...d, bodyAr: h } : d))} dir="rtl" /></Field>
                     <Field label={t('cm.bodyEn')} hint={t('faq.hint')}><RichEditor key={`ae-${aDraft.id ?? 'new'}`} value={aDraft.bodyEn} onChange={(h) => setADraft((d) => (d ? { ...d, bodyEn: h } : d))} dir="ltr" /></Field>
+                    {(aDraft.kind === 'initiative' || aDraft.kind === 'success') && <>
+                      <Field label={t('women.goals')}><RichEditor key={`ag-${aDraft.id ?? 'new'}`} value={aDraft.goalsAr} onChange={(h) => setADraft((d) => (d ? { ...d, goalsAr: h } : d))} dir="rtl" /></Field>
+                      <Field label={t('women.goalsEn')}><RichEditor key={`age-${aDraft.id ?? 'new'}`} value={aDraft.goalsEn} onChange={(h) => setADraft((d) => (d ? { ...d, goalsEn: h } : d))} dir="ltr" /></Field>
+                      <Field label={t('women.results')}><RichEditor key={`ar-${aDraft.id ?? 'new'}`} value={aDraft.resultsAr} onChange={(h) => setADraft((d) => (d ? { ...d, resultsAr: h } : d))} dir="rtl" /></Field>
+                      <Field label={t('women.resultsEn')}><RichEditor key={`are-${aDraft.id ?? 'new'}`} value={aDraft.resultsEn} onChange={(h) => setADraft((d) => (d ? { ...d, resultsEn: h } : d))} dir="ltr" /></Field>
+                    </>}
                     <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setADraft(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
                   </form>
                 )}

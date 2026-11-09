@@ -74,6 +74,10 @@ export class CreateActivityDto {
   @IsOptional() @IsString() @MaxLength(255) titleEn?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) bodyAr?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) bodyEn?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) goalsAr?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) goalsEn?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) resultsAr?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) resultsEn?: string | null;
   @IsOptional() @IsDateString() eventDate?: string | null;
 }
 
@@ -83,6 +87,10 @@ export class UpdateActivityDto {
   @IsOptional() @IsString() @MaxLength(255) titleEn?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) bodyAr?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) bodyEn?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) goalsAr?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) goalsEn?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) resultsAr?: string | null;
+  @IsOptional() @IsString() @MaxLength(100000) resultsEn?: string | null;
   @IsOptional() @IsDateString() eventDate?: string | null;
 }
 

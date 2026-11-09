@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDay, prettyUrl, telHref } from '@/lib/utils';
 import { Modal, Stars } from '@/components/ui/ui';
 import { Card, DefaultAvatar, FitImage, NewsCard, Thumb } from './cards';
-import { ContactIcon } from './icons';
+import { ContactIcon, SocialIcon } from './icons';
 import { CountUp, Reveal, Stagger } from './motion';
 import { ContactForm } from './contact-form';
 import { useSite } from './site-context';
@@ -605,9 +605,15 @@ export function ContactTeaser() {
 }
 
 export function ContactSection() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { s, loc } = useSite();
   const [mapOpen, setMapOpen] = useState(false);
+  const socialKeys = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'];
+  const socialLabels: Record<string, [string, string]> = {
+    facebook_url: ['فيسبوك', 'Facebook'], x_url: ['إكس', 'X'], instagram_url: ['إنستغرام', 'Instagram'],
+    linkedin_url: ['لينكدإن', 'LinkedIn'], youtube_url: ['يوتيوب', 'YouTube'],
+    whatsapp_url: ['واتساب', 'WhatsApp'], telegram_url: ['تيليغرام', 'Telegram'],
+  };
   // label, text, icon, always left-to-right (numbers / email / url), optional link
   type Row = { label: string; value: string | null; icon: 'phone' | 'mobile' | 'fax' | 'email' | 'website' | 'address' | 'hours'; ltr: boolean; link?: string; external?: boolean };
   const phone = s('contact', 'phone');
@@ -643,13 +649,25 @@ export function ContactSection() {
             );
           })}
         </ul>
+        {socialKeys.some((key) => s('social', key)) && (
+          <div className="mt-5 border-t border-line pt-4">
+            <h3 className="mb-3 text-sm font-bold text-secondary">{loc('footer', 'social_title') || (lang === 'ar' ? 'منصات التواصل' : 'Social media')}</h3>
+            <div className="flex flex-wrap gap-2">
+              {socialKeys.filter((key) => s('social', key)).map((key) => (
+                <a key={key} href={s('social', key)} target="_blank" rel="noopener noreferrer" aria-label={socialLabels[key][lang === 'ar' ? 0 : 1]} title={socialLabels[key][lang === 'ar' ? 0 : 1]} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:-translate-y-0.5 hover:bg-primary hover:text-white">
+                  <SocialIcon name={key} size={18} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         {map && (
           <button type="button" onClick={() => setMapOpen(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 active:scale-[0.97]">
             <ContactIcon name="address" size={16} />{t('site.showMap')}
           </button>
         )}
       </Reveal>
-      <Reveal className="self-start rounded-2xl bg-white p-5 shadow-card ring-1 ring-line"><ContactForm /></Reveal>
+      {s('contact', 'show_form') !== false && <Reveal className="self-start rounded-2xl bg-white p-5 shadow-card ring-1 ring-line"><ContactForm /></Reveal>}
       {map && (
         <Modal open={mapOpen} onClose={() => setMapOpen(false)} title={t('site.map')} wide>
           <iframe src={map} title={t('site.map')} loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />

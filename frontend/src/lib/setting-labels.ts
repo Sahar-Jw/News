@@ -38,6 +38,9 @@ const BASE_AR: Record<string, string> = {
   company_name: 'اسم الشركة',
   founded_date: 'تاريخ التأسيس',
   // contact
+  title: 'عنوان صفحة التواصل',
+  subtitle: 'الوصف أسفل عنوان التواصل',
+  show_form: 'إظهار نموذج إرسال الرسائل',
   phone: 'الهاتف',
   mobile: 'الجوال',
   fax: 'الفاكس',
@@ -115,6 +118,11 @@ const WOMEN_AR: Record<string, string> = {
   name: 'اسم الصفحة', tagline: 'الشعار النصي', logo: 'شعار اللجنة', primary_color: 'اللون الأساسي', accent_color: 'لون التمييز',
   header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص',
   footer_text: 'نص التذييل', page_links: 'روابط قائمة اللجنة وتذييلها',
+  vision: 'رؤية اللجنة', mission: 'رسالة اللجنة', goals: 'أهداف اللجنة', structure: 'الهيكلية التنظيمية والصفات',
+  news_category: 'التصنيف الرئيسي لأخبار سيدات الأعمال', contact_phone: 'هاتف اللجنة', contact_email: 'بريد اللجنة',
+  contact_website: 'موقع اللجنة', social_facebook_url: 'فيسبوك اللجنة', social_x_url: 'إكس اللجنة',
+  social_instagram_url: 'إنستغرام اللجنة', social_linkedin_url: 'لينكدإن اللجنة', social_youtube_url: 'يوتيوب اللجنة',
+  social_whatsapp_url: 'واتساب اللجنة', social_telegram_url: 'تيليغرام اللجنة',
 };
 
 /** labels of the "incubator" settings category */
