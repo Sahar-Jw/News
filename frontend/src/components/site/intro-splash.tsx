@@ -5,10 +5,10 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 /**
- * Opening animation, shown every time the site is opened or reloaded (not on in-app page changes: the layout stays mounted).
+ * Opening animation, shown once per new browser tab, but not on reloads in that tab.
  *
- *  1. A full-page cover in the main colour hides everything (it is already in the server HTML, so nothing flashes).
- *  2. Once the logo, the site name and the font are ready: the logo fades in and the name is written slowly in the middle.
+ *  1. On a first visit, a full-page cover in the main colour hides the site while its branding loads.
+ *  2. Once the logo, site name and font are ready: the logo and name animate together across the center.
  *  3. The name (and logo) then expand. The name is a cut-out in the cover, so the site shows through the gaps of the
  *     letters while they grow, and in the end the cover clears completely.
  *
@@ -24,14 +24,14 @@ const HOLD_MS = 250;
 const EXPAND_MS = 900;
 const MAX_SCALE = 20;
 const MAX_WAIT_MS = 4500; // never keep the visitor waiting for assets longer than this
-
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeIn = (t: number) => t * t * t;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-interface Geo { W: number; H: number; fs: number; tw: number; cx: number; baseY: number; logoR: number; logoCy: number }
+interface Geo { W: number; H: number; fs: number; cx: number; baseY: number; logoR: number; logoCy: number }
+interface PublicSettings { branding?: Record<string, unknown> }
 
 function loadImage(src: string) {
   return new Promise<boolean>((resolve) => {
@@ -48,7 +48,8 @@ function layout(name: string, hasLogo: boolean): Geo {
   let fs = Math.min(56, Math.max(26, W * 0.075));
   const ctx = document.createElement('canvas').getContext('2d');
   const measure = (size: number) => {
-    if (!ctx || !name) return 0;
+    if (!name) return 0;
+    if (!ctx) return size * name.length * 0.6;
     ctx.font = `700 ${size}px "Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif`;
     return ctx.measureText(name).width;
   };
@@ -59,8 +60,7 @@ function layout(name: string, hasLogo: boolean): Geo {
   const block = (hasLogo ? logoR * 2 : 0) + gap + (name ? fs * 1.25 : 0);
   const top = H / 2 - block / 2;
   return {
-    W, H, fs, tw, cx: W / 2,
-    logoR, logoCy: top + logoR,
+    W, H, fs, cx: W / 2, logoR, logoCy: top + logoR,
     baseY: top + (hasLogo ? logoR * 2 : 0) + gap + fs,
   };
 }
@@ -71,7 +71,8 @@ export function IntroSplash() {
   const [assets, setAssets] = useState<{ name: string; logo: string }>({ name: '', logo: '' });
   const [fade, setFade] = useState(false);
   const [done, setDone] = useState(false);
-  const [blocking, setBlocking] = useState(true);
+  const [started, setStarted] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   const underRef = useRef<SVGRectElement>(null);
   const coverRef = useRef<SVGRectElement>(null);
@@ -83,16 +84,24 @@ export function IntroSplash() {
   // 1. wait for the colours, the settings, the logo and the font; then decide how to play
   useEffect(() => {
     let dead = false;
+    if (!document.documentElement.hasAttribute('data-intro-pending')) {
+      setDone(true);
+      return;
+    }
+    setStarted(true);
+    setBlocking(true);
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     document.documentElement.style.overflow = 'hidden';
     (async () => {
       const started = Date.now();
-      // first-ever visit: the brand colours are not known yet (see theme.ts), wait until they are
+      // On a new tab, wait for the theme colors if this browser has not cached them yet.
       while (document.documentElement.hasAttribute('data-theme-pending') && Date.now() - started < 2500) await wait(40);
-      const settings = await Promise.race([api<any>('/public/settings', { cache: 'no-store' }).catch(() => null), wait(3000).then(() => null)]);
+      const settings = await Promise.race([api<PublicSettings>('/public/settings', { cache: 'no-store' }).catch(() => null), wait(3000).then(() => null)]);
       const b = settings?.branding ?? {};
-      const name = String(b[`site_name_${lang}`] ?? '').trim();
-      const logo = fileUrl(b.logo);
+      const rawName = b[`site_name_${lang}`];
+      const name = typeof rawName === 'string' ? rawName.trim() : '';
+      const rawLogo = typeof b.logo_url === 'string' && b.logo_url ? b.logo_url : b.logo;
+      const logo = typeof rawLogo === 'string' ? fileUrl(rawLogo) : '';
       const left = () => Math.max(300, MAX_WAIT_MS - (Date.now() - started));
       const [logoOk] = await Promise.all([
         logo ? Promise.race([loadImage(logo), wait(left()).then(() => false)]) : Promise.resolve(false),
@@ -144,7 +153,7 @@ export function IntroSplash() {
         logoRef.current.setAttribute('transform', `translate(${geo.cx} ${geo.logoCy}) scale(${ls})`);
         logoRef.current.setAttribute('opacity', String(li * (1 - clamp01(u / 0.45))));
       }
-     if (t < total) raf = requestAnimationFrame(frame);
+      if (t < total) raf = requestAnimationFrame(frame);
       else setDone(true);
     };
     raf = requestAnimationFrame(frame);
@@ -152,24 +161,28 @@ export function IntroSplash() {
   }, [geo, lang]);
 
   useEffect(() => {
-    if (done) document.documentElement.style.overflow = '';
+    if (done) {
+      document.documentElement.style.overflow = '';
+      document.documentElement.removeAttribute('data-intro-pending');
+    }
   }, [done]);
 
   if (done) return null;
   const common = 'fixed inset-0 z-[2147483000]';
   const style = { background: 'var(--primary)', pointerEvents: blocking ? ('auto' as const) : ('none' as const) };
 
+  if (!started) return <div id="splash" aria-hidden="true" className={`${common} pointer-events-none opacity-0`} />;
+
   if (!geo) {
     return <div id="splash" aria-hidden="true" className={`${common} transition-opacity duration-500 ${fade ? 'opacity-0' : ''}`} style={style} />;
   }
 
-  const rtl = lang === 'ar';
-  const { W, H, fs, cx, baseY, logoR } = geo;
+  const { W, H, fs, cx, baseY, logoR, logoCy } = geo;
   return (
     <div id="splash" aria-hidden="true" className={common} style={{ pointerEvents: style.pointerEvents }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
         <defs>
-          <linearGradient id="sp-grad" x1={rtl ? '1' : '0'} x2={rtl ? '0' : '1'} y1="0" y2="0">
+          <linearGradient id="sp-grad" x1={lang === 'ar' ? '1' : '0'} x2={lang === 'ar' ? '0' : '1'} y1="0" y2="0">
             <stop offset="0" stopColor="#000" />
             <stop ref={stopA} offset="0" stopColor="#000" />
             <stop ref={stopB} offset="0" stopColor="#fff" />
@@ -190,7 +203,7 @@ export function IntroSplash() {
         <rect ref={underRef} x="0" y="0" width={W} height={H} fill="#fff" />
         <rect ref={coverRef} x="0" y="0" width={W} height={H} mask="url(#sp-hole)" style={{ fill: 'var(--primary)' }} />
         {assets.logo && (
-          <g ref={logoRef} opacity="0" transform={`translate(${cx} ${geo.logoCy}) scale(0.7)`}>
+          <g ref={logoRef} opacity="0" transform={`translate(${cx} ${logoCy}) scale(0.7)`}>
             <circle r={logoR + 3} fill="#fff" />
             <image href={assets.logo} x={-logoR} y={-logoR} width={logoR * 2} height={logoR * 2} preserveAspectRatio="xMidYMid slice" clipPath="url(#sp-logo-clip)" />
           </g>
