@@ -187,7 +187,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
       </nav>
 
       {women ? (
-        <header id="about" className="relative scroll-mt-24 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
+        <header id="about" className="relative mb-5 scroll-mt-24 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
           <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
           <div className="relative grid items-center gap-6 p-6 md:grid-cols-[auto,1fr] md:p-10">
             <img src={c.logoUrl ? fileUrl(c.logoUrl) : '/brand/women-committee-icon.svg'} alt={c.name} className="mx-auto h-40 w-auto max-w-[12rem] object-contain md:h-48" />

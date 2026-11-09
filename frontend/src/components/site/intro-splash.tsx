@@ -30,7 +30,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const easeIn = (t: number) => t * t * t;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-interface Geo { W: number; H: number; fs: number; cx: number; textCx: number; baseY: number; logoR: number; logoCx: number; logoCy: number }
+interface Geo { W: number; H: number; fs: number; cx: number; baseY: number; logoR: number; logoCy: number }
 interface PublicSettings { branding?: Record<string, unknown> }
 
 function loadImage(src: string) {
@@ -42,7 +42,7 @@ function loadImage(src: string) {
   });
 }
 
-function layout(name: string, hasLogo: boolean, rtl: boolean): Geo {
+function layout(name: string, hasLogo: boolean): Geo {
   const W = window.innerWidth;
   const H = window.innerHeight;
   let fs = Math.min(56, Math.max(26, W * 0.075));
@@ -53,22 +53,15 @@ function layout(name: string, hasLogo: boolean, rtl: boolean): Geo {
     ctx.font = `700 ${size}px "Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif`;
     return ctx.measureText(name).width;
   };
-  const logoR = hasLogo ? Math.min(64, Math.max(38, W * 0.09)) : 0;
-  const gap = hasLogo && name ? 20 : 0;
-  const maxTextWidth = Math.max(80, W * 0.86 - (hasLogo ? logoR * 2 + gap : 0));
   let tw = measure(fs);
-  if (tw > maxTextWidth) { fs *= maxTextWidth / tw; tw = maxTextWidth; }
-  const textWidth = name ? tw : 0;
-  const blockWidth = (hasLogo ? logoR * 2 : 0) + gap + textWidth;
-  const left = (W - blockWidth) / 2;
-  const logoCx = rtl ? left + blockWidth - logoR : left + logoR;
-  const textCx = rtl
-    ? left + textWidth / 2
-    : left + (hasLogo ? logoR * 2 + gap : 0) + textWidth / 2;
+  if (tw > W * 0.86) { fs *= (W * 0.86) / tw; tw = W * 0.86; }
+  const logoR = hasLogo ? Math.min(64, Math.max(38, W * 0.09)) : 0;
+  const gap = hasLogo && name ? 26 : 0;
+  const block = (hasLogo ? logoR * 2 : 0) + gap + (name ? fs * 1.25 : 0);
+  const top = H / 2 - block / 2;
   return {
-    W, H, fs, cx: W / 2, textCx,
-    logoR, logoCx, logoCy: H / 2,
-    baseY: H / 2 + fs * 0.35,
+    W, H, fs, cx: W / 2, logoR, logoCy: top + logoR,
+    baseY: top + (hasLogo ? logoR * 2 : 0) + gap + fs,
   };
 }
 
@@ -117,7 +110,7 @@ export function IntroSplash() {
       if (dead) return;
       if (reduce || (!name && !logoOk)) { setFade(true); return; }
       setAssets({ name, logo: logoOk ? logo : '' });
-      setGeo(layout(name, logoOk, lang === 'ar'));
+      setGeo(layout(name, logoOk));
     })();
     return () => { dead = true; document.documentElement.style.overflow = ''; };
   }, [lang]);
@@ -152,12 +145,12 @@ export function IntroSplash() {
       const e = easeIn(u);
       if (u > 0 && !unblocked) { unblocked = true; setBlocking(false); }
       const s = 1 + (MAX_SCALE - 1) * e;
-      holeRef.current?.setAttribute('transform', `translate(${geo.textCx} ${geo.baseY - geo.fs * 0.35}) scale(${s}) translate(${-geo.textCx} ${-(geo.baseY - geo.fs * 0.35)})`);
+      holeRef.current?.setAttribute('transform', `translate(${geo.cx} ${geo.baseY - geo.fs * 0.35}) scale(${s}) translate(${-geo.cx} ${-(geo.baseY - geo.fs * 0.35)})`);
       underRef.current?.setAttribute('opacity', String(1 - clamp01(u / 0.22)));
       coverRef.current?.setAttribute('opacity', String(1 - clamp01((u - 0.72) / 0.28)));
       if (logoRef.current) {
         const ls = (0.7 + 0.3 * li) * (1 + 5 * easeIn(u));
-        logoRef.current.setAttribute('transform', `translate(${geo.logoCx} ${geo.logoCy}) scale(${ls})`);
+        logoRef.current.setAttribute('transform', `translate(${geo.cx} ${geo.logoCy}) scale(${ls})`);
         logoRef.current.setAttribute('opacity', String(li * (1 - clamp01(u / 0.45))));
       }
       if (t < total) raf = requestAnimationFrame(frame);
@@ -184,13 +177,12 @@ export function IntroSplash() {
     return <div id="splash" aria-hidden="true" className={`${common} transition-opacity duration-500 ${fade ? 'opacity-0' : ''}`} style={style} />;
   }
 
-  const rtl = lang === 'ar';
-  const { W, H, fs, cx, textCx, baseY, logoR, logoCx, logoCy } = geo;
+  const { W, H, fs, cx, baseY, logoR, logoCy } = geo;
   return (
     <div id="splash" aria-hidden="true" className={common} style={{ pointerEvents: style.pointerEvents }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
         <defs>
-          <linearGradient id="sp-grad" x1={rtl ? '1' : '0'} x2={rtl ? '0' : '1'} y1="0" y2="0">
+          <linearGradient id="sp-grad" x1={lang === 'ar' ? '1' : '0'} x2={lang === 'ar' ? '0' : '1'} y1="0" y2="0">
             <stop offset="0" stopColor="#000" />
             <stop ref={stopA} offset="0" stopColor="#000" />
             <stop ref={stopB} offset="0" stopColor="#fff" />
@@ -201,7 +193,7 @@ export function IntroSplash() {
             <g ref={holeRef}>
               {assets.name && (
                 // black = cut out of the cover; the gradient is black behind the "pen" and white ahead of it, so the name is written
-                <text x={textCx} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
+                <text x={cx} y={baseY} textAnchor="middle" fill="url(#sp-grad)" fontWeight="700" fontSize={fs} style={{ fontFamily: '"Readex Pro Variable", "IBM Plex Sans Arabic", sans-serif' }}>{assets.name}</text>
               )}
             </g>
           </mask>
@@ -211,7 +203,7 @@ export function IntroSplash() {
         <rect ref={underRef} x="0" y="0" width={W} height={H} fill="#fff" />
         <rect ref={coverRef} x="0" y="0" width={W} height={H} mask="url(#sp-hole)" style={{ fill: 'var(--primary)' }} />
         {assets.logo && (
-          <g ref={logoRef} opacity="0" transform={`translate(${logoCx} ${logoCy}) scale(0.7)`}>
+          <g ref={logoRef} opacity="0" transform={`translate(${cx} ${logoCy}) scale(0.7)`}>
             <circle r={logoR + 3} fill="#fff" />
             <image href={assets.logo} x={-logoR} y={-logoR} width={logoR * 2} height={logoR * 2} preserveAspectRatio="xMidYMid slice" clipPath="url(#sp-logo-clip)" />
           </g>

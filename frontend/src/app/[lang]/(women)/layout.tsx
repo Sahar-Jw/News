@@ -28,14 +28,20 @@ function WomenDropdown({ label, trigger, children, align = 'start', active = fal
   const [hovering, setHovering] = useState(false);
   const [closedByClick, setClosedByClick] = useState(false);
   const expanded = open || (hovering && !closedByClick);
-  const openClasses = expanded ? 'visible translate-y-0 scale-100 opacity-100 pointer-events-auto' : '';
+  const panelState = expanded
+    ? 'visible translate-y-0 scale-100 opacity-100 pointer-events-auto'
+    : 'invisible translate-y-2 scale-[0.98] opacity-0 pointer-events-none';
   return (
     <div className="group relative hidden xl:block"
       onMouseEnter={() => { setHovering(true); setClosedByClick(false); }}
       onMouseLeave={() => { setHovering(false); setClosedByClick(false); }}
       onFocusCapture={() => setOpen(true)}
       onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
-      {trigger ?? (
+      {trigger ? (
+        <button type="button" aria-label={label} aria-haspopup="true" aria-expanded={expanded} onClick={() => { setOpen((value) => !value); setClosedByClick(expanded); }} className="relative z-10 rounded-full">
+          {trigger}
+        </button>
+      ) : (
         <button type="button" aria-haspopup="true" aria-expanded={expanded} onClick={() => { setOpen((value) => !value); setClosedByClick(expanded); }} className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200 hover:bg-white/15 hover:text-accent ${active || expanded ? 'bg-white/15 text-accent' : 'text-white/90'}`}>
           {label}
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}>
@@ -43,8 +49,7 @@ function WomenDropdown({ label, trigger, children, align = 'start', active = fal
           </svg>
         </button>
       )}
-      {trigger && <button type="button" aria-label={label} aria-haspopup="true" aria-expanded={expanded} onClick={() => { setOpen((value) => !value); setClosedByClick(expanded); }} className="absolute inset-0 z-10 rounded-full" />}
-      <div className={`invisible absolute top-full z-50 origin-top translate-y-2 scale-[0.98] pt-1 opacity-0 pointer-events-none transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${openClasses} ${align === 'end' ? 'end-0 min-w-52' : 'start-0 min-w-52'}`}>
+      <div className={`absolute top-full z-50 origin-top pt-1 transition-[opacity,transform,visibility] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${panelState} ${align === 'end' ? 'end-0 min-w-52' : 'start-0 min-w-52'}`}>
         <div onClickCapture={(event) => {
           if ((event.target as HTMLElement).closest('[data-keep-open]')) return;
           setOpen(false);
