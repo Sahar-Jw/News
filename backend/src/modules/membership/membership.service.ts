@@ -12,7 +12,7 @@ import { MailService } from '../mail/mail.service';
 import { CC } from '../../common/content-categories';
 import { ContentStore, Rec, pick } from '../content/content.store';
 import { ApplyDto, MembershipAdminQueryDto, UpdateApplicationDto, UpdateMembershipSettingsDto } from './membership.dto';
-import { MembershipApplication, MembershipFile, MembershipSettings, MembershipStatus } from './membership.entity';
+import { BusinessType, MembershipApplication, MembershipFile, MembershipSettings, MembershipStatus } from './membership.entity';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const MEMBERSHIP_FOLDER = 'private/membership';
@@ -90,6 +90,9 @@ export class MembershipService {
   async apply(dto: ApplyDto, uploads: Express.Multer.File[]) {
     const s = await this.settingsRow();
     if (!s.isOpen) throw new BadRequestException('باب تقديم طلبات الانتساب مغلق حالياً');
+    if (dto.businessType === 'other' && !dto.businessTypeOther?.trim()) throw new BadRequestException('يرجى تحديد نوع المنشأة');
+    if (new Date(dto.registrationDate).getTime() > Date.now()) throw new BadRequestException('تاريخ التسجيل لا يمكن أن يكون في المستقبل');
+    if (uploads.length === 0) throw new BadRequestException('يرجى إرفاق الوثائق المطلوبة');
     if (uploads.length > MAX_APPLICATION_FILES) throw new BadRequestException(`الحد الأقصى ${MAX_APPLICATION_FILES} ملفات`);
     // one open application per e-mail: stops duplicates and flooding
     const open = await this.apps.findOne({ where: { email: dto.email, status: In(['new', 'in_review']) } });
@@ -103,7 +106,7 @@ export class MembershipService {
     }
     let app: MembershipApplication;
     try {
-      app = await this.apps.save(this.apps.create({ companyName: dto.companyName, activity: dto.activity, managerName: dto.managerName, phone: dto.phone, email: dto.email, address: dto.address ?? null, message: dto.message ?? null, status: 'new', staffNotes: null }));
+      app = await this.apps.save(this.apps.create({ companyName: dto.companyName, activity: dto.activity, managerName: dto.managerName, businessType: dto.businessType as BusinessType, businessTypeOther: dto.businessType === 'other' ? dto.businessTypeOther?.trim() ?? null : null, commercialRegNo: dto.commercialRegNo, registrationDate: dto.registrationDate.slice(0, 10), contactPerson: dto.contactPerson ?? null, phone: dto.phone, email: dto.email, address: dto.address, message: dto.message ?? null, status: 'new', staffNotes: null }));
       if (saved.length) await this.files.save(saved.map((path, i) => this.files.create({ applicationId: app.id, originalName: (uploads[i].originalname || 'file').slice(0, 255), path, size: uploads[i].size })));
     } catch (e) {
       await this.storage.removeMany(saved);
@@ -113,7 +116,7 @@ export class MembershipService {
     await this.audit.log({ category: 'membership', action: 'create', description: `طلب انتساب جديد ${ref}`, entityType: 'membership_applications', entityId: app.id });
     if (s.notifyEmail) {
       const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>طلب انتساب جديد ${ref}</h3>`
-        + `<p><b>المنشأة:</b> ${esc(dto.companyName)}<br><b>النشاط:</b> ${esc(dto.activity)}<br><b>المدير:</b> ${esc(dto.managerName)}<br><b>الهاتف:</b> ${esc(dto.phone)}<br><b>البريد:</b> ${esc(dto.email)}<br><b>عدد المرفقات:</b> ${saved.length}</p></div>`;
+        + `<p><b>المنشأة:</b> ${esc(dto.companyName)}<br><b>النشاط:</b> ${esc(dto.activity)}<br><b>صاحب المنشأة / المفوض بالتوقيع:</b> ${esc(dto.managerName)}<br><b>نوع المنشأة:</b> ${esc(dto.businessType === 'other' ? dto.businessTypeOther ?? '' : dto.businessType === 'company' ? 'شركة' : 'منشأة فردية')}<br><b>السجل التجاري:</b> ${esc(dto.commercialRegNo)} (${esc(dto.registrationDate.slice(0, 10))})<br><b>الهاتف:</b> ${esc(dto.phone)}<br><b>البريد:</b> ${esc(dto.email)}<br><b>عدد المرفقات:</b> ${saved.length}</p></div>`;
       void this.mail.send(s.notifyEmail, `طلب انتساب جديد ${ref}`, html);
     }
     void this.mail.send(dto.email, 'استلمنا طلب الانتساب', `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك، استلمنا طلب الانتساب الخاص بمنشأة <b>${esc(dto.companyName)}</b>.</p><p>رقم الطلب: <b>${ref}</b></p><p>سنراجع الطلب ونوافيك بالنتيجة على هذا البريد.</p></div>`);

@@ -2,6 +2,8 @@ import { Column, Entity, Index, PrimaryColumn, PrimaryGeneratedColumn } from 'ty
 import { TimestampedEntity } from '../../common/entities/base.entity';
 
 export const MEMBERSHIP_STATUSES = ['new', 'in_review', 'accepted', 'rejected'] as const;
+export const BUSINESS_TYPES = ['individual', 'company', 'other'] as const;
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 
 /** Single row (id = 1): the texts of the public "Membership" page and the address that gets every new application. */
@@ -45,8 +47,27 @@ export class MembershipApplication extends TimestampedEntity {
   @Column({ length: 255 })
   activity: string;
 
+  /** full (three-part) name of the establishment's owner or of the person authorised to sign */
   @Column({ name: 'manager_name', length: 150 })
   managerName: string;
+
+  /** individual establishment / company / other (described in businessTypeOther) */
+  @Column({ name: 'business_type', type: 'varchar', length: 20, nullable: true })
+  businessType: BusinessType | null;
+
+  @Column({ name: 'business_type_other', type: 'varchar', length: 120, nullable: true })
+  businessTypeOther: string | null;
+
+  @Column({ name: 'commercial_reg_no', type: 'varchar', length: 60, nullable: true })
+  commercialRegNo: string | null;
+
+  /** date the establishment was registered in the commercial register (YYYY-MM-DD) */
+  @Column({ name: 'registration_date', type: 'date', nullable: true })
+  registrationDate: string | null;
+
+  /** the person authorised to be contacted, when it is not the owner */
+  @Column({ name: 'contact_person', type: 'varchar', length: 150, nullable: true })
+  contactPerson: string | null;
 
   @Column({ length: 50 })
   phone: string;

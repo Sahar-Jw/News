@@ -14,7 +14,7 @@ const STATUSES = ['new', 'in_review', 'accepted', 'rejected'];
 const COLOR: Record<string, string> = { new: 'bg-blue-100 text-blue-700', in_review: 'bg-amber-100 text-amber-700', accepted: 'bg-emerald-100 text-emerald-700', rejected: 'bg-red-100 text-red-700' };
 
 interface FileRow { id: number; name: string; size: number; path: string }
-interface App { id: number; reference: string; companyName: string; activity: string; managerName: string; phone: string; email: string; address: string | null; message: string | null; status: string; staffNotes: string | null; createdAt: string; files?: FileRow[] }
+interface App { id: number; reference: string; companyName: string; activity: string; managerName: string; businessType: string | null; businessTypeOther: string | null; commercialRegNo: string | null; registrationDate: string | null; contactPerson: string | null; phone: string; email: string; address: string | null; message: string | null; status: string; staffNotes: string | null; createdAt: string; files?: FileRow[] }
 const kb = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 function Applications() {
@@ -59,7 +59,7 @@ function Applications() {
         {sel && (
           <div className="space-y-4">
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              {([[t('mb.company'), sel.companyName], [t('mb.activity'), sel.activity], [t('mb.manager'), sel.managerName], [t('mb.phone'), sel.phone], [t('contact.email'), sel.email], [t('mb.address'), sel.address]] as [string, string | null][]).map(([k, val]) => <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-semibold">{val || '—'}</dd></div>)}
+              {([[t('mb.company'), sel.companyName], [t('mb.activity'), sel.activity], [t('mb.manager'), sel.managerName], [t('mb.businessType'), sel.businessType === 'other' ? sel.businessTypeOther : sel.businessType ? t(`mb.type.${sel.businessType}`) : null], [t('mb.regNo'), sel.commercialRegNo], [t('mb.regDate'), sel.registrationDate], [t('mb.contactPerson'), sel.contactPerson], [t('mb.phone'), sel.phone], [t('contact.email'), sel.email], [t('mb.address'), sel.address]] as [string, string | null][]).map(([k, val]) => <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-semibold">{val || '—'}</dd></div>)}
             </dl>
             {sel.message && <div className="rounded-xl bg-canvas p-3 text-sm"><p className="mb-1 text-xs text-gray-500">{t('mb.message')}</p><p className="whitespace-pre-wrap">{sel.message}</p></div>}
             <div>

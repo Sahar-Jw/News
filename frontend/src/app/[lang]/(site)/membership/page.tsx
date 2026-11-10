@@ -13,7 +13,8 @@ const MAX_FILES = 6;
 const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const EMPTY = { companyName: '', activity: '', managerName: '', phone: '', email: '', address: '', message: '' };
+const EMPTY = { managerName: '', companyName: '', businessType: 'individual', businessTypeOther: '', commercialRegNo: '', registrationDate: '', activity: '', address: '', phone: '', email: '', contactPerson: '', message: '' };
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const Card = ({ title, html, empty }: { title: string; html: string; empty: string }) => (
   <section className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
@@ -57,6 +58,8 @@ export default function MembershipPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!EMAIL_RE.test(v.email.trim())) return toast(t('contact.err.emailInvalid'), 'err');
+    if (v.businessType === 'other' && !v.businessTypeOther.trim()) return toast(t('mb.typeOther'), 'err');
+    if (files.length === 0) return toast(t('mb.needFile'), 'err');
     const fd = new FormData();
     for (const [k, val] of Object.entries(v)) fd.set(k, val.trim());
     files.forEach((f) => fd.append('files', f));
@@ -74,9 +77,18 @@ export default function MembershipPage() {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <nav aria-label="breadcrumb" className="text-sm text-gray-500"><Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link><span className="mx-1.5">›</span><span className="text-ink">{t('nav.membership')}</span></nav>
 
+      <header className="relative overflow-hidden rounded-3xl bg-secondary p-6 text-white shadow-card md:p-9">
+        <div className="pointer-events-none absolute -top-24 end-[-4rem] h-64 w-64 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-2xl"><h1 className="text-2xl font-extrabold md:text-3xl">{t('nav.membership')}</h1><p className="mt-2 text-sm leading-7 text-white/85">{t('mb.heroText')}</p></div>
+          {page?.isOpen === false ? <p className="rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold">{t('mb.closed')}</p>
+            : <button type="button" onClick={() => setForm(true)} className="shrink-0 rounded-full bg-accent px-8 py-3 text-base font-extrabold text-secondary shadow-lift transition hover:-translate-y-px hover:brightness-110">{t('mb.apply')}</button>}
+        </div>
+      </header>
+
       <div className="grid gap-5 md:grid-cols-3">
         <Card title={t('mb.conditions')} html={page?.conditions ?? ''} empty={empty} />
-        <Card title={t('mb.documents')} html={page?.documents ?? ''} empty={empty} />
+        <div id="required-docs" className="scroll-mt-24"><Card title={t('mb.documents')} html={page?.documents ?? ''} empty={empty} /></div>
         <Card title={t('mb.fees')} html={page?.fees ?? ''} empty={empty} />
       </div>
 
@@ -95,12 +107,19 @@ export default function MembershipPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
         <section className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
           <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('mb.online')}</h2>
           <p className="text-sm leading-7 text-gray-600">{t('mb.onlineFields')}</p>
           {page?.isOpen === false ? <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-700">{t('mb.closed')}</p>
             : <button type="button" onClick={() => setForm(true)} className="mt-4 rounded-full bg-accent px-6 py-2.5 font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('mb.start')}</button>}
         </section>
+        <section aria-disabled="true" className="rounded-2xl border border-dashed border-accent/70 bg-white/60 p-5">
+          <div className="mb-3 flex items-center justify-between gap-2"><h2 className="border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('mb.trackSoon')}</h2><span className="rounded-full bg-accent/20 px-3 py-0.5 text-xs font-bold text-secondary">{t('mb.soonTag')}</span></div>
+          <p className="mb-3 text-sm leading-7 text-gray-600">{t('mb.trackText')}</p>
+          <div className="flex gap-2"><input disabled placeholder={t('mb.trackRef')} aria-label={t('mb.trackRef')} className={`${inputCls} cursor-not-allowed bg-gray-100`} /><button type="button" disabled className="cursor-not-allowed rounded-xl bg-gray-200 px-4 text-sm font-semibold text-gray-500">{t('mb.trackSoon')}</button></div>
+        </section>
+        </div>
         <section className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
           <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('mb.faq')}</h2>
           {faqs.length === 0 ? <p className="text-sm text-gray-500">{empty}</p> : (
@@ -127,24 +146,44 @@ export default function MembershipPage() {
             <Button type="button" onClick={close}>{t('mb.close')}</Button>
           </div>
         ) : (
-          <form onSubmit={submit} className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={t('mb.company')}><input required minLength={2} maxLength={255} className={inputCls} value={v.companyName} onChange={(e) => setV({ ...v, companyName: e.target.value })} /></Field>
-              <Field label={t('mb.activity')}><input required minLength={2} maxLength={255} className={inputCls} value={v.activity} onChange={(e) => setV({ ...v, activity: e.target.value })} /></Field>
-              <Field label={t('mb.manager')}><input required minLength={2} maxLength={150} className={inputCls} value={v.managerName} onChange={(e) => setV({ ...v, managerName: e.target.value })} /></Field>
-              <Field label={t('mb.phone')}><input required minLength={5} maxLength={50} dir="ltr" className={inputCls} value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} /></Field>
-              <Field label={t('contact.email')}><input required type="email" maxLength={190} dir="ltr" className={inputCls} value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} /></Field>
-              <Field label={t('mb.address')}><input maxLength={500} className={inputCls} value={v.address} onChange={(e) => setV({ ...v, address: e.target.value })} /></Field>
-            </div>
-            <Field label={t('mb.message')}><textarea rows={3} maxLength={3000} className={inputCls} value={v.message} onChange={(e) => setV({ ...v, message: e.target.value })} /></Field>
-            <Field label={t('mb.upload')} hint={t('mb.uploadHint')}>
-              <input ref={picker} type="file" multiple accept={ACCEPT} className={inputCls} onChange={(e) => addFiles(e.target.files)} />
-            </Field>
-            {files.length > 0 && (
-              <ul className="space-y-1 text-sm">
-                {files.map((f, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg bg-canvas px-3 py-1.5"><span className="truncate">{f.name}</span><button type="button" aria-label={t('app.delete')} className="text-red-600" onClick={() => setFiles(files.filter((_, j) => j !== i))}>✕</button></li>)}
-              </ul>
-            )}
+          <form onSubmit={submit} className="space-y-5">
+            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.owner')}</legend>
+              <Field label={t('mb.manager')} hint={t('mb.ownerHint')}><input required minLength={2} maxLength={150} autoComplete="name" className={inputCls} value={v.managerName} onChange={(e) => setV({ ...v, managerName: e.target.value })} /></Field>
+            </fieldset>
+            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.business')}</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t('mb.company')}><input required minLength={2} maxLength={255} className={inputCls} value={v.companyName} onChange={(e) => setV({ ...v, companyName: e.target.value })} /></Field>
+                <Field label={t('mb.businessType')}>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                    {['individual', 'company', 'other'].map((k) => <label key={k} className="flex items-center gap-1.5"><input type="radio" name="businessType" checked={v.businessType === k} onChange={() => setV({ ...v, businessType: k })} />{t(`mb.type.${k}`)}</label>)}
+                  </div>
+                </Field>
+                {v.businessType === 'other' && <Field label={t('mb.typeOther')}><input required maxLength={120} className={inputCls} value={v.businessTypeOther} onChange={(e) => setV({ ...v, businessTypeOther: e.target.value })} /></Field>}
+                <Field label={t('mb.regNo')}><input required maxLength={60} dir="ltr" className={inputCls} value={v.commercialRegNo} onChange={(e) => setV({ ...v, commercialRegNo: e.target.value })} /></Field>
+                <Field label={t('mb.regDate')}><input required type="date" max={todayIso()} dir="ltr" className={inputCls} value={v.registrationDate} onChange={(e) => setV({ ...v, registrationDate: e.target.value })} /></Field>
+                <Field label={t('mb.activity')}><input required minLength={2} maxLength={255} className={inputCls} value={v.activity} onChange={(e) => setV({ ...v, activity: e.target.value })} /></Field>
+              </div>
+              <Field label={t('mb.address')}><textarea required rows={2} minLength={5} maxLength={500} className={inputCls} value={v.address} onChange={(e) => setV({ ...v, address: e.target.value })} /></Field>
+            </fieldset>
+            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.contact')}</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={t('mb.phone')}><input required minLength={5} maxLength={50} dir="ltr" autoComplete="tel" className={inputCls} value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} /></Field>
+                <Field label={t('contact.email')}><input required type="email" maxLength={190} dir="ltr" autoComplete="email" className={inputCls} value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} /></Field>
+                <Field label={`${t('mb.contactPerson')} (${t('mb.optional')})`}><input maxLength={150} className={inputCls} value={v.contactPerson} onChange={(e) => setV({ ...v, contactPerson: e.target.value })} /></Field>
+              </div>
+              <Field label={t('mb.message')}><textarea rows={2} maxLength={3000} className={inputCls} value={v.message} onChange={(e) => setV({ ...v, message: e.target.value })} /></Field>
+            </fieldset>
+            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.docs')}</legend>
+              <p className="text-xs leading-6 text-gray-600">{t('mb.filesRequired')}{page?.documents && <> · <a href="#required-docs" onClick={close} className="font-semibold text-primary underline">{t('mb.seeDocs')}</a></>}</p>
+              <Field label={t('mb.upload')} hint={t('mb.uploadHint')}>
+                <input ref={picker} type="file" multiple accept={ACCEPT} className={inputCls} onChange={(e) => addFiles(e.target.files)} />
+              </Field>
+              {files.length > 0 && (
+                <ul className="space-y-1 text-sm">
+                  {files.map((f, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg bg-canvas px-3 py-1.5"><span className="truncate">{f.name}</span><button type="button" aria-label={t('app.delete')} className="text-red-600" onClick={() => setFiles(files.filter((_, j) => j !== i))}>✕</button></li>)}
+                </ul>
+              )}
+            </fieldset>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('mb.submit')}</Button></div>
           </form>
         )}
