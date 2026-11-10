@@ -7,7 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { ContentStore, Rec, isActive, pick, s } from '../content/content.store';
 import { filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
-import { DocumentKind, OFFICIAL_DOCUMENT_KINDS, SUBTYPES_OF_KIND } from './document.entity';
+import { DOCUMENT_KINDS, DocumentKind, OFFICIAL_DOCUMENT_KINDS, SUBTYPES_OF_KIND } from './document.entity';
 import { CreateDocumentDto, DocumentsAdminQueryDto, PublicDocumentsQueryDto, UpdateDocumentDto } from './documents.dto';
 
 /**
@@ -131,19 +131,22 @@ export class DocumentsService {
   }
 
   /** the codes a public request is about: one kind, the official ones, or every kind */
-  private codesOf(kind?: string, scope?: string) {
+  private codesOf(kind?: string, scope?: string, kinds?: string) {
+    const list = (kinds ?? '').split(',').map((k) => k.trim()).filter((k) => (DOCUMENT_KINDS as readonly string[]).includes(k));
+    if (!kind && list.length) return list.map(docCode);
     return kind ? [docCode(kind)] : scope === 'official' ? OFFICIAL_DOCUMENT_KINDS.map(docCode) : DOC_CODES;
   }
 
   async publicList(q: PublicDocumentsQueryDto) {
     const p = publicPage(q, 12, 50);
-    let rows = (await this.store.list(this.codesOf(q.kind, q.scope))).filter(isActive).map((r) => ({ r, d: this.view(r) }));
+    let rows = (await this.store.list(this.codesOf(q.kind, q.scope, q.kinds))).filter(isActive).map((r) => ({ r, d: this.view(r) }));
     if (q.subtype) rows = rows.filter(({ d }) => d.subtype === q.subtype);
     if (q.issuer?.trim()) rows = rows.filter(({ d }) => d.issuerAr === q.issuer!.trim() || d.issuerEn === q.issuer!.trim());
     if (q.from) rows = rows.filter(({ d }) => !!d.docDate && d.docDate >= q.from!.slice(0, 10));
     if (q.to) rows = rows.filter(({ d }) => !!d.docDate && d.docDate <= q.to!.slice(0, 10));
     if (q.q?.trim()) rows = rows.filter(({ d }) => matches([d.titleAr, d.titleEn, d.docNumber, d.summaryAr], q.q!));
     rows.sort((a, b) => DocumentsService.newest(a.d, b.d));
+    if (q.sort === 'oldest') rows.reverse();
     const en = q.lang === 'en';
     return paged(rows.slice(p.skip, p.skip + p.limit).map(({ r }) => this.card(r, en)), rows.length, p);
   }
@@ -156,9 +159,19 @@ export class DocumentsService {
   }
 
   /** Years that have at least one visible document (the year filter of the circulars / decisions pages), newest first. */
-  async publicYears(kind?: string, scope?: string) {
-    const years = (await this.store.list(this.codesOf(kind, scope))).filter(isActive).map((r) => String(r.x.docDate ?? '').slice(0, 4)).filter((y) => /^\d{4}$/.test(y));
+  async publicYears(kind?: string, scope?: string, kinds?: string) {
+    const years = (await this.store.list(this.codesOf(kind, scope, kinds))).filter(isActive).map((r) => String(r.x.docDate ?? '').slice(0, 4)).filter((y) => /^\d{4}$/.test(y));
     return [...new Set(years)].sort().reverse().map(Number);
+  }
+
+  /** How many visible documents each kind has (the type cards of the library). */
+  async publicCounts() {
+    const out: Record<string, number> = {};
+    for (const r of (await this.store.list(DOC_CODES)).filter(isActive)) {
+      const k = kindOfDocCode(r.code);
+      out[k] = (out[k] ?? 0) + 1;
+    }
+    return out;
   }
 
   async publicOne(id: number, lang: string) {

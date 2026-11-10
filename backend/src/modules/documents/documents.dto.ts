@@ -45,6 +45,10 @@ export class PublicDocumentsQueryDto {
   @IsOptional() @IsIn(['official']) scope?: string;
   @IsOptional() @IsString() @MaxLength(200) q?: string;
   @IsOptional() @IsIn(DOCUMENT_SUBTYPES as unknown as string[]) subtype?: string;
+  /** several kinds at once, comma separated (the library's "media materials" = press + mediakit) */
+  @IsOptional() @IsString() @MaxLength(200) kinds?: string;
+  /** "oldest" lists the oldest first (default: newest first) */
+  @IsOptional() @IsIn(['newest', 'oldest']) sort?: string;
   /** issuer as shown on the page (matches the Arabic or English issuer text exactly) */
   @IsOptional() @IsString() @MaxLength(150) issuer?: string;
   /** document date range, YYYY-MM-DD */

@@ -60,8 +60,14 @@ export class DocumentsPublicController {
 
   @Public()
   @Get('years')
-  years(@Query('kind') kind?: string, @Query('scope') scope?: string) {
-    return this.service.publicYears(kind, scope === 'official' ? 'official' : undefined);
+  years(@Query('kind') kind?: string, @Query('scope') scope?: string, @Query('kinds') kinds?: string) {
+    return this.service.publicYears(kind, scope === 'official' ? 'official' : undefined, kinds);
+  }
+
+  @Public()
+  @Get('counts')
+  counts() {
+    return this.service.publicCounts();
   }
 
   @Public()
