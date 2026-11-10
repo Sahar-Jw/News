@@ -18,6 +18,10 @@ import { filterByCf, matches, pageRows } from '../content/mem';
 import { ProjectStatus } from './incubator-project.entity';
 import { ApplicationsAdminQueryDto, ApplyDto, CreateProjectDto, ProjectsAdminQueryDto, UpdateApplicationDto, UpdateProjectDto } from './incubator.dto';
 
+export const INCUBATOR_FOLDER = 'private/incubator';
+/** "INC-2026-00042": shown to the applicant and used by the staff; derived from the id, nothing extra to store. */
+export const incubatorReference = (a: { id: number; createdAt: Date }) => `INC-${new Date(a.createdAt).getFullYear()}-${String(a.id).padStart(5, '0')}`;
+
 const TEXT = ['nameEn', 'sectorAr', 'sectorEn', 'founderAr', 'founderEn', 'summaryAr', 'summaryEn', 'storyAr', 'storyEn', 'website'] as const;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
@@ -147,8 +151,19 @@ export class IncubatorService {
     applyColumnFilters(qb, q.cf, { projectName: 'a.projectName', founderName: 'a.founderName', email: 'a.email', phone: 'a.phone', sector: 'a.sector', description: 'a.description', createdAt: 'CAST(a.createdAt AS TEXT)' });
     return qb.orderBy('a.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('a.id', 'DESC');
   }
-  private presentApp(a: IncubatorApplication) {
-    return { id: Number(a.id), status: a.status, projectName: a.projectName, founderName: a.founderName, email: a.email, phone: a.phone, sector: a.sector ?? '', stage: a.stage ?? '', description: a.description, adminNote: a.adminNote ?? '', createdAt: a.createdAt };
+  private presentApp(a: IncubatorApplication, withFile = false) {
+    const out: Record<string, unknown> = {
+      id: Number(a.id), reference: incubatorReference(a), status: a.status, projectName: a.projectName, founderName: a.founderName, email: a.email, phone: a.phone, sector: a.sector ?? '', stage: a.stage ?? '',
+      description: a.description, feasibility: a.feasibility ?? '', targetAudience: a.targetAudience ?? '', team: a.team ?? '', needs: a.needs ?? '', hasProfile: !!a.profilePath, consentAt: a.consentAt, adminNote: a.adminNote ?? '', createdAt: a.createdAt,
+    };
+    // the project profile is a private file: only its link is given, and only in the detail view
+    if (withFile) out.profile = a.profilePath ? { name: a.profileName ?? 'profile', url: this.storage.url(a.profilePath) } : null;
+    return out;
+  }
+  async oneApplication(id: number) {
+    const a = await this.apps.findOne({ where: { id } });
+    if (!a) throw new NotFoundException('الطلب غير موجود');
+    return this.presentApp(a, true);
   }
   async listApplications(q: ApplicationsAdminQueryDto) {
     const p = adminPage(q);
@@ -172,32 +187,54 @@ export class IncubatorService {
     const rows = await this.apps.find({ where: { id: In(unique) } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض الطلبات غير موجودة');
     await this.apps.delete({ id: In(unique) });
+    await this.storage.removeMany(rows.map((r) => r.profilePath));
     // personal data is not copied into the audit log
-    await this.audit.log({ category: 'incubator', action: 'delete', description: `حذف ${rows.length} طلب حاضنة`, actorId: actor.id, entityType: 'incubator_applications', details: { ids: unique }, changes: removedChanges('incubator_applications', rows, ['projectName', 'founderName', 'email', 'phone', 'description', 'adminNote']) });
+    await this.audit.log({ category: 'incubator', action: 'delete', description: `حذف ${rows.length} طلب حاضنة`, actorId: actor.id, entityType: 'incubator_applications', details: { ids: unique }, changes: removedChanges('incubator_applications', rows, ['projectName', 'founderName', 'email', 'phone', 'description', 'feasibility', 'targetAudience', 'team', 'needs', 'profileName', 'profilePath', 'adminNote']) });
     return { deleted: rows.length };
   }
 
-  /** Public form. Same e-mail + project within 10 minutes is the same request (double click). */
-  async apply(dto: ApplyDto) {
+  /** Public form. Same e-mail + project within 10 minutes is the same request (double click). The optional profile / study is a private file. */
+  async apply(dto: ApplyDto, profile: Express.Multer.File | undefined) {
+    const en = dto.lang === 'en';
     const email = dto.email.trim().toLowerCase();
     const dup = await this.apps.createQueryBuilder('a').where('a.email = :email AND a.projectName = :n AND a.createdAt > :since', { email, n: dto.projectName.trim(), since: new Date(Date.now() - 10 * 60_000) }).getCount();
-    if (dup) return { message: 'تم استلام طلبك مسبقاً، سنتواصل معك قريباً' };
-    const a = await this.apps.save(this.apps.create({ status: 'new', projectName: dto.projectName.trim(), founderName: dto.founderName.trim(), email, phone: dto.phone.trim(), sector: dto.sector?.trim() || null, stage: dto.stage || null, description: dto.description.trim() }));
-    void this.notify(a);
-    return { message: 'تم استلام مشروعك بنجاح، سنتواصل معك قريباً' };
+    if (dup) return { message: en ? 'Your request was already received. We will contact you soon.' : 'تم استلام طلبك مسبقاً، سنتواصل معك قريباً' };
+    // content is checked (PDF / DOC / DOCX), never the extension; nothing saved when the request fails
+    const path = profile ? await this.storage.saveDocument(profile, INCUBATOR_FOLDER) : null;
+    let a: IncubatorApplication;
+    try {
+      a = await this.apps.save(this.apps.create({
+        status: 'new', projectName: dto.projectName.trim(), founderName: dto.founderName.trim(), email, phone: dto.phone.trim(), sector: dto.sector.trim(), stage: dto.stage, description: dto.description.trim(),
+        feasibility: dto.feasibility.trim(), targetAudience: dto.targetAudience.trim(), team: dto.team?.trim() || null, needs: dto.needs.trim(),
+        profilePath: path, profileName: profile ? (profile.originalname || 'profile').slice(0, 255) : null, consentAt: new Date(),
+      }));
+    } catch (e) {
+      await this.storage.remove(path);
+      throw e;
+    }
+    const ref = incubatorReference(a);
+    // public form: no actor, and the applicant's data stays in incubator_applications, not in the log
+    await this.audit.log({ category: 'incubator', action: 'create', description: `طلب جديد لحاضنة الأعمال ${ref}`, entityType: 'incubator_applications', entityId: a.id });
+    void this.notify(a, ref, en ? 'en' : 'ar');
+    return { reference: ref, message: en ? 'Your project was received. We will contact you soon.' : 'تم استلام مشروعك بنجاح، سنتواصل معك قريباً' };
   }
 
-  /** E-mail to the incubator team (setting incubator.officer_email, else the chamber's contact e-mail). Never fails the request. */
-  private async notify(a: IncubatorApplication) {
+  /** Confirmation to the applicant + e-mail to the incubator team (setting incubator.officer_email, else the chamber's contact e-mail). Never fails the request. */
+  private async notify(a: IncubatorApplication, ref: string, lang: 'ar' | 'en') {
     try {
+      const en = lang === 'en';
+      await this.mail.send(a.email, en ? 'We received your project' : 'استلمنا مشروعك',
+        en ? `<div dir="ltr" style="font-family:Arial,sans-serif"><p>Thank you ${esc(a.founderName)}, we received your project "${esc(a.projectName)}" at the Business Incubator. Reference: <b>${ref}</b>. We will review it and contact you soon.</p></div>`
+          : `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك ${esc(a.founderName)}، استلمنا مشروعك «${esc(a.projectName)}» في حاضنة الأعمال. رقم الطلب: <b>${ref}</b>. سنراجعه ونتواصل معك قريباً.</p></div>`);
       const get = async (category: string, key: string) => ((await this.settings.findOne({ where: { category, key } }))?.value ?? '').toString().trim();
       const to = (await get('incubator', 'officer_email')) || (await get('contact', 'email'));
       if (!to) return;
       const row = (k: string, v?: string | null) => (v ? `<p><b>${k}:</b> ${esc(v)}</p>` : '');
-      const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>مشروع جديد لحاضنة الأعمال</h3>${row('المشروع', a.projectName)}${row('رائد الأعمال', a.founderName)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('القطاع', a.sector)}${row('المرحلة', a.stage)}${row('الوصف', a.description)}</div>`;
-      await this.mail.send(to, `مشروع جديد لحاضنة الأعمال: ${a.projectName}`, html);
+      const stage: Record<string, string> = { idea: 'فكرة أولية', prototype: 'قيد التطوير', launched: 'مشروع قائم' };
+      const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>مشروع جديد لحاضنة الأعمال ${ref}</h3>${row('المشروع', a.projectName)}${row('مقدم الطلب', a.founderName)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('القطاع', a.sector)}${row('المرحلة', a.stage ? stage[a.stage] ?? a.stage : null)}${row('الوصف', a.description)}${row('الجدوى الاقتصادية', a.feasibility)}${row('الفئة المستهدفة', a.targetAudience)}${row('فريق العمل', a.team)}${row('الاحتياجات المطلوبة', a.needs)}${a.profilePath ? '<p>مرفق: ملف تعريفي / دراسة (يُحمّل من لوحة الإدارة)</p>' : ''}</div>`;
+      await this.mail.send(to, `مشروع جديد لحاضنة الأعمال ${ref}: ${a.projectName}`, html);
     } catch (e) {
-      this.logger.error(`Could not notify the incubator team: ${(e as Error).message}`);
+      this.logger.error(`Could not send the incubator e-mails: ${(e as Error).message}`);
     }
   }
 }

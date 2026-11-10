@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
+import { MAX_DOC_BYTES, MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
@@ -55,7 +55,7 @@ export class IncubatorProjectsAdminController {
 }
 
 const cols = (ar: boolean): ExportColumn[] => [
-  { key: 'id', label: '#', value: (r) => r.id },
+  { key: 'reference', label: ar ? 'رقم الطلب' : 'Reference', value: (r) => r.reference },
   { key: 'status', label: ar ? 'الحالة' : 'Status', value: (r) => r.status },
   { key: 'projectName', label: ar ? 'المشروع' : 'Project', value: (r) => r.projectName },
   { key: 'founderName', label: ar ? 'رائد الأعمال' : 'Founder', value: (r) => r.founderName },
@@ -64,6 +64,11 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'sector', label: ar ? 'القطاع' : 'Sector', value: (r) => r.sector },
   { key: 'stage', label: ar ? 'المرحلة' : 'Stage', value: (r) => r.stage },
   { key: 'description', label: ar ? 'وصف المشروع' : 'Description', value: (r) => r.description },
+  { key: 'feasibility', label: ar ? 'الجدوى الاقتصادية' : 'Economic feasibility', value: (r) => r.feasibility },
+  { key: 'targetAudience', label: ar ? 'الفئة المستهدفة' : 'Target audience', value: (r) => r.targetAudience },
+  { key: 'team', label: ar ? 'فريق العمل' : 'Team', value: (r) => r.team },
+  { key: 'needs', label: ar ? 'الاحتياجات المطلوبة' : 'Needs from the incubator', value: (r) => r.needs },
+  { key: 'hasProfile', label: ar ? 'مرفق ملف تعريفي' : 'Profile attached', value: (r) => (r.hasProfile ? (ar ? 'نعم' : 'Yes') : ar ? 'لا' : 'No') },
   { key: 'adminNote', label: ar ? 'ملاحظة داخلية' : 'Internal note', value: (r) => r.adminNote },
   { key: 'createdAt', label: ar ? 'تاريخ الطلب' : 'Sent at', value: (r) => r.createdAt },
 ];
@@ -98,6 +103,12 @@ export class IncubatorApplicationsAdminController {
     return this.service.removeApplications(dto.ids, u);
   }
 
+  @Get(':id')
+  @Permissions(PERM.INCUBATOR_APPLICATIONS_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.oneApplication(id);
+  }
+
   @Patch(':id')
   @Permissions(PERM.INCUBATOR_APPLICATIONS_UPDATE)
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateApplicationDto, @CurrentUser() u: AuthUser) {
@@ -126,7 +137,8 @@ export class IncubatorPublicController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('apply')
   @HttpCode(200)
-  apply(@Body() dto: ApplyDto) {
-    return this.service.apply(dto);
+  @UseInterceptors(FileInterceptor('profile', { storage: memoryStorage(), limits: { fileSize: MAX_DOC_BYTES, files: 1, fieldSize: 1024 * 1024 } }))
+  apply(@Body() dto: ApplyDto, @UploadedFile() profile: Express.Multer.File | undefined) {
+    return this.service.apply(dto, profile);
   }
 }

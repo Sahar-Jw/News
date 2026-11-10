@@ -32,11 +32,12 @@ export class FilesController {
       if (!req.user) throw new UnauthorizedException('يلزم تسجيل الدخول');
       const membershipDoc = rel.startsWith('private/membership/');
       const trainerDoc = rel.startsWith('private/trainers/'); // CV and certificates of a trainer application
-      const mayRead = membershipDoc ? req.user.permissions.has(PERM.MEMBERSHIP_READ) : trainerDoc ? req.user.permissions.has(PERM.REGISTRATIONS_READ) : req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
-      const owner = membershipDoc || trainerDoc ? null : await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
+      const incubatorDoc = rel.startsWith('private/incubator/'); // project profile / study of an incubator application
+      const mayRead = membershipDoc ? req.user.permissions.has(PERM.MEMBERSHIP_READ) : trainerDoc ? req.user.permissions.has(PERM.REGISTRATIONS_READ) : incubatorDoc ? req.user.permissions.has(PERM.INCUBATOR_APPLICATIONS_READ) : req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
+      const owner = membershipDoc || trainerDoc || incubatorDoc ? null : await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
       // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive
-      await this.audit.log({ category: 'files', action: 'private.download', description: membershipDoc ? 'تنزيل مرفق طلب انتساب' : trainerDoc ? 'تنزيل مرفق طلب مدرب' : 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: membershipDoc ? 'membership_files' : trainerDoc ? 'trainer_applications' : 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
+      await this.audit.log({ category: 'files', action: 'private.download', description: membershipDoc ? 'تنزيل مرفق طلب انتساب' : trainerDoc ? 'تنزيل مرفق طلب مدرب' : incubatorDoc ? 'تنزيل مرفق طلب حاضنة' : 'تنزيل ملف خاص (سيرة ذاتية)', actorId: req.user.id, entityType: membershipDoc ? 'membership_files' : trainerDoc ? 'trainer_applications' : incubatorDoc ? 'incubator_applications' : 'users', entityId: owner?.id ?? null, details: { ownFile: owner?.id === req.user.id } });
     }
 
     if (this.storage.driver === 's3') {

@@ -30,6 +30,26 @@ export class IncubatorApplication {
   @Column({ type: 'text' })
   description: string;
 
+  /** economic feasibility of the project */
+  @Column({ type: 'text', nullable: true })
+  feasibility: string | null;
+  @Column({ name: 'target_audience', type: 'text', nullable: true })
+  targetAudience: string | null;
+  /** the team, when there is one */
+  @Column({ type: 'text', nullable: true })
+  team: string | null;
+  /** what the applicant needs from the incubator */
+  @Column({ type: 'text', nullable: true })
+  needs: string | null;
+  /** optional project profile / study: relative path under private/incubator/ (incubator.applications.read needed) */
+  @Column({ name: 'profile_path', type: 'varchar', length: 500, nullable: true })
+  profilePath: string | null;
+  @Column({ name: 'profile_name', type: 'varchar', length: 255, nullable: true })
+  profileName: string | null;
+  /** when the applicant accepted the privacy policy and confirmed that the data is correct */
+  @Column({ name: 'consent_at', type: 'timestamptz', nullable: true })
+  consentAt: Date | null;
+
   /** internal note of the incubator team */
   @Column({ name: 'admin_note', type: 'text', nullable: true })
   adminNote: string | null;

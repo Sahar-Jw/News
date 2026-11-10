@@ -141,7 +141,7 @@ const WOMEN_AR: Record<string, string> = {
 
 /** labels of the "incubator" settings category */
 const INCUBATOR_AR: Record<string, string> = {
-  about: 'عن الحاضنة', vision: 'الرؤية', goals: 'الأهداف (كل هدف في سطر)', how: 'آلية العمل (كل خطوة في سطر)', opportunities: 'الفرص المتاحة (كل فرصة في سطر)',
+  about: 'عن الحاضنة', vision: 'الرؤية', goals: 'الأهداف (كل هدف في سطر)', how: 'آلية العمل (كل خطوة في سطر)', purpose: 'غرض المشاريع المحتضنة', entrepreneurs: 'رواد الأعمال (من تخدمهم الحاضنة)', opportunities: 'الفرص المتاحة والحالية (كل فرصة في سطر)',
   news_topic: 'وسم أخبار الحاضنة', officer_email: 'بريد مسؤول الحاضنة (يصله إشعار عند كل مشروع)', apply_open: 'استقبال المشاريع مفتوح (زر «قدّم مشروعك»)',
 };
 
