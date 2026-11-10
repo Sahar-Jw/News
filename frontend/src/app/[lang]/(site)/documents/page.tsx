@@ -1,7 +1,7 @@
 'use client';
-import { DocumentsBrowser } from '@/components/site/documents-browser';
+import { DecisionsSection } from '@/components/site/decisions-section';
 
-/** P4: decisions, circulars, laws and guides. Studies, reports and the rest live in the Library (/library). */
+/** Decisions & circulars: its own section (circulars, decisions, laws & regulations). The Library (/library) keeps studies, reports and the rest. */
 export default function DocumentsPage() {
-  return <DocumentsBrowser base="/documents" kinds={['circular', 'decision', 'law', 'guide']} scope="official" title="doc.title" />;
+  return <DecisionsSection />;
 }

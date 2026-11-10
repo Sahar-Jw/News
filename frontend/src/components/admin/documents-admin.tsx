@@ -9,10 +9,11 @@ import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
-interface Row { id: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
-interface Draft { id?: number; kind: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
+interface Row { id: number; kind: string; subtype: string | null; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
+interface Draft { id?: number; kind: string; subtype: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
 const KINDS = ['circular', 'decision', 'law', 'guide', 'study', 'report', 'bulletin', 'form', 'historical', 'press', 'mediakit', 'library'];
-const EMPTY: Draft = { kind: 'circular', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
+const SUBTYPES: Record<string, string[]> = { decision: ['government', 'economic', 'members'], law: ['law', 'instruction', 'regulation'] };
+const EMPTY: Draft = { kind: 'circular', subtype: '', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
 
 /** Decisions, circulars and library files. Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. */
 export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
@@ -28,7 +29,7 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
   const open = (r?: Row) => {
     setPdf(null);
     setDraft(r
-      ? { id: r.id, kind: r.kind, docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl }
+      ? { id: r.id, kind: r.kind, subtype: r.subtype ?? '', docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl }
       : { ...EMPTY, ...(kind ? { kind } : {}) });
   };
 
@@ -55,7 +56,7 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
     if (!draft) return;
     if (!draft.id && !pdf) return toast(t('doc.pdfRequired'), 'err');
     const fd = new FormData();
-    fd.set('kind', draft.kind); fd.set('docNumber', draft.docNumber.trim()); fd.set('titleAr', draft.titleAr.trim()); fd.set('titleEn', draft.titleEn.trim());
+    fd.set('kind', draft.kind); fd.set('subtype', SUBTYPES[draft.kind] ? draft.subtype : ''); fd.set('docNumber', draft.docNumber.trim()); fd.set('titleAr', draft.titleAr.trim()); fd.set('titleEn', draft.titleEn.trim());
     fd.set('summaryAr', draft.summaryAr.trim()); fd.set('summaryEn', draft.summaryEn.trim()); fd.set('issuerAr', draft.issuerAr.trim()); fd.set('issuerEn', draft.issuerEn.trim()); fd.set('docDate', draft.docDate); fd.set('isActive', String(draft.isActive));
     if (pdf) fd.set('file', pdf);
     setBusy(true);
@@ -102,7 +103,13 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               {!kind && <Field label={t('doc.kind')}>
-                <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.map((k) => <option key={k} value={k}>{t(`doc.kind.${k}`)}</option>)}</select>
+                <select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value, subtype: '' })}>{KINDS.map((k) => <option key={k} value={k}>{t(`doc.kind.${k}`)}</option>)}</select>
+              </Field>}
+              {SUBTYPES[draft.kind] && <Field label={t('doc.subtype')}>
+                <select className={inputCls} value={draft.subtype} onChange={(e) => setDraft({ ...draft, subtype: e.target.value })}>
+                  <option value="">{draft.kind === 'law' ? t('doc.sub.law') : '—'}</option>
+                  {SUBTYPES[draft.kind].filter((x) => !(draft.kind === 'law' && x === 'law')).map((x) => <option key={x} value={x}>{t(`doc.sub.${x}`)}</option>)}
+                </select>
               </Field>}
               <Field label={t('doc.number')}><input maxLength={50} dir="ltr" className={inputCls} value={draft.docNumber} onChange={(e) => setDraft({ ...draft, docNumber: e.target.value })} /></Field>
               <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>

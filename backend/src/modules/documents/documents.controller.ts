@@ -59,6 +59,12 @@ export class DocumentsPublicController {
   }
 
   @Public()
+  @Get('years')
+  years(@Query('kind') kind?: string, @Query('scope') scope?: string) {
+    return this.service.publicYears(kind, scope === 'official' ? 'official' : undefined);
+  }
+
+  @Public()
   @Get('issuers')
   issuers(@Query('lang') lang?: string, @Query('kind') kind?: string, @Query('scope') scope?: string) {
     return this.service.publicIssuers(lang === 'en' ? 'en' : 'ar', kind, scope === 'official' ? 'official' : undefined);

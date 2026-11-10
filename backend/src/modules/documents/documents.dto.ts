@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
-import { DOCUMENT_KINDS } from './document.entity';
+import { DOCUMENT_KINDS, DOCUMENT_SUBTYPES } from './document.entity';
 
 // these DTOs arrive as multipart/form-data, so every value is a string
 const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
@@ -9,6 +9,7 @@ const toBool = () => Transform(({ value }) => (value === 'true' || value === tru
 
 export class CreateDocumentDto {
   @IsIn(DOCUMENT_KINDS as unknown as string[]) kind: string;
+  @blankToNull() @IsOptional() @IsIn(DOCUMENT_SUBTYPES as unknown as string[]) subtype?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(50) docNumber?: string | null;
   @IsString() @MinLength(1) @MaxLength(255) titleAr: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) titleEn?: string | null;
@@ -22,6 +23,7 @@ export class CreateDocumentDto {
 
 export class UpdateDocumentDto {
   @IsOptional() @IsIn(DOCUMENT_KINDS as unknown as string[]) kind?: string;
+  @blankToNull() @IsOptional() @IsIn(DOCUMENT_SUBTYPES as unknown as string[]) subtype?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(50) docNumber?: string | null;
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleAr?: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) titleEn?: string | null;
@@ -42,6 +44,7 @@ export class PublicDocumentsQueryDto {
   /** "official" = only decisions, circulars, laws and guides (when no kind is chosen); omitted = every kind (the Library) */
   @IsOptional() @IsIn(['official']) scope?: string;
   @IsOptional() @IsString() @MaxLength(200) q?: string;
+  @IsOptional() @IsIn(DOCUMENT_SUBTYPES as unknown as string[]) subtype?: string;
   /** issuer as shown on the page (matches the Arabic or English issuer text exactly) */
   @IsOptional() @IsString() @MaxLength(150) issuer?: string;
   /** document date range, YYYY-MM-DD */

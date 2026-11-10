@@ -9,7 +9,7 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { PdfViewer } from '@/components/site/pdf-viewer';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface Doc { id: number; kind: string; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string }
+interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string }
 
 /** One document: details and the PDF drawn in the page: /documents/view?id=5 */
 function View() {
@@ -30,7 +30,8 @@ function View() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <article className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:p-10">
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-          <Link href={href(`${['circular', 'decision', 'law', 'guide'].includes(d.kind) ? '/documents' : '/library'}?kind=${d.kind}`)} className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary transition hover:bg-primary hover:text-white">{t(`doc.kind.${d.kind}`)}</Link>
+          <Link href={href(['circular', 'decision', 'law', 'guide'].includes(d.kind) ? `/documents?part=${d.kind === 'guide' ? 'law&sub=guide' : d.kind}${d.subtype && d.kind !== 'guide' ? `&sub=${d.subtype}` : ''}` : `/library?kind=${d.kind}`)} className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary transition hover:bg-primary hover:text-white">{t(`doc.kind.${d.kind}`)}</Link>
+          {d.subtype && <span className="rounded-full bg-accent/20 px-3 py-1 font-semibold text-secondary">{t(`doc.sub.${d.subtype}`)}</span>}
           {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
           {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
           {d.issuer && <span>{t('doc.issuer')}: {d.issuer}</span>}

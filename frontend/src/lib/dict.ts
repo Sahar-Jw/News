@@ -93,6 +93,10 @@ const ar: Record<string, string> = {
   'board.bio': 'نبذة مهنية', 'board.duties': 'اللجان والمهام', 'board.back': 'العودة إلى مجلس الإدارة', 'board.empty': 'لم تتم إضافة أعضاء بعد',
   // documents
   'adm.documents': 'الوثائق والمكتبة', 'adm.library': 'المكتبة والأرشيف الرقمي', 'mod.documents': 'الوثائق والمكتبة', 'doc.title': 'القرارات والتعاميم', 'site.documents': 'القرارات والتعاميم',
+  // decisions & circulars section
+  'doc.part.circular': 'التعاميم', 'doc.part.circularText': 'التعاميم الرسمية الصادرة عن الغرفة، مرتبة حسب التاريخ مع البحث والتصفية', 'doc.part.decision': 'القرارات', 'doc.part.decisionText': 'القرارات الحكومية والقرارات التجارية والاقتصادية والقرارات ذات الصلة بالمنتسبين', 'doc.part.law': 'القوانين والأنظمة', 'doc.part.lawText': 'القوانين والتعليمات والأنظمة والأدلة، ويمكن تحميلها بصيغة PDF',
+  'doc.sub.government': 'قرارات حكومية', 'doc.sub.economic': 'قرارات تجارية واقتصادية', 'doc.sub.members': 'قرارات المنتسبين', 'doc.sub.law': 'القوانين', 'doc.sub.instruction': 'التعليمات', 'doc.sub.regulation': 'الأنظمة', 'doc.sub.guide': 'الأدلة',
+  'doc.sectionText': 'التعاميم الرسمية والقرارات والقوانين والأنظمة في مكان واحد، مع البحث والتصفية وتحميل الملفات', 'doc.items': 'وثيقة', 'doc.viewAll': 'عرض الكل', 'doc.byYear': 'حسب السنة', 'doc.subtype': 'التصنيف', 'doc.manage': 'إضافة / إدارة الوثائق',
   'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'وثائق ومواد أخرى', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
   'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
   'doc.fileHint': 'مطلوب، حتى 25 ميغابايت', 'doc.fileKeep': 'اتركه فارغاً للإبقاء على الملف الحالي', 'doc.current': 'عرض الملف الحالي', 'doc.pdfOnly': 'ملف PDF فقط', 'doc.pdfRequired': 'اختر ملف PDF',
@@ -299,6 +303,10 @@ const en: Record<string, string> = {
   'board.bio': 'Biography', 'board.duties': 'Committees and duties', 'board.back': 'Back to the board', 'board.empty': 'No members added yet',
   // documents
   'adm.documents': 'Documents', 'adm.library': 'Library & digital archive', 'mod.documents': 'Documents & library', 'doc.title': 'Decisions & circulars', 'site.documents': 'Decisions & circulars',
+  // decisions & circulars section
+  'doc.part.circular': 'Circulars', 'doc.part.circularText': 'The chamber’s official circulars by date, with search and filters', 'doc.part.decision': 'Decisions', 'doc.part.decisionText': 'Government decisions, commercial and economic decisions, and decisions concerning members', 'doc.part.law': 'Laws & regulations', 'doc.part.lawText': 'Laws, instructions, regulations and guides, available to download as PDF',
+  'doc.sub.government': 'Government decisions', 'doc.sub.economic': 'Commercial & economic', 'doc.sub.members': 'Members’ decisions', 'doc.sub.law': 'Laws', 'doc.sub.instruction': 'Instructions', 'doc.sub.regulation': 'Regulations', 'doc.sub.guide': 'Guides',
+  'doc.sectionText': 'Official circulars, decisions, laws and regulations in one place, with search, filters and downloadable files', 'doc.items': 'documents', 'doc.viewAll': 'View all', 'doc.byYear': 'By year', 'doc.subtype': 'Category', 'doc.manage': 'Add / manage documents',
   'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Other documents', 'doc.number': 'Number', 'doc.date': 'Date',
   'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
   'doc.fileHint': 'Required, up to 25 MB', 'doc.fileKeep': 'Leave empty to keep the current file', 'doc.current': 'View current file', 'doc.pdfOnly': 'PDF files only', 'doc.pdfRequired': 'Choose a PDF file',
