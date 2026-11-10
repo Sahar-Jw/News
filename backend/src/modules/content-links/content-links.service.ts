@@ -13,11 +13,19 @@ export class ContentLinksService {
     return rows.map((r) => Number(r.newsId));
   }
 
-  /** Attach news (idempotent: already linked ids are ignored). */
-  async link(type: LinkEntityType, entityId: number, newsIds: number[]) {
+  /** The linked news ids of one entity together with their kind label. */
+  async linksOf(type: LinkEntityType, entityId: number): Promise<{ newsId: number; kind: string | null }[]> {
+    const rows = await this.repo.find({ where: { entityType: type, entityId }, select: ['newsId', 'kind'] });
+    return rows.map((r) => ({ newsId: Number(r.newsId), kind: r.kind ?? null }));
+  }
+
+  /** Attach news (idempotent: an already linked id only gets its kind updated when one is given). */
+  async link(type: LinkEntityType, entityId: number, newsIds: number[], kind?: string | null) {
     const unique = [...new Set(newsIds)];
     if (!unique.length) return;
-    await this.repo.createQueryBuilder().insert().values(unique.map((newsId) => ({ newsId, entityType: type, entityId }))).orIgnore().execute();
+    const qb = this.repo.createQueryBuilder().insert().values(unique.map((newsId) => ({ newsId, entityType: type, entityId, kind: kind ?? null })));
+    if (kind) await qb.orUpdate(['kind'], ['news_id', 'entity_type', 'entity_id']).execute();
+    else await qb.orIgnore().execute();
   }
 
   async unlink(type: LinkEntityType, entityId: number, newsIds: number[]) {

@@ -9,7 +9,7 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
-import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
+import { CreateOccasionDto, LinkEventNewsDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { OccasionsService } from './occasions.service';
 
 const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
@@ -60,6 +60,30 @@ export class OccasionsAdminController {
     return this.service.bulkRemove(dto.ids, u);
   }
 
+  @Get(':id/news')
+  @Permissions(PERM.OCCASIONS_READ)
+  linkedNews(@Param('id', ParseIntPipe) id: number) {
+    return this.service.linkedNews(id);
+  }
+
+  @Get(':id/news-search')
+  @Permissions(PERM.OCCASIONS_UPDATE)
+  searchNews(@Param('id', ParseIntPipe) id: number, @Query('q') q?: string) {
+    return this.service.searchNews(id, q ?? '');
+  }
+
+  @Post(':id/news')
+  @Permissions(PERM.OCCASIONS_UPDATE)
+  linkNews(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkEventNewsDto, @CurrentUser() u: AuthUser) {
+    return this.service.linkNews(id, dto.newsIds, dto.kind, u);
+  }
+
+  @Post(':id/news/unlink')
+  @Permissions(PERM.OCCASIONS_UPDATE)
+  unlinkNews(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkEventNewsDto, @CurrentUser() u: AuthUser) {
+    return this.service.unlinkNews(id, dto.newsIds, u);
+  }
+
   @Patch(':id')
   @Permissions(PERM.OCCASIONS_UPDATE)
   @UseInterceptors(upload())
@@ -82,6 +106,12 @@ export class OccasionsPublicController {
   @Get()
   list(@Query() q: PublicOccasionsQueryDto) {
     return this.service.publicList(q);
+  }
+
+  @Public()
+  @Get('facets')
+  facets(@Query('type') type?: string, @Query('lang') lang?: string) {
+    return this.service.facets(type === 'exhibition' || type === 'occasion' ? type : undefined, lang === 'en' ? 'en' : 'ar');
   }
 
   @Public()

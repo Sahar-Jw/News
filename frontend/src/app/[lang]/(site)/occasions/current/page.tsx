@@ -1,6 +1,7 @@
 'use client';
-import { OccasionsList } from '@/components/site/occasions-list';
+import { EventsHub } from '@/components/site/events-hub';
 
-export default function CurrentOccasionsPage() {
-  return <OccasionsList scope="current" />;
+/** Kept so the old menu links keep working: opens the unified page on the occasions tab. */
+export default function Page() {
+  return <EventsHub initialTab="occasions" initialStatus="current" />;
 }

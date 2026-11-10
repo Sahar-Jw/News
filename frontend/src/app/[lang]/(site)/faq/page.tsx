@@ -22,7 +22,7 @@ export default function FaqPage() {
   const shown = (items ?? []).filter((f) => scope === 'all' || f.scope === scope);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <header className="mb-6 text-center">
         <h1 className="text-2xl font-extrabold text-secondary">{t('site.faq')}</h1>
         <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
@@ -41,7 +41,7 @@ export default function FaqPage() {
               ))}
             </div>
           )}
-          <div className="space-y-3">
+          <div className="grid items-start gap-3 md:grid-cols-2">
             {shown.map((f) => {
               const on = open === f.id;
               return (
