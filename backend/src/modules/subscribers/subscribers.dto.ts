@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 
 const toBool = () => Transform(({ value }) => (value === 'true' || value === true || value === '1' ? true : value === 'false' || value === false || value === '0' ? false : value));
@@ -7,10 +7,16 @@ const toBool = () => Transform(({ value }) => (value === 'true' || value === tru
 export class SubscribeDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value)) @IsEmail() @MaxLength(190) email: string;
   @IsOptional() @IsIn(['ar', 'en']) lang?: string;
+  /** Newsletter topics; empty / missing = everything. */
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) topics?: string[];
 }
 
 export class TokenDto {
   @IsString() @Matches(/^[a-f0-9]{48}$/, { message: 'الرابط غير صالح' }) token: string;
+}
+
+export class PreferencesDto extends TokenDto {
+  @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) topics: string[];
 }
 
 export class SubscribersQueryDto extends AdminListQueryDto {

@@ -13,6 +13,7 @@ export type EventStatus = 'upcoming' | 'current' | 'previous';
 export interface PublicEvent {
   id: number; title: string; date: string; finishDate: string; type: 'occasion' | 'exhibition'; status: EventStatus; isUpcoming: boolean;
   sector: string; organizer: string; location: string; participation: '' | 'organized' | 'participating'; images: string[];
+  startTime: string; endTime: string; audience: string; registrationUrl: string; registrationNote: string;
 }
 interface Result { data: PublicEvent[]; meta: { totalPages: number; total?: number } }
 interface Facets { sectors: string[]; organizers: string[]; years: string[] }
@@ -23,6 +24,9 @@ const LABEL = {
   exhibitions: ['المعارض', 'Exhibitions'], occasions: ['المناسبات', 'Occasions'], calendar: ['التقويم', 'Calendar'],
   upcoming: ['القادمة', 'Upcoming'], current: ['الحالية', 'Current'], previous: ['السابقة', 'Previous'],
 } as const;
+
+/** "10:00 – 12:00", "10:00", or '' */
+export const timeRange = (e: { startTime: string; endTime: string }) => (e.startTime && e.endTime ? `${e.startTime} – ${e.endTime}` : e.startTime || '');
 
 export const participationLabel = (p: string, ar: boolean) => p === 'organized' ? (ar ? 'تنظمها الغرفة' : 'Organized by the Chamber') : p === 'participating' ? (ar ? 'تشارك فيها الغرفة' : 'Chamber participates') : '';
 
@@ -51,7 +55,7 @@ export function EventCard({ event }: { event: PublicEvent }) {
     <Link href={href(`/occasions/view?id=${event.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
       <Thumb src={event.images[0]} alt={event.title} className="h-40 w-full" />
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}</p>
+        <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}{timeRange(event) && <span dir="ltr" className="ms-2 text-gray-500">{timeRange(event)}</span>}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${event.type === 'exhibition' ? 'bg-accent/25 text-secondary' : 'bg-primary/10 text-primary'}`}>{event.type === 'exhibition' ? (ar ? 'معرض' : 'Exhibition') : (ar ? 'مناسبة' : 'Occasion')}</span>
           {part && <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold text-gray-700">{part}</span>}
@@ -146,7 +150,7 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
 }
 
 /** Interactive month calendar of exhibitions and occasions: pick a day to list its events, filter by kind, jump to today. */
-function EventsCalendar() {
+export function EventsCalendar({ card }: { card?: (e: PublicEvent) => React.ReactNode } = {}) {
   const { lang } = useI18n();
   const ar = lang === 'ar';
   const today = damascusToday();
@@ -225,7 +229,9 @@ function EventsCalendar() {
         <h3 className="mb-3 text-lg font-bold text-secondary">{fmtDay(lang, selected)}</h3>
         {!data ? <Center><Spinner /></Center> : chosen.length === 0
           ? <p className="rounded-xl bg-white px-4 py-6 text-center text-sm text-gray-500 ring-1 ring-line">{ar ? 'لا توجد معارض أو مناسبات في هذا اليوم' : 'No exhibitions or occasions on this day'}</p>
-          : <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{chosen.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>}
+          : card
+            ? <ul className="space-y-4">{chosen.map((e) => <li key={e.id}>{card(e)}</li>)}</ul>
+            : <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{chosen.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>}
       </section>
     </div>
   );

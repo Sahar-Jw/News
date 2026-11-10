@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { Thumb } from './cards';
-import { EventCard, PublicEvent, participationLabel } from './events-hub';
+import { EventCard, PublicEvent, participationLabel, timeRange } from './events-hub';
 import { ImageSlider } from './image-slider';
 import { NotFoundContent } from './not-found-content';
 import { YoutubeEmbed } from './youtube-embed';
@@ -73,10 +73,13 @@ function View() {
   ];
   const info: [string, string][] = [
     [ar ? 'التاريخ' : 'Date', `${fmtDay(lang, d.date)}${d.finishDate !== d.date ? ` — ${fmtDay(lang, d.finishDate)}` : ''}`],
+    [ar ? 'الوقت' : 'Time', timeRange(d)],
     [ar ? 'القطاع' : 'Sector', d.sector],
     [ar ? 'الجهة المنظمة' : 'Organizer', d.organizer],
     [ar ? 'نوع المشاركة' : 'Participation', part],
     [ar ? 'المكان' : 'Place', d.location],
+    [ar ? 'الفئة المستهدفة' : 'Target audience', d.audience],
+    [ar ? 'التسجيل' : 'Registration', d.registrationUrl ? '' : d.registrationNote],
   ];
   const statusText = d.status === 'upcoming' ? (ar ? 'قادم' : 'Upcoming') : d.status === 'current' ? (ar ? 'جارٍ الآن' : 'Happening now') : (ar ? 'سابق' : 'Previous');
 
@@ -104,6 +107,12 @@ function View() {
               <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                 {info.filter(([, v]) => v).map(([k, v]) => <div key={k} className="rounded-xl bg-gray-50 px-4 py-3"><dt className="text-xs font-semibold text-gray-500">{k}</dt><dd className="mt-0.5 font-bold text-secondary">{v}</dd></div>)}
               </dl>
+              {d.registrationUrl && d.status !== 'previous' && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <a href={d.registrationUrl} target="_blank" rel="noopener noreferrer" className="inline-block rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition hover:brightness-110">{ar ? 'سجّل الآن' : 'Register now'}</a>
+                  {d.registrationNote && <span className="text-sm text-gray-600">{d.registrationNote}</span>}
+                </div>
+              )}
               {d.description && <p className="whitespace-pre-line text-[15px] leading-8 text-gray-800">{d.description}</p>}
             </div>
           )}

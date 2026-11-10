@@ -15,11 +15,12 @@ interface Coverage { title: string; url: string; source: string }
 interface Details {
   descriptionAr: string; descriptionEn: string; locationAr: string; locationEn: string; sectorAr: string; sectorEn: string; organizerAr: string; organizerEn: string;
   participation: '' | 'organized' | 'participating'; parentId: number | null; videos: string[]; coverage: Coverage[];
+  startTime: string; endTime: string; audienceAr: string; audienceEn: string; registrationUrl: string; registrationNoteAr: string; registrationNoteEn: string;
 }
 interface Row extends Details { id: number; titleAr: string; titleEn: string; eventDate: string; finishDate: string; type: 'occasion' | 'exhibition'; isUpcoming: boolean; images: string[]; imageUrls: string[]; imageCount: number }
 interface Draft extends Omit<Details, 'videos'> { id?: number; titleAr: string; titleEn: string; eventDate: string; finishDate: string; type: 'occasion' | 'exhibition'; imgs: ImageSet; videosText: string }
 
-const NO_DETAILS = { descriptionAr: '', descriptionEn: '', locationAr: '', locationEn: '', sectorAr: '', sectorEn: '', organizerAr: '', organizerEn: '', participation: '' as const, parentId: null, coverage: [] as Coverage[] };
+const NO_DETAILS = { descriptionAr: '', descriptionEn: '', locationAr: '', locationEn: '', sectorAr: '', sectorEn: '', organizerAr: '', organizerEn: '', participation: '' as const, parentId: null, coverage: [] as Coverage[], startTime: '', endTime: '', audienceAr: '', audienceEn: '', registrationUrl: '', registrationNoteAr: '', registrationNoteEn: '' };
 const NEWS_KINDS_AR: [string, string][] = [['news', 'خبر'], ['visit', 'زيارة'], ['meeting', 'لقاء'], ['participation', 'مشاركة'], ['activity', 'فعالية'], ['coverage', 'تغطية إعلامية']];
 const NEWS_KINDS_EN: [string, string][] = [['news', 'News'], ['visit', 'Visit'], ['meeting', 'Meeting'], ['participation', 'Participation'], ['activity', 'Activity'], ['coverage', 'Media coverage']];
 
@@ -44,7 +45,7 @@ export function OccasionsAdmin() {
   const open = (r?: Row) => setDraft(r
     ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, eventDate: r.eventDate.slice(0, 10), finishDate: r.finishDate.slice(0, 10), type: r.type, imgs: imageSetOf(r.images, r.imageUrls),
       descriptionAr: r.descriptionAr, descriptionEn: r.descriptionEn, locationAr: r.locationAr, locationEn: r.locationEn, sectorAr: r.sectorAr, sectorEn: r.sectorEn, organizerAr: r.organizerAr, organizerEn: r.organizerEn,
-      participation: r.participation, parentId: r.parentId, coverage: r.coverage ?? [], videosText: (r.videos ?? []).join('\n') }
+      participation: r.participation, parentId: r.parentId, coverage: r.coverage ?? [], startTime: r.startTime ?? '', endTime: r.endTime ?? '', audienceAr: r.audienceAr ?? '', audienceEn: r.audienceEn ?? '', registrationUrl: r.registrationUrl ?? '', registrationNoteAr: r.registrationNoteAr ?? '', registrationNoteEn: r.registrationNoteEn ?? '', videosText: (r.videos ?? []).join('\n') }
     : { titleAr: '', titleEn: '', eventDate: '', finishDate: '', type: 'occasion', imgs: emptyImageSet(), ...NO_DETAILS, videosText: '' });
 
   const cols: Col<Row>[] = [
@@ -80,7 +81,7 @@ export function OccasionsAdmin() {
     fd.append('eventDate', draft.eventDate);
     fd.append('finishDate', draft.finishDate);
     fd.append('type', draft.type);
-    for (const k of ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn', 'participation'] as const) fd.append(k, draft[k].trim());
+    for (const k of ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn', 'participation', 'startTime', 'endTime', 'audienceAr', 'audienceEn', 'registrationUrl', 'registrationNoteAr', 'registrationNoteEn'] as const) fd.append(k, draft[k].trim());
     fd.append('parentId', String(draft.type === 'occasion' && draft.parentId ? draft.parentId : 0));
     fd.append('videos', JSON.stringify(draft.videosText.split('\n').map((v) => v.trim()).filter(Boolean)));
     fd.append('coverage', JSON.stringify(draft.coverage.filter((c) => c.url.trim())));
@@ -144,6 +145,14 @@ export function OccasionsAdmin() {
               <Field label={tr('القطاع (إنجليزي)', 'Sector (English)')}><input maxLength={150} dir="ltr" className={inputCls} value={draft.sectorEn} onChange={(e) => setDraft({ ...draft, sectorEn: e.target.value })} /></Field>
               <Field label={tr('الجهة المنظمة (عربي)', 'Organizer (Arabic)')}><input maxLength={200} dir="rtl" className={inputCls} value={draft.organizerAr} onChange={(e) => setDraft({ ...draft, organizerAr: e.target.value })} /></Field>
               <Field label={tr('الجهة المنظمة (إنجليزي)', 'Organizer (English)')}><input maxLength={200} dir="ltr" className={inputCls} value={draft.organizerEn} onChange={(e) => setDraft({ ...draft, organizerEn: e.target.value })} /></Field>
+              <Field label={tr('وقت البداية', 'Start time')}><input type="time" className={inputCls} value={draft.startTime} onChange={(e) => setDraft({ ...draft, startTime: e.target.value })} /></Field>
+              <Field label={tr('وقت النهاية', 'End time')}><input type="time" className={inputCls} value={draft.endTime} onChange={(e) => setDraft({ ...draft, endTime: e.target.value })} /></Field>
+              <Field label={tr('الفئة المستهدفة (عربي)', 'Target audience (Arabic)')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.audienceAr} onChange={(e) => setDraft({ ...draft, audienceAr: e.target.value })} /></Field>
+              <Field label={tr('الفئة المستهدفة (إنجليزي)', 'Target audience (English)')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.audienceEn} onChange={(e) => setDraft({ ...draft, audienceEn: e.target.value })} /></Field>
+              <Field label={tr('رابط التسجيل (اختياري)', 'Registration link (optional)')}><input type="url" maxLength={500} dir="ltr" placeholder="https://" className={inputCls} value={draft.registrationUrl} onChange={(e) => setDraft({ ...draft, registrationUrl: e.target.value })} /></Field>
+              <div />
+              <Field label={tr('ملاحظة التسجيل (عربي)', 'Registration note (Arabic)')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.registrationNoteAr} onChange={(e) => setDraft({ ...draft, registrationNoteAr: e.target.value })} /></Field>
+              <Field label={tr('ملاحظة التسجيل (إنجليزي)', 'Registration note (English)')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.registrationNoteEn} onChange={(e) => setDraft({ ...draft, registrationNoteEn: e.target.value })} /></Field>
               <Field label={tr('المكان (عربي)', 'Place (Arabic)')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.locationAr} onChange={(e) => setDraft({ ...draft, locationAr: e.target.value })} /></Field>
               <Field label={tr('المكان (إنجليزي)', 'Place (English)')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.locationEn} onChange={(e) => setDraft({ ...draft, locationEn: e.target.value })} /></Field>
               {draft.type === 'exhibition' && (

@@ -8,7 +8,7 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
-import { SetActiveDto, SubscribeDto, SubscribersQueryDto, TokenDto } from './subscribers.dto';
+import { PreferencesDto, SetActiveDto, SubscribeDto, SubscribersQueryDto, TokenDto } from './subscribers.dto';
 import { SubscribersService } from './subscribers.service';
 
 const yn = (ar: boolean, v: boolean) => (v ? (ar ? 'نعم' : 'Yes') : ar ? 'لا' : 'No');
@@ -17,6 +17,8 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'email', label: ar ? 'البريد الإلكتروني' : 'E-mail', value: (r) => r.email },
   { key: 'isVerified', label: ar ? 'موثّق' : 'Verified', value: (r) => yn(ar, r.isVerified) },
   { key: 'isActive', label: ar ? 'نشط' : 'Active', value: (r) => yn(ar, r.isActive) },
+  { key: 'topics', label: ar ? 'المواضيع' : 'Topics', value: (r) => (r.topics?.length ? r.topics.join(', ') : ar ? 'الكل' : 'All') },
+  { key: 'language', label: ar ? 'اللغة' : 'Language', value: (r) => r.language },
   { key: 'verifiedAt', label: ar ? 'تاريخ التوثيق' : 'Verified at', value: (r) => r.verifiedAt },
   { key: 'rememberToken', label: ar ? 'رمز التذكر' : 'Remember token', value: (r) => r.rememberToken },
   { key: 'createdAt', label: ar ? 'تاريخ الاشتراك' : 'Subscribed at', value: (r) => r.createdAt },
@@ -35,7 +37,7 @@ export class SubscribersController {
   @Post('public/subscribe')
   @HttpCode(200)
   subscribe(@Body() dto: SubscribeDto) {
-    return this.service.subscribe(dto.email, dto.lang === 'en' ? 'en' : 'ar');
+    return this.service.subscribe(dto.email, dto.lang === 'en' ? 'en' : 'ar', dto.topics);
   }
 
   @Public()
@@ -52,6 +54,22 @@ export class SubscribersController {
   @HttpCode(200)
   unsubscribe(@Body() dto: TokenDto) {
     return this.service.unsubscribe(dto.token);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('public/subscribe/preferences')
+  @HttpCode(200)
+  preferences(@Body() dto: TokenDto) {
+    return this.service.preferences(dto.token);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Post('public/subscribe/preferences/save')
+  @HttpCode(200)
+  savePreferences(@Body() dto: PreferencesDto) {
+    return this.service.setPreferences(dto.token, dto.topics);
   }
 
   @Get('admin/subscribers')

@@ -11,6 +11,7 @@ import { MailService } from '../mail/mail.service';
 import { Subscriber } from './subscriber.entity';
 import { SubscribersQueryDto } from './subscribers.dto';
 import { removedChanges } from '../audit/audit-snapshot';
+import { normalizeTopics, NEWSLETTER_TOPICS } from '../../common/newsletter-topics';
 
 const OK_MESSAGE = { ar: 'شكراً لك! أرسلنا إليك رسالة لتأكيد بريدك الإلكتروني.', en: 'Thank you! We sent you an e-mail to confirm your address.' };
 
@@ -41,22 +42,23 @@ export class SubscribersService {
 
   // ---------------------------------------------------------------- public
   /** Always answers the same way, so nobody can use the form to find out who is subscribed. */
-  async subscribe(email: string, lang: 'ar' | 'en' = 'ar') {
+  async subscribe(email: string, lang: 'ar' | 'en' = 'ar', topics?: string[]) {
     let s = await this.repo.findOne({ where: { email } });
+    const chosen = normalizeTopics(topics);
     let action: string;
     if (!s) {
-      s = await this.repo.save(this.repo.create({ email, isVerified: false, isActive: false, verifiedAt: null, rememberToken: randomBytes(24).toString('hex') }));
+      s = await this.repo.save(this.repo.create({ email, isVerified: false, isActive: false, verifiedAt: null, rememberToken: randomBytes(24).toString('hex'), topics: chosen, language: lang }));
       await this.sendConfirmation(s, lang);
       action = 'subscribe';
-    } else if (!s.isVerified) {
-      await this.sendConfirmation(s, lang); // not confirmed yet: send the link again
-      action = 'subscribe.resend';
-    } else if (!s.isActive) {
-      s.isActive = true; // a confirmed subscriber who unsubscribed and comes back
+    } else if (!s.isVerified || !s.isActive) {
+      // not confirmed yet, or unsubscribed and coming back: the link in the e-mail is what (re)activates, so nobody can sign another person up again
+      if (topics !== undefined) s.topics = chosen;
+      s.language = lang;
       await this.repo.save(s);
-      action = 'resubscribe';
+      await this.sendConfirmation(s, lang);
+      action = s.isVerified ? 'resubscribe' : 'subscribe.resend';
     } else {
-      action = 'subscribe.existing'; // already subscribed: nothing changes, the visitor gets the same answer
+      action = 'subscribe.existing'; // already subscribed: nothing changes (preferences are changed only through the link in the e-mails)
     }
     // public form: no actor, and no e-mail address in the log (the subscriber row has it)
     await this.audit.log({ category: 'subscribers', action, description: 'طلب اشتراك في النشرة من الموقع', entityType: 'subscribers', entityId: s.id });
@@ -89,6 +91,22 @@ export class SubscribersService {
     return { unsubscribed: true };
   }
 
+  /** What the "manage my subscription" page shows. `topics` is always the full list the person receives. */
+  async preferences(token: string) {
+    const s = await this.byToken(token);
+    return { email: s.email, isActive: s.isActive && s.isVerified, topics: s.topics?.length ? s.topics : [...NEWSLETTER_TOPICS] };
+  }
+
+  async setPreferences(token: string, topics: string[]) {
+    const s = await this.byToken(token);
+    s.topics = normalizeTopics(topics);
+    if (!s.topics && !topics.length) s.isActive = false; // nothing chosen = no e-mails
+    else if (s.isVerified) s.isActive = true; // the person holds the private link: choosing topics again also brings an unsubscribed address back
+    await this.repo.save(s);
+    await this.audit.log({ category: 'subscribers', action: 'preferences', description: 'تعديل مواضيع الاشتراك في النشرة عبر الرابط', entityType: 'subscribers', entityId: s.id });
+    return this.preferences(token);
+  }
+
   // ---------------------------------------------------------------- admin
   private build(q: SubscribersQueryDto) {
     const qb = this.repo.createQueryBuilder('s');
@@ -100,7 +118,7 @@ export class SubscribersService {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('s.email ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { email: 's.email', rememberToken: 's.rememberToken', verifiedAt: 'CAST(s.verifiedAt AS TEXT)', createdAt: 'CAST(s.createdAt AS TEXT)' });
+    applyColumnFilters(qb, q.cf, { email: 's.email', topics: 'CAST(s.topics AS TEXT)', language: 's.language', rememberToken: 's.rememberToken', verifiedAt: 'CAST(s.verifiedAt AS TEXT)', createdAt: 'CAST(s.createdAt AS TEXT)' });
     qb.orderBy('s.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('s.id', 'DESC');
     return qb;
   }

@@ -22,6 +22,7 @@ function Action({ action }: { action: 'verify' | 'unsubscribe' }) {
       {state === 'busy' ? <><Spinner /><p className="mt-4 text-sm text-gray-600">{t('sub.verifying')}</p></> : (
         <>
           <p className={`text-lg font-bold ${state === 'ok' ? 'text-emerald-700' : 'text-red-600'}`}>{state === 'ok' ? t(action === 'verify' ? 'sub.verifiedOk' : 'sub.unsubOk') : t('sub.linkInvalid')}</p>
+          {state === 'ok' && action === 'unsubscribe' && <Link href={href(`/subscribe/preferences?token=${token}`)} className="mt-4 block text-sm text-primary underline">{t('sub.change')}</Link>}
           <Link href={href('/')} className="mt-6 inline-block text-sm text-primary">← {t('sub.home')}</Link>
         </>
       )}

@@ -88,7 +88,7 @@ export function AgendaSection({ code, title }: { code: string; title: string }) 
   if (items === null) return null;
   const bannerCls = 'relative flex min-h-[200px] flex-col justify-center overflow-hidden rounded-2xl p-6 text-white shadow-card';
   return (
-    <SectionWrap code={code} title={title} action={items.length ? <Link href={href('/occasions/upcoming')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link> : undefined}>
+    <SectionWrap code={code} title={title} action={items.length ? <Link href={href('/agenda')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link> : undefined}>
       <div className={`grid gap-5 ${items.length ? 'lg:grid-cols-2' : ''}`}>
         {items.length > 0 && (
           <ul className="space-y-3">

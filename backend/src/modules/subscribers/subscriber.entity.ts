@@ -23,4 +23,12 @@ export class Subscriber extends TimestampedEntity {
 
   @Column({ name: 'remember_token', length: 64 })
   rememberToken: string;
+
+  /** Chosen newsletter topics (see common/newsletter-topics.ts). null = everything. */
+  @Column({ type: 'jsonb', nullable: true })
+  topics: string[] | null;
+
+  /** Language of the e-mails this subscriber gets (the language of the form they used). */
+  @Column({ type: 'varchar', length: 2, default: 'ar' })
+  language: string;
 }

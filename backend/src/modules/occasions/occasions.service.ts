@@ -18,10 +18,11 @@ import { by, filterByCf, matches } from '../content/mem';
 import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { removedChanges } from '../audit/audit-snapshot';
 
-export type OccasionScope = 'all' | 'upcoming' | 'current' | 'previous' | 'exhibitions';
+/** 'agenda' = what is still to come or happening now (upcoming + current). */
+export type OccasionScope = 'all' | 'upcoming' | 'current' | 'previous' | 'exhibitions' | 'agenda';
 
 type Coverage = { title: string; url: string; source: string };
-const DETAIL_TEXT = ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn'] as const;
+const DETAIL_TEXT = ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn', 'startTime', 'endTime', 'audienceAr', 'audienceEn', 'registrationUrl', 'registrationNoteAr', 'registrationNoteEn'] as const;
 
 @Injectable()
 export class OccasionsService {
@@ -100,6 +101,9 @@ export class OccasionsService {
       sectorAr: this.text(r, 'sectorAr'), sectorEn: this.text(r, 'sectorEn'),
       organizerAr: this.text(r, 'organizerAr'), organizerEn: this.text(r, 'organizerEn'),
       participation: this.text(r, 'participation'),
+      startTime: this.text(r, 'startTime'), endTime: this.text(r, 'endTime'),
+      audienceAr: this.text(r, 'audienceAr'), audienceEn: this.text(r, 'audienceEn'),
+      registrationUrl: this.text(r, 'registrationUrl'), registrationNoteAr: this.text(r, 'registrationNoteAr'), registrationNoteEn: this.text(r, 'registrationNoteEn'),
       parentId: this.parentOf(r),
       videos: this.videosOf(r),
       coverage: this.coverageOf(r),
@@ -155,8 +159,14 @@ export class OccasionsService {
     if (finish < start) throw new BadRequestException('تاريخ النهاية يجب أن يكون في يوم البداية أو بعده');
   }
 
+  /** a one-day event cannot end before it starts */
+  private assertTimes(start: string, finish: string, from?: string, to?: string) {
+    if (start === finish && from && to && to < from) throw new BadRequestException('وقت النهاية يجب أن يكون بعد وقت البداية');
+  }
+
   async create(dto: CreateOccasionDto, files: Express.Multer.File[], actor: AuthUser) {
     this.assertDates(dto.eventDate, dto.finishDate);
+    this.assertTimes(dto.eventDate, dto.finishDate, dto.startTime, dto.endTime);
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const detail = this.detailX(dto);
     await this.assertParent(detail.parentId as number | null | undefined);
@@ -182,6 +192,7 @@ export class OccasionsService {
     const start = dto.eventDate ?? this.eventDate(current);
     const finish = dto.finishDate ?? current.finishAt ?? start;
     this.assertDates(start, finish);
+    this.assertTimes(start, finish, dto.startTime ?? this.text(current, 'startTime'), dto.endTime ?? this.text(current, 'endTime'));
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const existing = current.images ?? [];
     const keep = dto.keepImages ?? existing;
@@ -288,6 +299,11 @@ export class OccasionsService {
       organizer: pick(r.x.organizerAr, r.x.organizerEn, en),
       location: pick(r.x.locationAr, r.x.locationEn, en),
       participation: this.text(r, 'participation'),
+      startTime: this.text(r, 'startTime'),
+      endTime: this.text(r, 'endTime'),
+      audience: pick(r.x.audienceAr, r.x.audienceEn, en),
+      registrationUrl: this.text(r, 'registrationUrl'),
+      registrationNote: pick(r.x.registrationNoteAr, r.x.registrationNoteEn, en),
       images: images.map((p) => this.storage.url(p)),
     };
   }
@@ -308,6 +324,7 @@ export class OccasionsService {
     const scope = (q.scope as OccasionScope) ?? 'upcoming';
     let rows = await this.all();
     if (scope === 'upcoming' || scope === 'current' || scope === 'previous') rows = rows.filter((r) => this.statusOf(r, today) === scope);
+    if (scope === 'agenda') rows = rows.filter((r) => this.statusOf(r, today) !== 'previous');
     if (scope === 'exhibitions') rows = rows.filter((r) => this.eventType(r) === 'exhibition');
     rows = this.publicRows(q, rows);
     if (q.month) {

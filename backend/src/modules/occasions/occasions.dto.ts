@@ -29,6 +29,15 @@ export class CreateOccasionDto {
   @IsOptional() @IsString() @MaxLength(150) sectorEn?: string;
   @IsOptional() @IsString() @MaxLength(200) organizerAr?: string;
   @IsOptional() @IsString() @MaxLength(200) organizerEn?: string;
+  /** Agenda details (all optional, '' = not set). Times are 24-hour HH:MM. */
+  @IsOptional() @Matches(/^(([01]\d|2[0-3]):[0-5]\d)?$/, { message: 'الوقت يجب أن يكون بصيغة HH:MM' }) startTime?: string;
+  @IsOptional() @Matches(/^(([01]\d|2[0-3]):[0-5]\d)?$/, { message: 'الوقت يجب أن يكون بصيغة HH:MM' }) endTime?: string;
+  @IsOptional() @IsString() @MaxLength(255) audienceAr?: string;
+  @IsOptional() @IsString() @MaxLength(255) audienceEn?: string;
+  /** link of the registration page; must be http(s) */
+  @IsOptional() @Matches(/^(https?:\/\/\S{1,480})?$/i, { message: 'رابط التسجيل غير صالح' }) registrationUrl?: string;
+  @IsOptional() @IsString() @MaxLength(255) registrationNoteAr?: string;
+  @IsOptional() @IsString() @MaxLength(255) registrationNoteEn?: string;
   /** organized = the Chamber organizes it, participating = the Chamber takes part in it; '' = not set */
   @IsOptional() @IsIn(['organized', 'participating', '']) participation?: string;
   /** related exhibition (for an occasion that belongs to an exhibition); 0 = none */
@@ -55,6 +64,15 @@ export class UpdateOccasionDto {
   @IsOptional() @IsString() @MaxLength(150) sectorEn?: string;
   @IsOptional() @IsString() @MaxLength(200) organizerAr?: string;
   @IsOptional() @IsString() @MaxLength(200) organizerEn?: string;
+  /** Agenda details (all optional, '' = not set). Times are 24-hour HH:MM. */
+  @IsOptional() @Matches(/^(([01]\d|2[0-3]):[0-5]\d)?$/, { message: 'الوقت يجب أن يكون بصيغة HH:MM' }) startTime?: string;
+  @IsOptional() @Matches(/^(([01]\d|2[0-3]):[0-5]\d)?$/, { message: 'الوقت يجب أن يكون بصيغة HH:MM' }) endTime?: string;
+  @IsOptional() @IsString() @MaxLength(255) audienceAr?: string;
+  @IsOptional() @IsString() @MaxLength(255) audienceEn?: string;
+  /** link of the registration page; must be http(s) */
+  @IsOptional() @Matches(/^(https?:\/\/\S{1,480})?$/i, { message: 'رابط التسجيل غير صالح' }) registrationUrl?: string;
+  @IsOptional() @IsString() @MaxLength(255) registrationNoteAr?: string;
+  @IsOptional() @IsString() @MaxLength(255) registrationNoteEn?: string;
   /** organized = the Chamber organizes it, participating = the Chamber takes part in it; '' = not set */
   @IsOptional() @IsIn(['organized', 'participating', '']) participation?: string;
   /** related exhibition (for an occasion that belongs to an exhibition); 0 = none */
@@ -76,7 +94,7 @@ export class OccasionsAdminQueryDto extends AdminListQueryDto {
 
 export class PublicOccasionsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsIn(['ar', 'en']) lang?: string;
-  @IsOptional() @IsIn(['all', 'upcoming', 'current', 'previous', 'exhibitions']) scope?: string;
+  @IsOptional() @IsIn(['all', 'upcoming', 'current', 'previous', 'exhibitions', 'agenda']) scope?: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
   @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/) month?: string;
   /** free text over the name, sector, organizer and place */

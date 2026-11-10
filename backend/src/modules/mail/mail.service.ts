@@ -43,13 +43,13 @@ export class MailService {
   }
 
   /** Never throws: a mail problem must not break the subscription itself. */
-  async send(to: string, subject: string, html: string): Promise<boolean> {
+  async send(to: string, subject: string, html: string, headers?: Record<string, string>): Promise<boolean> {
     if (!this.enabled) {
       this.logger.warn(`SMTP not configured (set SMTP_HOST or MAIL_HOST in .env): e-mail "${subject}" to ${to} was NOT sent.`);
       return false;
     }
     try {
-      await this.tx.sendMail({ from: env('FROM') || env('USER'), to, subject, html });
+      await this.tx.sendMail({ from: env('FROM') || env('USER'), to, subject, html, headers });
       return true;
     } catch (e) {
       this.logger.error(`Could not send e-mail to ${to}: ${(e as Error).message}`);

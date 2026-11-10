@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
-interface Row { id: number; email: string; isVerified: boolean; isActive: boolean; verifiedAt: string | null; rememberToken: string; createdAt: string }
+interface Row { id: number; email: string; isVerified: boolean; isActive: boolean; verifiedAt: string | null; rememberToken: string; createdAt: string; topics: string[] | null; language: string }
 
 /** Newsletter subscribers: e-mail, verified?, active?, when it became verified, and its remember token. */
 export function SubscribersAdmin() {
@@ -19,12 +19,15 @@ export function SubscribersAdmin() {
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
   const badge = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
+  const topicsText = (r: Row) => (r.topics?.length ? r.topics.map((k) => t(`sub.topic.${k}`)).join('، ') : t('sub.allTopics'));
   const yn = [{ value: 'true', label: t('sub.yes') }, { value: 'false', label: t('sub.no') }];
 
   const cols: Col<Row>[] = [
     { key: 'email', label: t('sub.email'), render: (r) => <bdi dir="ltr">{r.email}</bdi> },
     { key: 'isVerified', searchable: false, label: t('sub.verified'), render: (r) => badge(r.isVerified), text: (r) => t(r.isVerified ? 'sub.yes' : 'sub.no') },
     { key: 'isActive', searchable: false, label: t('sub.active'), render: (r) => badge(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
+    { key: 'topics', label: t('sub.admTopics'), render: (r) => topicsText(r), text: (r) => topicsText(r) },
+    { key: 'language', label: t('sub.admLang'), render: (r) => r.language.toUpperCase(), text: (r) => r.language.toUpperCase() },
     { key: 'verifiedAt', type: 'date', label: t('sub.verifiedAt'), render: (r) => (r.verifiedAt ? fmtDate(lang, r.verifiedAt, true) : '—'), text: (r) => (r.verifiedAt ? fmtDate(lang, r.verifiedAt, true) : '') },
     {
       key: 'rememberToken', label: t('sub.token'),

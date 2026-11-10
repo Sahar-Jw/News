@@ -21,6 +21,10 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'eventDate', label: ar ? 'تاريخ البداية' : 'Start date', value: (r) => r.eventDate },
   { key: 'finishDate', label: ar ? 'تاريخ النهاية' : 'Finish date', value: (r) => r.finishDate },
   { key: 'type', label: ar ? 'النوع' : 'Type', value: (r) => r.type },
+  { key: 'startTime', label: ar ? 'وقت البداية' : 'Start time', value: (r) => r.startTime },
+  { key: 'endTime', label: ar ? 'وقت النهاية' : 'End time', value: (r) => r.endTime },
+  { key: 'audience', label: ar ? 'الفئة المستهدفة' : 'Target audience', value: (r) => (ar ? r.audienceAr : r.audienceEn || r.audienceAr) },
+  { key: 'registrationUrl', label: ar ? 'رابط التسجيل' : 'Registration link', value: (r) => r.registrationUrl },
   { key: 'imageCount', label: ar ? 'عدد الصور' : 'Images', value: (r) => r.imageCount },
 ];
 

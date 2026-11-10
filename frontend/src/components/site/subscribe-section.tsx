@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Reveal } from './motion';
+import { NEWSLETTER_TOPIC_KEYS, NewsletterTopics } from './newsletter-topics';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -12,14 +13,16 @@ export function SubscribeSection() {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [msg, setMsg] = useState('');
+  const [topics, setTopics] = useState<string[]>([...NEWSLETTER_TOPIC_KEYS]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = email.trim();
     if (!EMAIL_RE.test(v) || v.length > 190) { setState('error'); setMsg(t('sub.invalid')); return; }
+    if (topics.length === 0) { setState('error'); setMsg(t('sub.noneChosen')); return; }
     setState('busy');
     try {
-      const r = await api<{ message: string }>('/public/subscribe', { method: 'POST', body: { email: v, lang } });
+      const r = await api<{ message: string }>('/public/subscribe', { method: 'POST', body: { email: v, lang, topics } });
       setState('done'); setMsg(r.message); setEmail('');
     } catch (err: any) {
       setState('error'); setMsg(err.message);
@@ -39,6 +42,11 @@ export function SubscribeSection() {
           {state === 'busy' ? t('sub.sending') : t('sub.button')}
         </button>
       </form>
+      <details className="mt-3 rounded-xl border border-line bg-white/70 px-4 py-3 text-start">
+        <summary className="cursor-pointer text-sm font-semibold text-secondary">{t('sub.topics')}</summary>
+        <p className="mb-2 mt-2 text-xs text-gray-500">{t('sub.topicsHint')}</p>
+        <NewsletterTopics value={topics} onChange={(v) => { setTopics(v); if (state !== 'busy') setState('idle'); }} />
+      </details>
       <p role="status" aria-live="polite" className={`text-center text-sm ${msg && (state === 'done' || state === 'error') ? 'mt-3' : ''} ${state === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>{state === 'done' || state === 'error' ? msg : ''}</p>
     </Reveal>
   );
