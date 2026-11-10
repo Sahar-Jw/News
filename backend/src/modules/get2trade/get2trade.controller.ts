@@ -27,6 +27,9 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'packageName', label: ar ? 'الباقة' : 'Package', value: (r) => r.packageName },
   { key: 'startDate', label: ar ? 'تاريخ البدء' : 'Start date', value: (r) => r.startDate ?? '' },
   { key: 'people', label: ar ? 'عدد الأشخاص' : 'People', value: (r) => r.people ?? '' },
+  { key: 'spaceKind', label: ar ? 'نوع المساحة المطلوبة' : 'Requested space type', value: (r) => r.spaceKind ?? '' },
+  { key: 'duration', label: ar ? 'مدة الحجز' : 'Duration', value: (r) => (r.durationValue && r.durationUnit ? `${r.durationValue} ${r.durationUnit}` : '') },
+  { key: 'extraServices', label: ar ? 'خدمات إضافية' : 'Additional services', value: (r) => r.extraServices ?? '' },
   { key: 'status', label: ar ? 'الحالة' : 'Status', value: (r) => r.status },
   { key: 'createdAt', label: ar ? 'تاريخ الطلب' : 'Submitted at', value: (r) => r.createdAt },
 ];

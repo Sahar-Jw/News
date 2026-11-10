@@ -17,7 +17,7 @@ const cls = (bad?: string) => `${inputCls} ${bad ? 'border-red-500' : ''}`;
 const yn = (on: boolean, t: (k: string) => string) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
 
 // ------------------------------------------------------------------ bookings inbox
-interface Booking { id: number; reference: string; kind: string; name: string; company: string | null; phone: string; email: string; spaceName: string; packageName: string; startDate: string | null; people: number | null; message: string | null; status: string; staffNotes: string | null; createdAt: string }
+interface Booking { id: number; reference: string; kind: string; name: string; company: string | null; phone: string; email: string; spaceName: string; packageName: string; startDate: string | null; people: number | null; spaceKind: string | null; durationValue: number | null; durationUnit: string | null; extraServices: string | null; message: string | null; status: string; staffNotes: string | null; createdAt: string }
 
 function Bookings() {
   const { t, lang } = useI18n();
@@ -64,7 +64,7 @@ function Bookings() {
         {sel && (
           <div className="space-y-4">
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              {([[t('gt.a.type'), t(`gt.reqKind.${sel.kind}`)], [t('gt.name'), sel.name], [t('gt.company'), sel.company], [t('site.phone'), sel.phone], [t('contact.email'), sel.email], [t('gt.space'), sel.spaceName], [t('gt.package'), sel.packageName], [t('gt.a.startWish'), sel.startDate], [t('gt.a.people'), sel.people != null ? String(sel.people) : null]] as [string, string | null][]).map(([k, val]) => <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-semibold">{val || '—'}</dd></div>)}
+              {([[t('gt.a.type'), t(`gt.reqKind.${sel.kind}`)], [t('gt.name'), sel.name], [t('gt.company'), sel.company], [t('site.phone'), sel.phone], [t('contact.email'), sel.email], [t('gt.space'), sel.spaceName], [t('gt.package'), sel.packageName], [t('gt.a.startWish'), sel.startDate], [t('gt.a.people'), sel.people != null ? String(sel.people) : null], [t('gt.spaceKind'), sel.spaceKind ? t(`gt.kind.${sel.spaceKind}`) : null], [t('gt.duration'), sel.durationValue && sel.durationUnit ? `${sel.durationValue} ${t(`gt.unit.${sel.durationUnit}`)}` : null], [t('gt.extraServices'), sel.extraServices]] as [string, string | null][]).map(([k, val]) => <div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd className="font-semibold">{val || '—'}</dd></div>)}
             </dl>
             {sel.message && <div className="rounded-xl bg-canvas p-3 text-sm"><p className="mb-1 text-xs text-gray-500">{t('gt.a.messageLbl')}</p><p className="whitespace-pre-wrap">{sel.message}</p></div>}
             {can('get2trade.update') && (

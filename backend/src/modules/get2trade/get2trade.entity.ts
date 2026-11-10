@@ -4,6 +4,8 @@ import { TimestampedEntity } from '../../common/entities/base.entity';
 
 export const SPACE_KINDS = ['office', 'coworking', 'meeting_room', 'other'] as const;
 export type SpaceKind = (typeof SPACE_KINDS)[number];
+export const DURATION_UNITS = ['day', 'week', 'month', 'year'] as const;
+export type DurationUnit = (typeof DURATION_UNITS)[number];
 export const BOOKING_KINDS = ['booking', 'inquiry'] as const;
 export type BookingKind = (typeof BOOKING_KINDS)[number];
 export const BOOKING_STATUSES = ['new', 'in_review', 'accepted', 'rejected'] as const;
@@ -66,6 +68,21 @@ export class G2tBooking extends TimestampedEntity {
 
   @Column({ type: 'int', nullable: true })
   people: number | null;
+
+  /** the kind of office / space the applicant asked for (office, coworking, meeting room...) */
+  @Column({ name: 'space_kind', type: 'varchar', length: 20, nullable: true })
+  spaceKind: SpaceKind | null;
+
+  /** wished rental duration: a number + a unit (day / week / month / year) */
+  @Column({ name: 'duration_value', type: 'int', nullable: true })
+  durationValue: number | null;
+
+  @Column({ name: 'duration_unit', type: 'varchar', length: 10, nullable: true })
+  durationUnit: DurationUnit | null;
+
+  /** additional services the applicant asked for, free text */
+  @Column({ name: 'extra_services', type: 'text', nullable: true })
+  extraServices: string | null;
 
   @Column({ type: 'text', nullable: true })
   message: string | null;

@@ -14,7 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { MailService } from '../mail/mail.service';
 import { BookingDto, BookingsAdminQueryDto, CreatePackageDto, CreateSpaceDto, PackagesAdminQueryDto, SpacesAdminQueryDto, UpdateBookingDto, UpdateG2tSettingsDto, UpdatePackageDto, UpdateSpaceDto } from './get2trade.dto';
-import { BookingStatus, G2tBooking, Get2TradeSettings, SpaceKind } from './get2trade.entity';
+import { BookingStatus, DurationUnit, G2tBooking, Get2TradeSettings, SpaceKind } from './get2trade.entity';
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const lines = (v: string | null | undefined) => (v ?? '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
@@ -22,6 +22,9 @@ const lines = (v: string | null | undefined) => (v ?? '').split(/\r?\n/).map((x)
 export const reference = (b: { id: number; createdAt: Date }) => `G2T-${new Date(b.createdAt).getFullYear()}-${String(b.id).padStart(5, '0')}`;
 /** the chamber works in Damascus time (same setting as the training center) */
 const todayStr = () => new Date().toLocaleDateString('en-CA', { timeZone: process.env.APP_TIMEZONE || 'Asia/Damascus' });
+
+const UNIT_AR: Record<string, string> = { day: 'يوم', week: 'أسبوع', month: 'شهر', year: 'سنة' };
+const KIND_AR: Record<string, string> = { office: 'مكتب مجهز', coworking: 'مساحة عمل مشتركة', meeting_room: 'قاعة اجتماعات', other: 'أخرى' };
 
 const PACKAGE_TEXT = ['nameEn', 'featuresAr', 'featuresEn', 'priceAr', 'priceEn'] as const;
 const SPACE_TEXT = ['nameEn', 'descriptionAr', 'descriptionEn', 'priceAr', 'priceEn'] as const;
@@ -218,6 +221,8 @@ export class Get2TradeService {
     const st = await this.settingsRow();
     if (dto.kind === 'booking' && !st.isOpen) throw new BadRequestException('باب الحجز مغلق حالياً، يمكنك إرسال استفسار');
     if (dto.kind === 'inquiry' && (dto.message ?? '').trim().length < 5) throw new BadRequestException('اكتب نص الاستفسار');
+    if (dto.kind === 'booking' && (dto.name.match(/\S+/g) ?? []).length < 3) throw new BadRequestException('اكتب الاسم الثلاثي');
+    if (!!dto.durationValue !== !!dto.durationUnit) throw new BadRequestException('حدد مدة الحجز (الرقم والوحدة)');
     if (dto.startDate && dto.startDate < todayStr()) throw new BadRequestException('تاريخ بدء الحجز لا يمكن أن يكون في الماضي');
     let space: ReturnType<Get2TradeService['spaceView']> | null = null;
     let pack: ReturnType<Get2TradeService['presentPackage']> | null = null;
@@ -239,6 +244,7 @@ export class Get2TradeService {
     const b = await this.bookings.save(this.bookings.create({
       kind: dto.kind as 'booking' | 'inquiry', spaceId: space?.id ?? null, packageId: pack?.id ?? null, name: dto.name, company: dto.company ?? null, phone: dto.phone, email: dto.email,
       startDate: dto.startDate ?? null, people: dto.people ?? null, message: dto.message ?? null, status: 'new',
+      spaceKind: (space?.kind ?? dto.spaceKind ?? null) as SpaceKind | null, durationValue: dto.durationValue ?? null, durationUnit: (dto.durationUnit ?? null) as DurationUnit | null, extraServices: dto.extraServices ?? null,
     }));
     const ref = reference(b);
     const what = dto.kind === 'booking' ? 'طلب حجز جديد' : 'استفسار جديد';
@@ -246,7 +252,7 @@ export class Get2TradeService {
     if (st.notifyEmail) {
       const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>${what} ${ref}</h3>`
         + `<p><b>الاسم:</b> ${esc(dto.name)}<br>${dto.company ? `<b>الشركة:</b> ${esc(dto.company)}<br>` : ''}<b>الهاتف:</b> ${esc(dto.phone)}<br><b>البريد:</b> ${esc(dto.email)}`
-        + `${space ? `<br><b>المساحة:</b> ${esc(space.nameAr)}` : ''}${pack ? `<br><b>الباقة:</b> ${esc(pack.nameAr)}` : ''}${dto.startDate ? `<br><b>تاريخ البدء:</b> ${esc(dto.startDate)}` : ''}${dto.people ? `<br><b>عدد الأشخاص:</b> ${dto.people}` : ''}</p>`
+        + `${space ? `<br><b>المساحة:</b> ${esc(space.nameAr)}` : ''}${pack ? `<br><b>الباقة:</b> ${esc(pack.nameAr)}` : ''}${dto.startDate ? `<br><b>تاريخ البدء:</b> ${esc(dto.startDate)}` : ''}${dto.people ? `<br><b>عدد الأشخاص:</b> ${dto.people}` : ''}${b.spaceKind ? `<br><b>نوع المساحة:</b> ${KIND_AR[b.spaceKind] ?? esc(b.spaceKind)}` : ''}${b.durationValue && b.durationUnit ? `<br><b>مدة الحجز:</b> ${b.durationValue} ${UNIT_AR[b.durationUnit] ?? ''}` : ''}${dto.extraServices ? `<br><b>خدمات إضافية:</b> ${esc(dto.extraServices)}` : ''}</p>`
         + `${dto.message ? `<p style="white-space:pre-wrap">${esc(dto.message)}</p>` : ''}</div>`;
       void this.mail.send(st.notifyEmail, `${what} ${ref}`, html);
     }
@@ -298,7 +304,7 @@ export class Get2TradeService {
     if (before !== saved.status && (saved.status === 'accepted' || saved.status === 'rejected')) {
       const ok = saved.status === 'accepted';
       void this.mail.send(saved.email, ok ? 'تم تأكيد طلبك في غيت تو تريد' : 'بخصوص طلبك في غيت تو تريد',
-        `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>${ok ? 'يسرّنا إبلاغكم بتأكيد طلبكم' : 'نأسف لإبلاغكم بتعذّر تلبية طلبكم حالياً'} (${reference(saved)}).</p></div>`);
+        `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>${ok ? 'يسرّنا إبلاغكم بتأكيد طلبكم' : 'نأسف لإبلاغكم بتعذّر تلبية طلبكم حالياً'} (${reference(saved)}).${ok ? ' سنتواصل معكم قريباً لاستكمال التفاصيل.' : ''}</p></div>`);
     }
     return this.presentBooking(saved);
   }
