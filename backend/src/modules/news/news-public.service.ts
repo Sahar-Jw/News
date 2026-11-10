@@ -91,6 +91,9 @@ export class NewsPublicService {
         qb.andWhere(`(${conds.join(' OR ')})`, params);
       }
     }
+    if (q.topicsAll) {
+      [...new Set(q.topicsAll.split(',').map(normalizeLabel).filter(Boolean))].slice(0, 10).forEach((t, i) => qb.andWhere(`CAST(n.topics AS TEXT) ILIKE :ta${i}`, { [`ta${i}`]: `%${escapeLike(JSON.stringify(t))}%` }));
+    }
     if (q.hasVideo === 'true') qb.andWhere("(n.youtubeUrl IS NOT NULL AND n.youtubeUrl <> '')");
     if (q.q) this.applyTextSearch(qb, q.q);
     if (q.dateFrom && q.dateTo && q.dateFrom > q.dateTo) throw new BadRequestException('dateFrom must be before dateTo');

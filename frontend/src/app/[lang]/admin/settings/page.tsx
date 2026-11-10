@@ -32,12 +32,13 @@ import { PagesAdmin } from '@/components/admin/pages-admin';
 import { ScheduleAdmin } from '@/components/admin/schedule-admin';
 import { ServicesAdmin } from '@/components/admin/services-admin';
 import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
+import { TrainerApplicationsAdmin } from '@/components/admin/trainer-applications-admin';
 import { TrainersAdmin } from '@/components/admin/trainers-admin';
 import { WomenMenuAdmin } from '@/components/admin/women-menu-admin';
 
 /** what each tab shows: "<hub>.<tab>" (the data about hubs and tabs - names, permissions - lives in lib/hubs-meta.ts) */
 const SCREENS: Record<string, () => React.ReactNode> = {
-  'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />,
+  'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />, 'training.trainerApps': () => <TrainerApplicationsAdmin />,
   'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <ExpoApplicationsAdmin />,
   'expo.faqs': () => <FaqsAdmin scope="expo" />,
   'expo.links': () => <BrandedPageLinksAdmin page="expo" />,

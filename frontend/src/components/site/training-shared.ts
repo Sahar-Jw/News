@@ -8,6 +8,8 @@ export interface PublicCourse {
 export const COURSE_KINDS = ['course', 'workshop', 'seminar', 'diploma'] as const;
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_RE = /^[+0-9()\-\s]{6,30}$/;
+/** three-part name: first, father, family (same rule as the API) */
+export const THREE_PART_NAME_RE = /^\S+(\s+\S+){2,}$/;
 
 /** "12 March 2026" or "from 12 March 2026 to 14 March 2026" (the template comes from the dictionary) */
 export function courseDates(course: Pick<PublicCourse, 'startDate' | 'endDate'>, fmt: (d: string) => string, range: string) {

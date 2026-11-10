@@ -12,6 +12,8 @@ import { useSite } from '@/components/site/site-context';
 import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/training-shared';
 
 type Tab = 'current' | 'archive' | 'news';
+/** the sub-categories of the center news; each one is a news topic that editors tag (its label in the page language is the topic) */
+const NEWS_KINDS = ['all', 'partnerships', 'programs', 'graduation', 'events', 'center'] as const;
 interface Paged<T> { data: T[]; meta: { totalPages: number; total: number } }
 interface Filters { years: number[]; fields: string[]; kinds: string[]; trainers: { id: number; name: string }[] }
 
@@ -33,27 +35,32 @@ export default function TrainingPage() {
   const [kind, setKind] = useState('');
   const [reg, setReg] = useState<PublicCourse | null>(null);
   const [reload, setReload] = useState(0);
+  const [newsKind, setNewsKind] = useState<(typeof NEWS_KINDS)[number]>('all');
 
   const newsTopic = loc('training', 'news_topic');
 
-  // archive search boxes are filled from what exists in the archive
-  useEffect(() => { api<Filters>('/public/training/filters', { params: { lang }, cache: 'no-store' }).then(setFilters).catch(() => setFilters(null)); }, [lang]);
+  // the search boxes (year / field / trainer / type) are filled from what exists in the courses of the open tab
+  useEffect(() => {
+    if (tab === 'news') return;
+    api<Filters>('/public/training/filters', { params: { lang, scope: tab }, cache: 'no-store' }).then(setFilters).catch(() => setFilters(null));
+  }, [lang, tab, reload]);
 
   useEffect(() => {
     if (tab === 'news') return;
     setData(null);
-    const archive = tab === 'archive';
-    api<Paged<PublicCourse>>('/public/training/courses', { params: { lang, scope: tab, page, limit: 12, ...(archive ? { q: q.trim(), year, field, trainerId, kind } : {}) }, cache: 'no-store' })
+    api<Paged<PublicCourse>>('/public/training/courses', { params: { lang, scope: tab, page, limit: 12, q: q.trim(), year, field, trainerId, kind }, cache: 'no-store' })
       .then(setData).catch(() => setData({ data: [], meta: { totalPages: 1, total: 0 } }));
   }, [tab, lang, page, q, year, field, trainerId, kind, reload]);
 
   useEffect(() => {
     if (tab !== 'news') return;
     setNews(null);
-    api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, limit: 9 } }).then(setNews).catch(() => setNews({ data: [], meta: { totalPages: 1, total: 0 } }));
-  }, [tab, lang, newsTopic]);
+    // the center's own news (topic of the page) narrowed to the chosen sub-category (it must carry both topics)
+    const sub = newsKind === 'all' ? '' : t(`tr.news.${newsKind}`);
+    api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, topicsAll: sub, limit: 9 } }).then(setNews).catch(() => setNews({ data: [], meta: { totalPages: 1, total: 0 } }));
+  }, [tab, lang, newsTopic, newsKind, t]);
 
-  const switchTab = useCallback((x: Tab) => { setTab(x); setPage(1); }, []);
+  const switchTab = useCallback((x: Tab) => { setTab(x); setPage(1); setFilters(null); setQ(''); setYear(''); setField(''); setTrainerId(''); setKind(''); }, []);
   const filtered = !!(q.trim() || year || field || trainerId || kind);
   const clear = () => { setQ(''); setYear(''); setField(''); setTrainerId(''); setKind(''); setPage(1); };
   const setF = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { fn(e.target.value); setPage(1); };
@@ -65,6 +72,7 @@ export default function TrainingPage() {
       <header className="text-center">
         <h1 className="text-2xl font-extrabold text-secondary md:text-3xl">{t('tr.title')}</h1>
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-7 text-gray-600">{t('tr.subtitle')}</p>
+        <div className="mt-4"><Link href={href('/training/trainer-apply')} className="inline-block rounded-full border border-primary/30 bg-white px-5 py-2 text-sm font-bold text-primary shadow-sm transition hover:bg-primary/5">{t('tr.becomeTrainer')}</Link></div>
         <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true"><span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" /></div>
       </header>
 
@@ -74,7 +82,7 @@ export default function TrainingPage() {
         ))}
       </div>
 
-      {tab === 'archive' && (
+      {tab !== 'news' && (
         <div className="grid gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line sm:grid-cols-2 lg:grid-cols-5">
           <input type="search" className={`${inputCls} sm:col-span-2 lg:col-span-5`} maxLength={100} value={q} onChange={setF(setQ)} placeholder={t('tr.searchPh')} aria-label={t('tr.searchPh')} />
           <select className={inputCls} value={year} onChange={setF(setYear)} aria-label={t('tr.year')}><option value="">{t('tr.allYears')}</option>{filters?.years.map((y) => <option key={y} value={y}>{y}</option>)}</select>
@@ -82,6 +90,12 @@ export default function TrainingPage() {
           <select className={inputCls} value={trainerId} onChange={setF(setTrainerId)} aria-label={t('tr.trainer')}><option value="">{t('tr.allTrainers')}</option>{filters?.trainers.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
           <select className={inputCls} value={kind} onChange={setF(setKind)} aria-label={t('tr.kind')}><option value="">{t('tr.allKinds')}</option>{COURSE_KINDS.filter((k) => !filters || filters.kinds.includes(k)).map((k) => <option key={k} value={k}>{t(`tr.kind.${k}`)}</option>)}</select>
           {filtered && <Button type="button" variant="outline" onClick={clear}>{t('os.clear')}</Button>}
+        </div>
+      )}
+
+      {tab === 'news' && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('tr.tabNews')}>
+          {NEWS_KINDS.map((k) => <button key={k} type="button" aria-pressed={newsKind === k} onClick={() => setNewsKind(k)} className={`rounded-full px-4 py-1.5 text-xs font-bold transition ${newsKind === k ? 'bg-primary text-white' : 'bg-white text-secondary ring-1 ring-line hover:bg-primary/10'}`}>{t(`tr.news.${k}`)}</button>)}
         </div>
       )}
 

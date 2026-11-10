@@ -27,8 +27,8 @@ export const HUBS: HubMeta[] = [
     tabs: [settings(['identity', 'other']), { key: 'footer', ar: 'التذييل', en: 'Footer', perms: ['footer.read'] }, { key: 'menu', ar: 'القائمة الرئيسية', en: 'Main menu', perms: ['nav.read'] }],
   },
   {
-    key: 'training', ar: 'مركز التدريب', en: 'Training center', hintAr: 'الدورات والمدربون والمتدربون ونصوص الصفحة', hintEn: 'Courses, trainers, trainees and page texts', icon: '✎', color: '#2563eb',
-    tabs: [{ key: 'courses', ar: 'الدورات', en: 'Courses', perms: ['courses.read'] }, { key: 'trainers', ar: 'المدربون', en: 'Trainers', perms: ['courses.read'] }, { key: 'trainees', ar: 'المتدربون', en: 'Trainees', perms: ['registrations.read'] }, settings(['training'])],
+    key: 'training', ar: 'مركز التدريب', en: 'Training center', hintAr: 'الدورات والمدربون والمتدربون وطلبات المدربين ونصوص الصفحة', hintEn: 'Courses, trainers, trainees, trainer applications and page texts', icon: '✎', color: '#2563eb',
+    tabs: [{ key: 'courses', ar: 'الدورات', en: 'Courses', perms: ['courses.read'] }, { key: 'trainers', ar: 'المدربون', en: 'Trainers', perms: ['courses.read'] }, { key: 'trainees', ar: 'المتدربون', en: 'Trainees', perms: ['registrations.read'] }, { key: 'trainerApps', ar: 'طلبات المدربين', en: 'Trainer applications', perms: ['registrations.read'] }, settings(['training'])],
   },
   {
     key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'العارضون والرعاة والبرنامج والطلبات ومعلومات المعرض', hintEn: 'Exhibitors, sponsors, programme, requests and expo info', icon: '◈', color: '#4b1d7a',

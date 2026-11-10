@@ -100,6 +100,8 @@ export class PublicNewsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsString() @MaxLength(100) q?: string;
   /** comma-separated topics: matches news that has at least one of them */
   @IsOptional() @IsString() @MaxLength(500) topics?: string;
+  /** comma-separated topics: matches news that has ALL of them (combined with `topics` when both are sent) */
+  @IsOptional() @IsString() @MaxLength(500) topicsAll?: string;
   /** publish date range, inclusive (YYYY-MM-DD) */
   @IsOptional() @IsDateString({ strict: true }, { message: 'dateFrom must be a valid date (YYYY-MM-DD)' }) dateFrom?: string;
   @IsOptional() @IsDateString({ strict: true }, { message: 'dateTo must be a valid date (YYYY-MM-DD)' }) dateTo?: string;

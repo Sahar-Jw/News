@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
-interface Row { id: number; courseId: number; courseName: string; name: string; email: string; phone: string; organization: string; createdAt: string }
+interface Row { id: number; courseId: number; courseName: string; name: string; email: string; phone: string; workplace: string; organization: string; jobTitle: string; qualification: string; experience: string; notes: string; createdAt: string }
 
 /** Participants registered through the public "Register now" form. Filter by course; export to XLSX/CSV. */
 export function CourseRegistrationsAdmin() {
@@ -26,7 +26,12 @@ export function CourseRegistrationsAdmin() {
     { key: 'name', label: t('tr.fullName') },
     { key: 'email', label: t('contact.email') },
     { key: 'phone', label: t('site.phone') },
+    { key: 'workplace', label: t('tr.reg.workplace') },
     { key: 'organization', label: t('tr.org') },
+    { key: 'jobTitle', label: t('tr.reg.jobTitle') },
+    { key: 'qualification', label: t('tr.reg.qualification') },
+    { key: 'experience', searchable: false, label: t('tr.reg.expShort'), render: (r) => <span className="line-clamp-2 max-w-xs whitespace-pre-line">{r.experience || '—'}</span>, text: (r) => r.experience },
+    { key: 'notes', searchable: false, label: t('tr.reg.notes').replace(/\s*\(.*\)$/, ''), render: (r) => <span className="line-clamp-2 max-w-xs whitespace-pre-line">{r.notes || '—'}</span>, text: (r) => r.notes },
     { key: 'createdAt', label: t('tr.regDate'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => fmtDate(lang, r.createdAt, true) },
   ];
 

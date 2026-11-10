@@ -1,16 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
+import { MAX_DOC_BYTES, MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
-import { CoursesAdminQueryDto, CreateCourseDto, CreateTrainerDto, PublicCoursesQueryDto, RegisterDto, RegistrationsAdminQueryDto, TrainersAdminQueryDto, UpdateCourseDto, UpdateTrainerDto } from './training.dto';
+import { CoursesAdminQueryDto, CreateCourseDto, CreateTrainerDto, PublicCourseFiltersQueryDto, PublicCoursesQueryDto, RegisterDto, RegistrationsAdminQueryDto, TrainerApplicationsAdminQueryDto, TrainerApplyDto, TrainersAdminQueryDto, UpdateCourseDto, UpdateTrainerApplicationDto, UpdateTrainerDto } from './training.dto';
+import { TrainerApplicationsService, MAX_CERTIFICATES } from './trainer-applications.service';
 import { TrainersService } from './trainers.service';
 import { TrainingService } from './training.service';
 
@@ -104,7 +105,12 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'name', label: ar ? 'الاسم' : 'Name', value: (r) => r.name },
   { key: 'email', label: ar ? 'البريد الإلكتروني' : 'E-mail', value: (r) => r.email },
   { key: 'phone', label: ar ? 'الهاتف' : 'Phone', value: (r) => r.phone },
-  { key: 'organization', label: ar ? 'الجهة' : 'Organization', value: (r) => r.organization },
+  { key: 'workplace', label: ar ? 'مكان العمل' : 'Workplace', value: (r) => r.workplace },
+  { key: 'organization', label: ar ? 'اسم الشركة' : 'Company', value: (r) => r.organization },
+  { key: 'jobTitle', label: ar ? 'المسمى الوظيفي' : 'Job title', value: (r) => r.jobTitle },
+  { key: 'qualification', label: ar ? 'المؤهل العلمي' : 'Qualification', value: (r) => r.qualification },
+  { key: 'experience', label: ar ? 'الخبرات / الاختصاص' : 'Experience / specialisation', value: (r) => r.experience },
+  { key: 'notes', label: ar ? 'ملاحظات' : 'Notes', value: (r) => r.notes },
   { key: 'createdAt', label: ar ? 'تاريخ التسجيل' : 'Registered at', value: (r) => r.createdAt },
 ];
 
@@ -152,9 +158,78 @@ export class RegistrationsAdminController {
   }
 }
 
+const trainerCols = (ar: boolean): ExportColumn[] => [
+  { key: 'reference', label: ar ? 'رقم الطلب' : 'Reference', value: (r) => r.reference },
+  { key: 'fullName', label: ar ? 'الاسم الثلاثي' : 'Full name', value: (r) => r.fullName },
+  { key: 'phone', label: ar ? 'الهاتف' : 'Phone', value: (r) => r.phone },
+  { key: 'email', label: ar ? 'البريد الإلكتروني' : 'E-mail', value: (r) => r.email },
+  { key: 'specializations', label: ar ? 'الاختصاصات' : 'Specialisations', value: (r) => r.specializations },
+  { key: 'trainingFields', label: ar ? 'مجالات التدريب' : 'Training fields', value: (r) => r.trainingFields },
+  { key: 'qualification', label: ar ? 'المؤهل العلمي' : 'Qualification', value: (r) => r.qualification },
+  { key: 'experience', label: ar ? 'الخبرات العلمية والتدريبية' : 'Scientific and training experience', value: (r) => r.experience },
+  { key: 'programs', label: ar ? 'الدورات والبرامج' : 'Courses and programmes', value: (r) => r.programs },
+  { key: 'bio', label: ar ? 'نبذة تعريفية' : 'Bio', value: (r) => r.bio },
+  { key: 'certificateCount', label: ar ? 'عدد الشهادات' : 'Certificates', value: (r) => r.certificateCount },
+  { key: 'status', label: ar ? 'الحالة' : 'Status', value: (r) => r.status },
+  { key: 'createdAt', label: ar ? 'تاريخ الطلب' : 'Submitted at', value: (r) => r.createdAt },
+];
+
+/** Requests to become a trainer (same permissions as the course registrations: both are the trainees / applicants side of the center). */
+@Controller('admin/trainer-applications')
+export class TrainerApplicationsAdminController {
+  constructor(
+    private readonly service: TrainerApplicationsService,
+    private readonly audit: AuditService,
+  ) {}
+
+  @Get()
+  @Permissions(PERM.REGISTRATIONS_READ)
+  list(@Query() q: TrainerApplicationsAdminQueryDto) {
+    return this.service.list(q);
+  }
+
+  @Get('export')
+  @Permissions(PERM.REGISTRATIONS_EXPORT)
+  async export(@Query() q: TrainerApplicationsAdminQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
+    const ar = ex.lang !== 'en';
+    const picked = pickColumns(trainerCols(ar), ex.columns);
+    const rows = await this.service.listAll(q);
+    await this.audit.logExport(u, { category: 'training', entityType: 'trainer_applications', format: ex.format, rowCount: rows.length, columns: picked.map((c) => c.key) });
+    return sendExport(res, ex.format, 'trainer-applications', picked, rows, ar);
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  @Permissions(PERM.REGISTRATIONS_DELETE)
+  bulkDelete(@Body() dto: BulkDeleteDto, @CurrentUser() u: AuthUser) {
+    return this.service.bulkRemove(dto.ids, u);
+  }
+
+  @Get(':id')
+  @Permissions(PERM.REGISTRATIONS_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.one(id);
+  }
+
+  @Patch(':id')
+  @Permissions(PERM.COURSES_UPDATE)
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTrainerApplicationDto, @CurrentUser() u: AuthUser) {
+    return this.service.update(id, dto, u);
+  }
+
+  @Delete(':id')
+  @Permissions(PERM.REGISTRATIONS_DELETE)
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
+    return this.service.bulkRemove([id], u);
+  }
+}
+
 @Controller('public/training')
 export class TrainingPublicController {
-  constructor(private readonly service: TrainingService) {}
+  constructor(
+    private readonly service: TrainingService,
+    private readonly trainerApplications: TrainerApplicationsService,
+  ) {}
 
   @Public()
   @Get('courses')
@@ -164,8 +239,8 @@ export class TrainingPublicController {
 
   @Public()
   @Get('filters')
-  filters(@Query('lang') lang?: string) {
-    return this.service.publicFilters(lang === 'en' ? 'en' : 'ar');
+  filters(@Query() q: PublicCourseFiltersQueryDto) {
+    return this.service.publicFilters(q.lang === 'en' ? 'en' : 'ar', (q.scope as 'archive' | 'current' | 'all') ?? 'archive');
   }
 
   @Public()
@@ -181,5 +256,15 @@ export class TrainingPublicController {
   @HttpCode(200)
   register(@Param('id', ParseIntPipe) id: number, @Body() dto: RegisterDto) {
     return this.service.register(id, dto);
+  }
+
+  // 3 applications / 10 minutes / IP: a real applicant sends one. Files: "cv" (1, required) and "certificates" (optional).
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 600_000 } })
+  @Post('trainer-applications')
+  @HttpCode(200)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'cv', maxCount: 1 }, { name: 'certificates', maxCount: MAX_CERTIFICATES }], { storage: memoryStorage(), limits: { fileSize: MAX_DOC_BYTES, files: 1 + MAX_CERTIFICATES, fieldSize: 1024 * 1024 } }))
+  applyAsTrainer(@Body() dto: TrainerApplyDto, @UploadedFiles() files: { cv?: Express.Multer.File[]; certificates?: Express.Multer.File[] } | undefined) {
+    return this.trainerApplications.apply(dto, files?.cv?.[0], files?.certificates ?? []);
   }
 }

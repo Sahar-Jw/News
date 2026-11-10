@@ -18,6 +18,7 @@ import { SiteSetting } from '../settings/site-setting.entity';
 import { CourseKind } from './course.entity';
 import { CourseRegistration } from './course-registration.entity';
 import { CoursesAdminQueryDto, CreateCourseDto, PublicCoursesQueryDto, RegisterDto, RegistrationsAdminQueryDto, UpdateCourseDto } from './training.dto';
+import { officerRegistration, registrationConfirmation } from './training-mail';
 
 /** The chamber works in Damascus time: "today" decides current vs archive and whether registration is still possible. */
 const TZ = process.env.APP_TIMEZONE || 'Asia/Damascus';
@@ -37,7 +38,6 @@ export function registrationStatus(c: { startDate: string; endDate: string | nul
 /** course text fields kept in `extra` (the Arabic name is the news title) */
 const X_TEXT_FIELDS = ['nameEn', 'fieldAr', 'fieldEn', 'topicsAr', 'topicsEn', 'audienceAr', 'audienceEn', 'locationAr', 'locationEn', 'feeAr', 'feeEn'] as const;
 const lines = (v: string | null | undefined) => (v ?? '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /**
  * Training courses: news rows of the main category COURSE (name = news title, picture = news image); dates, trainer (the news id of a TRAINER row),
@@ -189,13 +189,13 @@ export class TrainingService {
     if (q.to) qb.andWhere('r.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('r.name ILIKE :like', { like }).orWhere('r.email ILIKE :like', { like }).orWhere('r.phone ILIKE :like', { like }).orWhere('c.title ILIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('r.name ILIKE :like', { like }).orWhere('r.email ILIKE :like', { like }).orWhere('r.phone ILIKE :like', { like }).orWhere('r.organization ILIKE :like', { like }).orWhere('r.jobTitle ILIKE :like', { like }).orWhere('c.title ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { courseName: 'c.title', name: 'r.name', email: 'r.email', phone: 'r.phone', organization: 'r.organization', createdAt: 'CAST(r.createdAt AS TEXT)' });
+    applyColumnFilters(qb, q.cf, { courseName: 'c.title', name: 'r.name', email: 'r.email', phone: 'r.phone', organization: 'r.organization', workplace: 'r.workplace', jobTitle: 'r.jobTitle', qualification: 'r.qualification', createdAt: 'CAST(r.createdAt AS TEXT)' });
     return qb.orderBy('r.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('r.id', 'DESC');
   }
   private presentReg(r: CourseRegistration) {
-    return { id: r.id, courseId: Number(r.courseId), courseName: r.course?.title ?? '', name: r.name, email: r.email, phone: r.phone, organization: r.organization ?? '', createdAt: r.createdAt };
+    return { id: r.id, courseId: Number(r.courseId), courseName: r.course?.title ?? '', name: r.name, email: r.email, phone: r.phone, workplace: r.workplace ?? '', organization: r.organization ?? '', jobTitle: r.jobTitle ?? '', qualification: r.qualification ?? '', experience: r.experience ?? '', notes: r.notes ?? '', createdAt: r.createdAt };
   }
   async listRegistrations(q: RegistrationsAdminQueryDto) {
     const p = adminPage(q);
@@ -211,7 +211,7 @@ export class TrainingService {
     if (rows.length !== unique.length) throw new NotFoundException('بعض التسجيلات غير موجودة');
     await this.regs.delete({ id: In(unique) });
     // the participant's personal data is not copied into the audit log
-    await this.audit.log({ category: 'training', action: 'delete', description: `حذف ${rows.length} تسجيل`, actorId: actor.id, entityType: 'course_registrations', details: { ids: unique }, changes: removedChanges('course_registrations', rows, ['name', 'email', 'phone', 'organization']) });
+    await this.audit.log({ category: 'training', action: 'delete', description: `حذف ${rows.length} تسجيل`, actorId: actor.id, entityType: 'course_registrations', details: { ids: unique }, changes: removedChanges('course_registrations', rows, ['name', 'email', 'phone', 'organization', 'workplace', 'jobTitle', 'qualification', 'experience', 'notes']) });
     return { deleted: rows.length };
   }
 
@@ -249,10 +249,10 @@ export class TrainingService {
     return paged(page.map((r) => this.card(r, n.get(r.id) ?? 0, en, today, trainers)), rows.length, p);
   }
 
-  /** Values for the archive search boxes (only what exists in archived courses). */
-  async publicFilters(lang: string) {
+  /** Values for the search boxes (only what exists in the courses of the asked scope: archived by default). */
+  async publicFilters(lang: string, scope: 'archive' | 'current' | 'all' = 'archive') {
     const en = lang === 'en';
-    const rows = await this.publicBase('archive');
+    const rows = scope === 'all' ? [...(await this.publicBase('current')), ...(await this.publicBase('archive'))] : await this.publicBase(scope);
     const trainers = await this.trainerMap();
     const years = [...new Set(rows.map((r) => Number(r.startDate.slice(0, 4))))].sort((a, b) => b - a);
     const fields = [...new Set(rows.map((r) => (en && r.fieldEn) || r.fieldAr).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, lang));
@@ -288,7 +288,7 @@ export class TrainingService {
         if (st === 'full') throw new BadRequestException('اكتمل عدد المشاركين في هذه الدورة');
         if (st !== 'open') throw new BadRequestException('التسجيل في هذه الدورة مغلق');
         if (await m.exists(CourseRegistration, { where: { courseId, email } })) throw new ConflictException('هذا البريد الإلكتروني مسجّل في الدورة بالفعل');
-        await m.save(m.create(CourseRegistration, { courseId, name: dto.name.trim(), email, phone: dto.phone.trim(), organization: dto.organization?.trim() || null }));
+        await m.save(m.create(CourseRegistration, { courseId, name: dto.name.trim(), email, phone: dto.phone.trim(), workplace: dto.workplace.trim(), organization: dto.organization.trim(), jobTitle: dto.jobTitle.trim(), qualification: dto.qualification.trim(), experience: dto.experience?.trim() || null, notes: dto.notes?.trim() || null }));
       });
     } catch (e: any) {
       if (e?.code === '23505') throw new ConflictException('هذا البريد الإلكتروني مسجّل في الدورة بالفعل');
@@ -297,7 +297,23 @@ export class TrainingService {
     // public form: no actor, and the participant's data stays in course_registrations, not in the log
     await this.audit.log({ category: 'training', action: 'create', description: `تسجيل جديد في دورة: ${course.nameAr}`, entityType: 'course_registrations', details: { courseId } });
     void this.notifyOfficer(course, dto, email);
-    return { message: 'تم تسجيلك في الدورة بنجاح' };
+    void this.confirmToTrainee(course, dto, email);
+    return { message: dto.lang === 'en' ? 'You are registered for the course. A confirmation e-mail has been sent to you.' : 'تم تسجيلك في الدورة بنجاح. أرسلنا إليك رسالة تأكيد على بريدك الإلكتروني.' };
+  }
+
+  /** Confirmation e-mail to the trainee, in the language of the form. Never fails the registration (MailService only logs a problem). */
+  private async confirmToTrainee(course: ReturnType<TrainingService['view']>, dto: RegisterDto, email: string) {
+    try {
+      const en = dto.lang === 'en';
+      const t = course.trainerId != null ? (await this.trainerMap()).get(course.trainerId) : undefined;
+      const mail = registrationConfirmation(en ? 'en' : 'ar', dto.name.trim(), {
+        name: pick(course.nameAr, course.nameEn, en), startDate: course.startDate, endDate: course.endDate, location: pick(course.locationAr, course.locationEn, en),
+        hours: course.hours, fee: pick(course.feeAr, course.feeEn, en), trainer: t ? pick(t.title, t.x.nameEn, en) : '',
+      });
+      await this.mail.send(email, mail.subject, mail.html);
+    } catch (e) {
+      this.logger.error(`Could not send the registration confirmation: ${(e as Error).message}`);
+    }
   }
 
   /** E-mail to the training officer (setting training.officer_email, else the chamber's contact e-mail). Never fails the registration. */
@@ -306,8 +322,11 @@ export class TrainingService {
       const get = async (category: string, key: string) => ((await this.settings.findOne({ where: { category, key } }))?.value ?? '').toString().trim();
       const to = (await get('training', 'officer_email')) || (await get('contact', 'email'));
       if (!to) return;
-      const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>تسجيل جديد في دورة</h3><p><b>الدورة:</b> ${esc(course.nameAr)} (${esc(course.startDate)})</p><p><b>الاسم:</b> ${esc(dto.name.trim())}</p><p><b>البريد:</b> ${esc(email)}</p><p><b>الهاتف:</b> ${esc(dto.phone.trim())}</p>${dto.organization ? `<p><b>الجهة:</b> ${esc(dto.organization.trim())}</p>` : ''}</div>`;
-      await this.mail.send(to, `تسجيل جديد: ${course.nameAr}`, html);
+      const m = officerRegistration({ name: course.nameAr, startDate: course.startDate }, {
+        name: dto.name.trim(), email, phone: dto.phone.trim(), workplace: dto.workplace.trim(), organization: dto.organization.trim(), jobTitle: dto.jobTitle.trim(),
+        qualification: dto.qualification.trim(), experience: dto.experience?.trim() || null, notes: dto.notes?.trim() || null,
+      });
+      await this.mail.send(to, m.subject, m.html);
     } catch (e) {
       this.logger.error(`Could not notify the training officer: ${(e as Error).message}`);
     }

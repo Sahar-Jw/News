@@ -25,8 +25,26 @@ export class CourseRegistration {
   @Column({ length: 30 })
   phone: string;
 
+  /** company name */
   @Column({ type: 'varchar', length: 150, nullable: true })
   organization: string | null;
+
+  /** place of work (city / branch / department) */
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  workplace: string | null;
+
+  @Column({ name: 'job_title', type: 'varchar', length: 150, nullable: true })
+  jobTitle: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  qualification: string | null;
+
+  /** optional: experience or specialisation */
+  @Column({ type: 'text', nullable: true })
+  experience: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

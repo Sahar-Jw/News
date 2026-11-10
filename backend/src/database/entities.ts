@@ -18,10 +18,11 @@ import { NavGroup, NavItem } from '../modules/nav/nav.entity';
 import { IncubatorApplication } from '../modules/incubator/incubator-application.entity';
 import { ExpoApplication } from '../modules/expo/expo-application.entity';
 import { CourseRegistration } from '../modules/training/course-registration.entity';
+import { TrainerApplication } from '../modules/training/trainer-application.entity';
 import { News } from '../modules/news/news.entity';
 import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 import { FooterGroup, FooterLink } from '../modules/footer/footer.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, CourseRegistration, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, CourseRegistration, TrainerApplication, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink];
