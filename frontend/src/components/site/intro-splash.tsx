@@ -5,9 +5,10 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 /**
- * Opening animation, shown once per new browser tab, but not on reloads in that tab.
+ * Opening animation, shown on every open of the site (new tab, typed address, bookmark, link from elsewhere), but not on a refresh.
+ * Whether it plays is decided before the first paint by INTRO_BOOT_SCRIPT (lib/theme.ts), which sets data-intro-pending.
  *
- *  1. On a first visit, a full-page cover in the main colour hides the site while its branding loads.
+ *  1. On an open, a full-page cover in the main colour hides the site while its branding loads.
  *  2. Once the logo, site name and font are ready: logo and name form one lockup in the middle, written in together
  *     with a single sweep (left to right, right to left in Arabic), then it holds for a moment.
  *  3. The lockup then zooms in. Logo and name are cut-outs in the cover, so the site shows through their shapes while

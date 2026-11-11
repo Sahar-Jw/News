@@ -9,10 +9,22 @@
  */
 // v2: the palette changed to the logo's green / gold, so colours remembered by older visits are dropped instead of flashing blue first
 export const THEME_STORAGE_KEY = 'site-theme-v2';
-export const INTRO_SESSION_KEY = 'news-site-intro-seen';
-
-/** Runs before paint so the main-color intro cover appears on a new tab, but not on reloads. */
-export const INTRO_BOOT_SCRIPT = `(function(){try{var d=document.documentElement,k=${JSON.stringify(INTRO_SESSION_KEY)};if(sessionStorage.getItem(k)==="true")return;sessionStorage.setItem(k,"true");d.setAttribute("data-intro-pending","")}catch(e){document.documentElement.setAttribute("data-intro-pending","")}})();`;
+/**
+ * Decides, before the first paint, whether the opening animation plays: on every OPEN of the site, never on a refresh.
+ *  - a reload (F5, the browser's refresh button) and back / forward do not play it;
+ *  - a new tab, a typed address, a bookmark, or a link from another site do play it, however many times the visitor comes back;
+ *  - a full page load made from inside the site (a plain link, the language switch) does not play it, because the visitor is
+ *    already in the site; the one exception is the bare address "/", which only redirects to /ar/ or /en/ and is where an open starts.
+ * Nothing is remembered between visits, so there is no "seen" flag to get stuck. If the browser cannot tell, the animation plays.
+ */
+export const INTRO_BOOT_SCRIPT = `(function(){var d=document.documentElement;try{
+var e=performance.getEntriesByType&&performance.getEntriesByType("navigation")[0];
+var type=e?e.type:(performance.navigation?(performance.navigation.type===1?"reload":performance.navigation.type===2?"back_forward":"navigate"):"navigate");
+if(type==="reload"||type==="back_forward")return;
+var r=document.referrer;
+if(r){var u=new URL(r);if(u.origin===location.origin&&u.pathname!=="/"&&u.pathname!=="/index.html")return}
+}catch(x){}
+d.setAttribute("data-intro-pending","")})();`;
 
 /** setting key -> CSS variable (+ values that count as "not customised", they keep the built-in look) */
 const THEME_VARS: Record<string, { cssVar: string; fg?: string }> = {

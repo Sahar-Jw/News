@@ -29,17 +29,17 @@ export default async function LangLayout({ children, params }: { children: React
       <head>
         {/* applies the last saved brand colours before the first paint, so the default colours never flash */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
-        {/* choose first-open vs reload synchronously, before any page content can paint */}
+        {/* choose open vs refresh synchronously, before any page content can paint */}
         <script dangerouslySetInnerHTML={{ __html: INTRO_BOOT_SCRIPT }} />
       </head>
       <body>
         <div id="intro-boot-cover" aria-hidden="true" />
-        {/* brand-color intro cover is enabled synchronously for a new tab, never for a reload */}
+        {/* brand-color intro cover is enabled synchronously on every open of the site, never on a refresh */}
         <div id="boot-skeleton" aria-hidden="true"><PageSkeletonOverlay /></div>
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>
-              {/* new-tab opening animation with the configured site logo */}
+              {/* opening animation with the configured site logo */}
               <IntroSplash />
               <Suspense fallback={null}><NavigationLoader /></Suspense>
               {children}
