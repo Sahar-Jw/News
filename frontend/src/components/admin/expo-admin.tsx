@@ -45,6 +45,8 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
       ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, mapX: String(r.mapX ?? ''), mapY: String(r.mapY ?? ''), nameAr: r.nameAr, startsAt: toLocal(r.startsAt), endsAt: toLocal(r.endsAt), sortOrder: String(r.sortOrder), isActive: r.isActive, logoUrl: r.logoUrl, removeLogo: false }
       : { ...EMPTY, category: kind === 'sponsor' ? 'partner' : kind === 'session' ? 'seminar' : '' });
   };
+  // the "＋ add" buttons on the public EXPO pages link here with ?add=1: the new-item window opens straight away
+  useEffect(() => { if (can('expo.create') && new URLSearchParams(window.location.search).get('add') === '1') open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const catLabel = (c: string) => (c ? (kind === 'session' ? sessionTypeLabel(c, lang === 'ar') : undefined) ?? t(`ex.${kind === 'sponsor' ? 'tier' : 'type'}.${c}`) : '');

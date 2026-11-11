@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { Pager } from '@/components/site/pager';
 import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
-import { Card, NewsCard } from '@/components/site/cards';
+import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { useSite } from '@/components/site/site-context';
 import { newsCategoryLabel } from '@/lib/news-categories';
 import { EMAIL_RE, PHONE_RE, THREE_PART_NAME_RE } from '@/components/site/training-shared';
@@ -113,16 +113,16 @@ export default function IncubatorPage() {
   const shown = data ? data[tab] : null;
   const pages = shown ? Math.max(1, Math.ceil(shown.length / PROJECTS_PER_PAGE)) : 1;
   const pageItems = shown ? shown.slice((Math.min(pp, pages) - 1) * PROJECTS_PER_PAGE, Math.min(pp, pages) * PROJECTS_PER_PAGE) : null;
-  // the sections of the page are tabs; a section without content has no tab
+  // the sections of the page are tabs: one overview (about, goals, how it works, purpose, who it is for), the projects, opportunities and news
+  const hasOverview = !!(about || vision || goals.length || how.length || purpose || entrepreneurs);
   const tabs = [
-    about || vision || goals.length > 0 ? ['about', t('inc.about')] : null, how.length > 0 ? ['how', t('inc.how')] : null, purpose ? ['purpose', t('inc.purpose')] : null, entrepreneurs ? ['entrepreneurs', t('inc.entrepreneurs')] : null,
-    ['projects', t('inc.projects')], opportunities.length > 0 ? ['opportunities', t('inc.opportunities')] : null, news.length > 0 ? ['news', t('inc.news')] : null,
+    hasOverview ? ['overview', t('inc.about')] : null, ['projects', t('inc.projects')], opportunities.length > 0 ? ['opportunities', t('inc.opportunities')] : null, news.length > 0 ? ['news', t('inc.news')] : null,
   ].filter((x): x is string[] => !!x);
   const current = tabs.some(([id]) => id === section) ? section : tabs[0][0];
   const mayRequests = can('incubator.applications.read'), mayProjects = can('incubator.read'), maySettings = can('settings.read');
   const goTab = (id: string) => { setSection(id); window.history.replaceState(null, '', `#${id}`); };
-  // an old link such as /incubator#projects opens that tab
-  useEffect(() => { const id = window.location.hash.replace('#', ''); if (id) setSection(id); }, []);
+  // an old link such as /incubator#projects (or #how, #purpose ...) opens its tab
+  useEffect(() => { const id = window.location.hash.replace('#', ''); if (id) setSection(['about', 'how', 'purpose', 'entrepreneurs'].includes(id) ? 'overview' : id); }, []);
   const tabCls = (x: string) => `rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === x ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`;
 
   return (
@@ -134,41 +134,50 @@ export default function IncubatorPage() {
         {mayProjects && <ManageLink to="/admin/settings?page=incubator&tab=projects">🚀 {t('adm.incubatorProjects')}</ManageLink>}
       </PageManageBar>
 
-      <header className="text-center">
-        <h1 className="text-2xl font-extrabold text-secondary md:text-3xl">{t('nav.incubator')}</h1>
-        <p className="mx-auto mt-2 max-w-2xl text-sm leading-7 text-gray-600">{t('inc.subtitle')}</p>
-        <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true"><span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" /></div>
-        {open && <div className="mt-5"><Button onClick={start}>{t('inc.submit')}</Button></div>}
+      {/* the ONE "submit your project" button of the page lives here */}
+      <header className="rounded-3xl bg-gradient-to-l from-secondary to-primary p-6 text-center text-white shadow-lift md:p-10">
+        <h1 className="text-2xl font-extrabold md:text-3xl">{t('nav.incubator')}</h1>
+        <p className="mx-auto mt-2 max-w-2xl text-sm leading-7 text-white/85">{t('inc.subtitle')}</p>
+        {data && (data.incubated.length > 0 || data.graduated.length > 0) && (
+          <dl className="mt-5 flex flex-wrap justify-center gap-3">
+            {([['inc.incubated', data.incubated.length], ['inc.graduated', data.graduated.length]] as const).map(([k, n]) => <div key={k} className="min-w-28 rounded-2xl bg-white/10 px-4 py-2 ring-1 ring-white/25"><dd className="text-2xl font-extrabold">{n}</dd><dt className="text-xs font-semibold text-white/85">{t(k)}</dt></div>)}
+          </dl>
+        )}
+        <div className="mt-5">
+          {open ? <button type="button" onClick={start} className="rounded-full bg-accent px-7 py-2.5 font-extrabold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('inc.submit')}</button> : <p role="status" className="inline-block rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold">{t('inc.closed')}</p>}
+        </div>
       </header>
 
-      {/* tabs: one per section, with the submit button always in reach */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-full bg-white/90 px-2 py-1.5 shadow-card ring-1 ring-line backdrop-blur">
-        <nav aria-label={t('nav.incubator')} role="tablist" className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-          {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${current === id ? 'bg-secondary text-white' : 'text-secondary hover:bg-primary/10 hover:text-primary'}`}>{label}</button>)}
-        </nav>
-        {open && <button type="button" onClick={start} className="hidden shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px sm:block">{t('inc.submit')}</button>}
+      <div role="tablist" aria-label={t('nav.incubator')} className="flex flex-wrap gap-2">
+        {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${current === id ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`}>{label}</button>)}
       </div>
 
-      {current === 'about' && (about || vision || goals.length > 0) && (
-        <div className="grid gap-5 md:grid-cols-2">
-          {(about || vision) && card(t('inc.about'), <div className="space-y-3 text-sm leading-8 text-gray-700">{about && <p className="whitespace-pre-line">{about}</p>}{vision && <p className="whitespace-pre-line rounded-xl bg-primary/5 p-3"><b className="text-secondary">{t('inc.vision')}: </b>{vision}</p>}</div>)}
-          {goals.length > 0 && card(t('inc.goals'), bullets(goals))}
+      {current === 'overview' && (
+        <div className="space-y-5">
+          {(about || vision || goals.length > 0) && (
+            <div className="grid gap-5 md:grid-cols-2">
+              {(about || vision) && card(t('inc.about'), <div className="space-y-3 text-sm leading-8 text-gray-700">{about && <p className="whitespace-pre-line">{about}</p>}{vision && <p className="whitespace-pre-line rounded-xl bg-primary/5 p-3"><b className="text-secondary">{t('inc.vision')}: </b>{vision}</p>}</div>)}
+              {goals.length > 0 && card(t('inc.goals'), bullets(goals))}
+            </div>
+          )}
+          {how.length > 0 && card(t('inc.how'), (
+            <ol className="flex flex-wrap items-center gap-2">
+              {how.map((x, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-secondary">{i + 1}. {x}</span>
+                  {i < how.length - 1 && <span className="text-accent rtl:rotate-180" aria-hidden="true">◂</span>}
+                </li>
+              ))}
+            </ol>
+          ))}
+          {(purpose || entrepreneurs) && (
+            <div className="grid gap-5 md:grid-cols-2">
+              {purpose && card(t('inc.purpose'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{purpose}</p>)}
+              {entrepreneurs && card(t('inc.entrepreneurs'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{entrepreneurs}</p>)}
+            </div>
+          )}
         </div>
       )}
-
-      {current === 'how' && card(t('inc.how'), (
-        <ol className="flex flex-wrap items-center gap-2">
-          {how.map((x, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-secondary">{i + 1}. {x}</span>
-              {i < how.length - 1 && <span className="text-accent rtl:rotate-180" aria-hidden="true">◂</span>}
-            </li>
-          ))}
-        </ol>
-      ))}
-
-      {current === 'purpose' && card(t('inc.purpose'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{purpose}</p>)}
-      {current === 'entrepreneurs' && card(t('inc.entrepreneurs'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{entrepreneurs}</p>)}
 
       {current === 'projects' && (
       <section aria-label={t('inc.projects')}>
@@ -181,11 +190,10 @@ export default function IncubatorPage() {
         </div>
         {!pageItems || !shown ? <p className="py-10 text-center text-sm text-gray-500">{t('app.loading')}</p> : shown.length === 0 ? <p className="rounded-2xl bg-white py-10 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t(tab === 'incubated' ? 'inc.noIncubated' : 'inc.noGraduated')}</p> : (
           <>
-          <Pager page={Math.min(pp, pages)} totalPages={pages} onPage={setPp} className="mb-4" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pageItems.map((p) => (
               <article key={p.id} className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-                {p.imageUrl && <img src={p.imageUrl} alt="" className="h-40 w-full object-cover" />}
+                {p.imageUrl ? <img src={p.imageUrl} alt="" className="h-40 w-full object-cover" /> : <Thumb src={null} className="h-40 w-full" />}
                 <div className="flex flex-1 flex-col p-5">
                   <h3 className="font-extrabold text-secondary">{p.name}</h3>
                   <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold">
@@ -214,13 +222,6 @@ export default function IncubatorPage() {
           <div className="grid gap-4 md:grid-cols-3">{news.map((n) => <NewsCard key={n.id} n={n} />)}</div>
           <div className="mt-3 text-center"><Link href={href(`/media?topics=${encodeURIComponent(topic)}`)} className="text-sm font-bold text-primary hover:underline">{t('tr.moreNews')} →</Link></div>
         </section>
-      )}
-
-      {(
-        <div className="rounded-2xl bg-gradient-to-r from-secondary to-primary p-6 text-center text-white shadow-card">
-          <h2 className="text-lg font-extrabold">{t('inc.cta')}</h2>
-          <div className="mt-4">{open ? <button type="button" onClick={start} className="rounded-full bg-accent px-6 py-2.5 font-extrabold text-secondary transition hover:brightness-110">{t('inc.submit')}</button> : <p className="text-sm font-semibold text-white/90">{t('inc.closed')}</p>}</div>
-        </div>
       )}
 
       <Modal open={showForm && open} onClose={closeForm} title={t('inc.submit')} wide>

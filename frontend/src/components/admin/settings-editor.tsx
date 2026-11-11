@@ -155,18 +155,21 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   }, [rows, only]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleGroup = (id: GroupId) => setOpen(openIds.includes(id) ? openIds.filter((x) => x !== id) : [...openIds, id]);
-  const pagination = (
-    <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+  // the page counter and the previous / next buttons: shown at the end of the filter row, and again under the list
+  const pageControls = (
+    <>
       <span>{totalMatches} {T.matches}{totalMatches > 0 ? ` · ${T.page} ${page} ${T.of} ${totalPages}` : ''}</span>
       {totalPages > 1 && <div className="flex gap-2">
         <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>{T.previous}</Button>
         <Button type="button" size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>{T.next}</Button>
       </div>}
-    </div>
+    </>
   );
+  // under the list: a gap above it, so the buttons never touch the last row
+  const pagination = <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">{pageControls}</div>;
   const filterBar = (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <input type="search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder={T.search} className={`${inputCls} min-w-48 max-w-md flex-1`} aria-label={T.search} />
+      <input type="search" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder={T.search} className={`${inputCls} min-w-48 max-w-xs flex-1`} aria-label={T.search} />
       {categories.length > 1 && (
         <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setTypeFilter(''); setPage(1); }} className={`${inputCls} w-auto min-w-40`} aria-label={T.category}>
           <option value="">{T.category}</option>
@@ -180,6 +183,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
         </select>
       )}
       {hasFilters && <Button type="button" size="sm" variant="outline" onClick={() => { setQuery(''); setCategoryFilter(''); setTypeFilter(''); setPage(1); }}>{T.clear}</Button>}
+      {/* search, filters and the previous / next buttons share one row */}
+      <div className="ms-auto flex flex-wrap items-center gap-3 text-sm text-gray-600">{pageControls}</div>
     </div>
   );
 
@@ -210,12 +215,10 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
       {loadErr && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p>}
       {!rows && !loadErr && <p className="py-10 text-center text-gray-500">{t('app.loading')}</p>}
 
-      {rows && (!only || only.includes('home')) && can('settings.read') && !hasFilters && <ShortcutsEditor />}
-
       {rows && only && (
         <>
         {filterBar}
-        {pagination}
+        {only.includes('home') && can('settings.read') && !hasFilters && <ShortcutsEditor />}
         <div className="space-y-6">
           {groups.flatMap((g) => g.cats).map((cat) => ({ ...cat, list: cat.list.filter((r) => visibleIds.has(r.id)) })).filter((cat) => cat.list.length > 0).map(catBlock)}
           {totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
@@ -247,7 +250,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
           </div>
 
           {filterBar}
-          {pagination}
+          {can('settings.read') && !hasFilters && <ShortcutsEditor />}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="flex-1" />
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen(groups.map((g) => g.id))}>{T.all}</Button>

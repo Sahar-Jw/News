@@ -11,6 +11,7 @@ import { WomenCalendar, type CalItem } from '@/components/women/women-calendar';
 import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 import { NewsFormDialog } from '@/components/admin/news-form';
 import { Thumb } from './cards';
+import { Pager } from './pager';
 import { CategoryNews } from '@/components/site/category-news';
 
 export type EventTab = 'exhibitions' | 'occasions';
@@ -23,6 +24,8 @@ export interface PublicEvent {
 interface Result { data: PublicEvent[]; meta: { totalPages: number; total?: number } }
 interface Facets { sectors: string[]; organizers: string[]; years: string[] }
 
+/** every list shows 6 cards per page (2 columns next to the calendar = 3 rows) */
+export const EVENTS_PER_PAGE = 6;
 const TABS: EventTab[] = ['exhibitions', 'occasions'];
 const STATUSES: EventStatus[] = ['upcoming', 'current', 'previous'];
 const LABEL = {
@@ -78,18 +81,6 @@ export function EventCard({ event }: { event: PublicEvent }) {
   );
 }
 
-function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
-  const { t } = useI18n();
-  if (pages <= 1) return null;
-  return (
-    <div className="mt-5 flex justify-center gap-3">
-      <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.first')}</button>
-      <span className="self-center text-sm">{page} / {pages}</span>
-      <button type="button" disabled={page >= pages} onClick={() => onPage(page + 1)} className="rounded-lg border border-line px-3 py-2 disabled:opacity-40">{t('tbl.last')}</button>
-    </div>
-  );
-}
-
 /** Exhibitions or occasions: status tabs (upcoming / current / previous = archive), filters by name, date, sector, organizer, participation. */
 function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; initialStatus: EventStatus }) {
   const { lang } = useI18n();
@@ -131,7 +122,7 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   useEffect(() => {
     let live = true;
     setData(null); setError('');
-    api<Result>('/public/occasions', { params: { lang, type, scope: day ? 'all' : status, day: day || undefined, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: 12 }, cache: 'no-store' })
+    api<Result>('/public/occasions', { params: { lang, type, scope: day ? 'all' : status, day: day || undefined, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' })
       .then((r) => { if (live) setData(r); })
       .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
@@ -144,16 +135,17 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
 
   const todayYmd = damascusToday();
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
     <div className="min-w-0">
-      <div role="tablist" aria-label={ar ? 'الحالة' : 'Status'} className="mb-4 flex flex-wrap gap-2 border-b border-line pb-3">
+      {/* one row: the status tabs, then the search and the filters (it wraps only when the screen is too narrow) */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div role="tablist" aria-label={ar ? 'الحالة' : 'Status'} className="flex shrink-0 gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-line">
         {STATUSES.map((s) => (
           <button key={s} type="button" role="tab" aria-selected={!day && status === s} onClick={() => { setStatus(s); setDay(null); }}
             className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${!day && status === s ? 'bg-secondary text-white' : 'text-secondary hover:bg-gray-100'}`}>{statusLabel(s)}</button>
         ))}
       </div>
-      <div className="mb-5 flex flex-wrap items-end gap-2">
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={ar ? 'ابحث باسم المعرض أو القطاع أو الجهة …' : 'Search by name, sector or organizer …'} aria-label={ar ? 'بحث' : 'Search'} className={`${inputCls} !w-auto min-w-56 flex-1`} />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={ar ? 'ابحث باسم المعرض أو القطاع أو الجهة …' : 'Search by name, sector or organizer …'} aria-label={ar ? 'بحث' : 'Search'} className={`${inputCls} !w-auto min-w-48 flex-1`} />
         {facets.sectors.length > 0 && <select aria-label={ar ? 'القطاع' : 'Sector'} className={sel} value={sector} onChange={(e) => setSector(e.target.value)}><option value="">{ar ? 'كل القطاعات' : 'All sectors'}</option>{facets.sectors.map((s) => <option key={s} value={s}>{s}</option>)}</select>}
         {facets.organizers.length > 0 && <select aria-label={ar ? 'الجهة المنظمة' : 'Organizer'} className={sel} value={organizer} onChange={(e) => setOrganizer(e.target.value)}><option value="">{ar ? 'كل الجهات المنظمة' : 'All organizers'}</option>{facets.organizers.map((s) => <option key={s} value={s}>{s}</option>)}</select>}
         {type === 'exhibition' && <select aria-label={ar ? 'نوع المشاركة' : 'Participation'} className={sel} value={participation} onChange={(e) => setParticipation(e.target.value)}><option value="">{ar ? 'كل أنواع المشاركة' : 'All participation types'}</option><option value="organized">{participationLabel('organized', ar)}</option><option value="participating">{participationLabel('participating', ar)}</option></select>}
@@ -171,8 +163,8 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
         data.data.length === 0
           ? <Center>{type === 'exhibition' ? (ar ? 'لا توجد معارض' : 'No exhibitions found') : (ar ? 'لا توجد مناسبات' : 'No occasions found')}</Center>
           : <>
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{data.data.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>
-            <Pager page={page} pages={data.meta.totalPages} onPage={setPage} />
+            <ul className="grid gap-5 sm:grid-cols-2">{data.data.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>
+            <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage} />
           </>
       )}
     </div>
@@ -270,7 +262,7 @@ export function EventsCalendar({ card }: { card?: (e: PublicEvent) => React.Reac
 }
 
 /** buttons at the top for the people who manage the page (visitors see nothing): add news to the events category, the events list and its settings */
-function ManageBar() {
+export function EventsManageBar() {
   const { lang } = useI18n();
   const { can } = useAuth();
   const [adding, setAdding] = useState(false);
@@ -294,7 +286,7 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
   const choose = (t: EventTab) => { setTab(t); try { window.history.replaceState(null, '', `?tab=${t}`); } catch { /* ignore */ } };
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <ManageBar />
+      <EventsManageBar />
       <header className="mb-6">
         <h1 className="text-2xl font-extrabold text-secondary">{ar ? 'المعارض والفعاليات' : 'Exhibitions & events'}</h1>
         <p className="mt-1 text-sm text-gray-600">{ar ? 'المعارض والمناسبات التي تنظمها الغرفة أو تشارك فيها، مع الأخبار والصور والتغطية الإعلامية.' : 'Exhibitions and occasions the Chamber organizes or takes part in, with news, photos and media coverage.'}</p>

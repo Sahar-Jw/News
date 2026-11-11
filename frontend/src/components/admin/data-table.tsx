@@ -151,14 +151,14 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
 
   return (
     <div className="space-y-3">
-      <div className="no-print flex flex-wrap items-end gap-2 rounded-2xl border border-line bg-white p-3 shadow-card">
+      <div className="no-print flex flex-wrap items-center gap-x-2 gap-y-2 rounded-2xl border border-line bg-white p-3 shadow-card">
         <label className="flex items-center gap-2 text-sm text-gray-600">
           {t('tbl.pageSize')}
           <select value={limit} onChange={(e) => { setLimit(e.target.value); setPage(1); }} className="rounded-lg border px-2 py-2">
             {['10', '20', '50', '100', 'all'].map((n) => <option key={n} value={n}>{n === 'all' ? t('app.all') : n}</option>)}
           </select>
         </label>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tbl.search')} className={`${inputCls} max-w-56`} />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('tbl.search')} className={`${inputCls} min-w-40 max-w-56 flex-1`} />
         {filters.map((f) => (
           <select key={f.key} value={fv[f.key] ?? ''} onChange={(e) => { setFv({ ...fv, [f.key]: e.target.value }); setPage(1); }} className={`${inputCls} max-w-44`} aria-label={f.label}>
             <option value="">{f.label}: {t('app.all')}</option>
@@ -167,8 +167,8 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
         ))}
         {dateFilter && (
           <>
-            <label className="text-xs text-gray-500">{t('tbl.from')}<input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className={`${inputCls} mt-0.5`} /></label>
-            <label className="text-xs text-gray-500">{t('tbl.to')}<input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className={`${inputCls} mt-0.5`} /></label>
+            <label className="flex items-center gap-1.5 text-xs text-gray-500">{t('tbl.from')}<input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} className={`${inputCls} !w-auto`} /></label>
+            <label className="flex items-center gap-1.5 text-xs text-gray-500">{t('tbl.to')}<input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} className={`${inputCls} !w-auto`} /></label>
           </>
         )}
         <div className="ms-auto flex flex-wrap items-center gap-2">
@@ -246,7 +246,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
         </table>
       </div>
 
-      <div className="no-print flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 pt-4 text-sm text-gray-600">
         <div>{meta && `${t('tbl.showing')} ${meta.from}–${meta.to} ${t('tbl.of')} ${meta.total}`}</div>
         {limit !== 'all' && meta && (() => {
           const last = meta.totalPages;

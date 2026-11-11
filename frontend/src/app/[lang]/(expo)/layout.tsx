@@ -1,13 +1,15 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
+import { fileUrl } from '@/lib/api';
 import { SiteProvider, useSite } from '@/components/site/site-context';
 import { useExpoInfo } from '@/components/site/expo-shared';
 import { BackToTop } from '@/components/site/shell';
 import { BrandedDropdown } from '@/components/site/branded-dropdown';
+import { ExpoManageBar } from '@/components/site/expo-manage-bar';
 import { SocialIcon } from '@/components/site/icons';
 import { expoPageHref, readExpoMenu } from '@/lib/expo-menu';
 import type { WomenMenuEntry, WomenMenuPage } from '@/lib/women-menu';
@@ -23,7 +25,8 @@ const SOCIAL = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtu
 function Chrome({ children }: { children: React.ReactNode }) {
   const { lang, t, href, otherLangHref } = useI18n();
   const pathname = usePathname();
-  const { can } = useAuth();
+  const { me, can, logout } = useAuth();
+  const router = useRouter();
   const x = useExpoInfo();
   const [open, setOpen] = useState(false);
   const { s } = useSite();
@@ -47,6 +50,18 @@ function Chrome({ children }: { children: React.ReactNode }) {
   const footerClass = 'rounded-lg px-2 py-1 text-sm text-white/80 transition hover:text-accent';
   const adminUrl = can('expo.read') ? '/admin/settings?page=expo&tab=exhibitors' : '/admin/settings?page=expo';
   const canManage = can('expo.read', 'settings.read');
+  // quick links of the account menu, each shown only to people who hold its permission (the API still enforces every one)
+  const tab = (k: string, add = false) => `/admin/settings?page=expo&tab=${k}${add ? '&add=1' : ''}`;
+  const quick: { to: string; label: string }[] = [
+    can('expo.create') && { to: tab('exhibitors', true), label: ar ? '＋ إضافة عارض' : '＋ Add exhibitor' },
+    can('expo.create') && { to: tab('sponsors', true), label: ar ? '＋ إضافة راعٍ / شريك' : '＋ Add sponsor' },
+    can('expo.create') && { to: tab('sessions', true), label: ar ? '＋ إضافة جلسة' : '＋ Add session' },
+    can('news.create') && { to: '/expo/news', label: ar ? '＋ إضافة خبر' : '＋ Add news' },
+    can('expo.applications.read') && { to: tab('applications'), label: ar ? '📥 طلبات المشاركة' : '📥 Participation requests' },
+    can('settings.read') && { to: tab('identity'), label: ar ? '🎨 الهوية والمظهر' : '🎨 Identity & theme' },
+  ].filter(Boolean) as { to: string; label: string }[];
+  const logoutUser = async () => { await logout(); router.push(href('/')); };
+  const avatar = me ? (me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-full w-full object-cover" /> : me.fullName.slice(0, 1)) : null;
   const socials = SOCIAL.filter((k) => s('expo', `social_${k}`));
   const rights = x.L('rights');
 
@@ -67,9 +82,19 @@ function Chrome({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="flex items-center gap-2">
             <Link href={href('/')} title={t('ex.backToChamber')} className="hidden items-center gap-1 rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 2xl:inline-flex"><span aria-hidden="true" className="rtl:rotate-180">←</span>{t('ex.backToChamber')}</Link>
-            {canManage && <Link href={href(adminUrl)} className="hidden rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 md:inline-block">{ar ? 'إدارة الصفحة' : 'Manage page'}</Link>}
             {x.registerOpen && <Link href={href('/expo/register')} className="hidden rounded-full bg-accent px-4 py-2 text-sm font-extrabold text-secondary shadow transition hover:brightness-110 sm:inline-block">{t('ex.registerExhibitor')}</Link>}
             <Link href={otherLangHref(pathname)} onClick={() => { try { localStorage.setItem('lang', ar ? 'en' : 'ar'); } catch {} }} className="rounded-full border border-white/30 px-3 py-1.5 text-xs font-bold hover:bg-white/15">{t('site.language')}</Link>
+            {me && <BrandedDropdown label={me.fullName} align="end" trigger={
+              <span title={me.fullName} aria-label={me.fullName} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white">{avatar}</span>
+            }>
+              <div className="mb-1 border-b border-line px-3 py-2 text-sm font-semibold text-ink">{me.fullName}</div>
+              <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? 'الملف الشخصي' : 'Profile'}</Link>
+              {canManage && <Link href={href(adminUrl)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? 'إدارة الصفحة' : 'Manage page'}</Link>}
+              {quick.length > 0 && <div className="my-1 border-t border-line px-3 pt-2 text-xs font-bold text-gray-500">{ar ? 'إدارة سريعة' : 'Quick manage'}</div>}
+              {quick.map((q) => <Link key={q.to + q.label} href={href(q.to)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{q.label}</Link>)}
+              <button type="button" onClick={logoutUser} className="w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{ar ? 'تسجيل الخروج' : 'Log out'}</button>
+            </BrandedDropdown>}
+            {me && <Link href={href('/profile')} aria-label={ar ? 'الملف الشخصي' : 'Profile'} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white xl:hidden">{avatar}</Link>}
             <button type="button" aria-label="menu" aria-expanded={open} onClick={() => setOpen(!open)} className="rounded-lg border border-white/30 px-2.5 py-1.5 text-lg leading-none xl:hidden">☰</button>
           </div>
         </div>
@@ -82,11 +107,21 @@ function Chrome({ children }: { children: React.ReactNode }) {
                 <div className="ps-3">{e.items.filter((it) => it.isActive !== false).map((it) => link(it, `block rounded-lg px-3 py-2 text-sm ${current(it.slug) ? 'bg-white/10 font-semibold text-accent' : 'hover:bg-white/10'}`))}</div>
               </details>)}
             <Link href={href('/')} className="mt-1 block rounded-lg border border-white/25 px-3 py-2 text-sm font-semibold hover:bg-white/10">← {t('ex.backToChamber')}</Link>
-            {canManage && <Link href={href(adminUrl)} className="mt-1 block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-white/10">{ar ? 'إدارة الصفحة' : 'Manage page'}</Link>}
             {x.registerOpen && <Link href={href('/expo/register')} className="mt-2 block rounded-full bg-accent px-4 py-2 text-center text-sm font-extrabold text-secondary">{t('ex.registerExhibitor')}</Link>}
+            {me && (
+              <div className="mt-2 border-t border-white/15 pt-2">
+                <div className="flex items-center gap-2 px-3 py-2 text-sm font-bold"><span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-white/15">{avatar}</span>{me.fullName}</div>
+                <Link href={href('/profile')} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm">{ar ? 'الملف الشخصي' : 'Profile'}</Link>
+                {canManage && <Link href={href(adminUrl)} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm">{ar ? 'إدارة الصفحة' : 'Manage page'}</Link>}
+                {quick.map((q) => <Link key={q.to + q.label} href={href(q.to)} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm">{q.label}</Link>)}
+                <button type="button" onClick={logoutUser} className="w-full rounded-lg px-3 py-2 text-start text-sm text-red-200">{ar ? 'تسجيل الخروج' : 'Log out'}</button>
+              </div>
+            )}
           </nav>
         )}
       </header>
+      {/* control buttons for people with permission; the wrapper disappears when the bar renders nothing */}
+      <div className="mx-auto max-w-7xl px-4 pt-6 empty:hidden"><ExpoManageBar /></div>
       <main className="min-h-[60vh] min-w-0">{children}</main>
       <footer className="mt-12 text-white/90" style={{ backgroundColor: 'var(--expo-footer)' }}>
         <div className="h-1 bg-gradient-to-r from-accent via-primary to-transparent" aria-hidden="true" />
