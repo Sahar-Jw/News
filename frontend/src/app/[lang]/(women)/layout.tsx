@@ -114,6 +114,8 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const pageLink = (entry: Extract<WomenMenuEntry, { type: 'page' }>, className: string) => (
     <Link href={href(womenPageHref(entry.slug))} target={entry.newTab ? '_blank' : undefined} rel={entry.newTab ? 'noopener noreferrer' : undefined} aria-current={activeSlug === entry.slug ? 'page' : undefined} onClick={() => { setOpen(false); setActiveSlug(entry.slug); }} key={entry.slug} className={className}>{label(entry)}</Link>
   );
+  // always the first link of the menu: the main page of the committee (the committee's own menu is edited in Settings)
+  const homeEntry: Extract<WomenMenuEntry, { type: 'page' }> = { type: 'page', slug: 'home', labelAr: 'الرئيسية', labelEn: 'Home', isActive: true, newTab: false };
   const footerClass = 'rounded-lg px-2 py-1 text-sm text-white/80 transition hover:text-accent';
   const navPageClass = (entry: Extract<WomenMenuEntry, { type: 'page' }>) =>
     `shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition ${activeSlug === entry.slug ? 'bg-white/15 text-accent ring-1 ring-white/20' : 'text-white/90 hover:bg-white/15 hover:text-accent'}`;
@@ -133,6 +135,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold">{name}</span>
           </Link>
           <nav aria-label={name} className="hidden max-w-[55vw] items-center gap-1 xl:flex">
+            <div key="nav-page-home">{pageLink(homeEntry, navPageClass(homeEntry))}</div>
             {navEntries.map((entry, index) => entry.type === 'page'
               ? <div key={`nav-page-${entry.slug}`}>{pageLink(entry, navPageClass(entry))}</div>
               : <WomenDropdown key={`nav-group-${index}`} label={lang === 'ar' ? entry.titleAr : entry.titleEn} active={entry.items.some((item) => item.isActive !== false && item.slug === activeSlug)}>
@@ -165,6 +168,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         {open && <nav className="border-t border-white/15 px-4 pb-3 xl:hidden">
+          {pageLink(homeEntry, `block rounded-lg px-3 py-2 text-sm font-semibold ${activeSlug === 'home' ? 'bg-white/15 text-accent' : 'hover:bg-white/10'}`)}
           {navEntries.map((entry, index) => entry.type === 'page'
             ? pageLink(entry, `block rounded-lg px-3 py-2 text-sm font-semibold ${activeSlug === entry.slug ? 'bg-white/15 text-accent' : 'hover:bg-white/10'}`)
             : <details key={`mobile-group-${index}`} className="group">

@@ -185,11 +185,6 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
     return (
       <div className="women-theme">
         <div className="mx-auto max-w-6xl px-4 py-6">
-          <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
-            <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
-            <span className="mx-1.5">›</span>
-            {womenPage === 'home' ? <span className="text-ink">{c.name}</span> : <><Link href={href('/committees/women')} className="hover:text-primary">{c.name}</Link></>}
-          </nav>
           {womenPage === 'home' && (
             <header className="relative mb-6 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
               <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
@@ -214,12 +209,15 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   return (
     <div className={women ? 'women-theme' : undefined}>
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
-        <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
-        <span className="mx-1.5">›</span>
-        {!women && <><Link href={href('/committees')} className="hover:text-primary">{t('cm.title')}</Link><span className="mx-1.5">›</span></>}
-        <span className="text-ink">{c.name}</span>
-      </nav>
+      {/* the committee's own menu has the way home, so the businesswomen page has no breadcrumb */}
+      {!women && (
+        <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
+          <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
+          <span className="mx-1.5">›</span>
+          <Link href={href('/committees')} className="hover:text-primary">{t('cm.title')}</Link><span className="mx-1.5">›</span>
+          <span className="text-ink">{c.name}</span>
+        </nav>
+      )}
 
       {women ? (
         <header id="about" className="relative mb-5 scroll-mt-24 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
