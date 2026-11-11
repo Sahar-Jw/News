@@ -5,11 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
 import { Center, Spinner, inputCls } from '@/components/ui/ui';
+import { WomenCalendar, type CalItem } from '@/components/women/women-calendar';
+import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { NewsFormDialog } from '@/components/admin/news-form';
 import { Thumb } from './cards';
 import { CategoryNews } from '@/components/site/category-news';
 
-export type EventTab = 'exhibitions' | 'occasions' | 'calendar';
+export type EventTab = 'exhibitions' | 'occasions';
 export type EventStatus = 'upcoming' | 'current' | 'previous';
 export interface PublicEvent {
   id: number; title: string; date: string; finishDate: string; type: 'occasion' | 'exhibition'; status: EventStatus; isUpcoming: boolean;
@@ -19,10 +23,10 @@ export interface PublicEvent {
 interface Result { data: PublicEvent[]; meta: { totalPages: number; total?: number } }
 interface Facets { sectors: string[]; organizers: string[]; years: string[] }
 
-const TABS: EventTab[] = ['exhibitions', 'occasions', 'calendar'];
+const TABS: EventTab[] = ['exhibitions', 'occasions'];
 const STATUSES: EventStatus[] = ['upcoming', 'current', 'previous'];
 const LABEL = {
-  exhibitions: ['المعارض', 'Exhibitions'], occasions: ['المناسبات', 'Occasions'], calendar: ['التقويم', 'Calendar'],
+  exhibitions: ['المعارض', 'Exhibitions'], occasions: ['المناسبات', 'Occasions'],
   upcoming: ['القادمة', 'Upcoming'], current: ['الحالية', 'Current'], previous: ['السابقة', 'Previous'],
 } as const;
 
@@ -96,6 +100,8 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   const [organizer, setOrganizer] = useState('');
   const [participation, setParticipation] = useState('');
   const [year, setYear] = useState('');
+  const [day, setDay] = useState<string | null>(null);
+  const [cal, setCal] = useState<CalItem[]>([]);
   const [page, setPage] = useState(1);
   const [facets, setFacets] = useState<Facets>({ sectors: [], organizers: [], years: [] });
   const [data, setData] = useState<Result | null>(null);
@@ -103,30 +109,47 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   const [debounced, setDebounced] = useState('');
 
   useEffect(() => { const h = setTimeout(() => setDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
-  useEffect(() => { setPage(1); }, [status, debounced, sector, organizer, participation, year, lang]);
+  useEffect(() => { setPage(1); }, [status, debounced, sector, organizer, participation, year, day, lang]);
+  // the calendar marks every day of every event of this type (upcoming, current and previous), loaded 50 at a time
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const all: PublicEvent[] = [];
+      for (let p = 1; p <= 8; p++) {
+        const r = await api<Result>('/public/occasions', { params: { lang, type, scope: 'all', page: p, limit: 50 }, cache: 'no-store' }).catch(() => null);
+        if (!r) break;
+        all.push(...r.data);
+        if (p >= r.meta.totalPages) break;
+      }
+      if (live) setCal(all.map((e) => ({ id: e.id, start: e.date, end: e.finishDate || e.date, live: e.status !== 'previous' })));
+    })();
+    return () => { live = false; };
+  }, [type, lang]);
   useEffect(() => {
     api<Facets>('/public/occasions/facets', { params: { type, lang }, cache: 'no-store' }).then(setFacets).catch(() => setFacets({ sectors: [], organizers: [], years: [] }));
   }, [type, lang]);
   useEffect(() => {
     let live = true;
     setData(null); setError('');
-    api<Result>('/public/occasions', { params: { lang, type, scope: status, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: 12 }, cache: 'no-store' })
+    api<Result>('/public/occasions', { params: { lang, type, scope: day ? 'all' : status, day: day || undefined, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: 12 }, cache: 'no-store' })
       .then((r) => { if (live) setData(r); })
       .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [lang, type, status, debounced, sector, organizer, participation, year, page]);
+  }, [lang, type, status, debounced, sector, organizer, participation, year, day, page]);
 
   const filtered = !!(debounced || sector || organizer || participation || year);
   const reset = () => { setQ(''); setSector(''); setOrganizer(''); setParticipation(''); setYear(''); };
   const statusLabel = (s: EventStatus) => s === 'previous' && type === 'exhibition' ? (ar ? 'أرشيف المعارض' : 'Exhibitions archive') : LABEL[s][ar ? 0 : 1];
   const sel = `${inputCls} !w-auto min-w-36`;
 
+  const todayYmd = damascusToday();
   return (
-    <div>
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+    <div className="min-w-0">
       <div role="tablist" aria-label={ar ? 'الحالة' : 'Status'} className="mb-4 flex flex-wrap gap-2 border-b border-line pb-3">
         {STATUSES.map((s) => (
-          <button key={s} type="button" role="tab" aria-selected={status === s} onClick={() => setStatus(s)}
-            className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${status === s ? 'bg-secondary text-white' : 'text-secondary hover:bg-gray-100'}`}>{statusLabel(s)}</button>
+          <button key={s} type="button" role="tab" aria-selected={!day && status === s} onClick={() => { setStatus(s); setDay(null); }}
+            className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${!day && status === s ? 'bg-secondary text-white' : 'text-secondary hover:bg-gray-100'}`}>{statusLabel(s)}</button>
         ))}
       </div>
       <div className="mb-5 flex flex-wrap items-end gap-2">
@@ -137,6 +160,12 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
         {facets.years.length > 0 && <select aria-label={ar ? 'السنة' : 'Year'} className={sel} value={year} onChange={(e) => setYear(e.target.value)}><option value="">{ar ? 'كل السنوات' : 'All years'}</option>{facets.years.map((y) => <option key={y} value={y}>{y}</option>)}</select>}
         {filtered && <button type="button" onClick={reset} className="rounded-lg border border-line px-3 py-2 text-sm font-semibold text-primary hover:bg-gray-50">{ar ? 'مسح التصفية' : 'Clear filters'}</button>}
       </div>
+      {day && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-sm ring-1 ring-primary/20">
+          <span className="font-semibold text-secondary">{ar ? 'الفعاليات في' : 'Events on'} {fmtDay(lang, day)}{data ? ` (${data.meta.total ?? data.data.length})` : ''}</span>
+          <button type="button" onClick={() => setDay(null)} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary ring-1 ring-line transition hover:ring-accent">✕ {ar ? 'إزالة اليوم' : 'Clear day'}</button>
+        </div>
+      )}
       {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {!data && !error ? <Center><Spinner /></Center> : data && (
         data.data.length === 0
@@ -146,6 +175,8 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
             <Pager page={page} pages={data.meta.totalPages} onPage={setPage} />
           </>
       )}
+    </div>
+    <aside className="order-first lg:sticky lg:top-24 lg:order-none"><WomenCalendar items={cal} today={todayYmd} selected={day} onSelect={setDay} /></aside>
     </div>
   );
 }
@@ -238,6 +269,23 @@ export function EventsCalendar({ card }: { card?: (e: PublicEvent) => React.Reac
   );
 }
 
+/** buttons at the top for the people who manage the page (visitors see nothing): add news to the events category, the events list and its settings */
+function ManageBar() {
+  const { lang } = useI18n();
+  const { can } = useAuth();
+  const [adding, setAdding] = useState(false);
+  const ar = lang === 'ar';
+  const mayRead = can('occasions.read'), mayCreate = can('occasions.create'), mayNews = can('news.create');
+  return (
+    <PageManageBar show={mayRead || mayCreate || mayNews} settingsUrl={mayRead ? '/admin/settings?page=occasions&tab=events' : undefined}>
+      {mayCreate && <ManageLink tone="solid" to="/admin/settings?page=occasions&tab=events">＋ {ar ? 'إضافة معرض / مناسبة' : 'Add exhibition / occasion'}</ManageLink>}
+      {mayNews && <ManageBtn onClick={() => setAdding(true)}>＋ {ar ? 'إضافة خبر' : 'Add news'}</ManageBtn>}
+      {mayRead && <ManageLink to="/admin/settings?page=occasions&tab=events">▤ {ar ? 'إدارة المعارض والمناسبات' : 'Manage exhibitions & occasions'}</ManageLink>}
+      {adding && <NewsFormDialog category="events" onClose={() => setAdding(false)} />}
+    </PageManageBar>
+  );
+}
+
 function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatus: EventStatus }) {
   const { lang } = useI18n();
   const ar = lang === 'ar';
@@ -246,6 +294,7 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
   const choose = (t: EventTab) => { setTab(t); try { window.history.replaceState(null, '', `?tab=${t}`); } catch { /* ignore */ } };
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      <ManageBar />
       <header className="mb-6">
         <h1 className="text-2xl font-extrabold text-secondary">{ar ? 'المعارض والفعاليات' : 'Exhibitions & events'}</h1>
         <p className="mt-1 text-sm text-gray-600">{ar ? 'المعارض والمناسبات التي تنظمها الغرفة أو تشارك فيها، مع الأخبار والصور والتغطية الإعلامية.' : 'Exhibitions and occasions the Chamber organizes or takes part in, with news, photos and media coverage.'}</p>
@@ -258,13 +307,12 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
       </div>
       {tab === 'exhibitions' && <EventList type="exhibition" initialStatus={initialStatus} />}
       {tab === 'occasions' && <EventList type="occasion" initialStatus={initialStatus} />}
-      {tab === 'calendar' && <EventsCalendar />}
       <CategoryNews category="events" className="mt-10 !px-0 !pb-0" />
     </div>
   );
 }
 
-/** The exhibitions & events page: Exhibitions / Occasions / Calendar tabs (`?tab=` picks one; `initialTab` is the route's default). */
+/** The exhibitions & events page: Exhibitions / Occasions tabs, each with its own calendar (`?tab=` picks one; `initialTab` is the route's default). */
 export function EventsHub({ initialTab = 'exhibitions', initialStatus = 'upcoming' }: { initialTab?: EventTab; initialStatus?: EventStatus }) {
   return <Suspense fallback={<Center><Spinner /></Center>}><Hub initialTab={initialTab} initialStatus={initialStatus} /></Suspense>;
 }

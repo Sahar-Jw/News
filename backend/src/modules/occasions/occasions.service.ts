@@ -327,6 +327,7 @@ export class OccasionsService {
     if (scope === 'agenda') rows = rows.filter((r) => this.statusOf(r, today) !== 'previous');
     if (scope === 'exhibitions') rows = rows.filter((r) => this.eventType(r) === 'exhibition');
     rows = this.publicRows(q, rows);
+    if (q.day) rows = rows.filter((r) => this.eventDate(r) <= q.day! && (r.finishAt ?? this.eventDate(r)) >= q.day!);
     if (q.month) {
       const [year, month] = q.month.split('-').map(Number);
       const from = `${q.month}-01`;

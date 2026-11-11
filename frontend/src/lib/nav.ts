@@ -55,7 +55,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'nav.currentOccasions', to: '/occasions/current', ready: true },
       { label: 'nav.exhibitionsOnly', to: '/occasions/exhibitions', ready: true },
       { label: 'nav.previousOccasions', to: '/occasions/previous', ready: true },
-      { label: 'nav.eventsCalendar', to: '/occasions?tab=calendar', ready: true },
       { label: 'nav.expo', to: '/expo', ready: true },
     ],
   },

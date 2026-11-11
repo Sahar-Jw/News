@@ -97,6 +97,8 @@ export class PublicOccasionsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsIn(['all', 'upcoming', 'current', 'previous', 'exhibitions', 'agenda']) scope?: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
   @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/) month?: string;
+  /** only the events running on this day (yyyy-mm-dd), for the calendar of the public page */
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/) day?: string;
   /** free text over the name, sector, organizer and place */
   @IsOptional() @IsString() @MaxLength(100) q?: string;
   @IsOptional() @IsString() @MaxLength(150) sector?: string;
