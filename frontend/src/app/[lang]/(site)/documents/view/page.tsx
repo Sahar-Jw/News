@@ -39,7 +39,7 @@ function View() {
         <h1 className="mt-4 text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{d.title}</h1>
         {d.summary && <p className="mt-3 leading-8 text-gray-700">{d.summary}</p>}
         {d.fileUrl && <a href={fileUrl(d.fileUrl)} download className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
-        {d.file && <div className="mt-6"><PdfViewer src={d.file} title={d.title} /></div>}
+        {d.fileUrl && <div className="mt-6"><PdfViewer src={d.fileUrl} title={d.title} /></div>}
       </article>
     </div>
   );

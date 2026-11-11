@@ -228,7 +228,7 @@ const ar: Record<string, string> = {
   'ed.unlink': 'إزالة الرابط', 'ed.clearFormat': 'مسح التنسيق', 'ed.clearAll': 'مسح كل المحتوى',
   'ed.url': 'الرابط', 'ed.applyLink': 'تطبيق الرابط',
   // in-place management bar of the public pages (Board, Committees)
-  'mg.bar': 'إدارة الصفحة', 'mg.settings': 'كل الإعدادات', 'mg.deleteText': 'سيُحذف هذا العنصر نهائياً ولا يمكن التراجع. هل تريد المتابعة؟', 'mg.deleteTitle': 'تأكيد الحذف', 'mg.editItem': 'تعديل', 'mg.deleteItem': 'حذف',
+  'mg.requests': 'طلبات الانتساب', 'mg.pageContent': 'محتوى الصفحة', 'mg.closeMembership': 'إغلاق باب الانتساب', 'mg.openMembership': 'فتح باب الانتساب', 'mg.allFaqs': 'كل الأسئلة', 'mg.addCourse': 'إضافة دورة', 'mg.addTrainer': 'إضافة مدرب', 'mg.courses': 'الدورات', 'mg.trainers': 'المدربون', 'mg.trainees': 'المتدربون', 'mg.trainerApps': 'طلبات المدربين', 'mg.pageTexts': 'نصوص الصفحة', 'mg.membershipOpened': 'تم فتح باب الانتساب', 'mg.membershipClosed': 'تم إغلاق باب الانتساب', 'mg.bar': 'إدارة الصفحة', 'mg.settings': 'كل الإعدادات', 'mg.deleteText': 'سيُحذف هذا العنصر نهائياً ولا يمكن التراجع. هل تريد المتابعة؟', 'mg.deleteTitle': 'تأكيد الحذف', 'mg.editItem': 'تعديل', 'mg.deleteItem': 'حذف',
   'app.pages': 'التنقل بين الصفحات', 'app.page': 'صفحة', 'os.mg.hours': 'تعديل أوقات الدوام', 'os.mg.texts': 'نصوص النافذة والتواصل', 'os.noFaqs': 'لا توجد أسئلة شائعة بعد',
 };
 
@@ -453,7 +453,7 @@ const en: Record<string, string> = {
   'ed.clearFormat': 'Clear formatting', 'ed.clearAll': 'Clear all content', 'ed.url': 'URL',
   'ed.applyLink': 'Apply link',
   // in-place management bar of the public pages (Board, Committees)
-  'mg.bar': 'Manage this page', 'mg.settings': 'All settings', 'mg.deleteText': 'This item will be deleted for good and this cannot be undone. Continue?', 'mg.deleteTitle': 'Confirm deletion', 'mg.editItem': 'Edit', 'mg.deleteItem': 'Delete',
+  'mg.requests': 'Membership requests', 'mg.pageContent': 'Page content', 'mg.closeMembership': 'Close membership', 'mg.openMembership': 'Open membership', 'mg.allFaqs': 'All questions', 'mg.addCourse': 'Add course', 'mg.addTrainer': 'Add trainer', 'mg.courses': 'Courses', 'mg.trainers': 'Trainers', 'mg.trainees': 'Trainees', 'mg.trainerApps': 'Trainer applications', 'mg.pageTexts': 'Page texts', 'mg.membershipOpened': 'Membership is now open', 'mg.membershipClosed': 'Membership is now closed', 'mg.bar': 'Manage this page', 'mg.settings': 'All settings', 'mg.deleteText': 'This item will be deleted for good and this cannot be undone. Continue?', 'mg.deleteTitle': 'Confirm deletion', 'mg.editItem': 'Edit', 'mg.deleteItem': 'Delete',
   'app.pages': 'Pagination', 'app.page': 'Page', 'os.mg.hours': 'Edit opening hours', 'os.mg.texts': 'Window texts & contact', 'os.noFaqs': 'No FAQs yet',
 };
 

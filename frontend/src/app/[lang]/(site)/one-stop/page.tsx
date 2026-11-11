@@ -251,7 +251,6 @@ function FaqTab({ faqs, tools, onPageChange }: { faqs: Faq[]; tools: (f: Faq) =>
 function ContactTab() {
   const { t } = useI18n();
   const { s, loc } = useSite();
-  const [mapOpen, setMapOpen] = useState(false);
   // the window's own contact details, falling back to the chamber's general ones
   const phone = s('one_stop', 'contact_phone') || s('contact', 'phone'), email = s('one_stop', 'contact_email') || s('contact', 'email'), map = s('one_stop', 'contact_map_url') || s('contact', 'map_url');
   const address = loc('one_stop', 'contact_address');
@@ -280,9 +279,9 @@ function ContactTab() {
             })}
           </ul>
           {map && (
-            <button type="button" onClick={() => setMapOpen(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 active:scale-[0.97]">
-              <ContactIcon name="address" size={16} />{t('site.showMap')}
-            </button>
+            <div className="mt-4 overflow-hidden rounded-xl ring-1 ring-line">
+              <iframe src={String(map)} title={t('site.map')} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="block h-64 w-full border-0 md:h-72" />
+            </div>
           )}
         </div>
         <div>
@@ -290,11 +289,6 @@ function ContactTab() {
           <ContactForm subjectPrefix={t('os.inquiryPrefix')} />
         </div>
       </div>
-      {map && (
-        <Modal open={mapOpen} onClose={() => setMapOpen(false)} title={t('site.map')} wide>
-          <iframe src={String(map)} title={t('site.map')} loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />
-        </Modal>
-      )}
     </Panel>
   );
 }

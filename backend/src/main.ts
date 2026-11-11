@@ -29,7 +29,14 @@ async function bootstrap() {
   });
   // CORS must run BEFORE the public micro-cache: a cache hit answers right away, and when CORS came after it those
   // answers had no Access-Control-Allow-Origin header, so the browser blocked every repeated public request.
-  const origins = (process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  // CORS_ORIGINS = the site origin(s), comma separated. A trailing slash or capital letters (a common slip when a domain is added)
+  // are tolerated, and the www / non-www twin of each origin is allowed too, so the bare domain and www both work.
+  const origins = [...new Set(
+    (process.env.CORS_ORIGINS ?? '').split(',').map((o) => o.trim().replace(/\/+$/, '').toLowerCase()).filter(Boolean).flatMap((o) => {
+      const m = /^(https?:\/\/)(www\.)?([^/]+)$/.exec(o);
+      return m && !/^(localhost|\d)/.test(m[3]) ? [o, `${m[1]}${m[2] ? '' : 'www.'}${m[3]}`] : [o];
+    }),
+  )];
   app.enableCors({
     origin: origins.length ? origins : false, // SRS 21: CORS limited to the frontend origin
     credentials: true,

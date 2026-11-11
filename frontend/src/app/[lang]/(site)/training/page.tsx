@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
 import { Button, Center, Spinner, inputCls } from '@/components/ui/ui';
@@ -11,6 +12,7 @@ import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
 import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/training-shared';
 import { CategoryNews } from '@/components/site/category-news';
+import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 
 type Tab = 'current' | 'archive' | 'news';
 /** the sub-categories of the center news; each one is a news topic that editors tag (its label in the page language is the topic) */
@@ -24,6 +26,7 @@ const BADGE: Record<string, string> = { open: 'bg-emerald-50 text-emerald-700', 
 export default function TrainingPage() {
   const { lang, t, href } = useI18n();
   const { loc } = useSite();
+  const { can } = useAuth();
   const [tab, setTab] = useState<Tab>('current');
   const [data, setData] = useState<Paged<PublicCourse> | null>(null);
   const [news, setNews] = useState<Paged<Card> | null>(null);
@@ -66,6 +69,7 @@ export default function TrainingPage() {
   const clear = () => { setQ(''); setYear(''); setField(''); setTrainerId(''); setKind(''); setPage(1); };
   const setF = (fn: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { fn(e.target.value); setPage(1); };
 
+  const mayCourses = can('courses.read'), mayRegistrations = can('registrations.read'), maySettings = can('settings.read');
   const tabCls = (x: Tab) => `rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === x ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`;
 
   return (
@@ -76,6 +80,17 @@ export default function TrainingPage() {
         <div className="mt-4"><Link href={href('/training/trainer-apply')} className="inline-block rounded-full border border-primary/30 bg-white px-5 py-2 text-sm font-bold text-primary shadow-sm transition hover:bg-primary/5">{t('tr.becomeTrainer')}</Link></div>
         <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true"><span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" /></div>
       </header>
+
+      {/* manager tools (hidden from visitors): every button opens the matching tab of the Training entry in Settings, and only for people holding its permission */}
+      <PageManageBar show={mayCourses || mayRegistrations || maySettings}>
+        {can('courses.create') && <ManageLink tone="solid" to="/admin/settings?page=training&tab=courses&add=1">＋ {t('mg.addCourse')}</ManageLink>}
+        {mayCourses && <ManageLink to="/admin/settings?page=training&tab=courses">{t('mg.courses')}</ManageLink>}
+        {can('courses.create') && <ManageLink to="/admin/settings?page=training&tab=trainers&add=1">＋ {t('mg.addTrainer')}</ManageLink>}
+        {mayCourses && <ManageLink to="/admin/settings?page=training&tab=trainers">{t('mg.trainers')}</ManageLink>}
+        {mayRegistrations && <ManageLink to="/admin/settings?page=training&tab=trainees">{t('mg.trainees')}</ManageLink>}
+        {mayRegistrations && <ManageLink to="/admin/settings?page=training&tab=trainerApps">{t('mg.trainerApps')}</ManageLink>}
+        {maySettings && <ManageLink to="/admin/settings?page=training&tab=settings">⚙ {t('mg.pageTexts')}</ManageLink>}
+      </PageManageBar>
 
       <div className="flex flex-wrap gap-2" role="tablist">
         {(['current', 'archive', 'news'] as Tab[]).map((x) => (

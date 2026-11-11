@@ -4,11 +4,15 @@ const RAW_API_URL =
   process.env.API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   'http://localhost:3001/api';
-export const API_URL = RAW_API_URL.replace(/\/$/, '');
+// a stray space or a doubled value in the environment variable ("https://x/api   https://x/api") must not break every file link: use the first address
+export const API_URL = (RAW_API_URL.match(/https?:\/\/\S+/)?.[0] ?? RAW_API_URL.trim()).replace(/\/$/, '');
 
 /** Backend returns file URLs like /api/files/news/x.jpg – rebase them on the configured API URL. */
 export function fileUrl(p?: string | null): string {
   if (!p) return '';
+  p = p.trim();
+  // an address that got another address glued in front of it (separated by spaces): keep the last, complete one
+  if (/\s/.test(p)) { const all = p.match(/https?:\/\/\S+/g); if (all) return all[all.length - 1]; }
   if (/^https?:\/\//.test(p)) return p;
   return API_URL + p.replace(/^\/api/, '');
 }

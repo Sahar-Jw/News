@@ -28,6 +28,12 @@ export function ManageBtn({ onClick, tone = 'solid', children }: { onClick: () =
   return <button type="button" onClick={onClick} className={tone === 'solid' ? solid : ghost}>{children}</button>;
 }
 
+/** A bar button that opens another screen (e.g. a tab of the Settings hub). */
+export function ManageLink({ to, tone = 'ghost', children }: { to: string; tone?: 'solid' | 'ghost'; children: React.ReactNode }) {
+  const { href } = useI18n();
+  return <Link href={href(to)} className={tone === 'solid' ? solid : ghost}>{children}</Link>;
+}
+
 /** Small edit / delete buttons under one card (render nothing when the person may do neither). */
 export function ItemActions({ onEdit, onDelete }: { onEdit?: () => void; onDelete?: () => void }) {
   const { t } = useI18n();

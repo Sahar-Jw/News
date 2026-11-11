@@ -1,10 +1,13 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { ConfirmDelete, ItemActions, ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { FaqDialog } from '@/components/admin/faqs-admin';
 
 interface Page { isOpen: boolean; conditions: string; documents: string; fees: string; steps: string[] }
 interface Faq { id: number; question: string; answer: string }
@@ -36,11 +39,40 @@ export default function MembershipPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
+  const { can } = useAuth();
+  // manager tools (hidden from visitors): the question window (id = edit, none = new) and the question waiting for the delete confirmation
+  const [faqDialog, setFaqDialog] = useState<{ id?: number } | null>(null);
+  const [askFaq, setAskFaq] = useState<Faq | null>(null);
+  const [mgBusy, setMgBusy] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api<Page>('/public/membership', { params: { lang }, cache: 'no-store' }).then(setPage).catch(() => setPage({ isOpen: true, conditions: '', documents: '', fees: '', steps: [] }));
     api<Faq[]>('/public/faqs', { params: { lang, scope: 'membership' }, cache: 'no-store' }).then(setFaqs).catch(() => setFaqs([]));
   }, [lang]);
+  useEffect(() => { load(); }, [load]);
+
+  const mayRequests = can('membership.read');
+  const mayToggle = can('membership.update') && can('membership.read');
+  const mayAddFaq = can('faqs.create'), mayEditFaq = can('faqs.update') && can('faqs.read'), mayDeleteFaq = can('faqs.delete');
+  const toggleOpen = async () => {
+    if (!page) return;
+    setMgBusy(true);
+    try {
+      await api('/admin/membership/settings', { method: 'PATCH', body: { isOpen: !page.isOpen } });
+      toast(t(page.isOpen ? 'mg.membershipClosed' : 'mg.membershipOpened'));
+      load();
+    } catch (e: any) { toast(e.message, 'err'); } finally { setMgBusy(false); }
+  };
+  const removeFaq = async () => {
+    if (!askFaq) return;
+    setMgBusy(true);
+    try {
+      await api(`/admin/faqs/${askFaq.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      setAskFaq(null);
+      load();
+    } catch (e: any) { toast(e.message, 'err'); } finally { setMgBusy(false); }
+  };
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -76,6 +108,13 @@ export default function MembershipPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <nav aria-label="breadcrumb" className="text-sm text-gray-500"><Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link><span className="mx-1.5">›</span><span className="text-ink">{t('nav.membership')}</span></nav>
+
+      <PageManageBar show={mayRequests || mayAddFaq || mayEditFaq || mayDeleteFaq}>
+        {mayRequests && <ManageLink tone="solid" to="/admin/settings?page=membership&tab=applications">📥 {t('mg.requests')}</ManageLink>}
+        {mayRequests && <ManageLink to="/admin/settings?page=membership&tab=content">✎ {t('mg.pageContent')}</ManageLink>}
+        {mayToggle && page && <button type="button" disabled={mgBusy} onClick={toggleOpen} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-white px-3.5 py-1.5 text-xs font-bold text-primary shadow-sm transition hover:bg-primary/10 disabled:opacity-50">{page.isOpen ? '⏸' : '▶'} {t(page.isOpen ? 'mg.closeMembership' : 'mg.openMembership')}</button>}
+        {mayAddFaq && <ManageBtn tone="ghost" onClick={() => setFaqDialog({})}>＋ {t('faq.add')}</ManageBtn>}
+      </PageManageBar>
 
       <header className="relative overflow-hidden rounded-3xl bg-secondary p-6 text-white shadow-card md:p-9">
         <div className="pointer-events-none absolute -top-24 end-[-4rem] h-64 w-64 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
@@ -128,6 +167,7 @@ export default function MembershipPage() {
                 <li key={q.id} className="rounded-xl border border-line">
                   <button type="button" aria-expanded={openFaq === q.id} onClick={() => setOpenFaq(openFaq === q.id ? null : q.id)} className="flex w-full items-center justify-between gap-3 p-3 text-start font-semibold text-secondary"><span>{q.question}</span><span aria-hidden="true">{openFaq === q.id ? '▾' : '▸'}</span></button>
                   {openFaq === q.id && <div className="prose-news border-t border-line p-3" dangerouslySetInnerHTML={{ __html: q.answer }} />}
+                  {(mayEditFaq || mayDeleteFaq) && <div className="border-t border-line p-2"><ItemActions onEdit={mayEditFaq ? () => setFaqDialog({ id: q.id }) : undefined} onDelete={mayDeleteFaq ? () => setAskFaq(q) : undefined} /></div>}
                 </li>
               ))}
             </ul>
@@ -136,6 +176,9 @@ export default function MembershipPage() {
       </div>
 
       <p className="text-sm text-gray-500">{t('mb.future')}</p>
+
+      {faqDialog && <FaqDialog key={faqDialog.id ?? 'new'} id={faqDialog.id} scope="membership" onClose={() => setFaqDialog(null)} onSaved={load} />}
+      {askFaq && <ConfirmDelete busy={mgBusy} onConfirm={removeFaq} onClose={() => setAskFaq(null)} />}
 
       <Modal open={form} onClose={close} title={t('mb.online')} wide>
         {done ? (

@@ -1,4 +1,5 @@
 'use client';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -43,6 +44,9 @@ export function CoursesAdmin() {
       : { ...EMPTY });
   };
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
+  // the "add" buttons on the public Training page link here with ?add=1: open the add window straight away
+  const addLink = useSearchParams().get('add') === '1';
+  useEffect(() => { if (addLink && can('courses.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const cols: Col<Row>[] = [

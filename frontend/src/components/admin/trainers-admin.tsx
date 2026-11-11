@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -24,6 +25,9 @@ export function TrainersAdmin() {
 
   const open = (r?: Row) => { setErrors({}); setDraft(r ? { id: r.id, nameAr: r.nameAr, nameEn: r.nameEn, bioAr: r.bioAr, bioEn: r.bioEn, isActive: r.isActive } : { ...EMPTY }); };
   const up = (p: Partial<typeof EMPTY>) => draft && setDraft({ ...draft, ...p });
+  // the "add" buttons on the public Training page link here with ?add=1: open the add window straight away
+  const addLink = useSearchParams().get('add') === '1';
+  useEffect(() => { if (addLink && can('courses.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const cols: Col<Row>[] = [
     { key: 'nameAr', label: t('tr.trainerNameAr') },

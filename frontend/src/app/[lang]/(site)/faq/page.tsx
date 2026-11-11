@@ -1,8 +1,12 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
-import { api } from '@/lib/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api, onSiteChange } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from '@/components/ui/toast';
 import { Center, Spinner } from '@/components/ui/ui';
+import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
+import { FaqDialog } from '@/components/admin/faqs-admin';
 
 interface Faq { id: number; scope: string; question: string; answer: string }
 
@@ -13,10 +17,31 @@ export default function FaqPage() {
   const [scope, setScope] = useState('all');
   const [open, setOpen] = useState<number | null>(null);
 
-  useEffect(() => {
-    setItems(null);
-    api<Faq[]>('/public/faqs', { params: { lang }, cache: 'no-store' }).then(setItems).catch(() => setItems([]));
+  const { can } = useAuth();
+  const toast = useToast();
+  // manager tools (hidden from visitors): the question window (id = edit, none = new) and the question waiting for the delete confirmation
+  const [dialog, setDialog] = useState<{ id?: number } | null>(null);
+  const [ask, setAsk] = useState<Faq | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback((quiet = false) => {
+    if (!quiet) setItems(null);
+    api<Faq[]>('/public/faqs', { params: { lang }, cache: 'no-store' }).then(setItems).catch(() => { if (!quiet) setItems([]); });
   }, [lang]);
+  useEffect(() => { load(); }, [load]);
+  // a change made in the window below (or in another tab) shows up at once
+  useEffect(() => onSiteChange(() => load(true)), [load]);
+
+  const mayAdd = can('faqs.create'), mayEdit = can('faqs.update') && can('faqs.read'), mayDelete = can('faqs.delete');
+  const remove = async () => {
+    if (!ask) return;
+    setBusy(true);
+    try {
+      await api(`/admin/faqs/${ask.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      setAsk(null);
+    } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
+  };
 
   const scopes = useMemo(() => [...new Set((items ?? []).map((f) => f.scope))], [items]);
   const shown = (items ?? []).filter((f) => scope === 'all' || f.scope === scope);
@@ -29,6 +54,11 @@ export default function FaqPage() {
           <span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" />
         </div>
       </header>
+      <PageManageBar show={mayAdd || mayEdit || mayDelete} settingsUrl={can('faqs.read') ? '/admin/settings?page=pages&tab=faqs' : undefined}>
+        {mayAdd && <ManageBtn onClick={() => setDialog({})}>＋ {t('faq.add')}</ManageBtn>}
+      </PageManageBar>
+      {dialog && <FaqDialog key={dialog.id ?? 'new'} id={dialog.id} scope={scope !== 'all' ? scope : undefined} onClose={() => setDialog(null)} onSaved={() => load(true)} />}
+      {ask && <ConfirmDelete busy={busy} onConfirm={remove} onClose={() => setAsk(null)} />}
       {!items ? <Center><Spinner /></Center> : items.length === 0 ? <Center>{t('faq.empty')}</Center> : (
         <>
           {scopes.length > 1 && (
@@ -51,6 +81,7 @@ export default function FaqPage() {
                     <span className={`shrink-0 text-accent transition-transform ${on ? 'rotate-45' : ''}`} aria-hidden="true">＋</span>
                   </button>
                   {on && <div className="whitespace-pre-line border-t border-line px-5 py-4 text-sm leading-7 text-gray-700">{f.answer}</div>}
+                  {(mayEdit || mayDelete) && <div className="border-t border-line p-2"><ItemActions onEdit={mayEdit ? () => setDialog({ id: f.id }) : undefined} onDelete={mayDelete ? () => setAsk(f) : undefined} /></div>}
                 </div>
               );
             })}
