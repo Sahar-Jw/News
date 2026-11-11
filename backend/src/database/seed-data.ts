@@ -1,4 +1,5 @@
 import { DEFAULT_APPOINTMENT_STATUSES, statusSettingRows } from '../modules/appointments/appointment-statuses';
+import { EXPO_NEW_SETTINGS } from './expo-settings';
 import { Language, PERM, SpecialCategory, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../common/constants';
 import { SettingValueType } from '../modules/settings/site-setting.entity';
 
@@ -232,6 +233,7 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('expo', 'news_topic_ar', 'text', 'المعرض'),
   s('expo', 'news_topic_en', 'text', 'EXPO'),
   s('expo', 'register_open', 'boolean', 'true'),
+  ...EXPO_NEW_SETTINGS.map(([key, type, value]) => s('expo', key, type, value ?? null)),
   // Women Business Committee page identity; the committee profile and its activities are managed separately
   s('women', 'name_ar', 'text', 'لجنة سيدات الأعمال'),
   s('women', 'name_en', 'text', 'Women Business Committee'),

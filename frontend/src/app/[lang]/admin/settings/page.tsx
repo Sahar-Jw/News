@@ -10,7 +10,6 @@ import { SettingsEditor } from '@/components/admin/settings-editor';
 import { AdsAdmin } from '@/components/admin/ads-admin';
 import { AppointmentsAdmin } from '@/components/admin/appointments-admin';
 import { BoardAdmin } from '@/components/admin/board-admin';
-import { BrandedPageLinksAdmin } from '@/components/admin/branded-page-links-admin';
 import { CommitteesAdmin } from '@/components/admin/committees-admin';
 import { CourseRegistrationsAdmin } from '@/components/admin/course-registrations-admin';
 import { CoursesAdmin } from '@/components/admin/courses-admin';
@@ -19,6 +18,7 @@ import { DatesDashboard } from '@/components/admin/dates-dashboard';
 import { DocumentsAdmin } from '@/components/admin/documents-admin';
 import { ExpoAdmin } from '@/components/admin/expo-admin';
 import { ExpoApplicationsAdmin } from '@/components/admin/expo-applications-admin';
+import { ExpoSettingsAdmin } from '@/components/admin/expo-settings-admin';
 import { FaqsAdmin } from '@/components/admin/faqs-admin';
 import { FooterAdmin } from '@/components/admin/footer-admin';
 import { GalleryAdmin } from '@/components/admin/gallery-admin';
@@ -41,7 +41,9 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />, 'training.trainerApps': () => <TrainerApplicationsAdmin />,
   'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <ExpoApplicationsAdmin />,
   'expo.faqs': () => <FaqsAdmin scope="expo" />,
-  'expo.links': () => <BrandedPageLinksAdmin page="expo" />,
+  'expo.links': () => <WomenMenuAdmin site="expo" />,
+  'expo.about': () => <ExpoSettingsAdmin section="about" />, 'expo.sectors': () => <ExpoSettingsAdmin section="sectors" />, 'expo.info': () => <ExpoSettingsAdmin section="info" />,
+  'expo.contact': () => <ExpoSettingsAdmin section="contact" />, 'expo.identity': () => <ExpoSettingsAdmin section="identity" />,
   'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,

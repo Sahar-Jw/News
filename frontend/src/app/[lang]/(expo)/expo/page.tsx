@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay, fmtNum } from '@/lib/utils';
 import { Card, NewsCard } from '@/components/site/cards';
-import { Heading, SESSION_TYPES, SPONSOR_TIERS, useExpoData, useExpoInfo } from '@/components/site/expo-shared';
+import { FloorPlanMap, Heading, SESSION_TYPES, SponsorTiers, sessionTypeLabel, useExpoData, useExpoInfo } from '@/components/site/expo-shared';
 
 /** DCC EXPO home (wireframe page 14): hero, stat tiles, about / why, programme, exhibitors, sponsors, news. */
 export default function ExpoHome() {
@@ -59,7 +59,7 @@ export default function ExpoHome() {
       {(about || why.length > 0) && (
         <section id="about" className="mx-auto max-w-5xl scroll-mt-20 px-4 pt-14">
           <Heading>{t('ex.about')}</Heading>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className={`grid gap-6 ${why.length ? 'md:grid-cols-2' : ''}`}>
             {about && <p className="whitespace-pre-line rounded-2xl bg-white p-6 text-sm leading-8 text-gray-700 shadow-card ring-1 ring-line">{about}</p>}
             {why.length > 0 && (
               <div className="rounded-2xl bg-white p-6 shadow-card ring-1 ring-line">
@@ -68,6 +68,7 @@ export default function ExpoHome() {
               </div>
             )}
           </div>
+          <div className="mt-4 text-center"><Link href={href('/expo/about')} className="font-bold text-primary hover:underline">{lang === 'ar' ? 'اقرأ المزيد عن المعرض' : 'Read more about the expo'} →</Link></div>
         </section>
       )}
 
@@ -86,7 +87,7 @@ export default function ExpoHome() {
               <li key={s.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line">
                 <span className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white">{s.startsAt ? fmtDate(lang, s.startsAt, true) : '—'}</span>
                 <span className="font-bold text-secondary">{s.name}</span>
-                <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-secondary">{t(`ex.type.${(SESSION_TYPES as readonly string[]).includes(s.type) ? s.type : 'other'}`)}</span>
+                <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-secondary">{sessionTypeLabel(s.type, lang === 'ar') ?? t(`ex.type.${(SESSION_TYPES as readonly string[]).includes(s.type) ? s.type : 'other'}`)}</span>
                 {s.hall && <span className="text-xs text-gray-500">📍 {s.hall}</span>}
               </li>
             ))}
@@ -95,9 +96,10 @@ export default function ExpoHome() {
         </section>
       )}
 
-      {x.floorPlan && <section className="mx-auto max-w-5xl px-4 pt-14">
+      {(x.floorPlan || x.floorPlanImage) && <section className="mx-auto max-w-5xl px-4 pt-14">
         <Heading>{t('ex.floorPlan')}</Heading>
-        <div className="whitespace-pre-line rounded-2xl bg-white p-6 text-sm leading-7 text-gray-700 shadow-card ring-1 ring-line">{x.floorPlan}</div>
+        {x.floorPlanImage && data ? <FloorPlanMap image={x.floorPlanImage} exhibitors={data.exhibitors} /> : null}
+        {x.floorPlan && <div className="mt-3 whitespace-pre-line rounded-2xl bg-white p-6 text-sm leading-7 text-gray-700 shadow-card ring-1 ring-line">{x.floorPlan}</div>}
       </section>}
 
       {exhibitors.length > 0 && (
@@ -118,23 +120,7 @@ export default function ExpoHome() {
       {data && data.sponsors.length > 0 && (
         <section id="sponsors" className="mx-auto max-w-5xl scroll-mt-20 px-4 pt-14">
           <Heading>{t('ex.sponsors')}</Heading>
-          <div className="space-y-5">
-            {SPONSOR_TIERS.map((tier) => {
-              const list = data.sponsors.filter((s) => ((SPONSOR_TIERS as readonly string[]).includes(s.tier) ? s.tier : 'partner') === tier);
-              if (!list.length) return null;
-              return (
-                <div key={tier}>
-                  <div className="mb-2 text-center text-xs font-extrabold tracking-wider text-accent">{t(`ex.tier.${tier}`)}</div>
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    {list.map((s) => {
-                      const inner = s.logoUrl ? <img src={s.logoUrl} alt={s.name} className="h-12 max-w-[9rem] object-contain" /> : <span className="font-bold text-secondary">{s.name}</span>;
-                      return s.website ? <a key={s.id} href={s.website} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-white px-5 py-3 shadow-card ring-1 ring-line transition hover:ring-accent">{inner}</a> : <span key={s.id} className="rounded-xl bg-white px-5 py-3 shadow-card ring-1 ring-line">{inner}</span>;
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <SponsorTiers sponsors={data.sponsors} />
         </section>
       )}
 

@@ -62,7 +62,15 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'company', label: ar ? 'الشركة' : 'Company', value: (r) => r.company },
   { key: 'email', label: ar ? 'البريد الإلكتروني' : 'E-mail', value: (r) => r.email },
   { key: 'phone', label: ar ? 'الهاتف' : 'Phone', value: (r) => r.phone },
-  { key: 'sector', label: ar ? 'القطاع' : 'Sector', value: (r) => r.sector },
+  { key: 'jobTitle', label: ar ? 'الصفة الوظيفية' : 'Job title', value: (r) => r.jobTitle },
+  { key: 'country', label: ar ? 'الدولة' : 'Country', value: (r) => r.country },
+  { key: 'city', label: ar ? 'المدينة' : 'City', value: (r) => r.city },
+  { key: 'sector', label: ar ? 'مجال العمل' : 'Business field', value: (r) => r.sector },
+  { key: 'products', label: ar ? 'المنتجات / الخدمات' : 'Products / services', value: (r) => r.products },
+  { key: 'area', label: ar ? 'المساحة' : 'Area', value: (r) => r.area },
+  { key: 'participationType', label: ar ? 'نوع الجناح' : 'Stand type', value: (r) => r.participationType },
+  { key: 'interest', label: ar ? 'طبيعة الاهتمام' : 'Interest', value: (r) => r.interest },
+  { key: 'inquiryType', label: ar ? 'نوع الاستفسار' : 'Inquiry type', value: (r) => r.inquiryType },
   { key: 'message', label: ar ? 'الرسالة' : 'Message', value: (r) => r.message },
   { key: 'adminNote', label: ar ? 'ملاحظة داخلية' : 'Internal note', value: (r) => r.adminNote },
   { key: 'createdAt', label: ar ? 'تاريخ الطلب' : 'Sent at', value: (r) => r.createdAt },
@@ -126,7 +134,8 @@ export class ExpoPublicController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('apply')
   @HttpCode(200)
-  apply(@Body() dto: ApplyDto) {
-    return this.service.apply(dto);
+  @UseInterceptors(FileInterceptor('profile', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1, fieldSize: 1024 * 1024 } }))
+  apply(@Body() dto: ApplyDto, @UploadedFile() profile?: Express.Multer.File) {
+    return this.service.apply(dto, profile);
   }
 }

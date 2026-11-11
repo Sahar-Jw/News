@@ -11,8 +11,8 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
-const PHOTO_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course'];
-const VIDEO_CATEGORIES = ['activity', 'coverage', 'encounter'];
+const PHOTO_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course', 'expo'];
+const VIDEO_CATEGORIES = ['activity', 'coverage', 'encounter', 'expo'];
 interface Row { id: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
 interface Draft { id?: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet }
 interface CommitteeOpt { id: number; name: string }

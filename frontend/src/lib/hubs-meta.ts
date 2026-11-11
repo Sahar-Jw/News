@@ -31,8 +31,15 @@ export const HUBS: HubMeta[] = [
     tabs: [{ key: 'courses', ar: 'الدورات', en: 'Courses', perms: ['courses.read'] }, { key: 'trainers', ar: 'المدربون', en: 'Trainers', perms: ['courses.read'] }, { key: 'trainees', ar: 'المتدربون', en: 'Trainees', perms: ['registrations.read'] }, { key: 'trainerApps', ar: 'طلبات المدربين', en: 'Trainer applications', perms: ['registrations.read'] }, settings(['training'])],
   },
   {
-    key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'العارضون والرعاة والبرنامج والطلبات ومعلومات المعرض', hintEn: 'Exhibitors, sponsors, programme, requests and expo info', icon: '◈', color: '#4b1d7a',
-    tabs: [{ key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] }, { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, settings(['expo']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
+    key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'موقع المعرض المستقل: المحتوى والعارضون والبرنامج والطلبات والهوية والقائمة', hintEn: 'The separate EXPO site: content, exhibitors, programme, requests, identity and menus', icon: '◈', color: '#4b1d7a',
+    tabs: [
+      { key: 'about', ar: 'التعريف بالمعرض', en: 'About', perms: S }, { key: 'sectors', ar: 'القطاعات', en: 'Sectors', perms: S },
+      { key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] },
+      { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] },
+      { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, { key: 'info', ar: 'المعلومات والتسجيل', en: 'Info & registration', perms: S },
+      { key: 'contact', ar: 'التواصل والفريق', en: 'Contact & team', perms: S }, { key: 'identity', ar: 'الهوية والمظهر', en: 'Identity & theme', perms: S },
+      { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S },
+    ],
   },
   {
     key: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'محتوى اللجنة وهوية صفحتها المستقلة', hintEn: 'Committee content and its separate page identity', icon: '✿', color: '#8b3d63',

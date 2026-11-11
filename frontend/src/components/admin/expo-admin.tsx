@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -8,18 +8,18 @@ import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
-import { SESSION_TYPES, SPONSOR_TIERS } from '@/components/site/expo-shared';
+import { SESSION_TYPES, SPONSOR_TIERS, sessionTypeLabel } from '@/components/site/expo-shared';
 
 export type ExpoKind = 'exhibitor' | 'sponsor' | 'session';
 type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'sectorAr' | 'sectorEn' | 'category' | 'personAr' | 'personEn' | 'placeAr' | 'placeEn' | 'website';
 const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'sectorAr', 'sectorEn', 'category', 'personAr', 'personEn', 'placeAr', 'placeEn', 'website'];
 type Fields = Record<Text, string>;
-interface Row extends Fields { id: number; nameAr: string; startsAt: string; endsAt: string; sortOrder: number; isActive: boolean; logoUrl: string | null }
-interface Draft extends Fields { id?: number; nameAr: string; startsAt: string; endsAt: string; sortOrder: string; isActive: boolean; logoUrl: string | null; removeLogo: boolean }
+interface Row extends Fields { id: number; mapX: number | ''; mapY: number | ''; nameAr: string; startsAt: string; endsAt: string; sortOrder: number; isActive: boolean; logoUrl: string | null }
+interface Draft extends Fields { id?: number; mapX: string; mapY: string; nameAr: string; startsAt: string; endsAt: string; sortOrder: string; isActive: boolean; logoUrl: string | null; removeLogo: boolean }
 type Errors = Partial<Record<'nameAr' | 'website' | 'endsAt' | 'sortOrder' | 'logo', string>>;
 
 const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fields;
-const EMPTY: Draft = { ...blank(), nameAr: '', startsAt: '', endsAt: '', sortOrder: '0', isActive: true, logoUrl: null, removeLogo: false };
+const EMPTY: Draft = { ...blank(), mapX: '', mapY: '', nameAr: '', startsAt: '', endsAt: '', sortOrder: '0', isActive: true, logoUrl: null, removeLogo: false };
 /** ISO → value of <input type="datetime-local"> (the admin's own time zone) and back */
 const toLocal = (iso: string) => { if (!iso) return ''; const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 const toIso = (v: string) => (v ? new Date(v).toISOString() : '');
@@ -42,12 +42,23 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
     setLogo(null);
     setErrors({});
     setDraft(r
-      ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, nameAr: r.nameAr, startsAt: toLocal(r.startsAt), endsAt: toLocal(r.endsAt), sortOrder: String(r.sortOrder), isActive: r.isActive, logoUrl: r.logoUrl, removeLogo: false }
+      ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, mapX: String(r.mapX ?? ''), mapY: String(r.mapY ?? ''), nameAr: r.nameAr, startsAt: toLocal(r.startsAt), endsAt: toLocal(r.endsAt), sortOrder: String(r.sortOrder), isActive: r.isActive, logoUrl: r.logoUrl, removeLogo: false }
       : { ...EMPTY, category: kind === 'sponsor' ? 'partner' : kind === 'session' ? 'seminar' : '' });
   };
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
-  const catLabel = (c: string) => (c ? t(`ex.${kind === 'sponsor' ? 'tier' : 'type'}.${c}`) : '');
+  const catLabel = (c: string) => (c ? (kind === 'session' ? sessionTypeLabel(c, lang === 'ar') : undefined) ?? t(`ex.${kind === 'sponsor' ? 'tier' : 'type'}.${c}`) : '');
+  // the floor plan image the exhibitor can be placed on (Settings → DCC EXPO → Information & registration)
+  const [plan, setPlan] = useState('');
+  useEffect(() => {
+    if (!draft || kind !== 'exhibitor' || plan) return;
+    api<Record<string, Record<string, any>>>('/public/settings', { cache: 'no-store' }).then((r) => setPlan(String(r.expo?.floor_plan_image_url ?? ''))).catch(() => undefined);
+  }, [!!draft, kind]); // eslint-disable-line react-hooks/exhaustive-deps
+  const place = (e: React.MouseEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const pct = (v: number) => String(Math.round(Math.min(100, Math.max(0, v)) * 10) / 10);
+    up({ mapX: pct(((e.clientX - box.left) / box.width) * 100), mapY: pct(((e.clientY - box.top) / box.height) * 100) });
+  };
 
   const cols: Col<Row>[] = [
     { key: 'nameAr', label: t(kind === 'session' ? 'ex.a.titleAr' : 'ex.a.nameAr') },
@@ -81,6 +92,7 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
     fd.set('nameAr', draft.nameAr.trim()); fd.set('startsAt', toIso(draft.startsAt)); fd.set('endsAt', toIso(draft.endsAt));
     fd.set('sortOrder', draft.sortOrder.trim()); fd.set('isActive', String(draft.isActive));
     for (const k of TEXT) fd.set(k, draft[k].trim());
+    if (kind === 'exhibitor') { fd.set('mapX', draft.mapX.trim()); fd.set('mapY', draft.mapY.trim()); }
     if (draft.id) fd.set('removeLogo', String(draft.removeLogo));
     if (logo) fd.set('logo', logo);
     setBusy(true);
@@ -135,12 +147,23 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
             {txt('ex.a.descAr', 'descriptionAr', 'rtl', { area: true, max: 3000 })}
             {txt('ex.a.descEn', 'descriptionEn', 'ltr', { area: true, max: 3000 })}
             {kind === 'exhibitor' && <>{txt('ex.a.sectorAr', 'sectorAr', 'rtl', { max: 150 })}{txt('ex.a.sectorEn', 'sectorEn', 'ltr', { max: 150 })}</>}
+            {kind === 'exhibitor' && plan && (
+              <Field label={lang === 'ar' ? 'موقع العارض على مخطط المعرض (اضغط على المخطط لتحديد الموقع)' : 'Position on the floor plan (click the plan)'}>
+                <div>
+                  <div onClick={place} className="relative cursor-crosshair overflow-hidden rounded-lg ring-1 ring-line">
+                    <img src={fileUrl(plan)} alt="" className="block w-full select-none" draggable={false} />
+                    {draft.mapX !== '' && draft.mapY !== '' && <span style={{ left: `${draft.mapX}%`, top: `${draft.mapY}%` }} className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-red-600 shadow" />}
+                  </div>
+                  <div className="mt-1 flex items-center gap-3 text-xs text-gray-500"><span dir="ltr">X {draft.mapX || '—'}% · Y {draft.mapY || '—'}%</span>{draft.mapX !== '' && <button type="button" className="text-red-600" onClick={() => up({ mapX: '', mapY: '' })}>{lang === 'ar' ? 'إزالة الموقع' : 'Clear'}</button>}</div>
+                </div>
+              </Field>
+            )}
             {kind === 'sponsor' && (
               <Field label={t('ex.a.tier')}><select className={inputCls} value={draft.category} onChange={(e) => up({ category: e.target.value })}>{SPONSOR_TIERS.map((x) => <option key={x} value={x}>{t(`ex.tier.${x}`)}</option>)}</select></Field>
             )}
             {kind === 'session' && (
               <>
-                <Field label={t('ex.a.type')}><select className={inputCls} value={draft.category} onChange={(e) => up({ category: e.target.value })}>{SESSION_TYPES.map((x) => <option key={x} value={x}>{t(`ex.type.${x}`)}</option>)}</select></Field>
+                <Field label={t('ex.a.type')}><select className={inputCls} value={draft.category} onChange={(e) => up({ category: e.target.value })}>{SESSION_TYPES.map((x) => <option key={x} value={x}>{sessionTypeLabel(x, lang === 'ar') ?? t(`ex.type.${x}`)}</option>)}</select></Field>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label={t('ex.a.startsAt')}><input type="datetime-local" dir="ltr" className={inputCls} value={draft.startsAt} onChange={(e) => up({ startsAt: e.target.value })} /></Field>
                   <Field label={t('ex.a.endsAt')} error={errors.endsAt}><input type="datetime-local" dir="ltr" className={inputCls} value={draft.endsAt} onChange={(e) => up({ endsAt: e.target.value })} /></Field>

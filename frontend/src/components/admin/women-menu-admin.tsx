@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Field, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { readWomenMenu, type WomenMenu, type WomenMenuEntry, type WomenMenuPage } from '@/lib/women-menu';
+import { readExpoMenu } from '@/lib/expo-menu';
 
 interface Row { id: number; key: string; value: unknown }
 type Part = 'navigation' | 'footer';
@@ -22,7 +23,10 @@ function VisibilitySwitch({ checked, label, disabled, onChange }: { checked: boo
   );
 }
 
-export function WomenMenuAdmin() {
+/** Navigation & footer editor of a separate-identity site: the Women Business Committee page (default) or DCC EXPO (`site="expo"`). */
+export function WomenMenuAdmin({ site = 'women' }: { site?: 'women' | 'expo' }) {
+  const expo = site === 'expo';
+  const readMenu = expo ? readExpoMenu : readWomenMenu;
   const { lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -37,13 +41,13 @@ export function WomenMenuAdmin() {
 
   useEffect(() => {
     let active = true;
-    api<{ data: Row[] }>('/admin/settings', { params: { category: 'women', limit: 'all' }, cache: 'no-store' })
+    api<{ data: Row[] }>('/admin/settings', { params: { category: site, limit: 'all' }, cache: 'no-store' })
       .then(({ data }) => {
         const row = data.find((item) => item.key === 'page_links');
-        if (!row) throw new Error('Missing women.page_links setting; apply the site settings migration.');
+        if (!row) throw new Error(`Missing ${site}.page_links setting; apply the site settings migration.`);
         if (!active) return;
         setSettingId(row.id);
-        const loaded = readWomenMenu(row.value);
+        const loaded = readMenu(row.value);
         setMenu({ navigation: addInitialIds(loaded.navigation), footer: addInitialIds(loaded.footer) });
       })
       .catch((error: unknown) => { if (active) setLoadErr(error instanceof Error ? error.message : String(error)); });
@@ -159,7 +163,7 @@ export function WomenMenuAdmin() {
     setBusy(true);
     try {
       await api(`/admin/settings/${settingId}`, { method: 'PATCH', body: { value: normalized } });
-      toast(ar ? 'تم حفظ قائمة سيدات الأعمال' : "Women's page navigation saved");
+      toast(ar ? (expo ? 'تم حفظ قائمة المعرض وتذييله' : 'تم حفظ قائمة سيدات الأعمال') : (expo ? 'EXPO navigation saved' : "Women's page navigation saved"));
     } catch (error: unknown) {
       toast(error instanceof Error ? error.message : String(error), 'err');
     } finally { setBusy(false); }
@@ -250,8 +254,8 @@ export function WomenMenuAdmin() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">{ar ? 'قائمة سيدات الأعمال وتذييلها' : "Women's navigation & footer"}</h1>
-        <p className="mt-1 text-sm text-gray-500">{ar ? 'رتّب صفحات سيدات الأعمال الموجودة في روابط مستقلة أو قوائم منسدلة، واسحبها بين القوائم أو استخدم خيار النقل. لا يمكن إنشاء صفحات جديدة؛ يمكنك إظهارها أو إخفاؤها.' : "Arrange existing Women's pages as standalone links or in dropdowns. Drag pages between groups or use the move selector. Pages cannot be added or deleted; you can show or hide them."}</p>
+        <h1 className="text-2xl font-bold">{expo ? (ar ? 'قائمة DCC EXPO وتذييلها' : 'DCC EXPO navigation & footer') : ar ? 'قائمة سيدات الأعمال وتذييلها' : "Women's navigation & footer"}</h1>
+        <p className="mt-1 text-sm text-gray-500">{ar ? `رتّب صفحات ${expo ? 'المعرض' : 'سيدات الأعمال'} الموجودة في روابط مستقلة أو قوائم منسدلة، واسحبها بين القوائم أو استخدم خيار النقل. لا يمكن إنشاء صفحات جديدة؛ يمكنك إظهارها أو إخفاؤها.` : `Arrange existing ${expo ? 'EXPO' : "Women's"} pages as standalone links or in dropdowns. Drag pages between groups or use the move selector. Pages cannot be added or deleted; you can show or hide them.`}</p>
       </div>
       {loadErr ? <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p> : !menu ? (
         <p role="status" className="py-8 text-center text-sm text-gray-500">{ar ? 'جارٍ التحميل…' : 'Loading…'}</p>

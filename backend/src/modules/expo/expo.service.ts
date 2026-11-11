@@ -46,6 +46,7 @@ export class ExpoService {
     return {
       id: r.id, kind: kindOfExpoCode(r.code), nameAr: r.title, nameEn: s(x.nameEn), descriptionAr: r.body ?? '', descriptionEn: s(x.descriptionEn), sectorAr: s(x.sectorAr), sectorEn: s(x.sectorEn),
       category: s(x.category), personAr: s(x.personAr), personEn: s(x.personEn), placeAr: s(x.placeAr), placeEn: s(x.placeEn), website: s(x.website),
+      mapX: typeof x.mapX === 'number' ? x.mapX : null, mapY: typeof x.mapY === 'number' ? x.mapY : null,
       startsAt: (x.startsAt ?? null) as string | null, endsAt: (x.endsAt ?? null) as string | null, sortOrder: sortOf(r), isActive: isActive(r), logo: r.images[0] ?? null,
     };
   }
@@ -53,7 +54,7 @@ export class ExpoService {
   private presentAdmin(r: Rec) {
     const i = this.view(r);
     const out: Record<string, unknown> = {
-      id: i.id, kind: i.kind, nameAr: i.nameAr, startsAt: i.startsAt ?? '', endsAt: i.endsAt ?? '', sortOrder: i.sortOrder, isActive: i.isActive, logoUrl: this.storage.url(i.logo), createdAt: r.createdAt, updatedAt: r.updatedAt,
+      id: i.id, kind: i.kind, nameAr: i.nameAr, startsAt: i.startsAt ?? '', endsAt: i.endsAt ?? '', sortOrder: i.sortOrder, isActive: i.isActive, logoUrl: this.storage.url(i.logo), mapX: i.mapX ?? '', mapY: i.mapY ?? '', createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
     for (const f of TEXT) out[f] = (i as Record<string, any>)[f] ?? '';
     return out;
@@ -75,6 +76,7 @@ export class ExpoService {
       const v = (dto as any)[f];
       if (v !== undefined) x[f] = typeof v === 'string' ? v.trim() || null : null;
     }
+    for (const f of ['mapX', 'mapY'] as const) if (dto[f] !== undefined) x[f] = dto[f] === null ? null : Math.round(Number(dto[f]) * 10) / 10;
     if (dto.startsAt !== undefined) x.startsAt = dto.startsAt ? new Date(dto.startsAt).toISOString() : null;
     if (dto.endsAt !== undefined) x.endsAt = dto.endsAt ? new Date(dto.endsAt).toISOString() : null;
     const start = x.startsAt !== undefined ? x.startsAt : cur?.x.startsAt ?? null;
@@ -137,7 +139,7 @@ export class ExpoService {
     const en = lang === 'en';
     const rows = (await this.store.list(EXPO_CODES)).filter(isActive).map((r) => this.view(r)).sort((a, b) => a.sortOrder - b.sortOrder || a.nameAr.localeCompare(b.nameAr) || a.id - b.id).slice(0, 2000);
     const base = (i: (typeof rows)[number]) => ({ id: i.id, name: pick(i.nameAr, i.nameEn, en), description: pick(i.descriptionAr, i.descriptionEn, en), website: i.website || null, logoUrl: this.storage.url(i.logo) });
-    const exhibitors = rows.filter((r) => r.kind === 'exhibitor').map((i) => ({ ...base(i), sector: pick(i.sectorAr, i.sectorEn, en), booth: pick(i.placeAr, i.placeEn, en) }));
+    const exhibitors = rows.filter((r) => r.kind === 'exhibitor').map((i) => ({ ...base(i), sector: pick(i.sectorAr, i.sectorEn, en), booth: pick(i.placeAr, i.placeEn, en), mapX: i.mapX, mapY: i.mapY }));
     const sponsors = rows.filter((r) => r.kind === 'sponsor').map((i) => ({ ...base(i), tier: i.category || 'partner' }));
     const sessions = rows
       .filter((r) => r.kind === 'session')
@@ -156,13 +158,14 @@ export class ExpoService {
     if (q.to) qb.andWhere('a.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('a.name ILIKE :like', { like }).orWhere('a.email ILIKE :like', { like }).orWhere('a.phone ILIKE :like', { like }).orWhere('a.company ILIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('a.name ILIKE :like', { like }).orWhere('a.email ILIKE :like', { like }).orWhere('a.phone ILIKE :like', { like }).orWhere('a.company ILIKE :like', { like }).orWhere('a.city ILIKE :like', { like }).orWhere('a.country ILIKE :like', { like })));
     }
-    applyColumnFilters(qb, q.cf, { name: 'a.name', company: 'a.company', email: 'a.email', phone: 'a.phone', sector: 'a.sector', message: 'a.message', createdAt: 'CAST(a.createdAt AS TEXT)' });
+    applyColumnFilters(qb, q.cf, { name: 'a.name', company: 'a.company', email: 'a.email', phone: 'a.phone', sector: 'a.sector', message: 'a.message', country: 'a.country', city: 'a.city', jobTitle: 'a.jobTitle', createdAt: 'CAST(a.createdAt AS TEXT)' });
     return qb.orderBy('a.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('a.id', 'DESC');
   }
   private presentApp(a: ExpoApplication) {
-    return { id: Number(a.id), kind: a.kind, status: a.status, name: a.name, company: a.company ?? '', email: a.email, phone: a.phone, sector: a.sector ?? '', message: a.message ?? '', adminNote: a.adminNote ?? '', createdAt: a.createdAt };
+    return { id: Number(a.id), kind: a.kind, status: a.status, name: a.name, company: a.company ?? '', email: a.email, phone: a.phone, sector: a.sector ?? '', message: a.message ?? '', adminNote: a.adminNote ?? '', createdAt: a.createdAt,
+      jobTitle: a.jobTitle ?? '', country: a.country ?? '', city: a.city ?? '', products: a.products ?? '', area: a.area ?? '', participationType: a.participationType ?? '', interest: a.interest ?? '', inquiryType: a.inquiryType ?? '', profileUrl: this.storage.url(a.profileFile) };
   }
   async listApplications(q: ApplicationsAdminQueryDto) {
     const p = adminPage(q);
@@ -186,20 +189,46 @@ export class ExpoService {
     const rows = await this.apps.find({ where: { id: In(unique) } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض الطلبات غير موجودة');
     await this.apps.delete({ id: In(unique) });
+    await this.storage.removeMany(rows.map((r) => r.profileFile));
     // personal data is not copied into the audit log
     await this.audit.log({ category: 'expo', action: 'delete', description: `حذف ${rows.length} طلب معرض`, actorId: actor.id, entityType: 'expo_applications', details: { ids: unique }, changes: removedChanges('expo_applications', rows, ['name', 'company', 'email', 'phone', 'message', 'adminNote']) });
     return { deleted: rows.length };
   }
 
+  /** Required fields of each form (the front end checks the same list so the person sees which field is missing). */
+  private validateApply(dto: ApplyDto) {
+    const need: Record<string, (keyof ApplyDto)[]> = {
+      exhibitor: ['company', 'jobTitle', 'country', 'city', 'sector', 'products', 'area', 'participationType'],
+      visitor: ['jobTitle', 'country', 'city', 'sector', 'interest'],
+      info: ['inquiryType', 'message'],
+    };
+    const missing = need[dto.kind].filter((k) => !String(dto[k] ?? '').trim());
+    if (missing.length) throw new BadRequestException(`الحقول التالية مطلوبة: ${missing.join('، ')}`);
+    // visitor and information requests ask for the three-part name
+    if (dto.kind !== 'exhibitor' && dto.name.trim().split(/\s+/).length < 3) throw new BadRequestException('الاسم الثلاثي مطلوب');
+  }
+
   /** Public form. The same e-mail + kind can be sent once every 10 minutes (stops double clicks) — beyond that it is a new request. */
-  async apply(dto: ApplyDto) {
+  async apply(dto: ApplyDto, profile?: Express.Multer.File) {
+    this.validateApply(dto);
     const email = dto.email.trim().toLowerCase();
     const since = new Date(Date.now() - 10 * 60_000);
     const dup = await this.apps.createQueryBuilder('a').where('a.email = :email AND a.kind = :kind AND a.createdAt > :since', { email, kind: dto.kind, since }).getCount();
     if (dup) return { message: 'تم استلام طلبك مسبقاً، سنتواصل معك قريباً' };
-    const a = await this.apps.save(this.apps.create({ kind: dto.kind, status: 'new', name: dto.name.trim(), company: dto.company?.trim() || null, email, phone: dto.phone.trim(), sector: dto.sector?.trim() || null, message: dto.message?.trim() || null }));
-    void this.notify(a);
-    return { message: 'تم استلام طلبك بنجاح، سنتواصل معك قريباً' };
+    const path = profile && dto.kind === 'exhibitor' ? await this.storage.saveDocument(profile, 'expo-applications') : null;
+    const t = (v?: string | null) => v?.trim() || null;
+    try {
+      const a = await this.apps.save(this.apps.create({
+        kind: dto.kind, status: 'new', name: dto.name.trim(), company: t(dto.company), email, phone: dto.phone.trim(), sector: t(dto.sector), message: t(dto.message),
+        jobTitle: t(dto.jobTitle), country: t(dto.country), city: t(dto.city), products: dto.kind === 'exhibitor' ? t(dto.products) : null, area: dto.kind === 'exhibitor' ? t(dto.area) : null,
+        participationType: dto.kind === 'exhibitor' ? t(dto.participationType) : null, interest: dto.kind === 'visitor' ? t(dto.interest) : null, inquiryType: dto.kind === 'info' ? t(dto.inquiryType) : null, profileFile: path,
+      }));
+      void this.notify(a);
+      return { message: 'تم استلام طلبك بنجاح، سنتواصل معك قريباً' };
+    } catch (e) {
+      await this.storage.remove(path);
+      throw e;
+    }
   }
 
   /** E-mail to the EXPO team (setting expo.contact_email, else the chamber's contact e-mail). Never fails the request. */
@@ -209,7 +238,7 @@ export class ExpoService {
       const to = (await get('expo', 'contact_email')) || (await get('contact', 'email'));
       if (!to) return;
       const row = (k: string, v?: string | null) => (v ? `<p><b>${k}:</b> ${esc(v)}</p>` : '');
-      const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>${KIND_AR[a.kind] ?? 'طلب جديد'} — DCC EXPO</h3>${row('الاسم', a.name)}${row('الشركة', a.company)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('القطاع', a.sector)}${row('الرسالة', a.message)}</div>`;
+      const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>${KIND_AR[a.kind] ?? 'طلب جديد'} — DCC EXPO</h3>${row('الاسم', a.name)}${row('الشركة', a.company)}${row('الصفة الوظيفية', a.jobTitle)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('الدولة', a.country)}${row('المدينة', a.city)}${row('مجال العمل', a.sector)}${row('المنتجات / الخدمات', a.products)}${row('المساحة', a.area)}${row('نوع الجناح', a.participationType)}${row('الاهتمام', a.interest)}${row('نوع الاستفسار', a.inquiryType)}${row('الملاحظات / النص', a.message)}${a.profileFile ? row('ملف التعريف', 'مرفق في لوحة التحكم') : ''}</div>`;
       await this.mail.send(to, `${KIND_AR[a.kind] ?? 'طلب جديد'}: ${a.name}`, html);
     } catch (e) {
       this.logger.error(`Could not notify the EXPO team: ${(e as Error).message}`);
