@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -9,6 +9,8 @@ import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { RichEditor } from '@/components/admin/rich-editor';
 import { createContext, useContext } from 'react';
 import { womenPageHref } from '@/lib/women-menu';
+import { useSite } from '@/components/site/site-context';
+import { parseYoutubeId } from '@/lib/youtube';
 
 /** the committee being edited and what to do after a change (set by the committee page) */
 const AdminCtx = createContext<{ id: number; reload: () => void }>({ id: 0, reload: () => {} });
@@ -135,7 +137,7 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
 
   const title = editId ? tr('تعديل', 'Edit') : isInit ? tr('إضافة مبادرة أو مشروع', 'Add an initiative or project') : isStory ? tr('إضافة قصة نجاح', 'Add a success story') : tr('إضافة نشاط أو فعالية', 'Add an activity or event');
   return (
-    <Modal open onClose={onClose} title={title} wide>
+    <Modal open onClose={onClose} title={title} wide brand>
       {!loaded ? <p className="py-8 text-center text-sm text-gray-500">…</p> : (
         <div className="space-y-4">
           <Tabs lang={lang} setLang={setLang} />
@@ -232,7 +234,7 @@ export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number
     } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
   };
   return (
-    <Modal open onClose={onClose} title={editId ? tr('تعديل عضوة', 'Edit member') : tr('إضافة عضوة', 'Add a member')}>
+    <Modal open onClose={onClose} title={editId ? tr('تعديل عضوة', 'Edit member') : tr('إضافة عضوة', 'Add a member')} brand>
       {!loaded ? <p className="py-8 text-center text-sm text-gray-500">…</p> : (
         <div className="space-y-3">
           <Field label={tr('الصفة التنظيمية', 'Role')}><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{ROLE_KEYS.map((r) => <option key={r} value={r}>{roleName[r]}</option>)}</select></Field>
@@ -316,7 +318,7 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
   const sfx = lang === 'ar' ? 'Ar' : 'En';
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   return (
-    <Modal open onClose={onClose} title={part === 'about' ? tr('تعديل «عن اللجنة»', 'Edit "About the committee"') : tr('تعديل الهيكلية التنظيمية', 'Edit the organisational structure')} wide>
+    <Modal open onClose={onClose} title={part === 'about' ? tr('تعديل «عن اللجنة»', 'Edit "About the committee"') : tr('تعديل الهيكلية التنظيمية', 'Edit the organisational structure')} wide brand>
       {!v ? <p className="py-8 text-center text-sm text-gray-500">…</p> : (
         <div className="space-y-4">
           <Tabs lang={lang} setLang={setLang} />
@@ -339,13 +341,178 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
   );
 }
 
+// ---------------------------------------------------------------- add a news item, in a window over the women page
+const NEWS_CATEGORY_FALLBACK = { ar: 'سيدات الأعمال', en: 'Businesswomen' } as const;
+const MAX_NEWS_IMAGE = 5 * 1024 * 1024;
+const MAX_NEWS_PDF = 25 * 1024 * 1024;
+const MAX_NEWS_PDFS = 10;
+
+/**
+ * "Add a news item" without leaving the women site. The news gets the committee's own main category (Settings -> women -> news category)
+ * so it shows on this page straight away. Same rules as the news form of the main site; every error is shown under its field.
+ */
+export function NewsDialog({ onClose }: { onClose: () => void }) {
+  const tr = useTr();
+  const toast = useToast();
+  const { lang } = useI18n();
+  const { can } = useAuth();
+  const { s } = useSite();
+  const { reload } = useWomen();
+  const mayPublish = can('news.publish');
+  const mayFeature = can('news.feature');
+  const [f, setF] = useState({ title: '', subject: '', language: lang as 'ar' | 'en', visibility: 'public', status: 'published', publishAt: '', youtubeUrl: '', body: '', isFeatured: false });
+  const [images, setImages] = useState<{ file: File; url: string }[]>([]);
+  const [pdfs, setPdfs] = useState<File[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const urls = useRef<string[]>([]);
+  useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
+
+  const set = (k: keyof typeof f, v: string | boolean) => { setF((x) => ({ ...x, [k]: v })); setErrors((e) => (e[k] ? { ...e, [k]: '' } : e)); };
+  const category = String(s('women', `news_category_${f.language}`) || NEWS_CATEGORY_FALLBACK[f.language]);
+  const ytId = parseYoutubeId(f.youtubeUrl);
+
+  const addImages = (list: FileList | null) => {
+    if (!list) return;
+    const picked = [...list];
+    const ok = picked.filter((x) => /^image\/(jpeg|png|webp|gif)$/.test(x.type) && x.size <= MAX_NEWS_IMAGE);
+    const next = ok.map((file) => { const url = URL.createObjectURL(file); urls.current.push(url); return { file, url }; });
+    setImages((x) => [...x, ...next]);
+    setErrors((e) => ({ ...e, images: ok.length !== picked.length ? tr('بعض الصور مرفوضة: الأنواع المسموحة JPG/PNG/WEBP/GIF وحتى 5 ميغابايت للصورة', 'Some pictures were rejected: JPG/PNG/WEBP/GIF up to 5 MB each') : '' }));
+  };
+  const addPdfs = (list: FileList | null) => {
+    if (!list) return;
+    const picked = [...list];
+    const ok = picked.filter((x) => (x.type === 'application/pdf' || /\.pdf$/i.test(x.name)) && x.size <= MAX_NEWS_PDF && !pdfs.some((y) => y.name === x.name && y.size === x.size));
+    const room = MAX_NEWS_PDFS - pdfs.length;
+    setPdfs((x) => [...x, ...ok.slice(0, Math.max(room, 0))]);
+    setErrors((e) => ({ ...e, pdfs: ok.length !== picked.length || ok.length > room ? tr('بعض الملفات مرفوضة: PDF فقط، حتى 25 ميغابايت للملف و10 ملفات', 'Some files were rejected: PDF only, up to 25 MB each and 10 files') : '' }));
+  };
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!f.title.trim()) e.title = tr('العنوان مطلوب', 'The title is required');
+    else if (f.title.trim().length > 255) e.title = tr('العنوان أطول من 255 حرفاً', 'The title is longer than 255 characters');
+    if (f.subject.length > 500) e.subject = tr('الموضوع أطول من 500 حرف', 'The subject is longer than 500 characters');
+    if (!f.body.replace(/<[^>]*>/g, '').trim()) e.body = tr('نص الخبر مطلوب', 'The news text is required');
+    if (f.youtubeUrl.trim() && !ytId) e.youtubeUrl = tr('رابط يوتيوب غير صالح', 'Not a valid YouTube link');
+    if (mayPublish && f.status === 'scheduled') {
+      if (!f.publishAt) e.publishAt = tr('وقت النشر مطلوب للخبر المجدول', 'The publish time is required for a scheduled item');
+      else if (new Date(f.publishAt).getTime() <= Date.now()) e.publishAt = tr('وقت الجدولة يجب أن يكون في المستقبل', 'The scheduled time must be in the future');
+    }
+    if (mayPublish && f.status === 'published' && f.publishAt && new Date(f.publishAt).getTime() > Date.now() + 60_000) e.publishAt = tr('لنشر في وقت مستقبلي اختاري الحالة «مجدولة»', 'To publish later, choose the status "Scheduled"');
+    return e;
+  };
+
+  const save = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    const e = validate();
+    setErrors((old) => ({ images: old.images ?? '', pdfs: old.pdfs ?? '', ...e }));
+    if (Object.values(e).some(Boolean)) { toast(tr('راجعي الحقول المظللة أسفل كل حقل', 'Please check the messages under the fields'), 'err'); return; }
+    const fd = new FormData();
+    fd.set('title', f.title.trim());
+    fd.set('subject', f.subject.trim());
+    fd.set('mainCategory', category);
+    fd.set('language', f.language);
+    fd.set('visibility', f.visibility);
+    fd.set('body', f.body);
+    if (f.youtubeUrl.trim()) fd.set('youtubeUrl', f.youtubeUrl.trim());
+    if (mayFeature) fd.set('isFeatured', String(f.isFeatured));
+    if (mayPublish) {
+      fd.set('status', f.status);
+      fd.set('publishAt', f.publishAt ? new Date(f.publishAt).toISOString() : '');
+    }
+    images.forEach((i) => fd.append('images', i.file));
+    pdfs.forEach((p) => fd.append('pdf', p));
+    setBusy(true);
+    try {
+      await api('/admin/news', { method: 'POST', form: fd });
+      toast(tr('تمت إضافة الخبر', 'The news item was added'));
+      reload();
+      onClose();
+    } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
+  };
+
+  const dir = f.language === 'ar' ? 'rtl' : 'ltr';
+  return (
+    <Modal open onClose={onClose} title={tr('إضافة خبر', 'Add a news item')} wide brand>
+      <form onSubmit={save} noValidate className="space-y-4">
+        <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs leading-5 text-secondary">
+          {tr(`سيظهر الخبر في هذه الصفحة تلقائياً ضمن التصنيف «${category}».`, `The news item will appear on this page automatically under the category "${category}".`)}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2"><Field label={tr('العنوان', 'Title')} error={errors.title}><input maxLength={255} dir={dir} className={inputCls} value={f.title} onChange={(e) => set('title', e.target.value)} /></Field></div>
+          <div className="sm:col-span-2"><Field label={tr('الموضوع / ملخص قصير (اختياري)', 'Subject / short summary (optional)')} error={errors.subject}><input maxLength={500} dir={dir} className={inputCls} value={f.subject} onChange={(e) => set('subject', e.target.value)} /></Field></div>
+          <Field label={tr('لغة الخبر', 'News language')} hint={tr('يظهر الخبر في الصفحة بنفس لغته', 'It shows on the page in its own language')}>
+            <select className={inputCls} value={f.language} onChange={(e) => set('language', e.target.value)}><option value="ar">العربية</option><option value="en">English</option></select>
+          </Field>
+          <Field label={tr('من يراه؟', 'Who can see it?')}>
+            <select className={inputCls} value={f.visibility} onChange={(e) => set('visibility', e.target.value)}><option value="public">{tr('الجميع', 'Everyone')}</option><option value="members">{tr('الأعضاء المسجلون فقط', 'Registered members only')}</option></select>
+          </Field>
+          {mayPublish && (
+            <>
+              <Field label={tr('الحالة', 'Status')}>
+                <select className={inputCls} value={f.status} onChange={(e) => set('status', e.target.value)}><option value="published">{tr('منشور', 'Published')}</option><option value="scheduled">{tr('مجدول', 'Scheduled')}</option></select>
+              </Field>
+              <Field label={tr('وقت النشر', 'Publish time')} hint={f.status === 'published' ? tr('اتركيه فارغاً للنشر الآن', 'Leave empty to publish now') : undefined} error={errors.publishAt}>
+                <input type="datetime-local" className={inputCls} value={f.publishAt} onChange={(e) => set('publishAt', e.target.value)} />
+              </Field>
+            </>
+          )}
+          {mayFeature && <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} />{tr('خبر مميز', 'Featured')}</label>}
+        </div>
+
+        <Field label={tr('نص الخبر', 'News text')} error={errors.body}><RichEditor key={f.language} dir={dir} value={f.body} onChange={(h) => set('body', h)} /></Field>
+
+        <Field label={tr('رابط فيديو يوتيوب (اختياري)', 'YouTube video link (optional)')} error={errors.youtubeUrl}>
+          <input type="url" dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={f.youtubeUrl} onChange={(e) => set('youtubeUrl', e.target.value)} />
+        </Field>
+
+        <Field label={tr('الصور (اختياري)', 'Pictures (optional)')} hint={tr('JPG / PNG / WEBP / GIF، حتى 5 ميغابايت للصورة؛ الأولى هي صورة الخبر', 'JPG / PNG / WEBP / GIF, up to 5 MB each; the first one is the cover')} error={errors.images}>
+          <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className={inputCls} onChange={(e) => { addImages(e.target.files); e.target.value = ''; }} />
+        </Field>
+        {images.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {images.map((i, k) => (
+              <div key={i.url} className="relative">
+                <img src={i.url} alt="" className="h-20 w-20 rounded-lg object-cover ring-1 ring-line" />
+                <button type="button" aria-label={tr('إزالة', 'Remove')} onClick={() => { URL.revokeObjectURL(i.url); setImages(images.filter((_, j) => j !== k)); }} className="absolute -end-2 -top-2 rounded-full bg-red-600 px-1.5 text-xs text-white">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Field label={tr('ملفات PDF (اختياري)', 'PDF files (optional)')} hint={tr('حتى 10 ملفات، 25 ميغابايت للملف', 'Up to 10 files, 25 MB each')} error={errors.pdfs}>
+          <input type="file" multiple accept="application/pdf,.pdf" className={inputCls} onChange={(e) => { addPdfs(e.target.files); e.target.value = ''; }} />
+        </Field>
+        {pdfs.length > 0 && (
+          <ul className="space-y-1.5 text-sm">
+            {pdfs.map((p, k) => (
+              <li key={`${p.name}-${p.size}`} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-1.5">
+                <span className="min-w-0 truncate" dir="ltr">📄 {p.name} <span className="text-xs text-gray-500">({(p.size / 1048576).toFixed(1)} MB)</span></span>
+                <button type="button" aria-label={tr('إزالة', 'Remove')} onClick={() => setPdfs(pdfs.filter((_, j) => j !== k))} className="shrink-0 rounded-full bg-red-600 px-1.5 text-xs text-white">✕</button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="ghost" onClick={onClose}>{tr('إلغاء', 'Cancel')}</Button>
+          <Button disabled={busy}>{busy ? '…' : tr('نشر الخبر', 'Add the news item')}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 // ---------------------------------------------------------------- small controls used by the pages
-export type DialogState = { type: 'activity'; group: ActGroup; editId?: number; defaultKind?: string } | { type: 'member'; editId?: number; defaultRole?: string } | { type: 'texts'; part: 'about' | 'structure' } | null;
+export type DialogState = { type: 'activity'; group: ActGroup; editId?: number; defaultKind?: string } | { type: 'member'; editId?: number; defaultRole?: string } | { type: 'texts'; part: 'about' | 'structure' } | { type: 'news' } | null;
 
 export function Dialogs({ state, close }: { state: DialogState; close: () => void }) {
   if (!state) return null;
   if (state.type === 'activity') return <ActivityDialog group={state.group} editId={state.editId} defaultKind={state.defaultKind} onClose={close} />;
   if (state.type === 'member') return <MemberDialog editId={state.editId} defaultRole={state.defaultRole} onClose={close} />;
+  if (state.type === 'news') return <NewsDialog onClose={close} />;
   return <TextsDialog part={state.part} onClose={close} />;
 }
 
@@ -381,6 +548,7 @@ export function WomenManageBar({ quickAdd = false, children }: { quickAdd?: bool
       <div className="flex flex-wrap items-center gap-2">
         {children}
         {quickAdd && can('committees.update') && quick.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className={chip}>{x.label}</Link>)}
+        {quickAdd && can('news.create') && <Link href={href(`${womenPageHref('news')}&add=news`)} className={chip}>{tr('＋ خبر', '＋ News item')}</Link>}
         <Link href={href(adminUrl)} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-bold text-white shadow-sm ring-1 ring-accent/50 transition hover:brightness-110">⚙ {tr('إدارة الصفحة', 'Manage page')}</Link>
       </div>
     </div>
@@ -424,7 +592,7 @@ export function ItemTools({ kind, id, archived, onEdit, canArchive = true }: { k
         {canArchive && kind === 'activity' && <button type="button" className={b} disabled={busy} onClick={toggleArchive}>{archived ? `↩ ${tr('إخراج من الأرشيف', 'Unarchive')}` : `🗄 ${tr('أرشفة', 'Archive')}`}</button>}
         <button type="button" className={`${b} text-red-600 hover:border-red-400 hover:text-red-600`} onClick={() => setAsk(true)}>🗑 {tr('حذف', 'Delete')}</button>
       </span>
-      <Modal open={ask} onClose={() => setAsk(false)} title={tr('تأكيد الحذف', 'Confirm deletion')}>
+      <Modal open={ask} onClose={() => setAsk(false)} title={tr('تأكيد الحذف', 'Confirm deletion')} brand>
         <p className="text-sm">{tr('سيُحذف هذا العنصر نهائياً. هل تريد المتابعة؟', 'This item will be deleted for good. Continue?')}</p>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setAsk(false)}>{tr('إلغاء', 'Cancel')}</Button>

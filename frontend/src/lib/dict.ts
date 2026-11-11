@@ -226,6 +226,8 @@ const ar: Record<string, string> = {
   'ed.textColor': 'لون النص', 'ed.highlight': 'لون التمييز', 'ed.link': 'إدراج رابط أو تعديله',
   'ed.unlink': 'إزالة الرابط', 'ed.clearFormat': 'مسح التنسيق', 'ed.clearAll': 'مسح كل المحتوى',
   'ed.url': 'الرابط', 'ed.applyLink': 'تطبيق الرابط',
+  // in-place management bar of the public pages (Board, Committees)
+  'mg.bar': 'إدارة الصفحة', 'mg.settings': 'كل الإعدادات', 'mg.deleteText': 'سيُحذف هذا العنصر نهائياً ولا يمكن التراجع. هل تريد المتابعة؟', 'mg.deleteTitle': 'تأكيد الحذف', 'mg.editItem': 'تعديل', 'mg.deleteItem': 'حذف',
 };
 
 const en: Record<string, string> = {
@@ -447,6 +449,8 @@ const en: Record<string, string> = {
   'ed.highlight': 'Highlight color', 'ed.link': 'Insert or edit link', 'ed.unlink': 'Remove link',
   'ed.clearFormat': 'Clear formatting', 'ed.clearAll': 'Clear all content', 'ed.url': 'URL',
   'ed.applyLink': 'Apply link',
+  // in-place management bar of the public pages (Board, Committees)
+  'mg.bar': 'Manage this page', 'mg.settings': 'All settings', 'mg.deleteText': 'This item will be deleted for good and this cannot be undone. Continue?', 'mg.deleteTitle': 'Confirm deletion', 'mg.editItem': 'Edit', 'mg.deleteItem': 'Delete',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

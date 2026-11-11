@@ -200,7 +200,7 @@ export function WomenPages({ c, page, reload }: { c: CommitteeData; page: string
       {page === 'initiatives' && <Initiatives c={c} open={setDialog} />}
       {page === 'activities' && <Activities c={c} open={setDialog} />}
       {page === 'success' && <Stories c={c} open={setDialog} />}
-      {page === 'news' && <NewsPage c={c} />}
+      {page === 'news' && <NewsPage c={c} open={setDialog} />}
       {page === 'archive' && <ArchivePage c={c} open={setDialog} />}
       {page === 'contact' && <ContactPage />}
       <Dialogs state={dialog} close={() => setDialog(null)} />
@@ -470,14 +470,24 @@ function Stories({ c, open }: { c: CommitteeData; open: Open }) {
 }
 
 // ---------------------------------------------------------------- news (everything whose main category is the businesswomen one + the news linked to the committee)
-function NewsPage({ c }: { c: CommitteeData }) {
+function NewsPage({ c, open }: { c: CommitteeData; open: Open }) {
   const tr = useTr();
-  const { href } = useI18n();
   const { can } = useAuth();
+  const mayAdd = can('news.create');
+  // `?add=news` in the address (the avatar menu's "add news") opens the window here instead of sending the person to the main site
+  useEffect(() => {
+    if (!mayAdd) return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('add') !== 'news') return;
+    open({ type: 'news' });
+    sp.delete('add');
+    const q = sp.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${q ? `?${q}` : ''}${window.location.hash}`);
+  }, [mayAdd]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="space-y-6">
       <PageTitle icon="📰" title={tr('الأخبار', 'News')} hint={tr('كل خبر تصنيفه الرئيسي «سيدات أعمال» يظهر هنا تلقائياً', 'Every news item whose main category is "businesswomen" appears here automatically')} />
-      {can('news.create') && <div className="flex justify-end"><Link href={href('/admin/news/edit')} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-110">＋ {tr('إضافة خبر', 'Add a news item')}</Link></div>}
+      {mayAdd && <div className="flex justify-end"><button type="button" onClick={() => open({ type: 'news' })} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110">＋ {tr('إضافة خبر', 'Add a news item')}</button></div>}
       {c.news.length ? <Paged items={c.news} size={PAGE_SIZE} render={(slice) => <NewsGrid items={slice} />} /> : <Empty />}
     </div>
   );

@@ -22,6 +22,13 @@ export class BoardAdminController {
     return this.service.list(q);
   }
 
+  /** one member with all his fields (the public page opens its edit window from here) */
+  @Get(':id')
+  @Permissions(PERM.BOARD_READ)
+  getOne(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getOne(id);
+  }
+
   @Post()
   @Permissions(PERM.BOARD_CREATE)
   @UseInterceptors(upload())

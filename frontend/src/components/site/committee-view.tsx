@@ -12,6 +12,9 @@ import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
 import { WomenPages } from '@/components/women/women-pages';
 import { Paged } from '@/components/women/women-pager';
 import { WomenManageBar } from '@/components/women/women-manage';
+import { useAuth } from '@/lib/auth';
+import { CommitteeDialog } from '@/components/admin/committees-admin';
+import { ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
 import { WomenError, WomenLoader, WomenNotFound } from '@/components/women/women-states';
 
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
@@ -121,6 +124,9 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const [c, setC] = useState<CommitteeData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404' | 'error'>('load');
   const [tab, setTab] = useState('overview');
+  const { can } = useAuth();
+  // manager tools of a sector committee: the committee window, opened on the chosen tab
+  const [edit, setEdit] = useState<{ tab: 'details' | 'members' | 'activities' | 'news' } | null>(null);
 
   const load = useCallback((quiet = false) => {
     if (!quiet) setState('load');
@@ -262,6 +268,18 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
           : <span className="flex h-36 w-full shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-4xl text-primary md:w-52" aria-hidden="true">🏛</span>}
       </header>
       )}
+
+      {!women && can('committees.update') && can('committees.read') && (
+        <div className="mt-5">
+          <PageManageBar show settingsUrl="/admin/settings?page=committees&tab=committees">
+            <ManageBtn onClick={() => setEdit({ tab: 'details' })}>✎ {t('cm.edit')}</ManageBtn>
+            <ManageBtn tone="ghost" onClick={() => setEdit({ tab: 'members' })}>＋ {t('cm.addMember')}</ManageBtn>
+            <ManageBtn tone="ghost" onClick={() => setEdit({ tab: 'activities' })}>＋ {t('cm.addActivity')}</ManageBtn>
+            <ManageBtn tone="ghost" onClick={() => setEdit({ tab: 'news' })}>📰 {t('cm.manage.news')}</ManageBtn>
+          </PageManageBar>
+        </div>
+      )}
+      {edit && <CommitteeDialog key={edit.tab} id={c.id} initialTab={edit.tab} onClose={() => setEdit(null)} onChanged={() => load(true)} />}
 
       {tabs.length > 0 && <div role="tablist" className="my-5 flex flex-wrap gap-2">
         {tabs.map((x) => (

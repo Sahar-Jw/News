@@ -44,6 +44,12 @@ export class BoardService {
     return v;
   }
 
+  async getOne(id: number) {
+    const r = await this.store.get(id, CC.BOARD_MEMBER);
+    if (!r) throw new NotFoundException('العضو غير موجود');
+    return this.present(r);
+  }
+
   async list(q: BoardAdminQueryDto) {
     let rows = (await this.store.list(CC.BOARD_MEMBER)).map((r) => this.view(r));
     if (q.position) rows = rows.filter((m) => m.position === q.position);
