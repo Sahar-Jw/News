@@ -13,7 +13,8 @@ import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/componen
 import { Pager } from '@/components/site/pager';
 import { PlayBadge } from '@/components/site/play-badge';
 
-interface PublicGallery { id: number; title: string; kind: 'photos' | 'video'; category: string | null; youtubeId: string | null; thumb: string | null; images: string[] }
+/** an item can hold pictures and/or a video */
+interface PublicGallery { id: number; title: string; category: string | null; youtubeId: string | null; hasVideo: boolean; hasImages: boolean; thumb: string | null; images: string[] }
 interface CategoryCount { category: string; count: number }
 type TypeFilter = '' | 'photos' | 'video';
 const PAGE_SIZE = 12;
@@ -107,12 +108,12 @@ export default function GalleryPage() {
               <Link href={href(`/gallery/view?id=${g.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
                 <div className="relative">
                   <Thumb src={g.thumb} alt={g.title} className="h-44 w-full" />
-                  {g.kind === 'video' && <PlayBadge />}
+                  {g.hasVideo && <PlayBadge />}
                   {g.category && <span className="absolute start-2 top-2 rounded-full bg-black/55 px-2.5 py-0.5 text-[11px] font-semibold text-white">{t(`gl.cat.${g.category}`)}</span>}
                 </div>
                 <div className="p-4">
                   <h2 className="line-clamp-2 font-bold group-hover:text-primary">{g.title}</h2>
-                  <p className="mt-1 text-xs text-gray-500">{g.kind === 'video' ? t('gl.video') : `${fmtNum(lang, g.images.length)} ${t('pub.photos')}`}</p>
+                  <p className="mt-1 text-xs text-gray-500">{[g.hasImages && `${fmtNum(lang, g.images.length)} ${t('pub.photos')}`, g.hasVideo && t('gl.video')].filter(Boolean).join(' • ')}</p>
                 </div>
               </Link>
               <ItemActions onEdit={mayEdit ? () => setDialog({ id: g.id }) : undefined} onDelete={mayDelete ? () => setAsk(g) : undefined} />

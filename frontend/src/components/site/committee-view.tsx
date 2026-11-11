@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, fileUrl, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useSite } from '@/components/site/site-context';
-import { fmtDate, fmtDay } from '@/lib/utils';
+import { fmtDate, fmtDay, fmtNum } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
+import { Thumb } from '@/components/site/cards';
+import { PlayBadge } from '@/components/site/play-badge';
 import { ContactIcon, SocialIcon } from './icons';
 import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
 import { WomenPages } from '@/components/women/women-pages';
@@ -20,8 +22,10 @@ import { WomenError, WomenLoader, WomenNotFound } from '@/components/women/women
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; endDate?: string | null; status?: 'upcoming' | 'ongoing' | 'finished' | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
 export interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
-interface Video { id: number; title: string; youtubeId: string; cover: string | null }
-interface Album { id: number; title: string; cover: string | null; count: number }
+interface Video { id: number; title: string; youtubeId: string; cover: string | null; count?: number }
+interface Album { id: number; title: string; cover: string | null; count: number; hasVideo?: boolean }
+/** a gallery item of the committee as a card: it can hold pictures and/or a video */
+interface MediaItem { id: number; title: string; cover: string | null; count: number; hasVideo: boolean }
 export interface CommitteeData {
   id: number; kind: string; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null; duties: string;
   members: Member[]; meetings: Activity[]; visits?: Activity[]; recommendations: Activity[]; outputs?: Activity[]; events?: Activity[]; initiatives: Activity[]; successStories?: Activity[]; news: NewsItem[]; gallery: Album[]; videos?: Video[];
@@ -48,25 +52,24 @@ function MemberGrid({ members }: { members: Member[] }) {
   );
 }
 
-/** click-to-play YouTube card: the player (privacy domain) is only loaded when the visitor presses play */
-function VideoCard({ v }: { v: Video }) {
-  const [play, setPlay] = useState(false);
+/** Gallery-style card (same as the Gallery page): the cover (thumbnail), a play badge when the item has a video, its title; opens the item with its pictures and video. */
+function MediaCard({ g }: { g: MediaItem }) {
+  const { t, href, lang } = useI18n();
+  const meta = [g.count > 0 && `${fmtNum(lang, g.count)} ${t('pub.photos')}`, g.hasVideo && t('gl.video')].filter(Boolean).join(' • ');
   return (
-    <figure className="overflow-hidden rounded-xl ring-1 ring-line">
-      <div className="relative aspect-video bg-black">
-        {play ? (
-          <iframe src={`https://www.youtube-nocookie.com/embed/${v.youtubeId}?rel=0&modestbranding=1&autoplay=1`} title={v.title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" className="absolute inset-0 h-full w-full border-0" />
-        ) : (
-          <button type="button" onClick={() => setPlay(true)} aria-label={v.title} className="group absolute inset-0">
-            <img src={v.cover ? fileUrl(v.cover) : `https://img.youtube.com/vi/${v.youtubeId}/hqdefault.jpg`} alt="" loading="lazy" className="h-full w-full object-cover opacity-90 transition group-hover:opacity-100" />
-            <span className="absolute inset-0 m-auto grid h-14 w-14 place-items-center rounded-full bg-red-600 text-white shadow-lg transition group-hover:scale-105"><svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M8 5v14l11-7z" /></svg></span>
-          </button>
-        )}
+    <Link href={href(`/gallery/view?id=${g.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+      <div className="relative">
+        <Thumb src={g.cover} alt={g.title} className="h-36 w-full" />
+        {g.hasVideo && <PlayBadge small />}
       </div>
-      <figcaption className="px-3 py-2 text-sm font-semibold text-secondary">{v.title}</figcaption>
-    </figure>
+      <div className="p-3">
+        <h3 className="line-clamp-2 text-sm font-bold text-secondary group-hover:text-primary">{g.title}</h3>
+        {meta && <p className="mt-1 text-xs text-gray-500">{meta}</p>}
+      </div>
+    </Link>
   );
 }
+const MediaGrid = ({ items }: { items: MediaItem[] }) => <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{items.map((g) => <MediaCard key={g.id} g={g} />)}</div>;
 
 function NewsList({ items, limit }: { items: NewsItem[]; limit?: number }) {
   const { lang, t, href } = useI18n();
@@ -124,6 +127,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const [c, setC] = useState<CommitteeData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404' | 'error'>('load');
   const [tab, setTab] = useState('overview');
+  const [mediaType, setMediaType] = useState<'all' | 'photos' | 'video'>('all');
   const { can } = useAuth();
   // manager tools of a sector committee: the committee window, opened on the chosen tab
   const [edit, setEdit] = useState<{ tab: 'details' | 'members' | 'activities' | 'news' } | null>(null);
@@ -168,6 +172,18 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
       { key: 'videos', show: (c.videos ?? []).length > 0 },
     ].filter((x) => x.show);
   }, [c]);
+
+  // pictures and videos of the committee as one list of cards (an item with both is one card), newest first
+  const mediaItems = useMemo<MediaItem[]>(() => {
+    if (!c) return [];
+    const byId = new Map<number, MediaItem>();
+    for (const g of c.gallery ?? []) byId.set(g.id, { id: g.id, title: g.title, cover: g.cover, count: g.count, hasVideo: !!g.hasVideo });
+    for (const v of c.videos ?? []) { const own = byId.get(v.id); if (own) own.hasVideo = true; else byId.set(v.id, { id: v.id, title: v.title, cover: v.cover, count: v.count ?? 0, hasVideo: true }); }
+    return [...byId.values()].sort((a, b) => b.id - a.id);
+  }, [c]);
+  const hasPhotos = mediaItems.some((m) => m.count > 0);
+  const hasVideos = mediaItems.some((m) => m.hasVideo);
+  const shownMedia = mediaItems.filter((m) => (mediaType === 'photos' ? m.count > 0 : mediaType === 'video' ? m.hasVideo : true));
 
   const isWomenPath = path.includes('/women');
   if (state === 'load') return isWomenPath ? <WomenLoader lang={lang} /> : <Center><Spinner /></Center>;
@@ -321,7 +337,16 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
       {women && womenPage === 'archive' && <div id="archive" className="scroll-mt-24"><Box><Heading>{t('women.archive')}</Heading><ActivityList items={archived} empty={t('cm.noContent')} /></Box></div>}
       {women && womenPage === 'news' && <div id="news" className="scroll-mt-24"><Box><Heading>{t('women.news')}</Heading><NewsList items={c.news} /></Box></div>}
       {women && womenPage === 'media' && <div id="media" className="scroll-mt-24"><Box><Heading>{t('women.media')}</Heading>
-        <Paged items={c.gallery} size={12} render={(slice) => <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{slice.map((g) => <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">{g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}<span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}</span></Link>)}</div>} />
+        {mediaItems.length === 0 ? <p className="text-sm text-gray-500">{t('cm.noContent')}</p> : <>
+          {(hasPhotos && hasVideos) && (
+            <div role="tablist" className="mb-4 flex flex-wrap gap-2">
+              {([['all', 'gl.all'], ['photos', 'gl.kind.photos'], ['video', 'gl.kind.video']] as const).map(([k, label]) => (
+                <button key={k} type="button" role="tab" aria-selected={mediaType === k} onClick={() => setMediaType(k)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${mediaType === k ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-ink/80 hover:bg-primary/20'}`}>{t(label)}</button>
+              ))}
+            </div>
+          )}
+          <Paged key={mediaType} items={shownMedia} size={12} render={(slice) => <MediaGrid items={slice} />} />
+        </>}
       </Box></div>}
       {women && womenPage === 'contact' && <div id="contact" className="scroll-mt-24">
         <Box><Heading>{t('women.contact')}</Heading>
@@ -348,20 +373,13 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
       {tab === 'events' && <div id="events" className="scroll-mt-24"><Box><ActivityList items={c.events ?? []} empty={t('cm.noContent')} /></Box></div>}
       {tab === 'videos' && (
         <div id="videos" className="scroll-mt-24"><Box>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{(c.videos ?? []).map((v) => <VideoCard key={v.id} v={v} />)}</div>
+          <MediaGrid items={(c.videos ?? []).map((v) => ({ id: v.id, title: v.title, cover: v.cover, count: v.count ?? 0, hasVideo: true }))} />
         </Box></div>
       )}
       {tab === 'recommendations' && <div id="recommendations" className="scroll-mt-24"><Box><ActivityList items={c.recommendations} empty={t('cm.noContent')} /></Box></div>}
       {tab === 'media' && (
         <div id="media" className="scroll-mt-24"><Box>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {c.gallery.map((g) => (
-              <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">
-                {g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}
-                <span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}<span className="ms-1 text-xs font-normal text-gray-500">({g.count})</span></span>
-              </Link>
-            ))}
-          </div>
+          <MediaGrid items={c.gallery.map((g) => ({ id: g.id, title: g.title, cover: g.cover, count: g.count, hasVideo: !!g.hasVideo }))} />
         </Box></div>
       )}
       {women && womenPage === 'initiatives' && <div id="initiatives" className="scroll-mt-24"><Box><Heading>{t('women.initiatives')}</Heading><ActivityList items={womenInitiatives} empty={t('cm.noContent')} /></Box></div>}

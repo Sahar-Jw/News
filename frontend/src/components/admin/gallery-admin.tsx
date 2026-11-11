@@ -9,12 +9,13 @@ import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
-import { ImageSet, ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
+import { ImageSet, ImageSetField, appendImages, coverField, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
-const PHOTO_CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course', 'expo'];
-const VIDEO_CATEGORIES = ['activity', 'coverage', 'encounter', 'expo'];
-interface Row { id: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; images: string[]; imageUrls: string[]; imageCount: number; committeeId: number | null; createdAt: string }
-interface Draft { id?: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet }
+/** an item can hold pictures and a video, so there is one list of categories */
+const CATEGORIES = ['meeting', 'event', 'exhibition', 'conference', 'visit', 'committee', 'course', 'expo', 'activity', 'coverage', 'encounter'];
+interface Row { id: number; titleAr: string; titleEn: string; youtubeUrl: string; category: string; images: string[]; imageUrls: string[]; imageCount: number; thumbnail: string | null; committeeId: number | null; createdAt: string }
+/** `cover`: the picture chosen as the cover (saved path, or the object URL of a new file); null = the first picture */
+interface Draft { id?: number; titleAr: string; titleEn: string; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet; cover: string | null }
 interface CommitteeOpt { id: number; name: string }
 
 /**
@@ -24,7 +25,7 @@ interface CommitteeOpt { id: number; name: string }
 export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: () => void; onSaved: () => void }) {
   const { t, lang } = useI18n();
   const toast = useToast();
-  const [draft, setDraft] = useState<Draft | null>(id ? null : { titleAr: '', titleEn: '', kind: 'photos', youtubeUrl: '', category: '', committeeId: '', imgs: emptyImageSet() });
+  const [draft, setDraft] = useState<Draft | null>(id ? null : { titleAr: '', titleEn: '', youtubeUrl: '', category: '', committeeId: '', imgs: emptyImageSet(), cover: null });
   const [busy, setBusy] = useState(false);
   const [committees, setCommittees] = useState<CommitteeOpt[]>([]);
 
@@ -33,7 +34,7 @@ export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: 
   useEffect(() => {
     if (!id) return;
     api<Row>(`/admin/gallery/${id}`)
-      .then((r) => setDraft({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, kind: r.kind, youtubeUrl: r.youtubeUrl, category: r.category, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }))
+      .then((r) => setDraft({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, youtubeUrl: r.youtubeUrl, category: r.category, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls), cover: r.thumbnail }))
       .catch((e) => { toast(e.message, 'err'); onClose(); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -42,15 +43,17 @@ export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft) return;
-    if (draft.kind === 'photos' && imageTotal(draft.imgs) < 1) return toast(t('oc.imagesRequired'), 'err');
-    if (draft.kind === 'video' && !parseYoutubeId(draft.youtubeUrl)) return toast(t('gl.youtubeInvalid'), 'err');
+    const video = draft.youtubeUrl.trim();
+    // pictures and the video are both optional, but one of them is needed
+    if (video && !parseYoutubeId(video)) return toast(t('gl.youtubeInvalid'), 'err');
+    if (imageTotal(draft.imgs) < 1 && !video) return toast(t('gl.needOne'), 'err');
     const fd = new FormData();
     fd.append('titleAr', draft.titleAr.trim());
     fd.append('titleEn', draft.titleEn.trim());
-    fd.append('kind', draft.kind);
-    fd.append('youtubeUrl', draft.kind === 'video' ? draft.youtubeUrl.trim() : '');
+    fd.append('youtubeUrl', video);
     fd.append('category', draft.category);
     fd.append('committeeId', draft.committeeId);
+    fd.append('thumbnail', coverField(draft.imgs, draft.cover));
     appendImages(fd, draft.imgs, !!draft.id);
     setBusy(true);
     try {
@@ -68,28 +71,13 @@ export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: 
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
-              <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
-              <Field label={t('gl.type')}>
-                <select className={inputCls} value={draft.kind} onChange={(e) => { const kind = e.target.value as Draft['kind']; const ok = kind === 'video' ? VIDEO_CATEGORIES : PHOTO_CATEGORIES; setDraft({ ...draft, kind, category: ok.includes(draft.category) ? draft.category : '' }); }}>
-                  <option value="photos">{t('gl.kind.photos')}</option><option value="video">{t('gl.kind.video')}</option>
-                </select>
-              </Field>
+              <Field label={t('gl.titleEnOpt')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
               <Field label={t('gl.category')}>
                 <select className={inputCls} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
                   <option value="">{t('gl.noCategory')}</option>
-                  {(draft.kind === 'video' ? VIDEO_CATEGORIES : PHOTO_CATEGORIES).map((c) => <option key={c} value={c}>{t(`gl.cat.${c}`)}</option>)}
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{t(`gl.cat.${c}`)}</option>)}
                 </select>
               </Field>
-              {draft.kind === 'video' && (
-                <div className="md:col-span-2">
-                  <Field label={t('gl.youtubeUrl')} hint={t('gl.youtubeHint')}>
-                    <input required dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={draft.youtubeUrl} onChange={(e) => setDraft({ ...draft, youtubeUrl: e.target.value })} />
-                  </Field>
-                  {draft.youtubeUrl.trim() && (parseYoutubeId(draft.youtubeUrl)
-                    ? <img src={`https://i.ytimg.com/vi/${parseYoutubeId(draft.youtubeUrl)}/mqdefault.jpg`} alt="" className="mt-2 h-24 rounded-lg object-cover ring-1 ring-line" />
-                    : <p className="mt-1 text-xs text-red-600">{t('gl.youtubeInvalid')}</p>)}
-                </div>
-              )}
               {committees.length > 0 && (
                 <Field label={t('gl.committee')} hint={t('gl.committeeHint')}>
                   <select className={inputCls} value={draft.committeeId} onChange={(e) => setDraft({ ...draft, committeeId: e.target.value })}>
@@ -98,8 +86,17 @@ export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: 
                   </select>
                 </Field>
               )}
+              <div className="md:col-span-2">
+                <Field label={t('gl.youtubeUrlOpt')} hint={t('gl.youtubeHint')}>
+                  <input dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={draft.youtubeUrl} onChange={(e) => setDraft({ ...draft, youtubeUrl: e.target.value })} />
+                </Field>
+                {draft.youtubeUrl.trim() && (parseYoutubeId(draft.youtubeUrl)
+                  ? <img src={`https://i.ytimg.com/vi/${parseYoutubeId(draft.youtubeUrl)}/mqdefault.jpg`} alt="" className="mt-2 h-24 rounded-lg object-cover ring-1 ring-line" />
+                  : <p className="mt-1 text-xs text-red-600">{t('gl.youtubeInvalid')}</p>)}
+              </div>
             </div>
-            <Field label={draft.kind === 'video' ? t('gl.cover') : t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
+            <Field label={t('gl.imagesOpt')} hint={t('gl.coverHint')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} cover={draft.cover} onCover={(cover) => setDraft({ ...draft, cover })} /></Field>
+            <p className="text-xs text-gray-500">{t('gl.needOneHint')}</p>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
       )}
@@ -119,13 +116,13 @@ export function GalleryAdmin() {
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
     { key: 'titleEn', label: t('oc.titleEn') },
-    { key: 'kind', searchable: false, label: t('gl.type'), render: (r) => t(`gl.kind.${r.kind}`), text: (r) => t(`gl.kind.${r.kind}`) },
+    { key: 'youtubeUrl', searchable: false, label: t('gl.type'), render: (r) => [r.imageCount > 0 && t('gl.kind.photos'), r.youtubeUrl && t('gl.kind.video')].filter(Boolean).join(' + ') || '—', text: (r) => [r.imageCount > 0 && t('gl.kind.photos'), r.youtubeUrl && t('gl.kind.video')].filter(Boolean).join(' + ') },
     { key: 'category', searchable: false, label: t('gl.category'), render: (r) => (r.category ? t(`gl.cat.${r.category}`) : '—'), text: (r) => (r.category ? t(`gl.cat.${r.category}`) : '') },
     {
       key: 'imageCount', searchable: false, label: t('oc.imageCount'),
       render: (r) => (
         <div className="flex items-center gap-1">
-          {r.imageUrls[0] && <img src={fileUrl(r.imageUrls[0])} alt="" className="h-8 w-10 rounded object-cover" />}
+          {(() => { const cover = r.imageUrls[Math.max(0, r.images.indexOf(r.thumbnail ?? ''))]; return cover ? <img src={fileUrl(cover)} alt="" className="h-8 w-10 rounded object-cover" /> : null; })()}
           <span className="text-xs text-gray-500">{r.imageCount}</span>
         </div>
       ),

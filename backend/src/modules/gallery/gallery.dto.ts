@@ -17,8 +17,11 @@ export class CreateGalleryDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) youtubeUrl?: string | null;
   @blankToNull() @IsOptional() @IsIn(CATS) category?: string | null;
   @committeeId() @IsOptional() @IsInt() committeeId?: number | null;
+  /** the cover: the path of a saved picture, or "new:<n>" for the n-th file uploaded with this request; empty = the first picture */
+  @blankToNull() @IsOptional() @IsString() @MaxLength(255) thumbnail?: string | null;
   @IsString() @MinLength(1) @MaxLength(255) titleAr: string;
-  @IsString() @MinLength(1) @MaxLength(255) titleEn: string;
+  /** optional */
+  @IsOptional() @IsString() @MaxLength(255) titleEn?: string;
 }
 
 export class UpdateGalleryDto {
@@ -27,7 +30,8 @@ export class UpdateGalleryDto {
   @blankToNull() @IsOptional() @IsIn(CATS) category?: string | null;
   @committeeId() @IsOptional() @IsInt() committeeId?: number | null;
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleAr?: string;
-  @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleEn?: string;
+  @IsOptional() @IsString() @MaxLength(255) titleEn?: string;
+  @blankToNull() @IsOptional() @IsString() @MaxLength(255) thumbnail?: string | null;
   @IsOptional() @Transform(parseStringList) @IsArray() @IsString({ each: true }) keepImages?: string[];
 }
 

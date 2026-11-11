@@ -11,7 +11,7 @@ import { ContentLinksService } from '../content-links/content-links.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
 import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
-import { Gallery } from '../gallery/gallery.entity';
+import { Gallery, galleryCoverPath } from '../gallery/gallery.entity';
 import { newsCategoryLabel } from '../../common/news-categories';
 import { News } from '../news/news.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
@@ -107,6 +107,12 @@ export class CommitteesService {
     };
   }
 
+  /** The businesswomen committee is a single page: only one committee of that kind can exist. */
+  private async assertNoOtherWomen(exceptId?: number) {
+    const others = (await this.store.list(CC.WOMEN_COMMITTEE)).filter((r) => r.id !== exceptId);
+    if (others.length) throw new BadRequestException('لجنة سيدات الأعمال مضافة مسبقاً، ويمكن إضافة لجنة واحدة فقط. عدّل اللجنة الحالية بدلاً من إضافة جديدة');
+  }
+
   private async mustFind(id: number) {
     const c = await this.store.get(id, COMMITTEE_CODES);
     if (!c) throw new NotFoundException('اللجنة غير موجودة');
@@ -137,6 +143,7 @@ export class CommitteesService {
   }
 
   async create(dto: CreateCommitteeDto, logo: Express.Multer.File | undefined, actor: AuthUser) {
+    if (dto.kind === 'women') await this.assertNoOtherWomen();
     const path = logo ? await this.storage.saveImage(logo, 'committees', 800) : null;
     try {
       const r = await this.store.create(committeeCode(dto.kind), {
@@ -157,6 +164,7 @@ export class CommitteesService {
 
   async update(id: number, dto: UpdateCommitteeDto, logo: Express.Multer.File | undefined, actor: AuthUser) {
     const cur = await this.mustFind(id);
+    if (dto.kind === 'women' && cur.code !== CC.WOMEN_COMMITTEE) await this.assertNoOtherWomen(id); // turning a sector committee into the women one
     const newPath = logo ? await this.storage.saveImage(logo, 'committees', 800) : null;
     const oldPath = cur.images[0] ?? null;
     try {
@@ -401,13 +409,17 @@ export class CommitteesService {
       qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(30);
       newsList = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
     }
-    const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 48 });
+    const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 96 });
     const title = (g: (typeof albums)[number]) => (en && g.titleEn) || g.titleAr;
-    const gallery = albums.filter((g) => g.kind !== 'video').slice(0, 24).map((g) => ({ id: g.id, title: title(g), cover: this.storage.url((g.images ?? [])[0] ?? null), count: (g.images ?? []).length }));
-    // YouTube videos of the committee (gallery items of kind "video" assigned to it)
-    const videos = albums.filter((g) => g.kind === 'video').flatMap((g) => {
+    // an item can hold pictures and a video: it is a card in the photos tab when it has pictures and a card in the videos tab when it has a video
+    const coverOf = (g: (typeof albums)[number], youtubeId: string | null) => {
+      const rel = galleryCoverPath(g);
+      return rel ? this.storage.url(rel) : youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : null;
+    };
+    const gallery = albums.filter((g) => (g.images ?? []).length > 0).slice(0, 48).map((g) => ({ id: g.id, title: title(g), cover: coverOf(g, parseYoutubeId(g.youtubeUrl)), count: (g.images ?? []).length, hasVideo: !!parseYoutubeId(g.youtubeUrl) }));
+    const videos = albums.flatMap((g) => {
       const youtubeId = parseYoutubeId(g.youtubeUrl);
-      return youtubeId ? [{ id: g.id, title: title(g), youtubeId, cover: this.storage.url((g.images ?? [])[0] ?? null) }] : [];
+      return youtubeId ? [{ id: g.id, title: title(g), youtubeId, cover: coverOf(g, youtubeId), count: (g.images ?? []).length }] : [];
     });
     const byKind = (k: ActivityKind) => acts.filter((a) => a.v.kind === k).map(act);
     return {

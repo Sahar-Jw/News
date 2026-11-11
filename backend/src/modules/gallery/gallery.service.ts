@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
@@ -10,7 +10,7 @@ import { escapeLike } from '../../common/utils/text';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { parseYoutubeId, youtubeWatchUrl } from '../../common/utils/youtube';
-import { GALLERY_CATEGORIES, Gallery, GalleryCategory, GalleryKind } from './gallery.entity';
+import { GALLERY_CATEGORIES, Gallery, GalleryCategory, GalleryKind, galleryCoverPath } from './gallery.entity';
 import { CreateGalleryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
 import { removedChanges } from '../audit/audit-snapshot';
 
@@ -24,7 +24,7 @@ export class GalleryService {
 
   present(g: Gallery) {
     const images = g.images ?? [];
-    return { id: g.id, titleAr: g.titleAr, titleEn: g.titleEn, kind: g.kind, youtubeUrl: g.youtubeUrl ?? '', category: g.category ?? '', images, imageUrls: images.map((p) => this.storage.url(p)), imageCount: images.length, committeeId: g.committeeId ? Number(g.committeeId) : null, createdAt: g.createdAt, updatedAt: g.updatedAt };
+    return { id: g.id, titleAr: g.titleAr, titleEn: g.titleEn ?? '', kind: g.kind, youtubeUrl: g.youtubeUrl ?? '', category: g.category ?? '', images, imageUrls: images.map((p) => this.storage.url(p)), imageCount: images.length, thumbnail: galleryCoverPath(g), committeeId: g.committeeId ? Number(g.committeeId) : null, createdAt: g.createdAt, updatedAt: g.updatedAt };
   }
 
   async list(q: AdminListQueryDto) {
@@ -47,23 +47,39 @@ export class GalleryService {
     return this.present(g);
   }
 
-  /** video: a valid YouTube link is required (stored in its canonical form); photos: no link is kept */
-  private youtubeOf(kind: GalleryKind, given: string | null | undefined): string | null {
-    if (kind !== 'video') return null;
+  /** The video is optional: empty = none; a given link must be a valid YouTube link (stored in its canonical form). */
+  private youtubeOf(given: string | null | undefined): string | null {
+    if (!given || !given.trim()) return null;
     const id = parseYoutubeId(given);
     if (!id) throw new BadRequestException('رابط يوتيوب غير صالح');
     return youtubeWatchUrl(id);
   }
 
+  /** 'video' only when the item has a video and no pictures; anything else is 'photos' (the column is kept for older readers). */
+  private kindOf(youtubeUrl: string | null, imageCount: number): GalleryKind {
+    return youtubeUrl && imageCount === 0 ? 'video' : 'photos';
+  }
+
+  /** The cover as sent by the form: a kept picture's path, or "new:<n>" = the n-th file of this request. Anything else = no choice (the first picture). */
+  private thumbOf(given: string | null | undefined, kept: string[], added: string[]): string | null {
+    if (!given) return null;
+    const m = /^new:(\d+)$/.exec(given);
+    if (m) return added[Number(m[1])] ?? null;
+    return kept.includes(given) ? given : null;
+  }
+
   async create(dto: CreateGalleryDto, files: Express.Multer.File[], actor: AuthUser) {
-    const kind = (dto.kind ?? 'photos') as GalleryKind;
-    const youtubeUrl = this.youtubeOf(kind, dto.youtubeUrl);
-    if (kind === 'photos' && !files?.length) throw new BadRequestException('أضف صورة واحدة على الأقل');
+    const youtubeUrl = this.youtubeOf(dto.youtubeUrl);
+    // both parts are optional, but an item needs at least one of them
+    if (!files?.length && !youtubeUrl) throw new BadRequestException('أضف صورة أو فيديو واحداً على الأقل');
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const paths = await this.storage.saveImages(files ?? [], 'gallery');
     try {
-      const saved = await this.repo.save(this.repo.create({ titleAr: dto.titleAr.trim(), titleEn: dto.titleEn.trim(), kind, youtubeUrl, category: (dto.category ?? null) as GalleryCategory | null, images: paths, committeeId: dto.committeeId ?? null, createdById: actor.id }));
-      await this.audit.log({ category: 'gallery', action: 'create', description: `${kind === 'video' ? 'إضافة فيديو' : 'إضافة معرض صور'}: ${saved.titleAr}`, actorId: actor.id, entityType: 'galleries', entityId: saved.id });
+      const saved = await this.repo.save(this.repo.create({
+        titleAr: dto.titleAr.trim(), titleEn: (dto.titleEn ?? '').trim(), kind: this.kindOf(youtubeUrl, paths.length), youtubeUrl, category: (dto.category ?? null) as GalleryCategory | null,
+        images: paths, thumbnail: this.thumbOf(dto.thumbnail, [], paths), committeeId: dto.committeeId ?? null, createdById: actor.id,
+      }));
+      await this.audit.log({ category: 'gallery', action: 'create', description: `${paths.length ? 'إضافة معرض صور' : 'إضافة فيديو'}: ${saved.titleAr}`, actorId: actor.id, entityType: 'galleries', entityId: saved.id });
       return this.present(saved);
     } catch (e) {
       await this.storage.removeMany(paths);
@@ -77,20 +93,21 @@ export class GalleryService {
     const existing = g.images ?? [];
     const keep = dto.keepImages ?? existing;
     if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
-    const kind = (dto.kind ?? g.kind) as GalleryKind;
-    const youtubeUrl = this.youtubeOf(kind, dto.youtubeUrl !== undefined ? dto.youtubeUrl : g.youtubeUrl);
-    if (kind === 'photos' && keep.length + (files?.length ?? 0) < 1) throw new BadRequestException('يجب أن يحتوي المعرض على صورة واحدة على الأقل');
+    const youtubeUrl = this.youtubeOf(dto.youtubeUrl !== undefined ? dto.youtubeUrl : g.youtubeUrl);
+    if (keep.length + (files?.length ?? 0) < 1 && !youtubeUrl) throw new BadRequestException('يجب أن يحتوي العنصر على صورة أو فيديو واحد على الأقل');
     if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
     const removed = existing.filter((p) => !keep.includes(p));
     const added = await this.storage.saveImages(files ?? [], 'gallery');
     try {
       g.titleAr = dto.titleAr?.trim() ?? g.titleAr;
-      g.titleEn = dto.titleEn?.trim() ?? g.titleEn;
+      g.titleEn = dto.titleEn !== undefined ? dto.titleEn.trim() : g.titleEn ?? '';
       if (dto.committeeId !== undefined) g.committeeId = dto.committeeId;
-      g.kind = kind;
       g.youtubeUrl = youtubeUrl;
       if (dto.category !== undefined) g.category = (dto.category ?? null) as GalleryCategory | null;
       g.images = [...keep, ...added];
+      g.kind = this.kindOf(youtubeUrl, g.images.length);
+      // cover: what the form sent; when it sent nothing the old one stays while its picture is still there
+      g.thumbnail = dto.thumbnail !== undefined ? this.thumbOf(dto.thumbnail, keep, added) : g.thumbnail && keep.includes(g.thumbnail) ? g.thumbnail : null;
       const saved = await this.repo.save(g);
       await this.storage.removeMany(removed);
       await this.audit.log({ category: 'gallery', action: 'update', description: `تعديل معرض صور: ${saved.titleAr}`, actorId: actor.id, entityType: 'galleries', entityId: id });
@@ -112,22 +129,32 @@ export class GalleryService {
   }
 
   // ---------------------------------------------------------------- public
-  /** Cover picture: the first uploaded picture, else (for a video) YouTube's own thumbnail. */
+  /** Cover picture: the chosen thumbnail, else the first uploaded picture, else (for a video) YouTube's own thumbnail. */
   private cover(g: Gallery, id: string | null) {
-    const first = (g.images ?? [])[0];
-    return first ? this.storage.url(first) : id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+    const rel = galleryCoverPath(g);
+    return rel ? this.storage.url(rel) : id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
   }
 
   private card(g: Gallery, lang: string) {
-    const youtubeId = g.kind === 'video' ? parseYoutubeId(g.youtubeUrl) : null;
-    return { id: g.id, title: lang === 'en' ? g.titleEn : g.titleAr, kind: g.kind, category: g.category, youtubeId, thumb: this.cover(g, youtubeId), images: (g.images ?? []).map((p) => this.storage.url(p)), createdAt: g.createdAt };
+    const youtubeId = parseYoutubeId(g.youtubeUrl);
+    const images = (g.images ?? []).map((p) => this.storage.url(p));
+    return {
+      id: g.id, title: (lang === 'en' && g.titleEn) || g.titleAr, kind: g.kind, category: g.category, youtubeId, hasVideo: !!youtubeId, hasImages: images.length > 0,
+      thumb: this.cover(g, youtubeId), images, createdAt: g.createdAt,
+    };
+  }
+
+  /** "photos" = has at least one picture; "video" = has a video. An item with both is found under each. */
+  private applyType(qb: SelectQueryBuilder<Gallery>, type?: string) {
+    if (type === 'photos') qb.andWhere(`jsonb_array_length(COALESCE(g.images, CAST('[]' AS jsonb))) > 0`);
+    else if (type === 'video') qb.andWhere('g.youtubeUrl IS NOT NULL');
   }
 
   async publicList(q: PublicGalleryQueryDto) {
     const p = publicPage(q);
     const qb = this.repo.createQueryBuilder('g').orderBy('g.id', 'DESC').skip(p.skip).take(p.limit);
     if (q.committeeId) qb.andWhere('g.committeeId = :cid', { cid: q.committeeId });
-    if (q.type) qb.andWhere('g.kind = :type', { type: q.type });
+    this.applyType(qb, q.type);
     if (q.category) qb.andWhere('g.category = :cat', { cat: q.category });
     if (q.year) qb.andWhere('EXTRACT(YEAR FROM g.createdAt) = :year', { year: q.year });
     const [rows, total] = await qb.getManyAndCount();
@@ -137,7 +164,7 @@ export class GalleryService {
   /** Categories that have at least one item, with their counts (the filter chips of the public page). */
   async publicCategories(type?: string) {
     const qb = this.repo.createQueryBuilder('g').select('g.category', 'category').addSelect('COUNT(*)', 'n').where('g.category IS NOT NULL').groupBy('g.category');
-    if (type) qb.andWhere('g.kind = :type', { type });
+    this.applyType(qb, type);
     const rows = await qb.getRawMany();
     return GALLERY_CATEGORIES.filter((c) => rows.some((r) => r.category === c)).map((c) => ({ category: c, count: Number(rows.find((r) => r.category === c)!.n) }));
   }
@@ -145,7 +172,7 @@ export class GalleryService {
   /** Years that have at least one item (the archive filter of the media center), newest first. */
   async publicYears(type?: string) {
     const qb = this.repo.createQueryBuilder('g').select('EXTRACT(YEAR FROM g.createdAt)', 'y').groupBy('y').orderBy('y', 'DESC');
-    if (type) qb.where('g.kind = :type', { type });
+    this.applyType(qb, type);
     const rows = await qb.getRawMany();
     return rows.map((r) => Number(r.y)).filter((y) => Number.isFinite(y));
   }

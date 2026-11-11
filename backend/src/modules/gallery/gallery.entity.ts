@@ -19,10 +19,14 @@ export class Gallery extends TimestampedEntity {
   @Column({ name: 'title_ar', length: 255 })
   titleAr: string;
 
-  @Column({ name: 'title_en', length: 255 })
+  /** optional: an empty string when no English title was given (readers then fall back to the Arabic one) */
+  @Column({ name: 'title_en', length: 255, default: '' })
   titleEn: string;
 
-  /** photos = an album of pictures; video = a YouTube video (pictures are then optional: the first one is its cover) */
+  /**
+   * Derived, kept for older readers: 'video' when the item has a YouTube video and no pictures, else 'photos'.
+   * An item can hold pictures AND a video; use `images` / `youtubeUrl` to know what it contains.
+   */
   @Column({ type: 'varchar', length: 10, default: 'photos' })
   kind: GalleryKind;
 
@@ -33,9 +37,13 @@ export class Gallery extends TimestampedEntity {
   @Column({ type: 'varchar', length: 30, nullable: true })
   category: GalleryCategory | null;
 
-  /** relative storage paths (at least one for photo albums) */
+  /** relative storage paths (optional, but an item needs at least one picture or a video) */
   @Column({ type: 'jsonb', nullable: true })
   images: string[] | null;
+
+  /** the picture chosen as the cover (one of `images`); empty = the first picture, else YouTube's own thumbnail */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  thumbnail: string | null;
 
   /** optional: the album belongs to a committee and appears in its "photos" tab (FK committees.id, ON DELETE SET NULL) */
   @Column({ name: 'committee_id', type: 'bigint', nullable: true })
@@ -47,4 +55,10 @@ export class Gallery extends TimestampedEntity {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by' })
   createdBy: User | null;
+}
+
+/** Relative path of the cover picture of an item: the chosen thumbnail (if it is still one of its pictures), else the first picture. */
+export function galleryCoverPath(g: Pick<Gallery, 'images' | 'thumbnail'>): string | null {
+  const images = g.images ?? [];
+  return g.thumbnail && images.includes(g.thumbnail) ? g.thumbnail : images[0] ?? null;
 }

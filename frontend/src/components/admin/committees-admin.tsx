@@ -52,6 +52,9 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
   const [found, setFound] = useState<LinkedNews[]>([]);
 
   const canUpdate = can('committees.update');
+  // the businesswomen committee is a single page: once it exists the "women" kind is no longer offered for a new / other committee
+  const [womenExists, setWomenExists] = useState(false);
+  useEffect(() => { api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 1 } }).then((r) => setWomenExists(r.meta.total > 0)).catch(() => setWomenExists(false)); }, []);
   const dirty = useRef(false); // something was saved: the page behind the window reloads when it closes
   const loadFull = async (cid: number) => {
     const f = await api<Full>(`/admin/committees/${cid}/full`);
@@ -172,7 +175,7 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
         {tab === 'details' && (
           <form onSubmit={saveDetails} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
-              {!kind && <Field label={t('cm.kind')}><select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.map((k) => <option key={k} value={k}>{t(`cm.kind.${k}`)}</option>)}</select></Field>}
+              {!kind && <Field label={t('cm.kind')}><select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.filter((k) => k !== 'women' || draft.kind === 'women' || !womenExists).map((k) => <option key={k} value={k}>{t(`cm.kind.${k}`)}</option>)}</select></Field>}
               <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
               <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
               <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
@@ -306,6 +309,12 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
   const canUpdate = can('committees.update');
+  // the businesswomen committee: one only, so its table offers "add" only while there is none
+  const [womenCount, setWomenCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (kind !== 'women') return;
+    api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 1 } }).then((r) => setWomenCount(r.meta.total)).catch(() => setWomenCount(null));
+  }, [kind, key]);
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const cols: Col<Row>[] = [
@@ -337,7 +346,7 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/committees/bulk-delete', can: can('committees.delete') }}
-        toolbar={!kind && can('committees.create') && <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
+        toolbar={(kind === 'women' ? womenCount === 0 : true) && can('committees.create') && <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
