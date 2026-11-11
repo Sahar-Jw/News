@@ -7,6 +7,8 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { Card, NewsCard } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
 import { NewsFilters, NewsFilterValues } from '@/components/site/news-filters';
+import { useSite } from '@/components/site/site-context';
+import { NEWS_MAIN_CATEGORIES } from '@/lib/news-categories';
 
 /**
  * The full news list (search, category / date / sort filters, topic links, pages) shown on the Media Center "News" tab.
@@ -16,6 +18,9 @@ export function AllNews() {
   const { lang, t, href } = useI18n();
   const sp = useSearchParams();
   const router = useRouter();
+  const { categories } = useSite();
+  // the fixed categories are known up front, so the chips show even before the API answers
+  const fixed = categories.fixed.length ? categories.fixed : NEWS_MAIN_CATEGORIES.map((c) => (lang === 'en' ? c.en : c.ar));
   const category = sp.get('category') ?? '';
   const subcategory = sp.get('subcategory') ?? '';
   const topics = sp.get('topics') ?? '';
@@ -46,6 +51,12 @@ export function AllNews() {
   return (
     <>
       {heading && <h2 className="mb-4 text-lg font-bold text-secondary">{heading}</h2>}
+      <div className="mb-4 flex flex-wrap justify-center gap-2" role="group" aria-label={t('site.category')}>
+        {[['', t('site.allCategories')], ...fixed.map((c) => [c, c])].map(([val, label]) => (
+          <button key={val || 'all'} type="button" aria-pressed={category === val} onClick={() => push({ category: val }, 1)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${category === val ? 'border-secondary bg-secondary text-white' : 'bg-white text-gray-700 hover:border-primary'}`}>{label}</button>
+        ))}
+      </div>
       <NewsFilters value={{ q, category, subcategory, dateFrom, dateTo, sort }} onApply={apply} />
       {!data ? <Center><Spinner /></Center> : data.data.length === 0 ? <Center>{t('site.noNews')}</Center> : (
         <>

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast';
 import { Center, Spinner } from '@/components/ui/ui';
 import { BoardMemberDialog } from '@/components/admin/board-admin';
 import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
+import { CategoryNews } from '@/components/site/category-news';
 
 interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null }
 const POSITIONS = ['president', 'vice_president', 'secretary', 'treasurer', 'member'];
@@ -124,6 +125,7 @@ export default function BoardPage() {
           })}
         </div>
       )}
+      <CategoryNews category="board" className="mt-10 !px-0 !pb-0" />
     </div>
   );
 }

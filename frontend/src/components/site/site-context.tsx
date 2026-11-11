@@ -5,8 +5,8 @@ import { useI18n } from '@/lib/i18n';
 import { applyTheme, themeReady } from '@/lib/theme';
 
 /** Two independent lists: a subcategory does not belong to any main category. */
-export interface Categories { main: string[]; sub: string[] }
-const NO_CATEGORIES: Categories = { main: [], sub: [] };
+export interface Categories { main: string[]; sub: string[]; /** the fixed media-center categories, in display order */ fixed: string[] }
+const NO_CATEGORIES: Categories = { main: [], sub: [], fixed: [] };
 type Settings = Record<string, Record<string, any>>;
 
 interface SiteCtx {

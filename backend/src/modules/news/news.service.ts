@@ -16,6 +16,7 @@ import {
 } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
+import { fixedNewsCategories, matchFixedNewsCategory } from '../../common/news-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { isYmd } from '../../common/utils/dates';
@@ -189,11 +190,16 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       .andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
       .orderBy('v', 'ASC')
       .getRawMany();
-    return { main: main.map((r) => r.v), sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
+    // the fixed media-center categories always come first (Arabic then English spelling), then whatever else editors already used
+    const fixed = [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')];
+    const others = main.map((r) => r.v as string).filter((v) => !fixed.some((f) => f.toLowerCase() === String(v).toLowerCase()));
+    return { main: [...fixed, ...others], sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
   }
 
   // ---------------------------------------------------------------- validation helpers
   private async canonical(kind: 'main' | 'sub', value: string): Promise<string | null> {
+    // a fixed media-center category is always valid (no "create category" permission needed) and keeps its canonical spelling
+    if (kind === 'main') { const fixed = matchFixedNewsCategory(value); if (fixed) return fixed; }
     const qb = this.repo.createQueryBuilder('n');
     if (kind === 'main') qb.select('n.mainCategory', 'v').where('n.mainCategory = :v', { v: value });
     else qb.select('n.subcategory', 'v').where('n.subcategory = :v', { v: value });

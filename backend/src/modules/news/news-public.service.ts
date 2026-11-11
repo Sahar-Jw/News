@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
+import { fixedNewsCategories, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -166,7 +167,8 @@ export class NewsPublicService {
       this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
     ]);
     const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
-    return { main: sort(mainRows), sub: sort(subRows) };
+    // `fixed` = the media-center categories in display order; `main` = those first, then any other category in use
+    return { main: withFixedFirst(L, sort(mainRows)), sub: sort(subRows), fixed: fixedNewsCategories(L) };
   }
 
   async section(code: string, lang: Language | undefined, v: Viewer) {
@@ -186,7 +188,7 @@ export class NewsPublicService {
         this.order(this.slim(this.base(L, v))).andWhere('n.mainCategory IN (:...sp)', { sp: SPECIAL_CATEGORY_CODES }).take(500).getMany(),
         // latest 5 featured news: marked as featured by an editor, OR mentioning "رئيس الغرفة" (flag kept up to date on save).
         // Both are independent of status/visibility, but the record must still be eligible.
-        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).andWhere('(n.isFeatured = true OR n.mentionsChamberHead = true)').take(5).getMany(),
+        this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).andWhere('(n.isFeatured = true OR n.mentionsChamberHead = true OR n.mainCategory IN (:...presidentCats))', { presidentCats: newsCategoryLabels('president') }).take(5).getMany(),
         this.order(this.slim(onlyRegular(this.base(L, v), 'n'))).take(4).getMany(),
       ]);
       return { settings, specials, featured, regular };

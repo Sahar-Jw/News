@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Field, inputCls } from '@/components/ui/ui';
 import { Card, NewsCard } from '@/components/site/cards';
 import { useSite } from '@/components/site/site-context';
+import { newsCategoryLabel } from '@/lib/news-categories';
 import { EMAIL_RE, PHONE_RE, THREE_PART_NAME_RE } from '@/components/site/training-shared';
 
 interface Project { id: number; status: string; name: string; sector: string; founder: string; summary: string; story: string; joinedYear: number | null; website: string | null; imageUrl: string | null }
@@ -32,8 +33,14 @@ export default function IncubatorPage() {
   const [news, setNews] = useState<Card[]>([]);
   useEffect(() => { api<Data>('/public/incubator', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData({ incubated: [], graduated: [] })); }, [lang]);
   useEffect(() => {
-    if (!topic) return setNews([]);
-    api<{ data: Card[] }>('/public/news', { params: { lang, topics: topic, limit: 3 } }).then((r) => setNews(r.data)).catch(() => setNews([]));
+    // the news of the fixed "Business Incubator News" category + the news tagged with the page topic (Settings), newest first, no duplicates
+    const get = (params: Record<string, string | number>) => api<{ data: Card[] }>('/public/news', { params: { lang, limit: 3, ...params } }).then((r) => r.data).catch(() => [] as Card[]);
+    Promise.all([get({ category: newsCategoryLabel('incubator', lang) }), topic ? get({ topics: topic }) : Promise.resolve([] as Card[])]).then(([byCategory, byTopic]) => {
+      const seen = new Set<number>();
+      const merged = [...byCategory, ...byTopic].filter((n) => !seen.has(n.id) && seen.add(n.id));
+      merged.sort((a, b) => (b.publishAt ? Date.parse(b.publishAt) : 0) - (a.publishAt ? Date.parse(a.publishAt) : 0));
+      setNews(merged.slice(0, 3));
+    });
   }, [lang, topic]);
 
   const [showForm, setShowForm] = useState(false);

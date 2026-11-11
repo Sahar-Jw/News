@@ -10,6 +10,7 @@ import { CourseRegister } from '@/components/site/course-register';
 import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
 import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/training-shared';
+import { CategoryNews } from '@/components/site/category-news';
 
 type Tab = 'current' | 'archive' | 'news';
 /** the sub-categories of the center news; each one is a news topic that editors tag (its label in the page language is the topic) */
@@ -134,6 +135,8 @@ export default function TrainingPage() {
       )}
 
       <p className="rounded-2xl border border-line bg-primary/5 px-4 py-3 text-sm text-gray-700"><b>{t('tr.autoArchiveLabel')}</b> {t('tr.autoArchive')}</p>
+
+      <CategoryNews category="training" className="!px-0 !pb-0" />
 
       {reg && <CourseRegister courseId={reg.id} courseName={reg.name} open onClose={() => setReg(null)} onDone={() => setReload((n) => n + 1)} />}
     </div>

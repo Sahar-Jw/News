@@ -12,6 +12,7 @@ import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content
 import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { Gallery } from '../gallery/gallery.entity';
+import { newsCategoryLabel } from '../../common/news-categories';
 import { News } from '../news/news.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
 import { applyEligibility } from '../news/news.eligibility';
@@ -363,9 +364,10 @@ export class CommitteesService {
     const c = (await this.store.list(CC.WOMEN_COMMITTEE)).filter(isActive).sort(by((r) => sortOf(r), (r) => r.id))[0];
     if (!c) throw new NotFoundException('اللجنة غير موجودة');
     const categorySetting = await this.settings.findOne({ where: { category: 'women', key: `news_category_${lang === 'en' ? 'en' : 'ar'}` } });
+    // the fixed media-center category "Businesswomen Committee News" always lands on this page, besides the category set in Settings
     const categories = lang === 'en'
-      ? [categorySetting?.value || 'Businesswomen']
-      : [...new Set([categorySetting?.value || 'سيدات الأعمال', 'سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال'])];
+      ? [...new Set([categorySetting?.value || 'Businesswomen', newsCategoryLabel('women', 'en')])]
+      : [...new Set([categorySetting?.value || 'سيدات الأعمال', newsCategoryLabel('women', 'ar'), 'سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال'])];
     return this.detail(c, lang, categories);
   }
 

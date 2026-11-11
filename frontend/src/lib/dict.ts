@@ -130,6 +130,7 @@ const ar: Record<string, string> = {
   // wireframe gaps: documents
   'doc.kind.law': 'القوانين والأنظمة', 'doc.kind.guide': 'الأدلة', 'doc.issuer': 'الجهة', 'doc.issuerAr': 'الجهة بالعربية', 'doc.issuerEn': 'الجهة بالإنجليزية (اختياري)',
   // media center
+  'cn.all': 'كل الأخبار',
   'md.title': 'المركز الإعلامي', 'md.tab.news': 'الأخبار', 'md.tab.statements': 'البيانات الرسمية', 'md.tab.photos': 'الصور', 'md.tab.video': 'الفيديو', 'md.tab.interviews': 'المقابلات',
   'md.tab.coverage': 'التغطيات الإعلامية', 'md.tab.press': 'المواد الصحفية', 'md.tab.kit': 'Media Kit', 'md.empty': 'لا يوجد محتوى في هذا التبويب بعد', 'md.allNews': 'عرض جميع الأخبار',
  'md.tab.overview': 'نظرة عامة', 'md.photosHint': 'أرشيف الصور مصنّفاً بالمناسبة والسنة', 'md.videosHint': 'أرشيف الفيديوهات مصنّفاً بالمناسبة والسنة', 'md.allYears': 'كل السنوات', 'md.newsVideos': 'أخبار مصوّرة',
@@ -353,6 +354,7 @@ const en: Record<string, string> = {
   // wireframe gaps: documents
   'doc.kind.law': 'Laws & regulations', 'doc.kind.guide': 'Guides', 'doc.issuer': 'Issuer', 'doc.issuerAr': 'Issuer (Arabic)', 'doc.issuerEn': 'Issuer (English, optional)',
   // media center
+  'cn.all': 'All news',
   'md.title': 'Media center', 'md.tab.news': 'News', 'md.tab.statements': 'Official statements', 'md.tab.photos': 'Photos', 'md.tab.video': 'Video', 'md.tab.interviews': 'Interviews',
   'md.tab.coverage': 'Media coverage', 'md.tab.press': 'Press materials', 'md.tab.kit': 'Media Kit', 'md.empty': 'Nothing in this tab yet', 'md.allNews': 'View all news',
  'md.tab.overview': 'Overview', 'md.photosHint': 'The photo archive by occasion and year', 'md.videosHint': 'The video archive by occasion and year', 'md.allYears': 'All years', 'md.newsVideos': 'News with video',

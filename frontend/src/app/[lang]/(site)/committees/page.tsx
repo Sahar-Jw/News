@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast';
 import { Center, Spinner } from '@/components/ui/ui';
 import { CommitteeDialog } from '@/components/admin/committees-admin';
 import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
+import { CategoryNews } from '@/components/site/category-news';
 
 interface Card { id: number; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null }
 
@@ -104,6 +105,7 @@ export default function CommitteesPage() {
           ))}
         </div>
       )}
+      <CategoryNews category="committees" className="mt-10 !px-0 !pb-0" />
     </div>
   );
 }

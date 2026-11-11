@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
 import { Center, Spinner, inputCls } from '@/components/ui/ui';
 import { Thumb } from './cards';
+import { CategoryNews } from '@/components/site/category-news';
 
 export type EventTab = 'exhibitions' | 'occasions' | 'calendar';
 export type EventStatus = 'upcoming' | 'current' | 'previous';
@@ -258,6 +259,7 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
       {tab === 'exhibitions' && <EventList type="exhibition" initialStatus={initialStatus} />}
       {tab === 'occasions' && <EventList type="occasion" initialStatus={initialStatus} />}
       {tab === 'calendar' && <EventsCalendar />}
+      <CategoryNews category="events" className="mt-10 !px-0 !pb-0" />
     </div>
   );
 }
