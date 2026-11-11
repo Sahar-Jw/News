@@ -10,7 +10,6 @@ import { useNavGroups } from './use-nav';
 import { useFooterGroups, type FooterLinkItem } from './use-footer';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { HUB_PERMS } from '@/lib/hubs-meta';
-import { CONTENT_TYPES, contentTypeLabel, contentTypeUrl } from '@/lib/content-types';
 import { ContactIcon, SocialIcon } from './icons';
 
 type NavItem = { label: string; to: string; show: boolean; newTab?: boolean };
@@ -251,7 +250,6 @@ export function Navbar() {
     { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
   ];
   // every content type (reserved main category) with its own editor: one row each, sent to that editor
-  const typeItems: NavItem[] = CONTENT_TYPES.map((c) => ({ label: contentTypeLabel(c, lang), to: contentTypeUrl(c), show: can(...c.perms) }));
   // Public dropdowns: managed in Settings -> Main menu (loaded from the API).
   const navGroups = useNavGroups(lang, t);
   const groups = [
@@ -352,7 +350,7 @@ export function Navbar() {
           <Link href={href('/contact')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${/\/contact\/?$/.test(pathname) ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('contact.title')}</Link>
 
 
-          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'types', label: t('adm.contentTypes'), items: typeItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
+          {me && <AdminMenu label={t('adm.admin')} groups={[{ key: 'content', label: t('adm.content'), items: manageItems }, { key: 'security', label: t('adm.security'), items: securityItems }]} href={href} />}
 
           {me && (
             <div className="flex flex-col gap-1 xl:hidden">
