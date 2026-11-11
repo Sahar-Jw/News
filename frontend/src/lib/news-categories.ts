@@ -19,3 +19,14 @@ export const newsCategoryLabel = (key: NewsMainCategoryKey, lang: string) => {
   const c = NEWS_MAIN_CATEGORIES.find((x) => x.key === key)!;
   return lang === 'en' ? c.en : c.ar;
 };
+
+export const isNewsCategoryKey = (k: string | null | undefined): k is NewsMainCategoryKey => NEWS_MAIN_CATEGORIES.some((c) => c.key === k);
+
+/** The key of a fixed category from its stored label in either language (undefined for any other category). */
+export const newsCategoryKeyOf = (label: string | null | undefined): NewsMainCategoryKey | undefined => NEWS_MAIN_CATEGORIES.find((c) => c.ar === label || c.en === label)?.key;
+
+/**
+ * Link to the "add news" form of a page: the form is pinned to that page's main category (it cannot be changed there)
+ * and returns to `from` (a path without the language, e.g. "/board") after saving.
+ */
+export const addNewsHref = (key: NewsMainCategoryKey, from?: string) => `/admin/news/edit?new=1&category=${key}${from ? `&from=${encodeURIComponent(from)}` : ''}`;

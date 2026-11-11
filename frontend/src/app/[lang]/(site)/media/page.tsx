@@ -12,6 +12,7 @@ import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
 import { AllNews } from '@/components/site/news-all';
+import { addNewsHref, newsCategoryKeyOf } from '@/lib/news-categories';
 
 const TABS = ['news', 'statements', 'photos', 'video', 'interviews', 'coverage', 'press', 'kit'] as const;
 type Tab = (typeof TABS)[number];
@@ -243,8 +244,11 @@ function KitTab() {
 function ManageBar() {
   const { t, href } = useI18n();
   const { can } = useAuth();
+  // a category chip is selected: "add news" is then pinned to that category (it cannot be changed in the form)
+  const cat = useSearchParams().get('category') ?? '';
+  const catKey = newsCategoryKeyOf(cat);
   const items = [
-    can('news.create') && { to: '/admin/news/edit', label: `＋ ${t('md.addNews')}` },
+    can('news.create') && { to: catKey ? addNewsHref(catKey, `/media?category=${encodeURIComponent(cat)}`) : '/admin/news/edit', label: `＋ ${t('md.addNews')}` },
     can('gallery.create', 'gallery.update') && { to: '/admin/settings?page=media&tab=gallery', label: `＋ ${t('md.addAlbum')}` },
     can('documents.create', 'documents.update') && { to: '/admin/settings?page=documents&tab=documents', label: `＋ ${t('md.addDoc')}` },
     can('settings.update') && { to: '/admin/settings?page=media&tab=settings', label: `⚙ ${t('md.kitSettings')}` },

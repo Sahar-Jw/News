@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/toast';
 import { parseYoutubeId } from '@/lib/youtube';
 import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { RichEditor } from './rich-editor';
+import { isNewsCategoryKey, newsCategoryLabel } from '@/lib/news-categories';
 
 interface Existing {
   id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[] | null; body: string | null;
@@ -29,6 +30,10 @@ function Form() {
   const sp = useSearchParams();
   const id = sp.get('id');
   const sectionParam = sp.get('section') ?? '';
+  const categoryParam = sp.get('category') ?? '';
+  const fromParam = sp.get('from') ?? '';
+  // where to go after saving: only a path inside this site
+  const returnTo = fromParam.startsWith('/') && !fromParam.startsWith('//') ? fromParam : '';
   const isEdit = !!id;
 
   const [loading, setLoading] = useState(isEdit);
@@ -53,11 +58,14 @@ function Form() {
   const section = sectionParam || (SECTIONS as readonly string[]).includes(f.mainCategory) ? (sectionParam || f.mainCategory) : '';
   const special = !!section;
   const single = section === 'TEAM' || section === 'COMPANY_OVERVIEW'; // these records have exactly one picture
-  const mayChangeCategory = !isEdit || can('news.category.change');
+  // opened from a page that owns one fixed main category (board, committees, training ...): the category is that page's and cannot be changed
+  const pinned = !special && isNewsCategoryKey(categoryParam) ? newsCategoryLabel(categoryParam, f.language as string) : '';
+  const mayChangeCategory = !pinned && (!isEdit || can('news.category.change'));
   const mayCreateCategory = can('news.category.create');
   const mayPublish = can('news.publish');
   const mayFeature = can('news.feature');
 
+  useEffect(() => { if (pinned) setF((x) => (x.mainCategory === pinned ? x : { ...x, mainCategory: pinned })); }, [pinned]);
   useEffect(() => {
     api<{ main: string[]; sub: string[] }>('/admin/news/categories').then(setCats).catch(() => {});
   }, []);
@@ -136,8 +144,9 @@ function Form() {
     if (section === 'TESTIMONIALS' || f.mainCategory === 'TESTIMONIALS') fd.set('rating', f.rating);
     if (!isEdit) {
       if (sectionParam) fd.set('section', sectionParam);
-      else fd.set('mainCategory', main);
-    } else if (mayChangeCategory && main) fd.set('mainCategory', main);
+      else fd.set('mainCategory', pinned || main);
+    } else if (pinned) fd.set('mainCategory', pinned);
+    else if (mayChangeCategory && main) fd.set('mainCategory', main);
     if (!special) fd.set('subcategory', sub);
     if (isEdit) fd.set('keepImages', JSON.stringify(existing.filter((p) => !removed.has(p))));
     fresh.forEach((i) => fd.append('images', i.file));
@@ -150,11 +159,11 @@ function Form() {
     try {
       await api(isEdit ? `/admin/news/${id}` : '/admin/news', { method: isEdit ? 'PATCH' : 'POST', form: fd });
       toast(t('app.saved'));
-      router.push(href(special ? `/admin/sections/${section}` : '/admin/news'));
+      router.push(href(returnTo || (special ? `/admin/sections/${section}` : '/admin/news')));
     } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
   };
 
-  const back = href(special ? `/admin/sections/${section}` : '/admin/news');
+  const back = href(returnTo || (special ? `/admin/sections/${section}` : '/admin/news'));
   const sectionOptions = useMemo(() => [...cats.main], [cats.main]);
 
   if (loading) return <Center><Spinner /></Center>;
@@ -180,8 +189,8 @@ function Form() {
           </Field>
         ) : (
           <>
-            <Field label={t('f.mainCategory')}>
-              {mayChangeCategory ? (
+            <Field label={t('f.mainCategory')} hint={pinned ? t('f.fixed') : undefined}>
+              {pinned ? <input disabled className={inputCls} value={pinned} /> : mayChangeCategory ? (
                 <>
                   <select required className={inputCls} value={f.mainCategory} onChange={(e) => {
                     const ct = CONTENT_TYPES.find((c) => `type:${c.code}` === e.target.value);

@@ -9,8 +9,8 @@ import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { RichEditor } from '@/components/admin/rich-editor';
 import { createContext, useContext } from 'react';
 import { womenPageHref } from '@/lib/women-menu';
-import { useSite } from '@/components/site/site-context';
 import { parseYoutubeId } from '@/lib/youtube';
+import { newsCategoryLabel } from '@/lib/news-categories';
 
 /** the committee being edited and what to do after a change (set by the committee page) */
 const AdminCtx = createContext<{ id: number; reload: () => void }>({ id: 0, reload: () => {} });
@@ -342,13 +342,12 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
 }
 
 // ---------------------------------------------------------------- add a news item, in a window over the women page
-const NEWS_CATEGORY_FALLBACK = { ar: 'سيدات الأعمال', en: 'Businesswomen' } as const;
 const MAX_NEWS_IMAGE = 5 * 1024 * 1024;
 const MAX_NEWS_PDF = 25 * 1024 * 1024;
 const MAX_NEWS_PDFS = 10;
 
 /**
- * "Add a news item" without leaving the women site. The news gets the committee's own main category (Settings -> women -> news category)
+ * "Add a news item" without leaving the women site. The news always gets the fixed main category "Businesswomen Committee News" (it cannot be changed here)
  * so it shows on this page straight away. Same rules as the news form of the main site; every error is shown under its field.
  */
 export function NewsDialog({ onClose }: { onClose: () => void }) {
@@ -356,7 +355,6 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
   const toast = useToast();
   const { lang } = useI18n();
   const { can } = useAuth();
-  const { s } = useSite();
   const { reload } = useWomen();
   const mayPublish = can('news.publish');
   const mayFeature = can('news.feature');
@@ -369,7 +367,8 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   const set = (k: keyof typeof f, v: string | boolean) => { setF((x) => ({ ...x, [k]: v })); setErrors((e) => (e[k] ? { ...e, [k]: '' } : e)); };
-  const category = String(s('women', `news_category_${f.language}`) || NEWS_CATEGORY_FALLBACK[f.language]);
+  // always the fixed "Businesswomen Committee News" category of the media center
+  const category = newsCategoryLabel('women', f.language);
   const ytId = parseYoutubeId(f.youtubeUrl);
 
   const addImages = (list: FileList | null) => {
