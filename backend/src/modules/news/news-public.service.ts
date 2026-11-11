@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
-import { fixedNewsCategories, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
+import { fixedNewsCategories, localizeFixedNewsCategory, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -79,7 +79,8 @@ export class NewsPublicService {
   async list(q: PublicNewsQueryDto, v: Viewer) {
     const p = publicPage(q);
     const qb = this.slim(onlyRegular(this.base(q.lang ?? Language.AR, v), 'n'));
-    if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: normalizeLabel(q.category) });
+    // a fixed category in the link may be spelled in the other language (/media?category=… after switching language)
+    if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: localizeFixedNewsCategory(normalizeLabel(q.category), q.lang ?? Language.AR) });
     if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
     if (q.topics) {
       const list = [...new Set(q.topics.split(',').map(normalizeLabel).filter(Boolean))].slice(0, 10);

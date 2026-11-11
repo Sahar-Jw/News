@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/toast';
 import { parseYoutubeId } from '@/lib/youtube';
 import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { RichEditor } from './rich-editor';
-import { isNewsCategoryKey, newsCategoryLabel } from '@/lib/news-categories';
+import { isNewsCategoryKey, newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
 
 interface Existing {
   id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[] | null; body: string | null;
@@ -66,9 +66,18 @@ function Form() {
   const mayFeature = can('news.feature');
 
   useEffect(() => { if (pinned) setF((x) => (x.mainCategory === pinned ? x : { ...x, mainCategory: pinned })); }, [pinned]);
+  // only the categories of the record's language are offered (Arabic news: Arabic labels, English news: English labels)
   useEffect(() => {
-    api<{ main: string[]; sub: string[] }>('/admin/news/categories').then(setCats).catch(() => {});
-  }, []);
+    api<{ main: string[]; sub: string[] }>('/admin/news/categories', { params: { lang: f.language } }).then(setCats).catch(() => {});
+  }, [f.language]);
+  // switching the record's language turns a fixed category into its twin in the new language
+  useEffect(() => {
+    setF((x) => {
+      const k = newsCategoryKeyOf(x.mainCategory);
+      const next = k ? newsCategoryLabel(k, x.language) : x.mainCategory;
+      return next === x.mainCategory ? x : { ...x, mainCategory: next };
+    });
+  }, [f.language]);
   useEffect(() => {
     if (!id) return;
     api<Existing>(`/admin/news/${id}`).then((n) => {
@@ -144,8 +153,8 @@ function Form() {
     if (section === 'TESTIMONIALS' || f.mainCategory === 'TESTIMONIALS') fd.set('rating', f.rating);
     if (!isEdit) {
       if (sectionParam) fd.set('section', sectionParam);
-      else fd.set('mainCategory', pinned || main);
-    } else if (pinned) fd.set('mainCategory', pinned);
+      else { fd.set('mainCategory', pinned || main); if (pinned) fd.set('categoryKey', categoryParam); }
+    } else if (pinned) { fd.set('mainCategory', pinned); fd.set('categoryKey', categoryParam); }
     else if (mayChangeCategory && main) fd.set('mainCategory', main);
     if (!special) fd.set('subcategory', sub);
     if (isEdit) fd.set('keepImages', JSON.stringify(existing.filter((p) => !removed.has(p))));

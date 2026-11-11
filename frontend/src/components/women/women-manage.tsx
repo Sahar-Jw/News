@@ -412,6 +412,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
     fd.set('title', f.title.trim());
     fd.set('subject', f.subject.trim());
     fd.set('mainCategory', category);
+    fd.set('categoryKey', 'women'); // the server pins the category to this page's one
     fd.set('language', f.language);
     fd.set('visibility', f.visibility);
     fd.set('body', f.body);

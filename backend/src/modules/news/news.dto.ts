@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Language, NewsStatus, SPECIAL_CATEGORY_CODES, Visibility } from '../../common/constants';
 import { AdminListQueryDto, PublicListQueryDto } from '../../common/dto/list-query.dto';
+import { NEWS_CATEGORY_KEYS } from '../../common/news-categories';
 
 /** multipart/form-data sends everything as strings, so booleans/arrays need explicit parsing. */
 const toBool = () =>
@@ -35,6 +36,8 @@ export class CreateNewsDto {
   /** Special section form: pins main_category to this reserved code. */
   @IsOptional() @emptyToNull() @IsIn(SPECIAL_CATEGORY_CODES) section?: string;
   @IsOptional() @emptyToNull() @IsString() @MaxLength(100) mainCategory?: string;
+  /** Sent by a page that owns one fixed main category (board, committees ...): the server pins the main category to it and refuses any other. */
+  @IsOptional() @emptyToNull() @IsIn(NEWS_CATEGORY_KEYS) categoryKey?: string;
   @IsOptional() @emptyToNull() @IsString() @MaxLength(100) subcategory?: string | null;
 
   @IsOptional() @toList() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(100, { each: true }) topics?: string[];
@@ -57,6 +60,8 @@ export class UpdateNewsDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) title?: string;
   @IsOptional() @emptyToNull() @IsString() @MaxLength(500) subject?: string | null;
   @IsOptional() @emptyToNull() @IsString() @MaxLength(100) mainCategory?: string;
+  /** See CreateNewsDto.categoryKey: the record must already belong to this category and keeps it. */
+  @IsOptional() @emptyToNull() @IsIn(NEWS_CATEGORY_KEYS) categoryKey?: string;
   @IsOptional() @emptyToNull() @IsString() @MaxLength(100) subcategory?: string | null;
   @IsOptional() @toList() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(100, { each: true }) topics?: string[];
   @IsOptional() @emptyToNull() @IsString() @MaxLength(1_000_000) body?: string | null;

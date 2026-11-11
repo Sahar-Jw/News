@@ -58,8 +58,8 @@ export class NewsAdminController {
 
   @Get('categories')
   @Permissions(...NEWS_ANY_PERMISSIONS)
-  categories() {
-    return this.service.categories();
+  categories(@Query() q: LangQueryDto) {
+    return this.service.categories(q.lang);
   }
 
   @Get('export')

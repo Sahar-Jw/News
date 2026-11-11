@@ -49,3 +49,17 @@ export const withFixedFirst = (lang: string | undefined, others: string[]): stri
   const all = [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')].map((x) => x.toLowerCase());
   return [...fixed, ...others.filter((o) => !all.includes((o ?? '').toLowerCase()))];
 };
+
+/** The key of a fixed category from its label in either language (undefined for any other category). */
+export const fixedNewsCategoryKey = (value: string | null | undefined): NewsMainCategoryKey | undefined => {
+  const v = (value ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+  return NEWS_MAIN_CATEGORIES.find((c) => c.ar.toLowerCase() === v || c.en.toLowerCase() === v)?.key;
+};
+
+/** A fixed category in the language of the record: "أخبار الغرفة" on an English record becomes "Chamber News". Any other value is returned as it is. */
+export const localizeFixedNewsCategory = (value: string, lang?: string): string => {
+  const key = fixedNewsCategoryKey(value);
+  return key ? newsCategoryLabel(key, lang) : value;
+};
+
+export const NEWS_CATEGORY_KEYS: string[] = NEWS_MAIN_CATEGORIES.map((c) => c.key);

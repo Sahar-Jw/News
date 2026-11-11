@@ -8,7 +8,7 @@ import { Card, NewsCard } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
 import { NewsFilters, NewsFilterValues } from '@/components/site/news-filters';
 import { useSite } from '@/components/site/site-context';
-import { NEWS_MAIN_CATEGORIES } from '@/lib/news-categories';
+import { NEWS_MAIN_CATEGORIES, newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
 
 /**
  * The full news list (search, category / date / sort filters, topic links, pages) shown on the Media Center "News" tab.
@@ -21,7 +21,10 @@ export function AllNews() {
   const { categories } = useSite();
   // the fixed categories are known up front, so the chips show even before the API answers
   const fixed = categories.fixed.length ? categories.fixed : NEWS_MAIN_CATEGORIES.map((c) => (lang === 'en' ? c.en : c.ar));
-  const category = sp.get('category') ?? '';
+  // a fixed category in the link may be in the other language (the language was switched): show it in the page language
+  const rawCategory = sp.get('category') ?? '';
+  const catKey = newsCategoryKeyOf(rawCategory);
+  const category = catKey ? newsCategoryLabel(catKey, lang) : rawCategory;
   const subcategory = sp.get('subcategory') ?? '';
   const topics = sp.get('topics') ?? '';
   const q = sp.get('q') ?? '';

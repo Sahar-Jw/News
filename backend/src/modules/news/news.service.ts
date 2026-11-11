@@ -16,7 +16,7 @@ import {
 } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
-import { fixedNewsCategories, matchFixedNewsCategory } from '../../common/news-categories';
+import { fixedNewsCategories, fixedNewsCategoryKey, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, NewsMainCategoryKey } from '../../common/news-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { isYmd } from '../../common/utils/dates';
@@ -176,23 +176,19 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
    * Dropdown values come from the real DISTINCT values in `news` (SRS 13.2) – there is no categories table.
    * Main category and subcategory are two independent lists: neither is filtered by the other.
    */
-  async categories() {
-    const main = await this.repo
-      .createQueryBuilder('n')
-      .select('DISTINCT n.mainCategory', 'v')
-      .where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
-      .orderBy('v', 'ASC')
-      .getRawMany();
-    const sub = await this.repo
-      .createQueryBuilder('n')
-      .select('DISTINCT n.subcategory', 'v')
-      .where('n.subcategory IS NOT NULL')
-      .andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
-      .orderBy('v', 'ASC')
-      .getRawMany();
-    // the fixed media-center categories always come first (Arabic then English spelling), then whatever else editors already used
-    const fixed = [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')];
-    const others = main.map((r) => r.v as string).filter((v) => !fixed.some((f) => f.toLowerCase() === String(v).toLowerCase()));
+  async categories(lang?: Language) {
+    // with `lang` (the language of the record being edited) only that language's fixed categories and the categories used by news of that language are listed
+    const inLang = (qb: ReturnType<Repository<News>['createQueryBuilder']>) => (lang ? qb.andWhere('n.language = :lang', { lang }) : qb);
+    const main = await inLang(
+      this.repo.createQueryBuilder('n').select('DISTINCT n.mainCategory', 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }),
+    ).orderBy('v', 'ASC').getRawMany();
+    const sub = await inLang(
+      this.repo.createQueryBuilder('n').select('DISTINCT n.subcategory', 'v').where('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }),
+    ).orderBy('v', 'ASC').getRawMany();
+    // the fixed media-center categories always come first, in the requested language (both languages when none is asked), then whatever else editors already used
+    const fixed = lang ? fixedNewsCategories(lang) : [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')];
+    const all = [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')].map((x) => x.toLowerCase());
+    const others = main.map((r) => r.v as string).filter((v) => !all.includes(String(v).toLowerCase()));
     return { main: [...fixed, ...others], sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
   }
 
@@ -218,34 +214,48 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async resolveCategories(
-    input: { mainCategory?: string; subcategory?: string | null; section?: string },
+    input: { mainCategory?: string; categoryKey?: string; subcategory?: string | null; section?: string },
     perms: Set<string>,
+    language: Language,
     existing?: News,
   ): Promise<{ main: string; sub: string | null }> {
     let main: string;
+    const pinKey = input.categoryKey as NewsMainCategoryKey | undefined;
+    if (pinKey && input.section) throw new BadRequestException('لا يمكن تثبيت فئة خبر في قسم خاص');
     if (!existing) {
       if (input.section) {
         if (input.mainCategory && codeKey(input.mainCategory) !== input.section) throw new BadRequestException('الفئة الرئيسية لا تطابق القسم');
         main = input.section;
       } else {
-        if (!input.mainCategory) throw new BadRequestException('الفئة الرئيسية مطلوبة');
-        const norm = normalizeLabel(input.mainCategory);
+        // a page that owns one category (categoryKey): the category is that page's, in the language of the record; any other value is refused
+        if (pinKey && input.mainCategory && fixedNewsCategoryKey(input.mainCategory) !== pinKey) throw new BadRequestException('هذه الصفحة تضيف أخباراً من فئتها فقط ولا يمكن تغيير الفئة');
+        if (!input.mainCategory && !pinKey) throw new BadRequestException('الفئة الرئيسية مطلوبة');
+        const norm = pinKey ? newsCategoryLabel(pinKey, language) : normalizeLabel(input.mainCategory!);
         if (RESERVED_CATEGORY_CODES.includes(codeKey(norm))) throw new BadRequestException('هذه القيمة رمز محجوز لقسم خاص ولا تُستخدم في نموذج الأخبار العادية');
         main = await this.regularValue('main', norm, perms);
       }
     } else {
       main = existing.mainCategory;
-      if (input.mainCategory !== undefined) {
+      if (pinKey) {
+        // editing from a page that owns one category: the record must already be of that category and keeps it
+        if (fixedNewsCategoryKey(existing.mainCategory) !== pinKey) throw new BadRequestException('هذا الخبر لا يتبع فئة هذه الصفحة');
+        if (input.mainCategory && fixedNewsCategoryKey(input.mainCategory) !== pinKey) throw new BadRequestException('لا يمكن تغيير فئة الخبر من هذه الصفحة');
+      } else if (input.mainCategory !== undefined) {
         const norm = normalizeLabel(input.mainCategory ?? '');
         if (!norm) throw new BadRequestException('الفئة الرئيسية مطلوبة');
         const special = SPECIAL_CATEGORY_CODES.includes(codeKey(norm));
         const candidate = special ? codeKey(norm) : norm;
-        if (candidate.toLowerCase() !== existing.mainCategory.toLowerCase()) {
+        // the same fixed category spelled in the other language is not a change
+        const sameFixed = !!fixedNewsCategoryKey(candidate) && fixedNewsCategoryKey(candidate) === fixedNewsCategoryKey(existing.mainCategory);
+        if (!sameFixed && candidate.toLowerCase() !== existing.mainCategory.toLowerCase()) {
           if (!perms.has(PERM.NEWS_CATEGORY_CHANGE)) throw new ForbiddenException('ليست لديك صلاحية تغيير الفئة الرئيسية');
           main = special ? candidate : await this.regularValue('main', norm, perms);
         }
       }
     }
+
+    // a fixed category always carries the language of its record (an Arabic label never sits on English news and the other way round)
+    if (!SPECIAL_CATEGORY_CODES.includes(main)) main = localizeFixedNewsCategory(main, language);
 
     let sub: string | null;
     const given = input.subcategory === undefined ? undefined : input.subcategory === null || !normalizeLabel(input.subcategory) ? null : normalizeLabel(input.subcategory);
@@ -340,7 +350,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     if (dto.finishAt && !isYmd(dto.finishAt)) throw new BadRequestException('تاريخ النهاية غير صالح');
     if (pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
     if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
-    const { main, sub } = await this.resolveCategories(dto, perms);
+    const { main, sub } = await this.resolveCategories(dto, perms, dto.language ?? Language.AR);
     this.assertMayCreate(main, perms);
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     const pub = this.resolvePublishing(dto, undefined, perms);
@@ -396,7 +406,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const perms = actor.permissions;
     this.assertMay('update', n.mainCategory, perms); // update permission of the record's CURRENT kind
 
-    const { main, sub } = await this.resolveCategories(dto, perms, n);
+    const { main, sub } = await this.resolveCategories(dto, perms, dto.language ?? n.language, n);
     // moving a record into another kind of content (regular ↔ a section, or section → section) counts as creating it there
     if (kindOf(main) !== kindOf(n.mainCategory)) this.assertMayCreate(main, perms);
     const pub = this.resolvePublishing(dto, n, perms);
