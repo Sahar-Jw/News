@@ -1,7 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { api } from '@/lib/api';
+import { useToast } from '@/components/ui/toast';
+import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { useState } from 'react';
 import { fmtNum } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { G2tProvider, useGet2Trade } from './context';
@@ -14,6 +19,36 @@ export const G2T_TABS = [
   { key: 'spaces', path: '/spaces', label: 'gt.spaces' },
   { key: 'news', path: '/news', label: 'gt.news' },
 ] as const;
+
+/** buttons at the top of the page for the people who may manage it (visitors see nothing): open / close booking and the Settings screens of the page */
+function ManageBar() {
+  const { t } = useI18n();
+  const { can } = useAuth();
+  const toast = useToast();
+  const { page, reload } = useGet2Trade();
+  const [busy, setBusy] = useState(false);
+  const mayRead = can('get2trade.read');
+  const mayToggle = can('get2trade.update');
+  const toggle = async () => {
+    if (!page) return;
+    setBusy(true);
+    try {
+      await api('/admin/get2trade/settings', { method: 'PATCH', body: { isOpen: !page.isOpen } });
+      toast(t(page.isOpen ? 'gt.m.closed' : 'gt.m.opened'));
+      reload();
+    } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
+  };
+  const to = (tab: string) => `/admin/settings?page=get2trade&tab=${tab}`;
+  return (
+    <PageManageBar show={mayRead || mayToggle} settingsUrl={mayRead ? '/admin/settings?page=get2trade' : undefined}>
+      {mayToggle && page && <ManageBtn onClick={() => { if (!busy) toggle(); }}>{page.isOpen ? `⏸ ${t('gt.m.close')}` : `▶ ${t('gt.m.open')}`}</ManageBtn>}
+      {mayRead && <ManageLink to={to('bookings')} tone="solid">📥 {t('gt.a.bookings')}</ManageLink>}
+      {mayRead && <ManageLink to={to('spaces')}>🏢 {t('gt.a.spaces')}</ManageLink>}
+      {mayRead && <ManageLink to={to('packages')}>📦 {t('gt.a.packages')}</ManageLink>}
+      {mayRead && <ManageLink to={to('content')}>✎ {t('gt.a.content')}</ManageLink>}
+    </PageManageBar>
+  );
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { t, href, lang } = useI18n();
@@ -28,6 +63,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link><span className="mx-1.5">›</span>
         {active === 'about' ? <span className="text-ink">{t('gt.title')}</span> : <><Link href={href('/get2trade')} className="hover:text-primary">{t('gt.title')}</Link><span className="mx-1.5">›</span><span className="text-ink">{t(G2T_TABS.find((x) => x.key === active)!.label)}</span></>}
       </nav>
+
+      <ManageBar />
 
       <header className="rounded-3xl bg-gradient-to-l from-secondary to-primary p-6 text-white shadow-lift md:p-10">
         <h1 className="text-2xl font-extrabold md:text-3xl">{t('gt.title')}</h1>

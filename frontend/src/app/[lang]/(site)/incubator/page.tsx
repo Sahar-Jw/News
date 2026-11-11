@@ -3,7 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, inputCls } from '@/components/ui/ui';
+import { useAuth } from '@/lib/auth';
+import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Pager } from '@/components/site/pager';
+import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 import { Card, NewsCard } from '@/components/site/cards';
 import { useSite } from '@/components/site/site-context';
 import { newsCategoryLabel } from '@/lib/news-categories';
@@ -16,12 +19,14 @@ const EMPTY: V = { projectName: '', founderName: '', email: '', phone: '', secto
 type Err = Partial<Record<keyof V | 'profile' | 'accept', string>>;
 const REQUIRED = ['sector', 'stage', 'description', 'feasibility', 'targetAudience', 'needs'] as const;
 const MAX_DOC = 10 * 1024 * 1024;
+const PROJECTS_PER_PAGE = 6;
 const lines = (v: string) => v.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
 
 /** Business Incubator (P10): about + how it works, incubated projects, success stories, opportunities, news and "submit your project". */
 export default function IncubatorPage() {
   const { lang, t, href } = useI18n();
   const { s, loc } = useSite();
+  const { can } = useAuth();
   const L = (k: string) => loc('incubator', k) || String(s('incubator', `${k}_ar`) ?? '');
   const open = s('incubator', 'apply_open') !== false && s('incubator', 'apply_open') !== 'false';
   const about = L('about'), vision = L('vision'), purpose = L('purpose'), entrepreneurs = L('entrepreneurs');
@@ -30,6 +35,8 @@ export default function IncubatorPage() {
 
   const [data, setData] = useState<Data | null>(null);
   const [tab, setTab] = useState<'incubated' | 'graduated'>('incubated');
+  const [section, setSection] = useState('');
+  const [pp, setPp] = useState(1);
   const [news, setNews] = useState<Card[]>([]);
   useEffect(() => { api<Data>('/public/incubator', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData({ incubated: [], graduated: [] })); }, [lang]);
   useEffect(() => {
@@ -54,9 +61,10 @@ export default function IncubatorPage() {
   const [serverError, setServerError] = useState('');
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
   const set = (k: keyof V, v: string) => { setF((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); setServerError(''); };
-  const start = () => { setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); };
+  // the "submit your project" form opens in a window on top of the page
+  const start = () => { setDone(false); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setDone(false); };
 
   const pickProfile = (list: FileList | null) => {
     const file = list?.[0] ?? null;
@@ -103,14 +111,29 @@ export default function IncubatorPage() {
   );
   const bullets = (items: string[]) => <ul className="space-y-2 text-sm leading-7 text-gray-700">{items.map((x, i) => <li key={i} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-sm bg-accent" /><span>{x}</span></li>)}</ul>;
   const shown = data ? data[tab] : null;
-  const nav = [
+  const pages = shown ? Math.max(1, Math.ceil(shown.length / PROJECTS_PER_PAGE)) : 1;
+  const pageItems = shown ? shown.slice((Math.min(pp, pages) - 1) * PROJECTS_PER_PAGE, Math.min(pp, pages) * PROJECTS_PER_PAGE) : null;
+  // the sections of the page are tabs; a section without content has no tab
+  const tabs = [
     about || vision || goals.length > 0 ? ['about', t('inc.about')] : null, how.length > 0 ? ['how', t('inc.how')] : null, purpose ? ['purpose', t('inc.purpose')] : null, entrepreneurs ? ['entrepreneurs', t('inc.entrepreneurs')] : null,
-    ['projects', t('inc.projects')], opportunities.length > 0 ? ['opportunities', t('inc.opportunities')] : null, news.length > 0 ? ['news', t('inc.news')] : null, open ? ['apply', t('inc.submit')] : null,
+    ['projects', t('inc.projects')], opportunities.length > 0 ? ['opportunities', t('inc.opportunities')] : null, news.length > 0 ? ['news', t('inc.news')] : null,
   ].filter((x): x is string[] => !!x);
+  const current = tabs.some(([id]) => id === section) ? section : tabs[0][0];
+  const mayRequests = can('incubator.applications.read'), mayProjects = can('incubator.read'), maySettings = can('settings.read');
+  const goTab = (id: string) => { setSection(id); window.history.replaceState(null, '', `#${id}`); };
+  // an old link such as /incubator#projects opens that tab
+  useEffect(() => { const id = window.location.hash.replace('#', ''); if (id) setSection(id); }, []);
   const tabCls = (x: string) => `rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === x ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      {/* buttons for the people who manage the page (visitors see nothing) */}
+      <PageManageBar show={mayRequests || mayProjects || maySettings} settingsUrl={maySettings ? '/admin/settings?page=incubator&tab=settings' : undefined}>
+        {mayRequests && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=applications">📥 {t('adm.incubatorApplications')}</ManageLink>}
+        {can('incubator.create') && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=projects">＋ {t('inc.a.add')}</ManageLink>}
+        {mayProjects && <ManageLink to="/admin/settings?page=incubator&tab=projects">🚀 {t('adm.incubatorProjects')}</ManageLink>}
+      </PageManageBar>
+
       <header className="text-center">
         <h1 className="text-2xl font-extrabold text-secondary md:text-3xl">{t('nav.incubator')}</h1>
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-7 text-gray-600">{t('inc.subtitle')}</p>
@@ -118,18 +141,22 @@ export default function IncubatorPage() {
         {open && <div className="mt-5"><Button onClick={start}>{t('inc.submit')}</Button></div>}
       </header>
 
-      <nav aria-label={t('nav.incubator')} className="sticky top-0 z-10 flex gap-2 overflow-x-auto rounded-full bg-white/90 px-2 py-1.5 shadow-card ring-1 ring-line backdrop-blur">
-        {nav.map(([id, label]) => <a key={id} href={`#${id}`} onClick={id === 'apply' ? start : undefined} className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold text-secondary transition hover:bg-primary/10 hover:text-primary">{label}</a>)}
-      </nav>
+      {/* tabs: one per section, with the submit button always in reach */}
+      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-full bg-white/90 px-2 py-1.5 shadow-card ring-1 ring-line backdrop-blur">
+        <nav aria-label={t('nav.incubator')} role="tablist" className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+          {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${current === id ? 'bg-secondary text-white' : 'text-secondary hover:bg-primary/10 hover:text-primary'}`}>{label}</button>)}
+        </nav>
+        {open && <button type="button" onClick={start} className="hidden shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px sm:block">{t('inc.submit')}</button>}
+      </div>
 
-      {(about || vision || goals.length > 0) && (
-        <div id="about" className="grid scroll-mt-24 gap-5 md:grid-cols-2">
+      {current === 'about' && (about || vision || goals.length > 0) && (
+        <div className="grid gap-5 md:grid-cols-2">
           {(about || vision) && card(t('inc.about'), <div className="space-y-3 text-sm leading-8 text-gray-700">{about && <p className="whitespace-pre-line">{about}</p>}{vision && <p className="whitespace-pre-line rounded-xl bg-primary/5 p-3"><b className="text-secondary">{t('inc.vision')}: </b>{vision}</p>}</div>)}
           {goals.length > 0 && card(t('inc.goals'), bullets(goals))}
         </div>
       )}
 
-      {how.length > 0 && card(t('inc.how'), (
+      {current === 'how' && card(t('inc.how'), (
         <ol className="flex flex-wrap items-center gap-2">
           {how.map((x, i) => (
             <li key={i} className="flex items-center gap-2">
@@ -138,26 +165,25 @@ export default function IncubatorPage() {
             </li>
           ))}
         </ol>
-      ), 'how')}
+      ))}
 
-      {(purpose || entrepreneurs) && (
-        <div className="grid gap-5 md:grid-cols-2">
-          {purpose && card(t('inc.purpose'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{purpose}</p>, 'purpose')}
-          {entrepreneurs && card(t('inc.entrepreneurs'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{entrepreneurs}</p>, 'entrepreneurs')}
-        </div>
-      )}
+      {current === 'purpose' && card(t('inc.purpose'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{purpose}</p>)}
+      {current === 'entrepreneurs' && card(t('inc.entrepreneurs'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{entrepreneurs}</p>)}
 
-      <section id="projects" aria-label={t('inc.projects')} className="scroll-mt-24">
+      {current === 'projects' && (
+      <section aria-label={t('inc.projects')}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-extrabold text-secondary">{t('inc.projects')}</h2>
           <div className="flex gap-2" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === 'incubated'} className={tabCls('incubated')} onClick={() => setTab('incubated')}>{t('inc.incubated')}</button>
-            <button type="button" role="tab" aria-selected={tab === 'graduated'} className={tabCls('graduated')} onClick={() => setTab('graduated')}>{t('inc.graduated')}</button>
+            <button type="button" role="tab" aria-selected={tab === 'incubated'} className={tabCls('incubated')} onClick={() => { setTab('incubated'); setPp(1); }}>{t('inc.incubated')}</button>
+            <button type="button" role="tab" aria-selected={tab === 'graduated'} className={tabCls('graduated')} onClick={() => { setTab('graduated'); setPp(1); }}>{t('inc.graduated')}</button>
           </div>
         </div>
-        {!shown ? <p className="py-10 text-center text-sm text-gray-500">{t('app.loading')}</p> : shown.length === 0 ? <p className="rounded-2xl bg-white py-10 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t(tab === 'incubated' ? 'inc.noIncubated' : 'inc.noGraduated')}</p> : (
+        {!pageItems || !shown ? <p className="py-10 text-center text-sm text-gray-500">{t('app.loading')}</p> : shown.length === 0 ? <p className="rounded-2xl bg-white py-10 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t(tab === 'incubated' ? 'inc.noIncubated' : 'inc.noGraduated')}</p> : (
+          <>
+          <Pager page={Math.min(pp, pages)} totalPages={pages} onPage={setPp} className="mb-4" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((p) => (
+            {pageItems.map((p) => (
               <article key={p.id} className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
                 {p.imageUrl && <img src={p.imageUrl} alt="" className="h-40 w-full object-cover" />}
                 <div className="flex flex-1 flex-col p-5">
@@ -174,30 +200,31 @@ export default function IncubatorPage() {
               </article>
             ))}
           </div>
+          <Pager page={Math.min(pp, pages)} totalPages={pages} onPage={setPp} />
+          </>
         )}
       </section>
+      )}
 
-      {opportunities.length > 0 && card(t('inc.opportunities'), bullets(opportunities), 'opportunities')}
+      {current === 'opportunities' && card(t('inc.opportunities'), bullets(opportunities))}
 
-      {news.length > 0 && (
-        <section id="news" className="scroll-mt-24">
+      {current === 'news' && news.length > 0 && (
+        <section>
           <h2 className="mb-4 text-xl font-extrabold text-secondary">{t('inc.news')}</h2>
           <div className="grid gap-4 md:grid-cols-3">{news.map((n) => <NewsCard key={n.id} n={n} />)}</div>
           <div className="mt-3 text-center"><Link href={href(`/media?topics=${encodeURIComponent(topic)}`)} className="text-sm font-bold text-primary hover:underline">{t('tr.moreNews')} →</Link></div>
         </section>
       )}
 
-      {!showForm && (
+      {(
         <div className="rounded-2xl bg-gradient-to-r from-secondary to-primary p-6 text-center text-white shadow-card">
           <h2 className="text-lg font-extrabold">{t('inc.cta')}</h2>
           <div className="mt-4">{open ? <button type="button" onClick={start} className="rounded-full bg-accent px-6 py-2.5 font-extrabold text-secondary transition hover:brightness-110">{t('inc.submit')}</button> : <p className="text-sm font-semibold text-white/90">{t('inc.closed')}</p>}</div>
         </div>
       )}
 
-      {showForm && open && (
-        <div id="apply" ref={formRef} className="scroll-mt-24 rounded-2xl bg-white p-6 shadow-card ring-1 ring-accent">
-          <h2 className="mb-4 text-lg font-extrabold text-secondary">{t('inc.submit')}</h2>
-          {done ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">{t('inc.done')}{ref && <> {t('inc.reference')}: <b dir="ltr">{ref}</b></>}</p> : (
+      <Modal open={showForm && open} onClose={closeForm} title={t('inc.submit')} wide>
+        {done ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">{t('inc.done')}{ref && <> {t('inc.reference')}: <b dir="ltr">{ref}</b></>}</p> : (
             <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
               <Field label={t('inc.founder')} error={errors.founderName}><input className={inputCls} maxLength={150} autoComplete="name" aria-invalid={!!errors.founderName} value={f.founderName} onChange={(e) => set('founderName', e.target.value)} /></Field>
               <Field label={t('inc.project')} error={errors.projectName}><input className={inputCls} maxLength={190} aria-invalid={!!errors.projectName} value={f.projectName} onChange={(e) => set('projectName', e.target.value)} /></Field>
@@ -223,8 +250,7 @@ export default function IncubatorPage() {
               <div className="sm:col-span-2"><Button disabled={busy}>{busy ? t('app.sending') : t('tr.send')}</Button></div>
             </form>
           )}
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

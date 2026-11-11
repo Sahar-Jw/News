@@ -22,6 +22,8 @@ interface Ctx {
   page: G2tPage | null;
   /** opens the booking / inquiry window, optionally with a space or a package already chosen */
   openForm: (kind: Kind, pick?: { spaceId?: number; packageId?: number }) => void;
+  /** loads the page content again (after a manager changed something from the top bar) */
+  reload: () => void;
 }
 const G2tContext = createContext<Ctx | null>(null);
 
@@ -45,9 +47,10 @@ export function G2tProvider({ children }: { children: React.ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
 
+  const [rev, setRev] = useState(0);
   useEffect(() => {
-    api<G2tPage>('/public/get2trade', { params: { lang }, cache: 'no-store' }).then(setPage).catch(() => setPage({ isOpen: true, about: '', services: '', newsTopic: '', packages: [], spaces: [] }));
-  }, [lang]);
+    api<G2tPage>('/public/get2trade', { params: { lang }, cache: 'no-store' }).then(setPage).catch(() => setPage((p) => p ?? { isOpen: true, about: '', services: '', newsTopic: '', packages: [], spaces: [] }));
+  }, [lang, rev]);
 
   const openForm: Ctx['openForm'] = (kind, pick) => {
     setV({ ...EMPTY, spaceId: pick?.spaceId ? String(pick.spaceId) : '', packageId: pick?.packageId ? String(pick.packageId) : '' });
@@ -85,7 +88,7 @@ export function G2tProvider({ children }: { children: React.ReactNode }) {
   const cls = (bad?: string) => `${inputCls} ${bad ? 'border-red-500' : ''}`;
 
   return (
-    <G2tContext.Provider value={{ page, openForm }}>
+    <G2tContext.Provider value={{ page, openForm, reload: () => setRev((n) => n + 1) }}>
       {children}
       <Modal open={!!form} onClose={close} title={form?.kind === 'booking' ? t('gt.formBook') : t('gt.formInquiry')} wide closeOnBackdrop={!!done}>
         {done ? (
