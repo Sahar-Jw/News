@@ -80,6 +80,8 @@ export class CreateActivityDto {
   @IsOptional() @IsString() @MaxLength(100000) resultsAr?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) resultsEn?: string | null;
   @blankToNull() @IsOptional() @IsDateString() eventDate?: string | null;
+  /** last day of an initiative / activity that runs for several days (empty = a one-day item); never before eventDate */
+  @blankToNull() @IsOptional() @IsDateString() endDate?: string | null;
   /** a person / project line (success stories) or a partner (initiatives) */
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) subtitleAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) subtitleEn?: string | null;
@@ -100,6 +102,7 @@ export class UpdateActivityDto {
   @IsOptional() @IsString() @MaxLength(100000) resultsAr?: string | null;
   @IsOptional() @IsString() @MaxLength(100000) resultsEn?: string | null;
   @blankToNull() @IsOptional() @IsDateString() eventDate?: string | null;
+  @blankToNull() @IsOptional() @IsDateString() endDate?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) subtitleAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) subtitleEn?: string | null;
   @blankToNull() @IsOptional() @IsIn(EVENT_KINDS) eventType?: string | null;

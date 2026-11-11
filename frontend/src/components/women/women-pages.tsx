@@ -11,11 +11,31 @@ import { ContactForm } from '@/components/site/contact-form';
 import { ContactIcon, SocialIcon } from '@/components/site/icons';
 import type { CommitteeData, Activity, Member, NewsItem } from '@/components/site/committee-view';
 import { Paged } from './women-pager';
-import { ActGroup, DialogState, Dialogs, ItemTools, ManageButton, WomenAdminProvider, useCanManage, useTr } from './women-manage';
+import { WomenCalendar, type CalItem } from './women-calendar';
+import { ActGroup, DialogState, Dialogs, ItemTools, ManageButton, WomenAdminProvider, WomenManageBar, useCanManage, useTr } from './women-manage';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
-/** archived by hand, or already over (its date has passed) */
-const autoArchived = (a: Activity) => !!a.eventDate && a.eventDate < todayStr();
+/** last day of an item: its end date, or its (only) date when it has no end date */
+const lastDay = (a: Activity) => a.endDate || a.eventDate;
+/** already over: its last day has passed (an item with no date never ends by itself) */
+const autoArchived = (a: Activity) => !!lastDay(a) && lastDay(a)! < todayStr();
+type Status = 'upcoming' | 'ongoing' | 'finished' | null;
+/** upcoming: starts later · ongoing: started and not over · finished: over or archived by hand · null: no date (or a success story) */
+const statusOf = (a: Activity): Status => {
+  if (a.kind === 'success') return null;
+  if (a.archived || autoArchived(a)) return 'finished';
+  if (!a.eventDate) return null;
+  return a.eventDate > todayStr() ? 'upcoming' : 'ongoing';
+};
+const dayDiff = (from: string, to: string) => Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86400000);
+/** "3 days" / "3 أيام" */
+function useDaysText() {
+  const { lang } = useI18n();
+  return (n: number) => {
+    if (lang !== 'ar') return `${n} ${n === 1 ? 'day' : 'days'}`;
+    return n === 1 ? 'يوم واحد' : n === 2 ? 'يومان' : n <= 10 ? `${n} أيام` : `${n} يوماً`;
+  };
+}
 const isArchived = (a: Activity) => !!a.archived || autoArchived(a);
 const byDateDesc = (a: Activity, b: Activity) => (b.eventDate ?? '').localeCompare(a.eventDate ?? '') || b.id - a.id;
 
@@ -90,7 +110,15 @@ function ActCard({ a, tools, showType = true }: { a: Activity; tools?: React.Rea
   const tr = useTr();
   const { lang } = useI18n();
   const typeName = useTypeName();
+  const daysText = useDaysText();
   const [open, setOpen] = useState(false);
+  const status = statusOf(a);
+  const multi = !!a.endDate && !!a.eventDate && a.endDate !== a.eventDate && a.kind !== 'success';
+  // "3 days" for a range; for one that is running: how long is left
+  const extra = multi ? [
+    daysText(dayDiff(a.eventDate!, a.endDate!) + 1),
+    status === 'ongoing' ? (a.endDate === todayStr() ? tr('ينتهي اليوم', 'ends today') : tr(`متبقّي ${daysText(dayDiff(todayStr(), a.endDate!))}`, `${daysText(dayDiff(todayStr(), a.endDate!))} left`)) : '',
+  ].filter(Boolean).join(' · ') : '';
   const more = !!(a.body || a.goals || a.results);
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:ring-accent/60">
@@ -98,10 +126,12 @@ function ActCard({ a, tools, showType = true }: { a: Activity; tools?: React.Rea
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {showType && <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-semibold text-primary">{typeName(typeOf(a))}</span>}
-          {a.eventDate && (a.kind !== 'success' || a.eventDate <= todayStr()) && <span className="text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
-          {a.upcoming && a.kind !== 'success' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">{tr('قريباً', 'Upcoming')}</span>}
+          {a.eventDate && (a.kind !== 'success' || a.eventDate <= todayStr()) && <span className="text-gray-500">{fmtDay(lang, a.eventDate)}{multi ? ` – ${fmtDay(lang, a.endDate)}` : ''}</span>}
+          {status === 'upcoming' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">{tr('قريباً', 'Upcoming')}</span>}
+          {status === 'ongoing' && <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 font-semibold text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />{tr('جارٍ الآن', 'Ongoing')}</span>}
           {isArchived(a) && <span className="rounded-full bg-stone-200 px-2 py-0.5 text-stone-600">{tr('أرشيف', 'Archive')}</span>}
         </div>
+        {extra && <p className="text-xs font-semibold text-primary">{extra}</p>}
         <h3 className="text-lg font-extrabold leading-snug text-secondary">{a.title}</h3>
         {a.subtitle && <p className="text-sm font-semibold text-primary">{a.subtitle}</p>}
         {more && (
@@ -184,9 +214,9 @@ function EditActTools({ a, group, open }: { a: Activity; group: ActGroup; open: 
 }
 
 const PAGE_SIZE = 9;
-function ActGrid({ items, group, open, showType, resetKey }: { items: Activity[]; group: ActGroup; open: Open; showType?: boolean; resetKey?: string }) {
+function ActGrid({ items, group, open, showType, resetKey, cols = 'md:grid-cols-2 lg:grid-cols-3' }: { items: Activity[]; group: ActGroup; open: Open; showType?: boolean; resetKey?: string; cols?: string }) {
   if (!items.length) return <Empty />;
-  return <Paged items={items} size={PAGE_SIZE} resetKey={resetKey} render={(slice) => <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{slice.map((a) => <ActCard key={a.id} a={a} showType={showType} tools={<EditActTools a={a} group={group} open={open} />} />)}</div>} />;
+  return <Paged items={items} size={PAGE_SIZE} resetKey={resetKey} render={(slice) => <div className={`grid gap-5 ${cols}`}>{slice.map((a) => <ActCard key={a.id} a={a} showType={showType} tools={<EditActTools a={a} group={group} open={open} />} />)}</div>} />;
 }
 
 // ---------------------------------------------------------------- home: the committee as a small site of its own
@@ -297,6 +327,7 @@ function About({ c, open }: { c: CommitteeData; open: Open }) {
   const goals = lines(loc('women', 'goals'));
   return (
     <div className="space-y-6">
+      <WomenManageBar><ManageButton tone="ghost" onClick={() => open({ type: 'texts', part: 'about' })}>✎ {tr('تعديل «عن اللجنة»', 'Edit "About"')}</ManageButton></WomenManageBar>
       <PageTitle icon="💡" title={tr('عن اللجنة', 'About the committee')} />
       <Box>
         <Heading action={<ManageButton tone="ghost" onClick={() => open({ type: 'texts', part: 'about' })}>✎ {tr('تعديل', 'Edit')}</ManageButton>}>{tr('تعريف باللجنة', 'About the committee')}</Heading>
@@ -351,10 +382,34 @@ function Structure({ c, open }: { c: CommitteeData; open: Open }) {
   );
 }
 
+// ---------------------------------------------------------------- list + small calendar on the side
+const inDay = (a: Activity, day: string) => !!a.eventDate && a.eventDate <= day && lastDay(a)! >= day;
+/** the calendar sits beside the list on wide screens and above it on phones; a clicked day lists only the items running on that day */
+function WithCalendar({ all, day, setDay, children }: { all: Activity[]; day: string | null; setDay: (d: string | null) => void; children: React.ReactNode }) {
+  const tr = useTr();
+  const { lang } = useI18n();
+  const items: CalItem[] = all.filter((a) => a.eventDate).map((a) => ({ id: a.id, start: a.eventDate!, end: lastDay(a)!, live: !isArchived(a) }));
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+      <div className="min-w-0 space-y-6">
+        {day && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-primary/10 px-4 py-2.5 text-sm ring-1 ring-primary/20">
+            <span className="font-semibold text-secondary">{tr('عناصر يوم', 'Items on')} {fmtDay(lang, day)} ({all.filter((a) => inDay(a, day)).length})</span>
+            <button type="button" onClick={() => setDay(null)} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary ring-1 ring-line transition hover:ring-accent">✕ {tr('إلغاء التصفية', 'Clear')}</button>
+          </div>
+        )}
+        {children}
+      </div>
+      <aside className="order-first lg:sticky lg:top-24 lg:order-none"><WomenCalendar items={items} today={todayStr()} selected={day} onSelect={setDay} /></aside>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- initiatives & projects (current / archive)
 function Initiatives({ c, open }: { c: CommitteeData; open: Open }) {
   const tr = useTr();
   const [tab, setTab] = useState<'current' | 'archive'>('current');
+  const [day, setDay] = useState<string | null>(null);
   useAutoAdd('initiative', () => open({ type: 'activity', group: 'initiative' }));
   const all = [...c.initiatives].sort(byDateDesc);
   const current = all.filter((a) => !isArchived(a));
@@ -362,11 +417,13 @@ function Initiatives({ c, open }: { c: CommitteeData; open: Open }) {
   return (
     <div className="space-y-6">
       <PageTitle icon="🌱" title={tr('المبادرات والمشاريع', 'Initiatives & projects')} hint={tr('ما تطلقه اللجنة من مبادرات ومشاريع: تفاصيل كل واحدة وأهدافها ونتائجها', 'What the committee launches: the details, goals and results of each')} />
+      <WithCalendar all={all} day={day} setDay={setDay}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={tab} onChange={(k) => setTab(k as 'current' | 'archive')} tabs={[{ key: 'current', label: tr('الحالية', 'Current'), count: current.length }, { key: 'archive', label: tr('الأرشيف', 'Archive'), count: past.length }]} />
+        <Tabs value={tab} onChange={(k) => { setDay(null); setTab(k as 'current' | 'archive'); }} tabs={[{ key: 'current', label: tr('الحالية', 'Current'), count: current.length }, { key: 'archive', label: tr('الأرشيف', 'Archive'), count: past.length }]} />
         <ManageButton onClick={() => open({ type: 'activity', group: 'initiative' })}>＋ {tr('إضافة مبادرة / مشروع', 'Add an initiative / project')}</ManageButton>
       </div>
-      <ActGrid items={tab === 'current' ? current : past} group="initiative" open={open} showType={false} resetKey={tab} />
+      <ActGrid items={day ? all.filter((a) => inDay(a, day)) : tab === 'current' ? current : past} group="initiative" open={open} showType={false} resetKey={`${tab}|${day}`} cols="md:grid-cols-2 xl:grid-cols-3" />
+      </WithCalendar>
     </div>
   );
 }
@@ -377,6 +434,7 @@ function Activities({ c, open }: { c: CommitteeData; open: Open }) {
   const typeName = useTypeName();
   const [tab, setTab] = useState<'current' | 'archive'>('current');
   const [type, setType] = useState('all');
+  const [day, setDay] = useState<string | null>(null);
   useAutoAdd('activity', () => open({ type: 'activity', group: 'activity' }));
   const all = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? [])].sort(byDateDesc);
   const pool = all.filter((a) => (tab === 'current' ? !isArchived(a) : isArchived(a)));
@@ -385,12 +443,14 @@ function Activities({ c, open }: { c: CommitteeData; open: Open }) {
   return (
     <div className="space-y-6">
       <PageTitle icon="📅" title={tr('الأنشطة والفعاليات', 'Activities & events')} hint={tr('الاجتماعات والزيارات واللقاءات وورش العمل والمشاركات في المعارض', 'Meetings, visits, gatherings, workshops and exhibition participation')} />
+      <WithCalendar all={all} day={day} setDay={setDay}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={tab} onChange={(k) => setTab(k as 'current' | 'archive')} tabs={[{ key: 'current', label: tr('الحالية والقادمة', 'Current & upcoming'), count: all.filter((a) => !isArchived(a)).length }, { key: 'archive', label: tr('الأرشيف', 'Archive'), count: all.filter(isArchived).length }]} />
+        <Tabs value={tab} onChange={(k) => { setDay(null); setTab(k as 'current' | 'archive'); }} tabs={[{ key: 'current', label: tr('الحالية والقادمة', 'Current & upcoming'), count: all.filter((a) => !isArchived(a)).length }, { key: 'archive', label: tr('الأرشيف', 'Archive'), count: all.filter(isArchived).length }]} />
         <ManageButton onClick={() => open({ type: 'activity', group: 'activity' })}>＋ {tr('إضافة نشاط / فعالية', 'Add an activity / event')}</ManageButton>
       </div>
-      <Tabs value={type} onChange={setType} tabs={[{ key: 'all', label: tr('الكل', 'All'), count: pool.length }, ...types.map((k) => ({ key: k, label: typeName(k), count: pool.filter((a) => typeOf(a) === k).length }))]} />
-      <ActGrid items={shown} group="activity" open={open} resetKey={`${tab}|${type}`} />
+      <Tabs value={type} onChange={(k) => { setDay(null); setType(k); }} tabs={[{ key: 'all', label: tr('الكل', 'All'), count: pool.length }, ...types.map((k) => ({ key: k, label: typeName(k), count: pool.filter((a) => typeOf(a) === k).length }))]} />
+      <ActGrid items={day ? all.filter((a) => inDay(a, day)) : shown} group="activity" open={open} resetKey={`${tab}|${type}|${day}`} cols="md:grid-cols-2 xl:grid-cols-3" />
+      </WithCalendar>
     </div>
   );
 }

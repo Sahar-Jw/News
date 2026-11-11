@@ -11,10 +11,11 @@ import { ContactIcon, SocialIcon } from './icons';
 import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
 import { WomenPages } from '@/components/women/women-pages';
 import { Paged } from '@/components/women/women-pager';
+import { WomenManageBar } from '@/components/women/women-manage';
 import { WomenError, WomenLoader, WomenNotFound } from '@/components/women/women-states';
 
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
-export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
+export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; endDate?: string | null; status?: 'upcoming' | 'ongoing' | 'finished' | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
 export interface NewsItem { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }
 interface Video { id: number; title: string; youtubeId: string; cover: string | null }
 interface Album { id: number; title: string; cover: string | null; count: number }
@@ -95,7 +96,7 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
         <li key={a.id} className="rounded-xl border border-line p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{t(`cm.act.${a.kind}`)}</span>
-            {a.eventDate && (a.kind !== 'success' || a.eventDate <= new Date().toISOString().slice(0, 10)) && <span className="text-xs text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
+            {a.eventDate && (a.kind !== 'success' || a.eventDate <= new Date().toISOString().slice(0, 10)) && <span className="text-xs text-gray-500">{fmtDay(lang, a.eventDate)}{a.endDate && a.endDate !== a.eventDate && a.kind !== 'success' ? ` – ${fmtDay(lang, a.endDate)}` : ''}</span>}
             {a.upcoming && a.kind !== 'success' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t('cm.upcoming')}</span>}
           </div>
           <h3 className="mt-2 font-bold text-secondary">{a.title}</h3>
@@ -173,7 +174,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const goals = loc('women', 'goals').split(/\r?\n/).map((goal) => goal.trim()).filter(Boolean);
   const structure = loc('women', 'structure');
   const today = new Date().toISOString().slice(0, 10);
-  const isArchived = (activity: Activity) => !!activity.eventDate && activity.eventDate < today;
+  const isArchived = (activity: Activity) => !!activity.eventDate && (activity.endDate || activity.eventDate) < today;
   const womenActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? [])].filter((activity) => !isArchived(activity));
   const womenInitiatives = c.initiatives.filter((activity) => !isArchived(activity));
   const archived = allActivities.filter(isArchived);
@@ -189,6 +190,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
     return (
       <div className="women-theme">
         <div className="mx-auto max-w-6xl px-4 py-6">
+          {womenPage === 'home' && <div className="mb-5"><WomenManageBar quickAdd /></div>}
           {womenPage === 'home' && (
             <header className="relative mb-6 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
               <div className="pointer-events-none absolute -top-28 end-[-5rem] h-80 w-80 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />

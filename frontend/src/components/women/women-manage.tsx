@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -7,6 +8,7 @@ import { useToast } from '@/components/ui/toast';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { RichEditor } from '@/components/admin/rich-editor';
 import { createContext, useContext } from 'react';
+import { womenPageHref } from '@/lib/women-menu';
 
 /** the committee being edited and what to do after a change (set by the committee page) */
 const AdminCtx = createContext<{ id: number; reload: () => void }>({ id: 0, reload: () => {} });
@@ -22,7 +24,7 @@ export function useTr() {
 export const useCanManage = () => useAuth().can('committees.update');
 
 interface FullAct {
-  id: number; kind: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; eventDate: string | null; subtitleAr: string; subtitleEn: string;
+  id: number; kind: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; eventDate: string | null; endDate: string | null; subtitleAr: string; subtitleEn: string;
   goalsAr: string; goalsEn: string; resultsAr: string; resultsEn: string; eventType: string | null; archived: boolean; imageUrl: string | null;
 }
 interface FullMember { id: number; role: string; nameAr: string; nameEn: string; titleAr: string; titleEn: string; photoUrl: string | null; sortOrder: number }
@@ -64,7 +66,11 @@ function ImagePick({ current, file, setFile, remove, setRemove, label }: { curre
 // ---------------------------------------------------------------- activities: initiatives, activities & events, success stories
 export type ActGroup = 'initiative' | 'activity' | 'success';
 const GROUP_KINDS: Record<ActGroup, string[]> = { initiative: ['initiative'], activity: ['meeting', 'visit', 'event'], success: ['success'] };
-const EMPTY_ACT = { kind: 'event', eventType: '', titleAr: '', titleEn: '', subtitleAr: '', subtitleEn: '', eventDate: '', bodyAr: '', bodyEn: '', goalsAr: '', goalsEn: '', resultsAr: '', resultsEn: '', archived: false };
+const EMPTY_ACT = { kind: 'event', eventType: '', titleAr: '', titleEn: '', subtitleAr: '', subtitleEn: '', eventDate: '', endDate: '', bodyAr: '', bodyEn: '', goalsAr: '', goalsEn: '', resultsAr: '', resultsEn: '', archived: false };
+
+/** today as yyyy-mm-dd in the visitor's own time zone (what a person means by "today" when picking a date) */
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dayCount = (a: string, b: string) => Math.round((new Date(`${b}T00:00:00Z`).getTime() - new Date(`${a}T00:00:00Z`).getTime()) / 86400000) + 1;
 
 /** Add (no `editId`) or edit one initiative / activity / success story, in a window over the page. */
 export function ActivityDialog({ group, editId, defaultKind, onClose }: { group: ActGroup; editId?: number; defaultKind?: string; onClose: () => void }) {
@@ -73,7 +79,7 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
   const { data, reload } = useWomen();
   const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const kinds = GROUP_KINDS[group];
-  const [f, setF] = useState({ ...EMPTY_ACT, kind: defaultKind && kinds.includes(defaultKind) ? defaultKind : kinds[0] });
+  const [f, setF] = useState({ ...EMPTY_ACT, kind: defaultKind && kinds.includes(defaultKind) ? defaultKind : kinds[0], eventDate: !editId && group !== 'success' ? localToday() : '' }); // a new initiative / activity starts today by default
   const [loaded, setLoaded] = useState(!editId);
   const [image, setImage] = useState<File | null>(null);
   const [current, setCurrent] = useState<string | null>(null);
@@ -85,7 +91,7 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
     loadFull(data.id).then((full) => {
       const a = full.activities.find((x) => x.id === editId);
       if (!a) { toast(tr('العنصر غير موجود', 'Item not found'), 'err'); onClose(); return; }
-      setF({ kind: a.kind, eventType: a.eventType ?? '', titleAr: a.titleAr, titleEn: a.titleEn ?? '', subtitleAr: a.subtitleAr ?? '', subtitleEn: a.subtitleEn ?? '', eventDate: a.eventDate ?? '', bodyAr: a.bodyAr ?? '', bodyEn: a.bodyEn ?? '', goalsAr: a.goalsAr ?? '', goalsEn: a.goalsEn ?? '', resultsAr: a.resultsAr ?? '', resultsEn: a.resultsEn ?? '', archived: a.archived });
+      setF({ kind: a.kind, eventType: a.eventType ?? '', titleAr: a.titleAr, titleEn: a.titleEn ?? '', subtitleAr: a.subtitleAr ?? '', subtitleEn: a.subtitleEn ?? '', eventDate: a.eventDate ?? '', endDate: a.endDate ?? '', bodyAr: a.bodyAr ?? '', bodyEn: a.bodyEn ?? '', goalsAr: a.goalsAr ?? '', goalsEn: a.goalsEn ?? '', resultsAr: a.resultsAr ?? '', resultsEn: a.resultsEn ?? '', archived: a.archived });
       setCurrent(a.imageUrl);
       setLoaded(true);
     }).catch((e) => { toast(e.message, 'err'); onClose(); });
@@ -105,7 +111,12 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
       const fd = new FormData();
       fd.set('kind', f.kind);
       for (const k of ['titleAr', 'titleEn', 'subtitleAr', 'subtitleEn', 'bodyAr', 'bodyEn', 'goalsAr', 'goalsEn', 'resultsAr', 'resultsEn'] as const) fd.set(k, f[k]);
-      fd.set('eventDate', isStory && f.eventDate > new Date().toISOString().slice(0, 10) ? '' : f.eventDate);
+      const start = isStory && f.eventDate > new Date().toISOString().slice(0, 10) ? '' : f.eventDate;
+      const end = isStory ? '' : f.endDate;
+      if (end && !start) { toast(tr('أدخلي تاريخ البدء قبل تاريخ الانتهاء', 'Enter the start date before the end date'), 'err'); setBusy(false); return; }
+      if (end && end < start) { toast(tr('تاريخ الانتهاء لا يمكن أن يسبق تاريخ البدء', 'The end date cannot be before the start date'), 'err'); setBusy(false); return; }
+      fd.set('eventDate', start);
+      fd.set('endDate', end);
       fd.set('eventType', f.kind === 'event' ? f.eventType : '');
       fd.set('archived', String(f.archived));
       if (image) fd.set('image', image);
@@ -141,7 +152,22 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
                 </select>
               </Field>
             )}
-            <Field label={isStory ? tr('التاريخ (اختياري، لا يمكن أن يكون في المستقبل)', 'Date (optional, cannot be in the future)') : tr('التاريخ', 'Date')}><input type="date" className={inputCls} value={f.eventDate} max={isStory ? new Date().toISOString().slice(0, 10) : undefined} onChange={(e) => set('eventDate', e.target.value)} /></Field>
+            {isStory
+              ? <Field label={tr('التاريخ (اختياري، لا يمكن أن يكون في المستقبل)', 'Date (optional, cannot be in the future)')}><input type="date" className={inputCls} value={f.eventDate} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set('eventDate', e.target.value)} /></Field>
+              : <>
+                <Field label={tr('تاريخ البدء', 'Start date')}><input type="date" className={inputCls} value={f.eventDate} onChange={(e) => setF((s) => ({ ...s, eventDate: e.target.value, endDate: s.endDate && e.target.value && s.endDate < e.target.value ? '' : s.endDate }))} /></Field>
+                <Field label={tr('تاريخ الانتهاء (اختياري)', 'End date (optional)')}>
+                  <input type="date" className={inputCls} value={f.endDate} min={f.eventDate || undefined} disabled={!f.eventDate} onChange={(e) => set('endDate', e.target.value)} />
+                  <span className={`mt-1.5 flex items-start gap-1.5 rounded-lg px-2.5 py-1.5 text-xs leading-5 ${f.endDate ? 'bg-emerald-50 text-emerald-800' : 'bg-primary/10 text-secondary'}`}>
+                    <span aria-hidden="true">{f.endDate ? '📆' : 'ℹ️'}</span>
+                    <span>{!f.eventDate
+                      ? tr('اختاري تاريخ البدء أولاً.', 'Pick the start date first.')
+                      : f.endDate
+                        ? tr(`المدة ${dayCount(f.eventDate, f.endDate) === 1 ? 'يوم واحد' : `${dayCount(f.eventDate, f.endDate)} يوماً`}. بعد آخر يوم ينتقل تلقائياً إلى الأرشيف.`, `Runs for ${dayCount(f.eventDate, f.endDate)} ${dayCount(f.eventDate, f.endDate) === 1 ? 'day' : 'days'}. After the last day it moves to the archive by itself.`)
+                        : tr('إن لم تضيفي تاريخ انتهاء فسيُعتبر ليوم واحد فقط.', 'If you do not add an end date, it counts as a one-day item.')}</span>
+                  </span>
+                </Field>
+              </>}
           </div>
           <Field label={`${tr('العنوان', 'Title')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('title')] as string} onChange={(e) => set(L('title'), e.target.value)} /></Field>
           {(isInit || isStory) && <Field label={`${isStory ? tr('صاحبة التجربة / المشروع', 'Woman / project') : tr('الجهة أو الشريك (اختياري)', 'Partner (optional)')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('subtitle')] as string} onChange={(e) => set(L('subtitle'), e.target.value)} /></Field>}
@@ -328,6 +354,37 @@ export function ManageButton({ onClick, children, tone = 'primary' }: { onClick:
   const can = useCanManage();
   if (!can) return null;
   return <button type="button" onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold shadow-sm transition ${tone === 'primary' ? 'bg-primary text-white hover:brightness-110' : 'border border-primary/40 bg-white text-primary hover:bg-primary/5'}`}>{children}</button>;
+}
+
+/**
+ * Bar at the top of the committee's main page and "About" page, only for people who may manage the page
+ * (the same permissions as the "Manage page" entry of the avatar menu). `children` = extra buttons of the page.
+ */
+export function WomenManageBar({ quickAdd = false, children }: { quickAdd?: boolean; children?: React.ReactNode }) {
+  const tr = useTr();
+  const { href } = useI18n();
+  const { can } = useAuth();
+  if (!can('committees.read', 'settings.read')) return null;
+  const adminUrl = can('committees.read') ? '/admin/settings?page=women&tab=content' : '/admin/settings?page=women&tab=settings';
+  const chip = 'inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-white px-4 py-2 text-sm font-bold text-primary shadow-sm transition hover:bg-primary/10';
+  const quick = [
+    { slug: 'initiatives', add: 'initiative', label: tr('＋ مبادرة / مشروع', '＋ Initiative / project') },
+    { slug: 'activities', add: 'activity', label: tr('＋ نشاط / فعالية', '＋ Activity / event') },
+    { slug: 'success', add: 'success', label: tr('＋ قصة نجاح', '＋ Success story') },
+  ];
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-card ring-1 ring-accent/40">
+      <span className="flex items-center gap-2 text-sm font-bold text-secondary">
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10" aria-hidden="true">⚙</span>
+        {tr('أدوات إدارة الصفحة', 'Page controls')}
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        {children}
+        {quickAdd && can('committees.update') && quick.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className={chip}>{x.label}</Link>)}
+        <Link href={href(adminUrl)} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-4 py-2 text-sm font-bold text-white shadow-sm ring-1 ring-accent/50 transition hover:brightness-110">⚙ {tr('إدارة الصفحة', 'Manage page')}</Link>
+      </div>
+    </div>
+  );
 }
 
 /** edit / archive / delete for one initiative, activity, story or member */

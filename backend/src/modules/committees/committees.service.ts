@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Not, Repository } from 'typeorm';
 import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
@@ -26,6 +26,29 @@ const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE :
 const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
 const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE, CC.COMMITTEE_SUCCESS] as string[];
 const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
+/**
+ * Start / end date of an initiative or activity.
+ *  - the start date is the first day, the end date (optional) the last: no end date = a one-day item
+ *  - an end date needs a start date and cannot be before it
+ *  - a success story has no end date (and never a future date, see storyDate)
+ */
+const normDates = (kind: string, start?: string | null, end?: string | null): { eventDate: string | null; endDate: string | null } => {
+  const eventDate = storyDate(kind, start);
+  let endDate = kind === 'success' || !end ? null : end.slice(0, 10);
+  if (endDate && !eventDate) throw new BadRequestException('أدخل تاريخ البدء قبل تاريخ الانتهاء');
+  if (endDate && eventDate && endDate < eventDate) throw new BadRequestException('تاريخ الانتهاء لا يمكن أن يسبق تاريخ البدء');
+  if (endDate === eventDate) endDate = null; // same day = one-day item
+  return { eventDate, endDate };
+};
+type ActivityStatus = 'upcoming' | 'ongoing' | 'finished' | null;
+/** upcoming: starts later · ongoing: started and not over (a one-day item is "ongoing" on its day) · finished: over, or archived by hand */
+const activityStatus = (kind: string, start: string | null, end: string | null, archived: boolean, t: string): ActivityStatus => {
+  if (kind === 'success') return null;
+  if (archived) return 'finished';
+  if (!start) return null;
+  if (start > t) return 'upcoming';
+  return (end ?? start) >= t ? 'ongoing' : 'finished';
+};
 /** A success story is never upcoming: it has no date, or a date that is today or earlier. */
 const storyDate = (kind: string, d?: string | null) => { const v = d ? d.slice(0, 10) : null; return kind === 'success' && v && v > today() ? null : v; };
 const activityKind = (code: string) => code.replace(/^COMMITTEE_/, '').toLowerCase() as ActivityKind;
@@ -78,7 +101,7 @@ export class CommitteesService {
     return {
       id: r.id, committeeId: Number(r.x.parentId), kind: activityKind(r.code), titleAr: r.title, titleEn: s(r.x.titleEn),
       bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn), goalsAr: s(r.x.goalsAr), goalsEn: s(r.x.goalsEn),
-      resultsAr: s(r.x.resultsAr), resultsEn: s(r.x.resultsEn), eventDate: (r.x.eventDate ?? null) as string | null,
+      resultsAr: s(r.x.resultsAr), resultsEn: s(r.x.resultsEn), eventDate: (r.x.eventDate ?? null) as string | null, endDate: (r.x.endDate ?? null) as string | null,
       subtitleAr: s(r.x.subtitleAr), subtitleEn: s(r.x.subtitleEn), eventType: (r.x.eventType ?? null) as string | null, archived: r.x.archived === true, imageUrl: this.storage.url(r.images[0] ?? null),
     };
   }
@@ -235,7 +258,7 @@ export class CommitteesService {
           parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn),
           goalsAr: sanitizeRichText(dto.goalsAr), goalsEn: sanitizeRichText(dto.goalsEn),
           resultsAr: sanitizeRichText(dto.resultsAr), resultsEn: sanitizeRichText(dto.resultsEn),
-          eventDate: storyDate(dto.kind, dto.eventDate), ...this.activityExtras(dto), archived: dto.archived ?? false,
+          ...normDates(dto.kind, dto.eventDate, dto.endDate), ...this.activityExtras(dto), archived: dto.archived ?? false,
         },
       });
       await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
@@ -249,6 +272,15 @@ export class CommitteesService {
   async updateActivity(id: number, dto: UpdateActivityDto, image: Express.Multer.File | undefined, actor: AuthUser) {
     const cur = await this.store.get(id, ACTIVITY_CODES);
     if (!cur) throw new NotFoundException('النشاط غير موجود');
+    // dates: only recomputed when one of them (or the kind) is sent; what is not sent keeps its stored value
+    const touched = dto.eventDate !== undefined || dto.endDate !== undefined || dto.kind !== undefined;
+    const dates = touched
+      ? normDates(
+        dto.kind ?? activityKind(cur.code),
+        dto.eventDate === undefined ? (cur.x.eventDate as string | null) ?? null : dto.eventDate,
+        dto.endDate === undefined ? (cur.x.endDate as string | null) ?? null : dto.endDate,
+      )
+      : { eventDate: undefined, endDate: undefined };
     const newPath = image ? await this.storage.saveImage(image, 'committees', 1600) : null;
     const oldPath = cur.images[0] ?? null;
     try {
@@ -261,7 +293,7 @@ export class CommitteesService {
           goalsEn: dto.goalsEn === undefined ? undefined : sanitizeRichText(dto.goalsEn),
           resultsAr: dto.resultsAr === undefined ? undefined : sanitizeRichText(dto.resultsAr),
           resultsEn: dto.resultsEn === undefined ? undefined : sanitizeRichText(dto.resultsEn),
-          eventDate: dto.eventDate === undefined ? undefined : storyDate(dto.kind ?? activityKind(cur.code), dto.eventDate), ...this.activityExtras(dto),
+          ...dates, ...this.activityExtras(dto),
         },
       });
       await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
@@ -352,7 +384,9 @@ export class CommitteesService {
       id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en),
       goals: pick(r.x.goalsAr, r.x.goalsEn, en), results: pick(r.x.resultsAr, r.x.resultsEn, en),
       subtitle: pick(v.subtitleAr, v.subtitleEn, en), eventType: v.eventType, archived: v.archived, image: v.imageUrl,
-      eventDate: v.eventDate, upcoming: v.kind !== 'success' && !!v.eventDate && v.eventDate >= t && !v.archived,
+      eventDate: v.eventDate, endDate: v.endDate, status: activityStatus(v.kind, v.eventDate, v.endDate, v.archived, t),
+      // not over yet (upcoming or ongoing): what the home page and the "current" tabs show
+      upcoming: ['upcoming', 'ongoing'].includes(activityStatus(v.kind, v.eventDate, v.endDate, v.archived, t) ?? ''),
     });
     let newsList: unknown[] = [];
     if (newsIds.length || newsCategories?.length) {
