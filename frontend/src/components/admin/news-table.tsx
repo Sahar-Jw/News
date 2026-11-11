@@ -8,7 +8,9 @@ import { fmtDate, fmtNum, newsPerm } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { Button, Modal } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useNewsSaved } from '@/lib/news-events';
 import { Col, DataTable } from './data-table';
+import { NewsFormDialog } from './news-form';
 
 interface Row { id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[]; publishAt: string | null; viewCount: number; status: string; language: string; visibility: string }
 
@@ -18,6 +20,9 @@ export function NewsTable({ section }: { section: string }) {
   const { can } = useAuth();
   const toast = useToast();
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  useNewsSaved(() => setRefreshKey((n) => n + 1));
   const special = section !== 'regular';
   const sp = special ? `&section=${section}` : '';
   // each action is checked against THIS section only (regular news: news.<action>, a section: news.<action>.<section>)
@@ -62,7 +67,8 @@ export function NewsTable({ section }: { section: string }) {
         { key: 'visibility', label: t('f.visibility'), options: ['public', 'members'].map((s) => ({ value: s, label: t(`v.${s}`) })) },
       ]}
       bulkDelete={{ path: '/admin/news/bulk-delete', can: may('delete') }}
-      toolbar={may('create') && <Link href={href(`/admin/news/edit?${special ? `section=${section}` : 'new=1'}`)}><Button>＋ {t('app.add')}</Button></Link>}
+      refreshKey={refreshKey}
+      toolbar={may('create') && <Button type="button" onClick={() => setAdding(true)}>＋ {t('app.add')}</Button>}
       rowActions={(r, reload) => (
         <div className="flex gap-1">
           {may('update') && <Link href={href(`/admin/news/edit?id=${r.id}${sp}`)}><Button size="sm" variant="outline">{t('app.edit')}</Button></Link>}
@@ -71,6 +77,7 @@ export function NewsTable({ section }: { section: string }) {
         </div>
       )}
     />
+    {adding && <NewsFormDialog section={special ? section : undefined} onClose={() => setAdding(false)} />}
     <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
       <p className="mb-5">{t('tbl.confirmDelete')}</p>
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={removeNews}>{t('app.delete')}</Button></div>

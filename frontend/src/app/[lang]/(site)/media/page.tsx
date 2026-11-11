@@ -9,7 +9,8 @@ import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { useSite } from '@/components/site/site-context';
 import { AllNews } from '@/components/site/news-all';
-import { addNewsHref, newsCategoryKeyOf } from '@/lib/news-categories';
+import { newsCategoryKeyOf } from '@/lib/news-categories';
+import { NewsFormDialog } from '@/components/admin/news-form';
 
 const TABS = ['news', 'press', 'kit'] as const;
 type Tab = (typeof TABS)[number];
@@ -140,16 +141,21 @@ function ManageBar() {
   // a category chip is selected: "add news" is then pinned to that category (it cannot be changed in the form)
   const cat = useSearchParams().get('category') ?? '';
   const catKey = newsCategoryKeyOf(cat);
+  const [adding, setAdding] = useState(false);
+  const chip = 'rounded-full bg-primary px-3 py-1 text-xs font-bold text-white hover:brightness-110';
   const items = [
-    can('news.create') && { to: catKey ? addNewsHref(catKey, `/media?category=${encodeURIComponent(cat)}`) : '/admin/news/edit', label: `＋ ${t('md.addNews')}` },
-    can('documents.create', 'documents.update') && { to: '/admin/settings?page=documents&tab=documents', label: `＋ ${t('md.addDoc')}` },
-    can('settings.update') && { to: '/admin/settings?page=media&tab=settings', label: `⚙ ${t('md.kitSettings')}` },
-  ].filter(Boolean) as { to: string; label: string }[];
+    can('news.create') && { key: 'news', onClick: () => setAdding(true), label: `＋ ${t('md.addNews')}` },
+    can('documents.create', 'documents.update') && { key: 'doc', to: '/admin/settings?page=documents&tab=documents', label: `＋ ${t('md.addDoc')}` },
+    can('settings.update') && { key: 'kit', to: '/admin/settings?page=media&tab=settings', label: `⚙ ${t('md.kitSettings')}` },
+  ].filter(Boolean) as { key: string; label: string; to?: string; onClick?: () => void }[];
   if (!items.length) return null;
   return (
     <div className="mb-6 flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3">
       <span className="text-xs font-bold text-primary">{t('md.manage')}:</span>
-      {items.map((x) => <Link key={x.to} href={href(x.to)} className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-white hover:brightness-110">{x.label}</Link>)}
+      {items.map((x) => x.to
+        ? <Link key={x.key} href={href(x.to)} className={chip}>{x.label}</Link>
+        : <button key={x.key} type="button" onClick={x.onClick} className={chip}>{x.label}</button>)}
+      {adding && <NewsFormDialog category={catKey} onClose={() => setAdding(false)} />}
     </div>
   );
 }

@@ -12,7 +12,14 @@ import { useToast } from '@/components/ui/toast';
 import { parseYoutubeId } from '@/lib/youtube';
 import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { RichEditor } from './rich-editor';
-import { isNewsCategoryKey, newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
+import { NewsMainCategoryKey, isNewsCategoryKey, newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
+import { announceNewsSaved } from '@/lib/news-events';
+
+/**
+ * "Add news" shown in a window on top of the current page instead of the separate /admin/news/edit page.
+ * `category` pins a fixed media-center category (as on the board / committees / training pages), `section` a special section.
+ */
+export interface NewsDialogProps { category?: NewsMainCategoryKey; section?: string; onClose: () => void }
 
 interface Existing {
   id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[] | null; body: string | null;
@@ -21,16 +28,17 @@ interface Existing {
 interface NewImg { file: File; url: string }
 const NEW = '__new__';
 
-function Form() {
+function Form({ dialog }: { dialog?: NewsDialogProps }) {
   const { t, href, lang, dir } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const sp = useSearchParams();
-  const id = sp.get('id');
-  const sectionParam = sp.get('section') ?? '';
-  const categoryParam = sp.get('category') ?? '';
-  const fromParam = sp.get('from') ?? '';
+  // in a window the address of the page behind it is not the form's business (it may have its own ?id= or ?category=)
+  const id = dialog ? null : sp.get('id');
+  const sectionParam = dialog ? dialog.section ?? '' : sp.get('section') ?? '';
+  const categoryParam = dialog ? dialog.category ?? '' : sp.get('category') ?? '';
+  const fromParam = dialog ? '' : sp.get('from') ?? '';
   // where to go after saving: only a path inside this site
   const returnTo = fromParam.startsWith('/') && !fromParam.startsWith('//') ? fromParam : '';
   const isEdit = !!id;
@@ -167,6 +175,13 @@ function Form() {
     try {
       await api(isEdit ? `/admin/news/${id}` : '/admin/news', { method: isEdit ? 'PATCH' : 'POST', form: fd });
       toast(t('app.saved'));
+      if (dialog) {
+        // stay on the page the window was opened from: close it and let the page reload its list
+        announceNewsSaved();
+        router.refresh();
+        dialog.onClose();
+        return;
+      }
       router.push(href(returnTo || (special ? `/admin/sections/${section}` : '/admin/news')));
     } catch (err: any) { toast(err.message, 'err'); } finally { setBusy(false); }
   };
@@ -180,11 +195,13 @@ function Form() {
   // editing needs the update permission of the record's own section (regular news: news.update)
   if (isEdit && !can(newsPerm('update', section))) return <Center>{t('adm.noAccess')}</Center>;
   return (
-    <form onSubmit={submit} className="mx-auto max-w-5xl space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{special ? t(`section.${section}`) : t('adm.news')} — {isEdit ? t('app.edit') : t('app.add')}</h1>
-        <Link href={back} className="text-sm text-primary">← {t('app.back')}</Link>
-      </div>
+    <form onSubmit={submit} className={dialog ? 'space-y-5' : 'mx-auto max-w-5xl space-y-5'}>
+      {!dialog && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{special ? t(`section.${section}`) : t('adm.news')} — {isEdit ? t('app.edit') : t('app.add')}</h1>
+          <Link href={back} className="text-sm text-primary">← {t('app.back')}</Link>
+        </div>
+      )}
 
       <div className="grid gap-4 rounded-xl border bg-white p-5 md:grid-cols-2">
         <div className="md:col-span-2"><Field label={t('f.title')}><input required maxLength={255} className={inputCls} value={f.title} onChange={(e) => set('title', e.target.value)} /></Field></div>
@@ -314,7 +331,9 @@ function Form() {
       <div className="flex gap-3">
         <Button disabled={busy}>{busy ? t('app.loading') : t('app.save')}</Button>
         <Button type="button" variant="outline" onClick={() => setPreview(true)}>{t('f.preview')}</Button>
-        <Link href={back}><Button type="button" variant="ghost">← {t('app.back')}</Button></Link>
+        {dialog
+          ? <Button type="button" variant="ghost" onClick={dialog.onClose}>{t('app.cancel')}</Button>
+          : <Link href={back}><Button type="button" variant="ghost">← {t('app.back')}</Button></Link>}
       </div>
 
       <Modal open={!!zoom} onClose={() => setZoom('')} wide><img src={zoom} alt="" className="mx-auto max-h-[75vh] rounded" /></Modal>
@@ -332,4 +351,15 @@ function Form() {
 
 export default function NewsForm() {
   return <Suspense fallback={<Center><Spinner /></Center>}><Form /></Suspense>;
+}
+
+/** The "add news" form in a window (see NewsDialogProps). Render it only while the window should be open. */
+export function NewsFormDialog(props: NewsDialogProps) {
+  const { t } = useI18n();
+  const special = !!props.section;
+  return (
+    <Modal open onClose={props.onClose} title={`${special ? t(`section.${props.section}`) : t('adm.news')} — ${t('app.add')}`} wide closeOnBackdrop={false}>
+      <Suspense fallback={<Center><Spinner /></Center>}><Form dialog={props} /></Suspense>
+    </Modal>
+  );
 }

@@ -8,6 +8,7 @@ import { Card, NewsCard } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
 import { NewsFilters, NewsFilterValues } from '@/components/site/news-filters';
 import { newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
+import { useNewsSaved } from '@/lib/news-events';
 
 /**
  * The full news list (search, category / date / sort filters, topic links, pages) shown on the Media Center "News" tab.
@@ -29,11 +30,14 @@ export function AllNews() {
   const sort = sp.get('sort') ?? '';
   const page = Number(sp.get('page') ?? 1);
   const [data, setData] = useState<{ data: Card[]; meta: { totalPages: number; total: number } } | null>(null);
+  // a news item added from the window on this page: load the list again
+  const [tick, setTick] = useState(0);
+  useNewsSaved(() => setTick((n) => n + 1));
 
   useEffect(() => {
     setData(null);
     api('/public/news', { params: { lang, category, subcategory, topics, q, dateFrom, dateTo, sort, page, limit: 12 } }).then(setData).catch(() => setData({ data: [], meta: { totalPages: 1, total: 0 } }));
-  }, [lang, category, subcategory, topics, q, dateFrom, dateTo, sort, page]);
+  }, [lang, category, subcategory, topics, q, dateFrom, dateTo, sort, page, tick]);
 
   const push = (v: Partial<NewsFilterValues> & { topics?: string }, p: number) => {
     const next: Record<string, string> = { category, subcategory, topics, q, dateFrom, dateTo, sort, ...v };

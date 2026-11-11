@@ -41,8 +41,18 @@ export function Field({ label, children, hint, error }: { label?: string; childr
   );
 }
 
-/** `brand` = a header band in the colours of the page it opens on (header colour + accent line), e.g. the businesswomen site */
-export function Modal({ open, onClose, title, children, wide, brand }: { open: boolean; onClose: () => void; title?: string; children: React.ReactNode; wide?: boolean; brand?: boolean }) {
+// windows open on top of each other (e.g. a picture preview inside the news form): only the top one reacts to Esc / Tab,
+// and the page behind stays locked until the last one closes
+const openModals: string[] = [];
+let lockedOverflow = '';
+
+/**
+ * `brand` = a header band in the colours of the page it opens on (header colour + accent line), e.g. the businesswomen site.
+ * The window itself never scrolls: the header stays put and only the content below it scrolls, so the scrollbar sits inside
+ * the rounded border instead of on top of it. `closeOnBackdrop={false}` keeps the window open when the dimmed area is clicked
+ * (used by long forms, so a stray click does not throw the typed text away).
+ */
+export function Modal({ open, onClose, title, children, wide, brand, closeOnBackdrop = true }: { open: boolean; onClose: () => void; title?: string; children: React.ReactNode; wide?: boolean; brand?: boolean; closeOnBackdrop?: boolean }) {
   const { t } = useI18n();
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -51,10 +61,12 @@ export function Modal({ open, onClose, title, children, wide, brand }: { open: b
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
+    if (!openModals.length) lockedOverflow = document.body.style.overflow;
+    openModals.push(titleId);
     document.body.style.overflow = 'hidden';
     dialog.current?.focus();
     const h = (e: KeyboardEvent) => {
+      if (openModals[openModals.length - 1] !== titleId) return;
       if (e.key === 'Escape') close.current();
       if (e.key !== 'Tab' || !dialog.current) return;
       const items = dialog.current.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])');
@@ -67,20 +79,27 @@ export function Modal({ open, onClose, title, children, wide, brand }: { open: b
     window.addEventListener('keydown', h);
     return () => {
       window.removeEventListener('keydown', h);
-      document.body.style.overflow = overflow;
+      const at = openModals.indexOf(titleId);
+      if (at >= 0) openModals.splice(at, 1);
+      if (!openModals.length) document.body.style.overflow = lockedOverflow;
       previous?.focus();
     };
-  }, [open]);
+  }, [open, titleId]);
   if (!open) return null;
   return (
-    <div className="page-in fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-secondary/40 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : t('app.dialog')} tabIndex={-1} className={cn('max-h-[90vh] w-full overflow-auto rounded-2xl bg-white p-6 shadow-lift ring-1 ring-line outline-none [animation:pop_0.3s_var(--ease-out)]', wide ? 'max-w-3xl' : 'max-w-lg')}>
-        <div className={cn('mb-4 flex items-center justify-between gap-3', brand ? '-mx-6 -mt-6 rounded-t-2xl px-6 py-4 text-white' : 'border-b border-line pb-3')} style={brand ? { backgroundColor: 'var(--header-bg, var(--secondary))' } : undefined}>
-          {title ? <h3 id={titleId} className="text-lg font-bold">{title}</h3> : <span />}
-          <button type="button" onClick={onClose} className={cn('flex h-8 w-8 items-center justify-center rounded-full transition', brand ? 'text-white/85 hover:bg-white/15 hover:text-white' : 'text-gray-500 hover:bg-primary/10 hover:text-primary')} aria-label={t('app.close')}>✕</button>
+    <div className="page-in fixed inset-0 z-50 !mt-0 flex items-center justify-center bg-secondary/40 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (closeOnBackdrop && e.target === e.currentTarget) onClose(); }}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : t('app.dialog')} tabIndex={-1} className={cn('flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-lift ring-1 ring-line outline-none [animation:pop_0.3s_var(--ease-out)]', wide ? 'max-w-3xl' : 'max-w-lg')}>
+        <div className={cn('shrink-0', brand ? '' : 'px-6 pt-6')}>
+          <div className={cn('flex items-center justify-between gap-3', brand ? 'px-6 py-4 text-white' : 'border-b border-line pb-3')} style={brand ? { backgroundColor: 'var(--header-bg, var(--secondary))' } : undefined}>
+            {title ? <h3 id={titleId} className="text-lg font-bold">{title}</h3> : <span />}
+            <button type="button" onClick={onClose} className={cn('flex h-8 w-8 items-center justify-center rounded-full transition', brand ? 'text-white/85 hover:bg-white/15 hover:text-white' : 'text-gray-500 hover:bg-primary/10 hover:text-primary')} aria-label={t('app.close')}>✕</button>
+          </div>
+          {brand && <div className="h-1 bg-gradient-to-r from-transparent via-accent to-transparent" aria-hidden="true" />}
         </div>
-        {brand && <div className="-mx-6 -mt-4 mb-5 h-1 bg-gradient-to-r from-transparent via-accent to-transparent" aria-hidden="true" />}
-        {children}
+        {/* only this part scrolls; the scrollbar stays inside the rounded border */}
+        <div className={cn('min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-6', brand ? 'pt-5' : 'pt-4')}>
+          {children}
+        </div>
       </div>
     </div>
   );
