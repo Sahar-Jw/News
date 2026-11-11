@@ -310,8 +310,7 @@ export function HeroSlider() {
   }, [i, many, paused, slides.length]);
   if (!slides.length) return null;
   const cur = slides[Math.min(i, slides.length - 1)];
-  const go = (d: number) => setI((c) => (c + d + slides.length) % slides.length);
-  const btnCls = 'inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:bg-secondary hover:shadow-lift active:scale-[0.97]';
+  const btnCls = 'inline-flex shrink-0 items-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-bold text-white shadow-lift transition hover:-translate-y-px hover:brightness-110 active:scale-[0.97]';
   const label = cur.button || t('hero.more');
   const arrow = <span aria-hidden="true" className="rtl:-scale-x-100">→</span>;
   let button: React.ReactNode = null;
@@ -319,41 +318,30 @@ export function HeroSlider() {
     if (/^https?:\/\//i.test(cur.link)) button = <a href={cur.link} target="_blank" rel="noopener noreferrer" className={btnCls}>{label}{arrow}</a>;
     else { const [path, hash] = cur.link.split('#'); button = <Link href={`${href(path || '/')}${hash ? `#${hash}` : ''}`} className={btnCls}>{label}{arrow}</Link>; }
   }
-  const nav = 'absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-lg text-secondary shadow-card ring-1 ring-line transition hover:bg-white hover:text-primary active:scale-95';
   return (
     <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="mx-auto max-w-7xl px-4 pt-4" aria-roledescription="carousel">
-      <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line">
-        <div className="relative h-[220px] bg-secondary/5 sm:h-[320px] md:h-[440px]">
-          {slides.map((sl, k) => (
-            <div key={k} aria-hidden={k !== i} className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-              <FitImage src={sl.image} alt={sl.title} />
-            </div>
-          ))}
-          {many && (
-            <>
-              <button type="button" aria-label={t('hero.prev')} onClick={() => go(-1)} className={`${nav} start-3`}><span aria-hidden="true" className="rtl:-scale-x-100">‹</span></button>
-              <button type="button" aria-label={t('hero.next')} onClick={() => go(1)} className={`${nav} end-3`}><span aria-hidden="true" className="rtl:-scale-x-100">›</span></button>
-            </>
-          )}
-        </div>
-        {(cur.title || cur.desc || button || many) && (
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line px-5 py-4 md:px-8">
-            <div key={i} className="hero-in min-w-0 flex-1 basis-72">
-              {cur.title && <h2 className="hero-desc text-lg font-extrabold leading-snug text-secondary md:text-2xl">{cur.title}</h2>}
-              {cur.desc && <p className="hero-desc mt-1 line-clamp-2 text-sm leading-7 text-gray-600 md:text-base">{cur.desc}</p>}
-            </div>
-            <div className="flex items-center gap-4">
-              {many && (
-                <div className="flex items-center gap-1.5" role="tablist">
-                  {slides.map((_, k) => (
-                    <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="py-2">
-                      <span className={`block h-2 rounded-full transition-all ${k === i ? 'w-6 bg-accent' : 'w-2 bg-line hover:bg-primary/40'}`} />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {button}
-            </div>
+      <div className="relative h-[240px] overflow-hidden rounded-3xl bg-secondary/5 shadow-card ring-1 ring-line sm:h-[340px] md:h-[460px]">
+        {slides.map((sl, k) => (
+          <div key={k} aria-hidden={k !== i} className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+            <FitImage src={sl.image} alt={sl.title} />
+          </div>
+        ))}
+        {/* soft shade at the bottom only, so the text and the dots stay readable while the picture stays whole */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/65 via-black/25 to-transparent" aria-hidden="true" />
+        {(cur.title || cur.desc || button) && (
+          <div key={i} className="hero-in absolute inset-x-0 bottom-0 px-5 pb-11 text-white md:px-10 md:pb-12">
+            {cur.title && <h2 className="hero-desc max-w-3xl text-lg font-extrabold leading-snug drop-shadow sm:text-xl md:text-3xl">{cur.title}</h2>}
+            {cur.desc && <p className="hero-desc mt-1 line-clamp-2 max-w-2xl text-sm leading-7 text-white/90 drop-shadow md:text-base">{cur.desc}</p>}
+            {button && <div className="hero-desc mt-3">{button}</div>}
+          </div>
+        )}
+        {many && (
+          <div className="absolute inset-x-0 bottom-2 z-10 flex items-center justify-center gap-1.5" role="tablist">
+            {slides.map((_, k) => (
+              <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="py-2">
+                <span className={`block h-2 rounded-full shadow transition-all ${k === i ? 'w-6 bg-accent' : 'w-2 bg-white/70 hover:bg-white'}`} />
+              </button>
+            ))}
           </div>
         )}
       </div>
