@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { parseYoutubeId } from '@/lib/youtube';
-import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
@@ -17,41 +17,27 @@ interface Row { id: number; titleAr: string; titleEn: string; kind: 'photos' | '
 interface Draft { id?: number; titleAr: string; titleEn: string; kind: 'photos' | 'video'; youtubeUrl: string; category: string; committeeId: string; imgs: ImageSet }
 interface CommitteeOpt { id: number; name: string }
 
-/** Image and video gallery: a titled photo album or a YouTube video, optionally classified (meetings, events, exhibitions ...) and attached to a committee. */
-export function GalleryAdmin() {
+/**
+ * The add / edit window of one album or video. Used by the Settings table and by the public Gallery page (so a manager does not
+ * have to leave the page). Give `id` to edit (loaded here); without it a new album is added.
+ */
+export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: () => void; onSaved: () => void }) {
   const { t, lang } = useI18n();
-  const { can } = useAuth();
   const toast = useToast();
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(id ? null : { titleAr: '', titleEn: '', kind: 'photos', youtubeUrl: '', category: '', committeeId: '', imgs: emptyImageSet() });
   const [busy, setBusy] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
-  const [key, setKey] = useState(0);
   const [committees, setCommittees] = useState<CommitteeOpt[]>([]);
 
   // committees an album can be attached to (public list: no extra permission needed)
   useEffect(() => { api<CommitteeOpt[]>('/public/committees', { params: { lang } }).then(setCommittees).catch(() => setCommittees([])); }, [lang]);
+  useEffect(() => {
+    if (!id) return;
+    api<Row>(`/admin/gallery/${id}`)
+      .then((r) => setDraft({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, kind: r.kind, youtubeUrl: r.youtubeUrl, category: r.category, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }))
+      .catch((e) => { toast(e.message, 'err'); onClose(); });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
-  const open = (r?: Row) => setDraft(r
-    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, kind: r.kind, youtubeUrl: r.youtubeUrl, category: r.category, committeeId: r.committeeId ? String(r.committeeId) : '', imgs: imageSetOf(r.images, r.imageUrls) }
-    : { titleAr: '', titleEn: '', kind: 'photos', youtubeUrl: '', category: '', committeeId: '', imgs: emptyImageSet() });
-
-  const cols: Col<Row>[] = [
-    { key: 'titleAr', label: t('oc.titleAr') },
-    { key: 'titleEn', label: t('oc.titleEn') },
-    { key: 'kind', searchable: false, label: t('gl.type'), render: (r) => t(`gl.kind.${r.kind}`), text: (r) => t(`gl.kind.${r.kind}`) },
-    { key: 'category', searchable: false, label: t('gl.category'), render: (r) => (r.category ? t(`gl.cat.${r.category}`) : '—'), text: (r) => (r.category ? t(`gl.cat.${r.category}`) : '') },
-    {
-      key: 'imageCount', searchable: false, label: t('oc.imageCount'),
-      render: (r) => (
-        <div className="flex items-center gap-1">
-          {r.imageUrls[0] && <img src={fileUrl(r.imageUrls[0])} alt="" className="h-8 w-10 rounded object-cover" />}
-          <span className="text-xs text-gray-500">{r.imageCount}</span>
-        </div>
-      ),
-    },
-    { key: 'createdAt', searchable: false, exportable: false, label: t('oc.created'), render: (r) => fmtDate(lang, r.createdAt) },
-  ];
+  const close = () => { if (draft) releaseImages(draft.imgs); onClose(); };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,42 +56,15 @@ export function GalleryAdmin() {
     try {
       await api(draft.id ? `/admin/gallery/${draft.id}` : '/admin/gallery', { method: draft.id ? 'PATCH' : 'POST', form: fd });
       toast(t('app.saved'));
+      onSaved();
       close();
-      setKey((k) => k + 1);
     } catch (err: any) { toast(err.message, 'err'); }
     finally { setBusy(false); }
   };
 
-  const remove = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api(`/admin/gallery/${deleteTarget.row.id}`, { method: 'DELETE' });
-      toast(t('app.deleted'));
-      deleteTarget.reload();
-      setDeleteTarget(null);
-    } catch (err: any) { toast(err.message, 'err'); }
-  };
-
   return (
-    <RequirePerm any={['gallery.read']}>
-      <h1 className="mb-4 text-2xl font-bold">{t('adm.gallery')}</h1>
-      <DataTable<Row>
-        endpoint="/admin/gallery"
-        columns={cols}
-        exportable={false}
-        refreshKey={key}
-        bulkDelete={{ path: '/admin/gallery/bulk-delete', can: can('gallery.delete') }}
-        toolbar={can('gallery.create') && <Button onClick={() => open()}>＋ {t('gl.add')}</Button>}
-        rowActions={(r, reload) => (
-          <div className="flex gap-1">
-            <a href={`/${lang}/gallery/view/?id=${r.id}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{t('app.view')}</Button></a>
-            {can('gallery.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}
-            {can('gallery.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
-          </div>
-        )}
-      />
-      <Modal open={!!draft} onClose={close} title={draft?.id ? t('gl.edit') : t('gl.add')} wide>
-        {draft && (
+    <Modal open onClose={close} title={draft?.id || id ? t('gl.edit') : t('gl.add')} wide>
+      {!draft ? <div className="flex justify-center py-10"><Spinner /></div> : (
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
@@ -143,8 +102,66 @@ export function GalleryAdmin() {
             <Field label={draft.kind === 'video' ? t('gl.cover') : t('oc.images')}><ImageSetField value={draft.imgs} onChange={(imgs) => setDraft({ ...draft, imgs })} /></Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
+      )}
+    </Modal>
+  );
+}
+
+/** Image and video gallery: a titled photo album or a YouTube video, optionally classified (meetings, events, exhibitions ...) and attached to a committee. */
+export function GalleryAdmin() {
+  const { t, lang } = useI18n();
+  const { can } = useAuth();
+  const toast = useToast();
+  const [dialog, setDialog] = useState<{ id?: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
+  const [key, setKey] = useState(0);
+
+  const cols: Col<Row>[] = [
+    { key: 'titleAr', label: t('oc.titleAr') },
+    { key: 'titleEn', label: t('oc.titleEn') },
+    { key: 'kind', searchable: false, label: t('gl.type'), render: (r) => t(`gl.kind.${r.kind}`), text: (r) => t(`gl.kind.${r.kind}`) },
+    { key: 'category', searchable: false, label: t('gl.category'), render: (r) => (r.category ? t(`gl.cat.${r.category}`) : '—'), text: (r) => (r.category ? t(`gl.cat.${r.category}`) : '') },
+    {
+      key: 'imageCount', searchable: false, label: t('oc.imageCount'),
+      render: (r) => (
+        <div className="flex items-center gap-1">
+          {r.imageUrls[0] && <img src={fileUrl(r.imageUrls[0])} alt="" className="h-8 w-10 rounded object-cover" />}
+          <span className="text-xs text-gray-500">{r.imageCount}</span>
+        </div>
+      ),
+    },
+    { key: 'createdAt', searchable: false, exportable: false, label: t('oc.created'), render: (r) => fmtDate(lang, r.createdAt) },
+  ];
+
+  const remove = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api(`/admin/gallery/${deleteTarget.row.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      deleteTarget.reload();
+      setDeleteTarget(null);
+    } catch (err: any) { toast(err.message, 'err'); }
+  };
+
+  return (
+    <RequirePerm any={['gallery.read']}>
+      <h1 className="mb-4 text-2xl font-bold">{t('adm.gallery')}</h1>
+      <DataTable<Row>
+        endpoint="/admin/gallery"
+        columns={cols}
+        exportable={false}
+        refreshKey={key}
+        bulkDelete={{ path: '/admin/gallery/bulk-delete', can: can('gallery.delete') }}
+        toolbar={can('gallery.create') && <Button onClick={() => setDialog({})}>＋ {t('gl.add')}</Button>}
+        rowActions={(r, reload) => (
+          <div className="flex gap-1">
+            <a href={`/${lang}/gallery/view/?id=${r.id}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{t('app.view')}</Button></a>
+            {can('gallery.update') && <Button size="sm" variant="outline" onClick={() => setDialog({ id: r.id })}>{t('app.edit')}</Button>}
+            {can('gallery.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
+          </div>
         )}
-      </Modal>
+      />
+      {dialog && <GalleryDialog key={dialog.id ?? 'new'} id={dialog.id} onClose={() => setDialog(null)} onSaved={() => setKey((k) => k + 1)} />}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
         <p className="mb-5">{t('tbl.confirmDelete')}</p>
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={remove}>{t('app.delete')}</Button></div>

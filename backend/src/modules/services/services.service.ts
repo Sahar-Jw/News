@@ -49,6 +49,13 @@ export class ServicesService {
     return pageRows(rows, q, (x) => this.present(x.r));
   }
 
+  /** one service for the edit window (the public page opens it without going through the Settings table) */
+  async adminOne(id: number) {
+    const r = await this.store.get(id, CC.SERVICE);
+    if (!r) throw new NotFoundException('الخدمة غير موجودة');
+    return this.present(r);
+  }
+
   private xOf(dto: CreateServiceDto | UpdateServiceDto) {
     const x: Record<string, any> = { kind: dto.kind, sortOrder: dto.sortOrder === undefined ? undefined : dto.sortOrder ?? 0, isActive: dto.isActive };
     for (const f of X_TEXT_FIELDS) {

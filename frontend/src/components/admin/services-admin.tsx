@@ -1,10 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
@@ -20,36 +20,27 @@ const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fiel
 const EMPTY: Draft = { ...blank(), kind: 'other', nameAr: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false, formFileUrl: null, removeForm: false };
 const URL_RE = /^https?:\/\/\S+$/i;
 
-/** Chamber services (feeds the One-Stop page and, later, the Services page). Errors show under each field. */
-export function ServicesAdmin() {
-  const { t, href } = useI18n();
-  const { can } = useAuth();
+/**
+ * The add / edit window of one service. Used by the Settings table and by the public One-Stop page (so a manager does not have
+ * to leave the page). Give `id` to edit (loaded here); without it a new service is added. Errors show under each field.
+ */
+export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
   const toast = useToast();
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(id ? null : { ...EMPTY });
   const [image, setImage] = useState<File | null>(null);
   const [formFile, setFormFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Partial<Record<'nameAr' | 'formUrl' | 'sortOrder' | 'image', string>>>({});
   const [busy, setBusy] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
-  const [key, setKey] = useState(0);
 
-  const open = (r?: Row) => {
-    setImage(null);
-    setFormFile(null);
-    setErrors({});
-    setDraft(r ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, sortOrder: String(r.sortOrder), isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false, formFileUrl: r.formFileUrl ?? null, removeForm: false } : { ...EMPTY });
-  };
+  useEffect(() => {
+    if (!id) return;
+    api<Row>(`/admin/services/${id}`)
+      .then((r) => setDraft({ ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, sortOrder: String(r.sortOrder), isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false, formFileUrl: r.formFileUrl ?? null, removeForm: false }))
+      .catch((e) => { toast(e.message, 'err'); onClose(); });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
-
-  const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
-  const cols: Col<Row>[] = [
-    { key: 'nameAr', label: t('svc.nameAr') },
-    { key: 'nameEn', label: t('svc.nameEn') },
-    { key: 'kind', searchable: false, label: t('svc.kind'), render: (r) => t(`svc.kind.${r.kind}`), text: (r) => t(`svc.kind.${r.kind}`) },
-    { key: 'departmentAr', label: t('svc.department') },
-    { key: 'feeAr', label: t('svc.fee') },
-    { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
-  ];
 
   const pickImage = (f: File | undefined) => {
     if (!f) return;
@@ -80,20 +71,10 @@ export function ServicesAdmin() {
     try {
       await api(draft.id ? `/admin/services/${draft.id}` : '/admin/services', { method: draft.id ? 'PATCH' : 'POST', form: fd });
       toast(t('app.saved'));
-      setDraft(null);
-      setKey((k) => k + 1);
+      onSaved();
+      onClose();
     } catch (e2: any) { toast(e2.message, 'err'); }
     finally { setBusy(false); }
-  };
-
-  const remove = async () => {
-    if (!deleteTarget) return;
-    try {
-      await api(`/admin/services/${deleteTarget.row.id}`, { method: 'DELETE' });
-      toast(t('app.deleted'));
-      deleteTarget.reload();
-      setDeleteTarget(null);
-    } catch (e2: any) { toast(e2.message, 'err'); }
   };
 
   const pair = (label: string, a: Text, b: Text, opts: { area?: boolean; max: number; hint?: string }) => draft && (
@@ -107,26 +88,10 @@ export function ServicesAdmin() {
     </>
   );
 
+
   return (
-    <RequirePerm any={['services.read']}>
-      <h1 className="mb-4 text-2xl font-bold">{t('adm.services')}</h1>
-      <DataTable<Row>
-        endpoint="/admin/services"
-        columns={cols}
-        refreshKey={key}
-        exportable={false}
-        bulkDelete={{ path: '/admin/services/bulk-delete', can: can('services.delete') }}
-        toolbar={can('services.create') && <Button onClick={() => open()}>＋ {t('svc.add')}</Button>}
-        rowActions={(r, reload) => (
-          <div className="flex gap-1">
-            <Link href={href(`/services/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
-            {can('services.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}
-            {can('services.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
-          </div>
-        )}
-      />
-      <Modal open={!!draft} onClose={() => setDraft(null)} title={draft?.id ? t('svc.edit') : t('svc.add')} wide>
-        {draft && (
+    <Modal open onClose={onClose} title={draft?.id || id ? t('svc.edit') : t('svc.add')} wide>
+      {!draft ? <div className="flex justify-center py-10"><Spinner /></div> : (
           <form onSubmit={save} noValidate className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('svc.kind')}>
@@ -164,10 +129,61 @@ export function ServicesAdmin() {
               {!image && draft.imageUrl && !draft.removeImage && <img src={fileUrl(draft.imageUrl)} alt="" className="h-16 w-24 rounded object-cover" />}
               {!image && draft.imageUrl && <label className="flex items-center gap-2"><input type="checkbox" checked={draft.removeImage} onChange={(e) => up({ removeImage: e.target.checked })} />{t('svc.removeImage')}</label>}
             </div>
-            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDraft(null)}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
+      )}
+    </Modal>
+  );
+}
+
+/** Chamber services (feeds the One-Stop page and, later, the Services page). */
+export function ServicesAdmin() {
+  const { t, href } = useI18n();
+  const { can } = useAuth();
+  const toast = useToast();
+  const [dialog, setDialog] = useState<{ id?: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
+  const [key, setKey] = useState(0);
+
+  const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
+  const cols: Col<Row>[] = [
+    { key: 'nameAr', label: t('svc.nameAr') },
+    { key: 'nameEn', label: t('svc.nameEn') },
+    { key: 'kind', searchable: false, label: t('svc.kind'), render: (r) => t(`svc.kind.${r.kind}`), text: (r) => t(`svc.kind.${r.kind}`) },
+    { key: 'departmentAr', label: t('svc.department') },
+    { key: 'feeAr', label: t('svc.fee') },
+    { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
+  ];
+
+  const remove = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api(`/admin/services/${deleteTarget.row.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      deleteTarget.reload();
+      setDeleteTarget(null);
+    } catch (e2: any) { toast(e2.message, 'err'); }
+  };
+
+  return (
+    <RequirePerm any={['services.read']}>
+      <h1 className="mb-4 text-2xl font-bold">{t('adm.services')}</h1>
+      <DataTable<Row>
+        endpoint="/admin/services"
+        columns={cols}
+        refreshKey={key}
+        exportable={false}
+        bulkDelete={{ path: '/admin/services/bulk-delete', can: can('services.delete') }}
+        toolbar={can('services.create') && <Button onClick={() => setDialog({})}>＋ {t('svc.add')}</Button>}
+        rowActions={(r, reload) => (
+          <div className="flex gap-1">
+            <Link href={href(`/services/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
+            {can('services.update') && <Button size="sm" variant="outline" onClick={() => setDialog({ id: r.id })}>{t('app.edit')}</Button>}
+            {can('services.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
+          </div>
         )}
-      </Modal>
+      />
+      {dialog && <ServiceDialog key={dialog.id ?? 'new'} id={dialog.id} onClose={() => setDialog(null)} onSaved={() => setKey((k) => k + 1)} />}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
         <p className="mb-5">{t('tbl.confirmDelete')}</p>
         <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={remove}>{t('app.delete')}</Button></div>

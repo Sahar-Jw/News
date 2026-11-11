@@ -35,6 +35,13 @@ export class FaqsService {
     return pageRows(rows, q, (f) => f);
   }
 
+  /** one question for the edit window */
+  async adminOne(id: number) {
+    const r = await this.store.get(id, CC.FAQ);
+    if (!r) throw new NotFoundException('السؤال غير موجود');
+    return this.view(r);
+  }
+
   async create(dto: CreateFaqDto, actor: AuthUser) {
     const r = await this.store.create(CC.FAQ, {
       title: dto.questionAr.trim(), body: dto.answerAr.trim(),

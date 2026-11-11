@@ -228,6 +228,7 @@ const ar: Record<string, string> = {
   'ed.url': 'الرابط', 'ed.applyLink': 'تطبيق الرابط',
   // in-place management bar of the public pages (Board, Committees)
   'mg.bar': 'إدارة الصفحة', 'mg.settings': 'كل الإعدادات', 'mg.deleteText': 'سيُحذف هذا العنصر نهائياً ولا يمكن التراجع. هل تريد المتابعة؟', 'mg.deleteTitle': 'تأكيد الحذف', 'mg.editItem': 'تعديل', 'mg.deleteItem': 'حذف',
+  'app.pages': 'التنقل بين الصفحات', 'app.page': 'صفحة', 'os.mg.hours': 'تعديل أوقات الدوام', 'os.mg.texts': 'نصوص النافذة والتواصل', 'os.noFaqs': 'لا توجد أسئلة شائعة بعد',
 };
 
 const en: Record<string, string> = {
@@ -451,6 +452,7 @@ const en: Record<string, string> = {
   'ed.applyLink': 'Apply link',
   // in-place management bar of the public pages (Board, Committees)
   'mg.bar': 'Manage this page', 'mg.settings': 'All settings', 'mg.deleteText': 'This item will be deleted for good and this cannot be undone. Continue?', 'mg.deleteTitle': 'Confirm deletion', 'mg.editItem': 'Edit', 'mg.deleteItem': 'Delete',
+  'app.pages': 'Pagination', 'app.page': 'Page', 'os.mg.hours': 'Edit opening hours', 'os.mg.texts': 'Window texts & contact', 'os.noFaqs': 'No FAQs yet',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

@@ -22,6 +22,12 @@ export class ServicesAdminController {
     return this.service.list(q);
   }
 
+  @Get(':id')
+  @Permissions(PERM.SERVICES_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.adminOne(id);
+  }
+
   @Post()
   @Permissions(PERM.SERVICES_CREATE)
   @UseInterceptors(upload())

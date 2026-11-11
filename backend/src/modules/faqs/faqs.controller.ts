@@ -16,6 +16,12 @@ export class FaqsAdminController {
     return this.service.list(q);
   }
 
+  @Get(':id')
+  @Permissions(PERM.FAQS_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.adminOne(id);
+  }
+
   @Post()
   @Permissions(PERM.FAQS_CREATE)
   create(@Body() dto: CreateFaqDto, @CurrentUser() u: AuthUser) {

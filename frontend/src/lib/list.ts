@@ -14,3 +14,10 @@ export function asList(v: unknown): string[] {
   }
   return [];
 }
+
+/** Client-side pagination of a list that is already loaded: the slice of the current page and the page count (the page is clamped when the list shrinks). */
+export function paginate<T>(items: T[], page: number, size: number) {
+  const totalPages = Math.max(1, Math.ceil(items.length / size));
+  const current = Math.min(Math.max(1, page), totalPages);
+  return { rows: items.slice((current - 1) * size, current * size), page: current, totalPages, total: items.length };
+}

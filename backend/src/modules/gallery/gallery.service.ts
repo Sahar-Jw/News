@@ -40,6 +40,13 @@ export class GalleryService {
     return paged(rows.map((r) => this.present(r)), total, p);
   }
 
+  /** one album / video for the edit window */
+  async adminOne(id: number) {
+    const g = await this.repo.findOne({ where: { id } });
+    if (!g) throw new NotFoundException('المعرض غير موجود');
+    return this.present(g);
+  }
+
   /** video: a valid YouTube link is required (stored in its canonical form); photos: no link is kept */
   private youtubeOf(kind: GalleryKind, given: string | null | undefined): string | null {
     if (kind !== 'video') return null;

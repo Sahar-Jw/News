@@ -21,6 +21,12 @@ export class GalleryAdminController {
     return this.service.list(q);
   }
 
+  @Get(':id')
+  @Permissions(PERM.GALLERY_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.adminOne(id);
+  }
+
   @Post()
   @Permissions(PERM.GALLERY_CREATE)
   @UseInterceptors(upload())
