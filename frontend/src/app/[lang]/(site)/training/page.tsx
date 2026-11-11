@@ -15,8 +15,6 @@ import { CategoryNews } from '@/components/site/category-news';
 import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 
 type Tab = 'current' | 'archive' | 'news';
-/** the sub-categories of the center news; each one is a news topic that editors tag (its label in the page language is the topic) */
-const NEWS_KINDS = ['all', 'partnerships', 'programs', 'graduation', 'events', 'center'] as const;
 interface Paged<T> { data: T[]; meta: { totalPages: number; total: number } }
 interface Filters { years: number[]; fields: string[]; kinds: string[]; trainers: { id: number; name: string }[] }
 
@@ -39,7 +37,6 @@ export default function TrainingPage() {
   const [kind, setKind] = useState('');
   const [reg, setReg] = useState<PublicCourse | null>(null);
   const [reload, setReload] = useState(0);
-  const [newsKind, setNewsKind] = useState<(typeof NEWS_KINDS)[number]>('all');
 
   const newsTopic = loc('training', 'news_topic');
 
@@ -59,10 +56,9 @@ export default function TrainingPage() {
   useEffect(() => {
     if (tab !== 'news') return;
     setNews(null);
-    // the center's own news (topic of the page) narrowed to the chosen sub-category (it must carry both topics)
-    const sub = newsKind === 'all' ? '' : t(`tr.news.${newsKind}`);
-    api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, topicsAll: sub, limit: 9 } }).then(setNews).catch(() => setNews({ data: [], meta: { totalPages: 1, total: 0 } }));
-  }, [tab, lang, newsTopic, newsKind, t]);
+    // the center's own news (the topic of the page), no filters
+    api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, limit: 9 } }).then(setNews).catch(() => setNews({ data: [], meta: { totalPages: 1, total: 0 } }));
+  }, [tab, lang, newsTopic]);
 
   const switchTab = useCallback((x: Tab) => { setTab(x); setPage(1); setFilters(null); setQ(''); setYear(''); setField(''); setTrainerId(''); setKind(''); }, []);
   const filtered = !!(q.trim() || year || field || trainerId || kind);
@@ -106,12 +102,6 @@ export default function TrainingPage() {
           <select className={inputCls} value={trainerId} onChange={setF(setTrainerId)} aria-label={t('tr.trainer')}><option value="">{t('tr.allTrainers')}</option>{filters?.trainers.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
           <select className={inputCls} value={kind} onChange={setF(setKind)} aria-label={t('tr.kind')}><option value="">{t('tr.allKinds')}</option>{COURSE_KINDS.filter((k) => !filters || filters.kinds.includes(k)).map((k) => <option key={k} value={k}>{t(`tr.kind.${k}`)}</option>)}</select>
           {filtered && <Button type="button" variant="outline" onClick={clear}>{t('os.clear')}</Button>}
-        </div>
-      )}
-
-      {tab === 'news' && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t('tr.tabNews')}>
-          {NEWS_KINDS.map((k) => <button key={k} type="button" aria-pressed={newsKind === k} onClick={() => setNewsKind(k)} className={`rounded-full px-4 py-1.5 text-xs font-bold transition ${newsKind === k ? 'bg-primary text-white' : 'bg-white text-secondary ring-1 ring-line hover:bg-primary/10'}`}>{t(`tr.news.${k}`)}</button>)}
         </div>
       )}
 

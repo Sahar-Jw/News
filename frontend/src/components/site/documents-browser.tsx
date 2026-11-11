@@ -7,13 +7,14 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
+import { Pager } from '@/components/site/pager';
 
 export interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null }
 export interface Result { data: Doc[]; meta: { page: number; totalPages: number; total: number } }
 const dateOk = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
 /** The results of a documents search: a table on wide screens, cards on phones, and the pager. Shared by the Library and the Decisions & circulars section. */
-export function DocResults({ res, onPage }: { res: Result | null; onPage: (page: number) => void }) {
+export function DocResults({ res, onPage, actions: rowTools }: { res: Result | null; onPage: (page: number) => void; /** extra buttons under a row (edit / delete for the people who manage documents) */ actions?: (d: Doc) => React.ReactNode }) {
   const { lang, t, href } = useI18n();
   const actions = (d: Doc) => (
     <div className="flex flex-wrap gap-2 text-sm">
@@ -21,10 +22,14 @@ export function DocResults({ res, onPage }: { res: Result | null; onPage: (page:
       {d.fileUrl && <a href={fileUrl(d.fileUrl)} download className="rounded-lg border border-line px-3 py-1 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('doc.download')}</a>}
     </div>
   );
+  const tools = (d: Doc) => { const x = rowTools?.(d); return x ? <div className="mt-2">{x}</div> : null; };
+  // numbered pages (1 2 3 … 9) above and below the list; changing page brings the list back into view
+  const change = (n: number) => { onPage(n); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   if (!res) return <Center><Spinner /></Center>;
   if (res.data.length === 0) return <Center>{t('doc.empty')}</Center>;
   return (
         <>
+          <Pager page={res.meta.page} totalPages={res.meta.totalPages} onPage={change} className="mb-4" />
           {/* wide screens: table (number, title, date, issuer, actions) */}
           <div className="hidden overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line md:block">
             <table className="w-full text-start text-sm">
@@ -48,7 +53,7 @@ export function DocResults({ res, onPage }: { res: Result | null; onPage: (page:
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{d.docDate ? fmtDate(lang, d.docDate) : '—'}</td>
                     <td className="px-4 py-3">{d.issuer || '—'}</td>
-                    <td className="px-4 py-3">{actions(d)}</td>
+                    <td className="px-4 py-3">{actions(d)}{tools(d)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -66,17 +71,11 @@ export function DocResults({ res, onPage }: { res: Result | null; onPage: (page:
                 </div>
                 <h2 className="mt-2 text-lg font-bold text-secondary"><Link href={href(`/documents/view?id=${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
                 {d.summary && <p className="mt-1 line-clamp-3 text-sm leading-7 text-gray-600">{d.summary}</p>}
-                <div className="mt-3">{actions(d)}</div>
+                <div className="mt-3">{actions(d)}{tools(d)}</div>
               </li>
             ))}
           </ul>
-          {res.meta.totalPages > 1 && (
-            <nav className="mt-6 flex items-center justify-center gap-3 text-sm" aria-label="pagination">
-              <button type="button" disabled={res.meta.page <= 1} onClick={() => onPage(res.meta.page - 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">{t('doc.prev')}</button>
-              <span>{res.meta.page} / {res.meta.totalPages}</span>
-              <button type="button" disabled={res.meta.page >= res.meta.totalPages} onClick={() => onPage(res.meta.page + 1)} className="rounded-lg border px-3 py-1.5 disabled:opacity-40">{t('doc.next')}</button>
-            </nav>
-          )}
+          <Pager page={res.meta.page} totalPages={res.meta.totalPages} onPage={change} />
         </>
       
   );

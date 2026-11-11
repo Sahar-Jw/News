@@ -21,6 +21,12 @@ export class DocumentsAdminController {
     return this.service.list(q);
   }
 
+  @Get(':id')
+  @Permissions(PERM.DOCUMENTS_READ)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.adminOne(id);
+  }
+
   @Post()
   @Permissions(PERM.DOCUMENTS_CREATE)
   @UseInterceptors(upload())

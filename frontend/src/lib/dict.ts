@@ -103,7 +103,7 @@ const ar: Record<string, string> = {
   'doc.sectionText': 'التعاميم الرسمية والقرارات والقوانين والأنظمة في مكان واحد، مع البحث والتصفية وتحميل الملفات', 'doc.items': 'وثيقة', 'doc.viewAll': 'عرض الكل', 'doc.byYear': 'حسب السنة', 'doc.subtype': 'التصنيف', 'doc.manage': 'إضافة / إدارة الوثائق',
   'lib.intro': 'مرجع رقمي طويل الأمد يضم الدراسات والتقارير والنشرات والأدلة والقوانين والقرارات والتعاميم والنماذج والوثائق والمواد الإعلامية والوثائق التاريخية، مع بحث وتصنيف حسب النوع والتاريخ', 'lib.documents': 'الوثائق', 'lib.sort': 'الترتيب', 'lib.newest': 'الأحدث أولاً', 'lib.oldest': 'الأقدم أولاً', 'doc.kind.media': 'المواد الإعلامية',
   'doc.kind': 'النوع', 'doc.kind.decision': 'قرارات', 'doc.kind.circular': 'تعاميم', 'doc.kind.library': 'وثائق ومواد أخرى', 'doc.number': 'الرقم', 'doc.date': 'التاريخ',
-  'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
+  'doc.manageList': 'قائمة الوثائق', 'doc.add': 'إضافة وثيقة', 'doc.edit': 'تعديل الوثيقة', 'doc.summaryAr': 'الملخص بالعربية', 'doc.summaryEn': 'الملخص بالإنجليزية (اختياري)', 'doc.file': 'ملف PDF',
   'doc.fileHint': 'مطلوب، حتى 25 ميغابايت', 'doc.fileKeep': 'اتركه فارغاً للإبقاء على الملف الحالي', 'doc.current': 'عرض الملف الحالي', 'doc.pdfOnly': 'ملف PDF فقط', 'doc.pdfRequired': 'اختر ملف PDF',
   'doc.search': 'ابحث في العنوان أو الرقم', 'doc.searchBtn': 'بحث', 'doc.empty': 'لا توجد وثائق', 'doc.open': 'عرض', 'doc.download': 'تنزيل', 'doc.prev': 'السابق', 'doc.next': 'التالي',
   // static pages
@@ -327,7 +327,7 @@ const en: Record<string, string> = {
   'doc.sectionText': 'Official circulars, decisions, laws and regulations in one place, with search, filters and downloadable files', 'doc.items': 'documents', 'doc.viewAll': 'View all', 'doc.byYear': 'By year', 'doc.subtype': 'Category', 'doc.manage': 'Add / manage documents',
   'lib.intro': 'A long-term digital reference of studies, reports, bulletins, guides, laws, decisions, circulars, forms, documents, media materials and historical documents, searchable and sortable by type and date', 'lib.documents': 'Documents', 'lib.sort': 'Sort', 'lib.newest': 'Newest first', 'lib.oldest': 'Oldest first', 'doc.kind.media': 'Media materials',
   'doc.kind': 'Type', 'doc.kind.decision': 'Decisions', 'doc.kind.circular': 'Circulars', 'doc.kind.library': 'Other documents', 'doc.number': 'Number', 'doc.date': 'Date',
-  'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
+  'doc.manageList': 'Documents list', 'doc.add': 'Add document', 'doc.edit': 'Edit document', 'doc.summaryAr': 'Summary (Arabic)', 'doc.summaryEn': 'Summary (English, optional)', 'doc.file': 'PDF file',
   'doc.fileHint': 'Required, up to 25 MB', 'doc.fileKeep': 'Leave empty to keep the current file', 'doc.current': 'View current file', 'doc.pdfOnly': 'PDF files only', 'doc.pdfRequired': 'Choose a PDF file',
   'doc.search': 'Search by title or number', 'doc.searchBtn': 'Search', 'doc.empty': 'No documents', 'doc.open': 'View', 'doc.download': 'Download', 'doc.prev': 'Previous', 'doc.next': 'Next',
   // static pages

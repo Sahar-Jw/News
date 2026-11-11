@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { DocResults, type Result } from '@/components/site/documents-browser';
+import { useDocsManage } from '@/components/site/docs-manage';
 
 /**
  * Decisions & circulars: one section of its own with three parts.
@@ -51,30 +51,24 @@ function Header({ title, text }: { title: string; text?: string }) {
   );
 }
 
-function ManageLink() {
-  const { t, href } = useI18n();
-  const { can } = useAuth();
-  if (!can('documents.create', 'documents.update')) return null;
-  return <div className="mb-4 flex justify-center"><Link href={href('/admin/settings?page=documents&tab=documents')} className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-white hover:brightness-110">＋ {t('doc.manage')}</Link></div>;
-}
-
 /** the section home: the three parts with their counts and latest items, and a search over everything */
 function Home() {
   const { lang, t, href } = useI18n();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [data, setData] = useState<Record<string, Result | null>>({});
+  const manage = useDocsManage({ kind: 'circular' });
   useEffect(() => {
     PARTS.forEach((p) => {
       // one request per kind: the part's "law" also holds the guides, so its count adds them up
       Promise.all(p.kinds.map((kind) => api<Result>('/public/documents', { params: { lang, kind, limit: 3 }, cache: 'no-store' }).catch(() => null)))
         .then((rs) => setData((d) => ({ ...d, [p.key]: { data: rs.flatMap((r) => r?.data ?? []).sort((a, b) => (b.docDate ?? '').localeCompare(a.docDate ?? '')).slice(0, 3), meta: { page: 1, totalPages: 1, total: rs.reduce((n, r) => n + (r?.meta.total ?? 0), 0) } } })));
     });
-  }, [lang]);
+  }, [lang, manage.rev]);
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <Header title={t('doc.title')} text={t('doc.sectionText')} />
-      <ManageLink />
+      {manage.bar}
       <form className="mx-auto mb-8 flex max-w-2xl gap-2" onSubmit={(e) => { e.preventDefault(); router.push(href(`/documents?part=all${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`)); }}>
         <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={200} placeholder={t('doc.search')} aria-label={t('doc.search')} className="min-w-0 flex-1 rounded-xl border border-line bg-white px-4 py-2.5 text-sm outline-none focus:border-primary" />
         <button className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.searchBtn')}</button>
@@ -99,6 +93,7 @@ function Home() {
           );
         })}
       </div>
+      {manage.dialogs}
     </div>
   );
 }
@@ -120,6 +115,7 @@ function PartPage({ part }: { part: Part | 'all' }) {
   const from = year ? `${year}-01-01` : dateOk(sp.get('from'));
   const to = year ? `${year}-12-31` : dateOk(sp.get('to'));
   const page = Math.max(1, Number(sp.get('page')) || 1);
+  const manage = useDocsManage({ kind: kind || def?.kinds[0], subtype: chosen?.subtype });
   const [text, setText] = useState(q);
   const [res, setRes] = useState<Result | null>(null);
   const [years, setYears] = useState<number[]>([]);
@@ -145,7 +141,7 @@ function PartPage({ part }: { part: Part | 'all' }) {
           setRes({ data, meta: { page, totalPages: Math.max(...rs.map((r) => r?.meta.totalPages ?? 1)), total: rs.reduce((n, r) => n + (r?.meta.total ?? 0), 0) } });
         });
     }
-  }, [lang, kind, part, sub, q, issuer, from, to, year, page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lang, kind, part, sub, q, issuer, from, to, year, page, manage.rev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (next: { sub?: string; q?: string; issuer?: string; year?: string; from?: string; to?: string; page?: number }) => {
     const p = new URLSearchParams({ part });
@@ -164,7 +160,7 @@ function PartPage({ part }: { part: Part | 'all' }) {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <nav aria-label="breadcrumb" className="mb-3 text-sm text-gray-500"><Link href={href('/documents')} className="hover:text-primary">{t('doc.title')}</Link><span className="mx-1.5">›</span><span className="text-ink">{def ? t(def.title) : t('doc.searchBtn')}</span></nav>
       <Header title={def ? t(def.title) : t('doc.title')} text={def ? t(def.text) : undefined} />
-      <ManageLink />
+      {manage.bar}
       {chips.length > 0 && (
         <div className="mb-3 flex flex-wrap justify-center gap-2" role="tablist">
           <button type="button" role="tab" aria-selected={!sub} className={chip(!sub)} onClick={() => go({ sub: '' })}>{t('faq.all')}</button>
@@ -191,7 +187,8 @@ function PartPage({ part }: { part: Part | 'all' }) {
           {filtered && <button type="button" onClick={() => go({ q: '', issuer: '', year: '', from: '', to: '' })} className="rounded-xl border border-line px-3 py-2 text-sm text-gray-600 hover:border-primary">{t('os.clear')}</button>}
         </div>
       </form>
-      <DocResults res={res} onPage={(n) => go({ page: n })} />
+      <DocResults res={res} onPage={(n) => go({ page: n })} actions={manage.actions} />
+      {manage.dialogs}
     </div>
   );
 }

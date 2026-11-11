@@ -63,6 +63,13 @@ export class DocumentsService {
     return pageRows(rows, q, (d) => d);
   }
 
+  /** one record with both languages, for the edit window opened from the public pages */
+  async adminOne(id: number) {
+    const r = await this.store.get(id, DOC_CODES);
+    if (!r) throw new NotFoundException('الوثيقة غير موجودة');
+    return this.view(r);
+  }
+
   async create(dto: CreateDocumentDto, file: Express.Multer.File | undefined, actor: AuthUser) {
     if (!file) throw new BadRequestException('ملف PDF مطلوب');
     const path = await this.storage.savePdf(file, 'documents');

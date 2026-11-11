@@ -18,12 +18,12 @@ export function pageWindow(page: number, total: number, around = 1): (number | n
 const base = 'inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40';
 
 /** Numbered pagination: previous / 1 2 3 … 9 / next. Renders nothing when everything fits on one page. */
-export function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
+export function Pager({ page, totalPages, onPage, className = 'mt-8' }: { page: number; totalPages: number; onPage: (p: number) => void; className?: string }) {
   const { t, lang } = useI18n();
   if (totalPages <= 1) return null;
   const go = (p: number) => onPage(Math.min(Math.max(1, p), totalPages));
   return (
-    <nav aria-label={t('app.pages')} className="mt-8 flex flex-wrap items-center justify-center gap-1.5">
+    <nav aria-label={t('app.pages')} className={`${className} flex flex-wrap items-center justify-center gap-1.5`}>
       <button type="button" className={`${base} bg-white hover:border-primary hover:text-primary`} disabled={page <= 1} onClick={() => go(page - 1)}>{t('app.prev')}</button>
       {pageWindow(page, totalPages).map((p, i) => p === null
         ? <span key={`gap-${i}`} aria-hidden="true" className="px-1 text-gray-400">…</span>

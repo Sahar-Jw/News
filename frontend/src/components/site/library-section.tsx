@@ -1,12 +1,11 @@
 'use client';
-import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { DocResults, type Result } from '@/components/site/documents-browser';
+import { useDocsManage } from '@/components/site/docs-manage';
 
 /**
  * Library & digital archive: a long-term digital reference with every kind of document: studies, reports, bulletins, guides, laws,
@@ -32,7 +31,6 @@ const chip = (on: boolean) => `rounded-full border px-3 py-1.5 text-sm font-semi
 
 function Library() {
   const { lang, t, href } = useI18n();
-  const { can } = useAuth();
   const router = useRouter();
   const sp = useSearchParams();
   const raw = sp.get('kind') ?? '';
@@ -52,9 +50,10 @@ function Library() {
   const [years, setYears] = useState<number[]>([]);
   const [issuers, setIssuers] = useState<string[]>([]);
   const kinds = def ? def.kinds.join(',') : undefined;
+  const manage = useDocsManage({ kind: def?.kinds[0] ?? 'library', tab: 'library' });
 
   useEffect(() => { setText(q); }, [q]);
-  useEffect(() => { api<Record<string, number>>('/public/documents/counts', { cache: 'no-store' }).then(setCounts).catch(() => setCounts({})); }, []);
+  useEffect(() => { api<Record<string, number>>('/public/documents/counts', { cache: 'no-store' }).then(setCounts).catch(() => setCounts({})); }, [manage.rev]);
   useEffect(() => {
     api<number[]>('/public/documents/years', { params: { kinds }, cache: 'no-store' }).then(setYears).catch(() => setYears([]));
     api<string[]>('/public/documents/issuers', { params: { lang, kind: def?.kinds.length === 1 ? def.kinds[0] : undefined }, cache: 'no-store' }).then(setIssuers).catch(() => setIssuers([]));
@@ -62,7 +61,7 @@ function Library() {
   useEffect(() => {
     setRes(null);
     api<Result>('/public/documents', { params: { lang, kinds, q, issuer, from, to, sort, page, limit: 12 }, cache: 'no-store' }).then(setRes).catch(() => setRes({ data: [], meta: { page: 1, totalPages: 1, total: 0 } }));
-  }, [lang, kinds, q, issuer, from, to, sort, page]);
+  }, [lang, kinds, q, issuer, from, to, sort, page, manage.rev]);
 
   const go = (next: { kind?: string; q?: string; issuer?: string; year?: string; from?: string; to?: string; sort?: string; page?: number }) => {
     const v = { kind: type, q, issuer, year, from: sp.get('from') ?? '', to: sp.get('to') ?? '', sort, ...next };
@@ -86,7 +85,7 @@ function Library() {
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-7 text-gray-600">{t('lib.intro')}</p>
         <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true"><span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" /></div>
       </header>
-      {can('documents.create', 'documents.update') && <div className="mb-4 flex justify-center"><Link href={href('/admin/settings?page=documents&tab=documents')} className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-white hover:brightness-110">＋ {t('doc.manage')}</Link></div>}
+      {manage.bar}
 
       {/* browse by type, with how many each holds */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" role="tablist" aria-label={t('doc.kind')}>
@@ -127,7 +126,8 @@ function Library() {
         </div>
       </form>
       {res && res.meta.total > 0 && <p className="mb-3 text-center text-xs text-gray-500">{res.meta.total} {t('doc.items')}</p>}
-      <DocResults res={res} onPage={(n) => go({ page: n })} />
+      <DocResults res={res} onPage={(n) => go({ page: n })} actions={manage.actions} />
+      {manage.dialogs}
     </div>
   );
 }
