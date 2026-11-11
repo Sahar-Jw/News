@@ -1,7 +1,7 @@
 const ar: Record<string, string> = {
   // common
   'app.loading': 'جارٍ التحميل…', 'app.error': 'حدث خطأ', 'app.save': 'حفظ', 'app.cancel': 'إلغاء', 'app.delete': 'حذف', 'app.edit': 'تعديل',
-  'app.add': 'إضافة', 'app.view': 'عرض', 'app.close': 'إغلاق', 'app.search': 'بحث', 'app.confirm': 'تأكيد', 'app.yes': 'نعم', 'app.no': 'لا',
+  'app.add': 'إضافة', 'app.view': 'عرض', 'app.chooseFile': 'اختيار ملف', 'app.chooseFiles': 'اختيار ملفات', 'app.filesSelected': 'ملفات محددة', 'app.close': 'إغلاق', 'app.search': 'بحث', 'app.confirm': 'تأكيد', 'app.yes': 'نعم', 'app.no': 'لا',
   'app.back': 'رجوع', 'app.all': 'الكل', 'app.none': '—', 'app.saved': 'تم الحفظ بنجاح', 'app.deleted': 'تم الحذف', 'app.actions': 'إجراءات',
   'app.next': 'التالي', 'app.prev': 'السابق', 'app.sending': 'جارٍ الإرسال…', 'app.reset': 'إعادة ضبط', 'app.apply': 'تطبيق',
   // site
@@ -234,7 +234,7 @@ const ar: Record<string, string> = {
 
 const en: Record<string, string> = {
   'app.loading': 'Loading…', 'app.error': 'Something went wrong', 'app.save': 'Save', 'app.cancel': 'Cancel', 'app.delete': 'Delete', 'app.edit': 'Edit',
-  'app.add': 'Add', 'app.view': 'View', 'app.close': 'Close', 'app.search': 'Search', 'app.confirm': 'Confirm', 'app.yes': 'Yes', 'app.no': 'No',
+  'app.add': 'Add', 'app.view': 'View', 'app.chooseFile': 'Choose file', 'app.chooseFiles': 'Choose files', 'app.filesSelected': 'files selected', 'app.close': 'Close', 'app.search': 'Search', 'app.confirm': 'Confirm', 'app.yes': 'Yes', 'app.no': 'No',
   'app.back': 'Back', 'app.all': 'All', 'app.none': '—', 'app.saved': 'Saved successfully', 'app.deleted': 'Deleted', 'app.actions': 'Actions',
   'app.next': 'Next', 'app.prev': 'Previous', 'app.sending': 'Sending…', 'app.reset': 'Reset', 'app.apply': 'Apply',
   'site.home': 'Home', 'site.categories': 'Categories', 'site.subcategories': 'Subcategories', 'site.sections': 'Sections', 'site.language': 'العربية', 'site.readMore': 'Read more',

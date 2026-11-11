@@ -9,6 +9,8 @@ import { paginate } from '@/lib/list';
 import { Button, Center, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Thumb } from '@/components/site/cards';
+import { ContactIcon } from '@/components/site/icons';
+import { telHref } from '@/lib/utils';
 import { ContactForm } from '@/components/site/contact-form';
 import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
 import { Pager } from '@/components/site/pager';
@@ -245,27 +247,54 @@ function FaqTab({ faqs, tools, onPageChange }: { faqs: Faq[]; tools: (f: Faq) =>
   );
 }
 
-/** Contact tab: the window's phone / e-mail / address / map and the inquiry form. */
+/** Contact tab: the window's phone / e-mail / address / map (same icon rows as the main Contact page) and the inquiry form. */
 function ContactTab() {
   const { t } = useI18n();
   const { s, loc } = useSite();
+  const [mapOpen, setMapOpen] = useState(false);
   // the window's own contact details, falling back to the chamber's general ones
   const phone = s('one_stop', 'contact_phone') || s('contact', 'phone'), email = s('one_stop', 'contact_email') || s('contact', 'email'), map = s('one_stop', 'contact_map_url') || s('contact', 'map_url');
   const address = loc('one_stop', 'contact_address');
+  type Row = { label: string; value: string | null; icon: 'phone' | 'email' | 'address'; ltr: boolean; link?: string };
+  const rows: Row[] = [
+    { label: t('site.phone'), value: phone ? String(phone) : null, icon: 'phone', ltr: true, link: phone ? telHref(String(phone)) : undefined },
+    { label: t('site.email'), value: email ? String(email) : null, icon: 'email', ltr: true, link: email ? `mailto:${String(email)}` : undefined },
+    { label: t('os.address'), value: address || null, icon: 'address', ltr: false },
+  ];
   return (
     <Panel title={t('os.contact')}>
-      <div className="grid gap-5 md:grid-cols-[1fr,1.2fr]">
-        <ul className="space-y-2 text-sm text-gray-700">
-          {phone && <li className="flex items-center gap-2"><span aria-hidden="true">📞</span>{t('site.phone')}: <a href={`tel:${String(phone).replace(/[^\d+]/g, '')}`}><bdi dir="ltr">{String(phone)}</bdi></a></li>}
-          {email && <li className="flex items-center gap-2"><span aria-hidden="true">✉️</span>{t('contact.email')}: <a href={`mailto:${String(email)}`}><bdi dir="ltr">{String(email)}</bdi></a></li>}
-          {address && <li className="flex items-center gap-2"><span aria-hidden="true">📍</span>{t('os.address')}: {address}</li>}
-          {map && <li><a href={String(map)} target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('site.map')}</a></li>}
-        </ul>
+      <div className="grid items-start gap-5 md:grid-cols-[1fr,1.2fr]">
+        <div>
+          <ul className="divide-y divide-line">
+            {rows.filter((r) => r.value).map((r) => {
+              const text = r.ltr ? <bdi dir="ltr">{r.value}</bdi> : r.value;
+              return (
+                <li key={r.icon} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ContactIcon name={r.icon} size={16} /></span>
+                  <div className="min-w-0">
+                    <div className="text-xs text-gray-500">{r.label}</div>
+                    <div className="break-words text-sm font-medium">{r.link ? <a href={r.link} className="hover:text-primary hover:underline">{text}</a> : text}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {map && (
+            <button type="button" onClick={() => setMapOpen(true)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 active:scale-[0.97]">
+              <ContactIcon name="address" size={16} />{t('site.showMap')}
+            </button>
+          )}
+        </div>
         <div>
           <p className="mb-3 text-sm font-bold text-secondary">{t('os.inquiryTitle')}</p>
           <ContactForm subjectPrefix={t('os.inquiryPrefix')} />
         </div>
       </div>
+      {map && (
+        <Modal open={mapOpen} onClose={() => setMapOpen(false)} title={t('site.map')} wide>
+          <iframe src={String(map)} title={t('site.map')} loading="lazy" className="h-[60vh] w-full rounded-lg border-0" />
+        </Modal>
+      )}
     </Panel>
   );
 }

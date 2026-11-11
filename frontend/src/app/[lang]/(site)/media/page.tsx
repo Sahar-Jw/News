@@ -3,127 +3,20 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { PlayBadge } from '@/components/site/play-badge';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { fmtDate, fmtNum } from '@/lib/utils';
+import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
-import { Card, NewsCard, Thumb } from '@/components/site/cards';
-import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
 import { AllNews } from '@/components/site/news-all';
 import { addNewsHref, newsCategoryKeyOf } from '@/lib/news-categories';
 
-const TABS = ['news', 'statements', 'photos', 'video', 'interviews', 'coverage', 'press', 'kit'] as const;
+const TABS = ['news', 'press', 'kit'] as const;
 type Tab = (typeof TABS)[number];
-/** tabs that read news by a category label written in Settings (category "media") */
-const CATEGORY_KEY: Partial<Record<Tab, string>> = { statements: 'statements_category', interviews: 'interviews_category', coverage: 'coverage_category' };
-
 interface Paged<T> { data: T[]; meta: { totalPages: number } }
-interface Gallery { id: number; title: string; images: string[] }
 interface Doc { id: number; title: string; summary: string; docDate: string | null; fileUrl: string | null }
 
-/** statements / interviews / coverage / video: news filtered by a label or by having a video (the plain "news" tab is the full list, AllNews) */
-function NewsTab({ tab }: { tab: Tab }) {
-  const { lang, t, href } = useI18n();
-  const { s } = useSite();
-  const [page, setPage] = useState(1);
-  const [res, setRes] = useState<Paged<Card> | null>(null);
-  const key = CATEGORY_KEY[tab];
-  const category = key ? String(s('media', key) ?? '').trim() : '';
-
-  useEffect(() => { setPage(1); }, [tab]);
-  useEffect(() => {
-    if (key && !category) { setRes({ data: [], meta: { totalPages: 1 } }); return; }
-    setRes(null);
-    api<Paged<Card>>('/public/news', { params: { lang, category: category || undefined, hasVideo: tab === 'video' ? 'true' : undefined, page, limit: 9 }, cache: 'no-store' })
-      .then(setRes).catch(() => setRes({ data: [], meta: { totalPages: 1 } }));
-  }, [lang, tab, category, key, page]);
-
-  if (!res) return <Center><Spinner /></Center>;
-  if (!res.data.length) return <Center>{t('md.empty')}</Center>;
-  return (
-    <>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{res.data.map((n) => <NewsCard key={n.id} n={n} />)}</div>
-      <Pager page={page} totalPages={res.meta.totalPages} onPage={setPage} />
-    </>
-  );
-}
-
 interface GalleryCard { id: number; title: string; kind: 'photos' | 'video'; category: string | null; thumb: string | null; images: string[]; createdAt: string }
-
-const chip = (on: boolean) => `rounded-full border px-3 py-1 text-xs font-semibold transition ${on ? 'border-secondary bg-secondary text-white' : 'bg-white text-gray-700 hover:border-primary'}`;
-
-/** The photo / video archive: albums and videos filtered by occasion (category) and by year. */
-function ArchiveTab({ type }: { type: 'photos' | 'video' }) {
-  const { lang, t, href } = useI18n();
-  const [page, setPage] = useState(1);
-  const [cat, setCat] = useState('');
-  const [year, setYear] = useState('');
-  const [cats, setCats] = useState<{ category: string; count: number }[]>([]);
-  const [years, setYears] = useState<number[]>([]);
-  const [res, setRes] = useState<Paged<GalleryCard> | null>(null);
-  useEffect(() => { setPage(1); setCat(''); setYear(''); }, [type]);
-  useEffect(() => {
-    api<{ category: string; count: number }[]>('/public/gallery/categories', { params: { type }, cache: 'no-store' }).then(setCats).catch(() => setCats([]));
-    api<number[]>('/public/gallery/years', { params: { type }, cache: 'no-store' }).then(setYears).catch(() => setYears([]));
-  }, [type]);
-  useEffect(() => {
-    setRes(null);
-    api<Paged<GalleryCard>>('/public/gallery', { params: { lang, type, category: cat || undefined, year: year || undefined, page, limit: 12 }, cache: 'no-store' })
-      .then(setRes).catch(() => setRes({ data: [], meta: { totalPages: 1 } }));
-  }, [lang, type, cat, year, page]);
-  return (
-    <>
-      <p className="mb-4 text-center text-sm text-gray-600">{t(type === 'photos' ? 'md.photosHint' : 'md.videosHint')}</p>
-      {cats.length > 0 && (
-        <div className="mb-3 flex flex-wrap justify-center gap-2">
-          <button type="button" className={chip(!cat)} onClick={() => { setCat(''); setPage(1); }}>{t('gl.allCategories')}</button>
-          {cats.map((c) => <button key={c.category} type="button" className={chip(cat === c.category)} onClick={() => { setCat(c.category); setPage(1); }}>{t(`gl.cat.${c.category}`)} ({fmtNum(lang, c.count)})</button>)}
-        </div>
-      )}
-      {years.length > 1 && (
-        <div className="mb-5 flex flex-wrap justify-center gap-2">
-          <button type="button" className={chip(!year)} onClick={() => { setYear(''); setPage(1); }}>{t('md.allYears')}</button>
-          {years.map((y) => <button key={y} type="button" className={chip(year === String(y))} onClick={() => { setYear(String(y)); setPage(1); }}>{fmtNum(lang, y).replace(/[,٬]/g, '')}</button>)}
-        </div>
-      )}
-      {!res ? <Center><Spinner /></Center> : !res.data.length ? <Center>{t('md.empty')}</Center> : (
-        <>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {res.data.map((g) => (
-              <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="relative"><Thumb src={g.thumb ?? g.images[0]} alt={g.title} className="h-40 w-full" />{g.kind === 'video' && <PlayBadge />}</div>
-                <div className="p-4">
-                  <h2 className="line-clamp-2 font-bold group-hover:text-primary">{g.title}</h2>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
-                    {g.kind === 'photos' && <span>{fmtNum(lang, g.images.length)} {t('pub.photos')}</span>}
-                    {g.category && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{t(`gl.cat.${g.category}`)}</span>}
-                    <span>{fmtDate(lang, g.createdAt)}</span>
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <Pager page={page} totalPages={res.meta.totalPages} onPage={setPage} />
-        </>
-      )}
-    </>
-  );
-}
-
-function VideoTab() {
-  const { t } = useI18n();
-  return (
-    <div className="space-y-10">
-      <ArchiveTab type="video" />
-      <section>
-        <h2 className="mb-4 border-s-4 border-accent ps-3 text-lg font-extrabold text-secondary">{t('md.newsVideos')}</h2>
-        <NewsTab tab="video" />
-      </section>
-    </div>
-  );
-}
 
 /** press materials and the Media Kit are documents of kind "press" / "mediakit" */
 function DocsTab({ kind }: { kind: 'press' | 'mediakit' }) {
@@ -249,7 +142,6 @@ function ManageBar() {
   const catKey = newsCategoryKeyOf(cat);
   const items = [
     can('news.create') && { to: catKey ? addNewsHref(catKey, `/media?category=${encodeURIComponent(cat)}`) : '/admin/news/edit', label: `＋ ${t('md.addNews')}` },
-    can('gallery.create', 'gallery.update') && { to: '/admin/settings?page=media&tab=gallery', label: `＋ ${t('md.addAlbum')}` },
     can('documents.create', 'documents.update') && { to: '/admin/settings?page=documents&tab=documents', label: `＋ ${t('md.addDoc')}` },
     can('settings.update') && { to: '/admin/settings?page=media&tab=settings', label: `⚙ ${t('md.kitSettings')}` },
   ].filter(Boolean) as { to: string; label: string }[];
@@ -287,7 +179,7 @@ function MediaCenter() {
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${tab === k ? 'border-primary bg-primary text-white' : 'bg-white text-gray-700 hover:border-primary'}`}>{t(`md.tab.${k}`)}</button>
         ))}
       </div>
-      {tab === 'photos' ? <ArchiveTab type="photos" /> : tab === 'video' ? <VideoTab /> : tab === 'press' ? <DocsTab kind="press" /> : tab === 'kit' ? <KitTab /> : tab === 'news' ? <AllNews /> : <NewsTab tab={tab} />}
+      {tab === 'press' ? <DocsTab kind="press" /> : tab === 'kit' ? <KitTab /> : <AllNews />}
     </div>
   );
 }

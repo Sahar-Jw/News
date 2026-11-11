@@ -193,3 +193,38 @@ html[data-intro-playing] #intro-boot-cover { display: none; }
     radial-gradient(52rem 30rem at 95% -4%, color-mix(in srgb, #c7878d 22%, transparent), transparent 70%),
     radial-gradient(44rem 30rem at -6% 60%, color-mix(in srgb, #c7878d 12%, transparent), transparent 70%);
 }
+
+/* ---------- file inputs: one shared look for every <input type="file"> (the FilePicker component matches it) ---------- */
+input[type="file"] {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  padding: 0.55rem;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--ink) 75%, white);
+  background: color-mix(in srgb, var(--primary) 3%, white);
+  border: 2px dashed var(--line);
+  border-radius: 1rem;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+input[type="file"]:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); }
+input[type="file"]:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent); }
+input[type="file"]:disabled { cursor: not-allowed; opacity: 0.55; }
+input[type="file"][aria-invalid="true"] { border-color: #ef4444; }
+input[type="file"]::file-selector-button {
+  margin-inline-end: 0.75rem;
+  cursor: pointer;
+  padding: 0.45rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 1px 2px rgb(4 51 35 / 0.18);
+  transition: filter 0.2s, transform 0.2s;
+}
+input[type="file"]:hover::file-selector-button { filter: brightness(1.1); }
+input[type="file"]:active::file-selector-button { transform: scale(0.97); }
+/* the FilePicker hides its input and draws its own card */
+label > input[type="file"].opacity-0 { padding: 0; border: 0; background: none; }

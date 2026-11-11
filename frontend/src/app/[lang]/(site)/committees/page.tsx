@@ -12,14 +12,13 @@ import { CategoryNews } from '@/components/site/category-news';
 
 interface Card { id: number; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null }
 
-/** Committees and sectors, with a "find my committee by business activity" search. */
+/** Committees and sectors, with a text search. */
 export default function CommitteesPage() {
   const { lang, t, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const [all, setAll] = useState<Card[] | null>(null);
   const [q, setQ] = useState('');
-  const [activity, setActivity] = useState('');
   // manager tools: the committee window (id = committee being edited, none = a new one) and the committee waiting for the delete confirmation
   const [dialog, setDialog] = useState<{ id?: number } | null>(null);
   const [ask, setAsk] = useState<Card | null>(null);
@@ -46,17 +45,10 @@ export default function CommitteesPage() {
     } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
   };
 
-  // business activities = the activity tags of the committees, most used first
-  const activities = useMemo(() => {
-    const m = new Map<string, number>();
-    (all ?? []).forEach((c) => c.tags.forEach((x) => m.set(x, (m.get(x) ?? 0) + 1)));
-    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], lang)).map(([name, n]) => ({ name, n }));
-  }, [all, lang]);
-
   const needle = q.trim().toLowerCase();
   const items = useMemo(
-    () => (all ?? []).filter((c) => (!activity || c.tags.includes(activity)) && (!needle || `${c.name} ${c.summary} ${c.chairName} ${c.tags.join(' ')}`.toLowerCase().includes(needle))),
-    [all, activity, needle],
+    () => (all ?? []).filter((c) => (!needle || `${c.name} ${c.summary} ${c.chairName} ${c.tags.join(' ')}`.toLowerCase().includes(needle))),
+    [all, needle],
   );
 
   return (
@@ -70,20 +62,7 @@ export default function CommitteesPage() {
       </PageManageBar>
       <div className="mx-auto mb-8 max-w-3xl space-y-3" role="search">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cm.search')} aria-label={t('cm.search')} className="h-11 w-full rounded-full border border-line bg-white px-5 text-sm outline-none focus:border-primary" />
-        {activities.length > 0 && (
-          <div>
-            <p className="mb-2 text-center text-xs font-semibold text-gray-500">{t('cm.byActivity')}</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {[{ name: '', n: (all ?? []).length }, ...activities].map((a) => (
-                <button key={a.name || 'all'} type="button" aria-pressed={activity === a.name} onClick={() => setActivity(a.name)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${activity === a.name ? 'bg-secondary text-white shadow-card' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}>
-                  {a.name || t('cm.allActivities')} <span className="text-xs opacity-70">({a.n})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {(q || activity) && all && <p className="text-center text-sm text-gray-500">{items.length} {t('cm.count')} <button type="button" onClick={() => { setQ(''); setActivity(''); }} className="ms-2 font-semibold text-primary hover:underline">{t('app.reset')}</button></p>}
+        {q && all && <p className="text-center text-sm text-gray-500">{items.length} {t('cm.count')} <button type="button" onClick={() => { setQ(''); }} className="ms-2 font-semibold text-primary hover:underline">{t('app.reset')}</button></p>}
       </div>
       {dialog && <CommitteeDialog key={dialog.id ?? 'new'} id={dialog.id} onClose={() => setDialog(null)} onChanged={() => load(true)} />}
       {ask && <ConfirmDelete busy={busy} onConfirm={remove} onClose={() => setAsk(null)} />}

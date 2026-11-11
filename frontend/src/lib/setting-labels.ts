@@ -75,9 +75,6 @@ const BASE_AR: Record<string, string> = {
   read_more: 'نص «اقرأ المزيد»',
   breaking: 'نص «عاجل»',
   // media center
-  statements_category: 'تصنيف الأخبار لتبويب «البيانات الرسمية»',
-  interviews_category: 'تصنيف الأخبار لتبويب «المقابلات»',
-  coverage_category: 'تصنيف الأخبار لتبويب «التغطيات الإعلامية»',
   kit_enabled: 'اعتماد Media Kit (يظهر للزوار عند التفعيل)',
   kit_logo: 'Media Kit: شعار الغرفة (يُستعمل شعار الموقع إن تُرك فارغاً)',
   kit_logo_alt: 'Media Kit: نسخة بديلة من الشعار (فاتحة / أحادية)',

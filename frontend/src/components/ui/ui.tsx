@@ -87,6 +87,7 @@ export function Modal({ open, onClose, title, children, wide, brand }: { open: b
 }
 
 export function FilePicker({ label, hint, accept, multiple, onChange }: { label: string; hint?: string; accept?: string; multiple?: boolean; onChange: (files: FileList | null) => void }) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState('');
   return (
     <label className="group relative block cursor-pointer rounded-2xl border-2 border-dashed border-line bg-primary/[0.03] p-4 transition hover:border-primary hover:bg-primary/5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
@@ -98,7 +99,7 @@ export function FilePicker({ label, hint, accept, multiple, onChange }: { label:
         className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         onChange={(e) => {
           const files = e.target.files;
-          if (files?.length) setSelected(multiple ? `${files.length} files selected` : files[0].name);
+          if (files?.length) setSelected(multiple ? `${files.length} ${t('app.filesSelected')}` : files[0].name);
           onChange(files);
           e.target.value = '';
         }}
@@ -109,7 +110,7 @@ export function FilePicker({ label, hint, accept, multiple, onChange }: { label:
           <span className="block truncate text-sm font-semibold text-gray-800">{selected || label}</span>
           {hint && <span className="mt-0.5 block text-xs text-gray-500">{hint}</span>}
         </span>
-        <span className="shrink-0 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-medium text-gray-700 group-hover:border-primary group-hover:text-primary">{multiple ? 'Choose files' : 'Choose file'}</span>
+        <span className="shrink-0 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-medium text-gray-700 group-hover:border-primary group-hover:text-primary">{multiple ? t('app.chooseFiles') : t('app.chooseFile')}</span>
       </span>
     </label>
   );

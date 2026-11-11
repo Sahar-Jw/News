@@ -10,15 +10,14 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { SERVICE_KINDS } from '@/components/site/services-shared';
 
-type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'audienceAr' | 'audienceEn' | 'documentsAr' | 'documentsEn' | 'stepsAr' | 'stepsEn' | 'locationAr' | 'locationEn' | 'departmentAr' | 'departmentEn' | 'durationAr' | 'durationEn' | 'feeAr' | 'feeEn' | 'formUrl';
+type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'audienceAr' | 'audienceEn' | 'documentsAr' | 'documentsEn' | 'stepsAr' | 'stepsEn' | 'locationAr' | 'locationEn' | 'departmentAr' | 'departmentEn' | 'durationAr' | 'durationEn' | 'feeAr' | 'feeEn';
 type Fields = Record<Text, string>;
 interface Row extends Fields { id: number; kind: string; nameAr: string; sortOrder: number; isActive: boolean; imageUrl: string | null; formFileUrl: string | null }
 interface Draft extends Fields { id?: number; kind: string; nameAr: string; sortOrder: string; isActive: boolean; imageUrl: string | null; removeImage: boolean; formFileUrl: string | null; removeForm: boolean }
 
-const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn', 'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'durationAr', 'durationEn', 'feeAr', 'feeEn', 'formUrl'];
+const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn', 'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'durationAr', 'durationEn', 'feeAr', 'feeEn'];
 const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fields;
 const EMPTY: Draft = { ...blank(), kind: 'other', nameAr: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false, formFileUrl: null, removeForm: false };
-const URL_RE = /^https?:\/\/\S+$/i;
 
 /**
  * The add / edit window of one service. Used by the Settings table and by the public One-Stop page (so a manager does not have
@@ -30,7 +29,7 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
   const [draft, setDraft] = useState<Draft | null>(id ? null : { ...EMPTY });
   const [image, setImage] = useState<File | null>(null);
   const [formFile, setFormFile] = useState<File | null>(null);
-  const [errors, setErrors] = useState<Partial<Record<'nameAr' | 'formUrl' | 'sortOrder' | 'image', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<'nameAr' | 'sortOrder' | 'image', string>>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -55,7 +54,6 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
     if (!draft) return;
     const err: typeof errors = {};
     if (draft.nameAr.trim().length < 2) err.nameAr = t('svc.nameRequired');
-    if (draft.formUrl.trim() && !URL_RE.test(draft.formUrl.trim())) err.formUrl = t('svc.formUrlInvalid');
     const order = Number(draft.sortOrder);
     if (draft.sortOrder.trim() === '' || !Number.isInteger(order) || order < 0 || order > 100000) err.sortOrder = t('svc.orderInvalid');
     setErrors(err);
@@ -108,7 +106,6 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
               {pair('svc.department', 'departmentAr', 'departmentEn', { max: 150 })}
               {pair('svc.duration', 'durationAr', 'durationEn', { max: 100 })}
               {pair('svc.fee', 'feeAr', 'feeEn', { max: 150, hint: t('svc.feeHint') })}
-              <Field label={t('svc.formUrl')} error={errors.formUrl}><input maxLength={500} dir="ltr" placeholder="https://" aria-invalid={!!errors.formUrl} className={`${inputCls} ${errors.formUrl ? 'border-red-500' : ''}`} value={draft.formUrl} onChange={(e) => up({ formUrl: e.target.value })} /></Field>
               <div className="md:col-span-2">
                 <Field label={t('svc.formFile')} hint={t('svc.formFileHint')}>
                   <input type="file" accept=".pdf,.doc,.docx,application/pdf" className={inputCls} onChange={(e) => { setFormFile(e.target.files?.[0] ?? null); e.target.value = ''; }} />
