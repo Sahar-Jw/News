@@ -1,6 +1,7 @@
 /** Arabic names for the Settings table (category + key). English keeps the raw key; unknown keys fall back to it. */
 const CATEGORY_AR: Record<string, string> = {
   branding: 'الهوية',
+  mail: 'البريد الإلكتروني (اسم المرسِل والردود)',
   contact: 'التواصل',
   social: 'وسائل التواصل الاجتماعي',
   hero: 'الشريط الرئيسي',
@@ -140,7 +141,8 @@ const INCUBATOR_AR: Record<string, string> = {
 };
 
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
-const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عنوان', description: 'وصف' };
+const MAIL_PAGE_AR: Record<string, string> = { system: 'رسائل النظام (استعادة كلمة المرور)', newsletter: 'النشرة البريدية', membership: 'الانتساب', get2trade: 'غيت تو تريد', training: 'مركز التدريب', incubator: 'حاضنة الأعمال', expo: 'DCC EXPO' };
+const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عنوان', description: 'وصف', link: 'رابط الزر في', button: 'نص الزر في' };
 
 export const categoryLabel = (category: string, lang: string) => (lang === 'ar' ? CATEGORY_AR[category] ?? category : category);
 
@@ -157,8 +159,12 @@ export function keyLabel(category: string, key: string, lang: string): string {
   const base = m ? m[1] : key;
   const suffix = m ? (m[2] === 'ar' ? ' (عربي)' : ' (إنجليزي)') : '';
   if (category === 'hero') {
-    const s = /^slide(\d+)_(image|title|description)$/.exec(base);
+    const s = /^slide(\d+)_(image|title|description|link|button)$/.exec(base);
     if (s) return `${SLIDE_PART_AR[s[2]]} الشريحة ${s[1]}${suffix}`;
+  }
+  if (category === 'mail') {
+    const m = /^(.*)_(name|reply_to)$/.exec(key);
+    if (m && MAIL_PAGE_AR[m[1]]) return `${MAIL_PAGE_AR[m[1]]} — ${m[2] === 'name' ? 'اسم المرسِل الظاهر (اتركه فارغاً لاسم حساب البريد)' : 'بريد استقبال الردود (اتركه فارغاً ليرد على حساب البريد)'}`;
   }
   if (category === 'incubator' && INCUBATOR_AR[base]) return `${INCUBATOR_AR[base]}${suffix}`;
   if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;

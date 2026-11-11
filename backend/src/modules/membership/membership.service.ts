@@ -117,9 +117,9 @@ export class MembershipService {
     if (s.notifyEmail) {
       const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>طلب انتساب جديد ${ref}</h3>`
         + `<p><b>المنشأة:</b> ${esc(dto.companyName)}<br><b>النشاط:</b> ${esc(dto.activity)}<br><b>صاحب المنشأة / المفوض بالتوقيع:</b> ${esc(dto.managerName)}<br><b>نوع المنشأة:</b> ${esc(dto.businessType === 'other' ? dto.businessTypeOther ?? '' : dto.businessType === 'company' ? 'شركة' : 'منشأة فردية')}<br><b>السجل التجاري:</b> ${esc(dto.commercialRegNo)} (${esc(dto.registrationDate.slice(0, 10))})<br><b>الهاتف:</b> ${esc(dto.phone)}<br><b>البريد:</b> ${esc(dto.email)}<br><b>عدد المرفقات:</b> ${saved.length}</p></div>`;
-      void this.mail.send(s.notifyEmail, `طلب انتساب جديد ${ref}`, html);
+      void this.mail.as('membership').send(s.notifyEmail, `طلب انتساب جديد ${ref}`, html);
     }
-    void this.mail.send(dto.email, 'استلمنا طلب الانتساب', `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك، استلمنا طلب الانتساب الخاص بمنشأة <b>${esc(dto.companyName)}</b>.</p><p>رقم الطلب: <b>${ref}</b></p><p>سنراجع الطلب ونوافيك بالنتيجة على هذا البريد.</p></div>`);
+    void this.mail.as('membership').send(dto.email, 'استلمنا طلب الانتساب', `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك، استلمنا طلب الانتساب الخاص بمنشأة <b>${esc(dto.companyName)}</b>.</p><p>رقم الطلب: <b>${ref}</b></p><p>سنراجع الطلب ونوافيك بالنتيجة على هذا البريد.</p></div>`);
     return { id: app.id, reference: ref, message: 'تم استلام طلب الانتساب' };
   }
 
@@ -165,7 +165,7 @@ export class MembershipService {
     await this.audit.log({ category: 'membership', action: 'update', description: `تحديث طلب الانتساب ${reference(saved)} (${saved.status})`, actorId: actor.id, entityType: 'membership_applications', entityId: id });
     if (before !== saved.status && (saved.status === 'accepted' || saved.status === 'rejected')) {
       const ok = saved.status === 'accepted';
-      void this.mail.send(saved.email, ok ? 'تم قبول طلب الانتساب' : 'بخصوص طلب الانتساب',
+      void this.mail.as('membership').send(saved.email, ok ? 'تم قبول طلب الانتساب' : 'بخصوص طلب الانتساب',
         `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>${ok ? 'يسرّنا إبلاغكم بقبول طلب الانتساب' : 'نأسف لإبلاغكم بتعذّر قبول طلب الانتساب حالياً'} (رقم الطلب <b>${reference(saved)}</b>) الخاص بمنشأة <b>${esc(saved.companyName)}</b>.</p><p>للاستفسار يرجى التواصل مع الغرفة.</p></div>`);
     }
     return this.present(saved, await this.files.find({ where: { applicationId: id }, order: { id: 'ASC' } }));

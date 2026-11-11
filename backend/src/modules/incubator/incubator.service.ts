@@ -223,7 +223,7 @@ export class IncubatorService {
   private async notify(a: IncubatorApplication, ref: string, lang: 'ar' | 'en') {
     try {
       const en = lang === 'en';
-      await this.mail.send(a.email, en ? 'We received your project' : 'استلمنا مشروعك',
+      await this.mail.as('incubator').send(a.email, en ? 'We received your project' : 'استلمنا مشروعك',
         en ? `<div dir="ltr" style="font-family:Arial,sans-serif"><p>Thank you ${esc(a.founderName)}, we received your project "${esc(a.projectName)}" at the Business Incubator. Reference: <b>${ref}</b>. We will review it and contact you soon.</p></div>`
           : `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك ${esc(a.founderName)}، استلمنا مشروعك «${esc(a.projectName)}» في حاضنة الأعمال. رقم الطلب: <b>${ref}</b>. سنراجعه ونتواصل معك قريباً.</p></div>`);
       const get = async (category: string, key: string) => ((await this.settings.findOne({ where: { category, key } }))?.value ?? '').toString().trim();
@@ -232,7 +232,7 @@ export class IncubatorService {
       const row = (k: string, v?: string | null) => (v ? `<p><b>${k}:</b> ${esc(v)}</p>` : '');
       const stage: Record<string, string> = { idea: 'فكرة أولية', prototype: 'قيد التطوير', launched: 'مشروع قائم' };
       const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>مشروع جديد لحاضنة الأعمال ${ref}</h3>${row('المشروع', a.projectName)}${row('مقدم الطلب', a.founderName)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('القطاع', a.sector)}${row('المرحلة', a.stage ? stage[a.stage] ?? a.stage : null)}${row('الوصف', a.description)}${row('الجدوى الاقتصادية', a.feasibility)}${row('الفئة المستهدفة', a.targetAudience)}${row('فريق العمل', a.team)}${row('الاحتياجات المطلوبة', a.needs)}${a.profilePath ? '<p>مرفق: ملف تعريفي / دراسة (يُحمّل من لوحة الإدارة)</p>' : ''}</div>`;
-      await this.mail.send(to, `مشروع جديد لحاضنة الأعمال ${ref}: ${a.projectName}`, html);
+      await this.mail.as('incubator').send(to, `مشروع جديد لحاضنة الأعمال ${ref}: ${a.projectName}`, html);
     } catch (e) {
       this.logger.error(`Could not send the incubator e-mails: ${(e as Error).message}`);
     }

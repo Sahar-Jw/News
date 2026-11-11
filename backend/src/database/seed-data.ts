@@ -322,6 +322,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('social', 'youtube_url', 'url'),
   s('social', 'whatsapp_url', 'url'),
   s('social', 'telegram_url', 'url'),
+  // mail identity per part of the site (sender name / reply-to); empty = the mail account's own name
+  ...['system', 'newsletter', 'membership', 'get2trade', 'training', 'incubator', 'expo'].flatMap((p) => [s('mail', `${p}_name`, 'text'), s('mail', `${p}_reply_to`, 'text')]),
   // hero slider: 5 slides
   ...[1, 2, 3, 4, 5].flatMap((n) => [
     s('hero', `slide${n}_image`, 'file'),

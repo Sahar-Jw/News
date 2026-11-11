@@ -80,7 +80,7 @@ export class NewsletterService implements OnModuleInit, OnModuleDestroy {
     let sent = 0;
     for (const s of people) {
       const m = this.compose(n, topic, lang, s);
-      if (await this.mail.send(s.email, m.subject, m.html, m.headers)) sent++;
+      if (await this.mail.as('newsletter').send(s.email, m.subject, m.html, m.headers)) sent++;
       await new Promise((r) => setTimeout(r, GAP_MS));
     }
     await this.news.query(`UPDATE newsletter_dispatches SET recipients = $2, sent_at = now() WHERE news_id = $1`, [id, sent]);

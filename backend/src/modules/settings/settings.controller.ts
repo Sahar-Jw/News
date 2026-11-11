@@ -4,7 +4,7 @@ import { memoryStorage } from 'multer';
 import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions } from '../../common/decorators';
 import { AuthUser } from '../../common/types';
-import { SaveShortcutsDto, SettingsListQueryDto, UpdateSettingDto } from './settings.dto';
+import { SaveShortcutsDto, SaveHeroButtonsDto, SettingsListQueryDto, UpdateSettingDto } from './settings.dto';
 import { SettingsService } from './settings.service';
 
 @Controller('admin/settings')
@@ -34,6 +34,19 @@ export class SettingsController {
   @Permissions(PERM.SETTINGS_UPDATE)
   saveShortcuts(@Body() dto: SaveShortcutsDto, @CurrentUser() u: AuthUser) {
     return this.service.saveShortcuts(dto.urls, u);
+  }
+
+  /** Home hero: the button of each slide (page from the page list + its text). */
+  @Get('hero-buttons')
+  @Permissions(PERM.SETTINGS_READ)
+  heroButtons() {
+    return this.service.heroButtons();
+  }
+
+  @Put('hero-buttons')
+  @Permissions(PERM.SETTINGS_UPDATE)
+  saveHeroButtons(@Body() dto: SaveHeroButtonsDto, @CurrentUser() u: AuthUser) {
+    return this.service.saveHeroButtons(dto.items, u);
   }
 
   @Patch(':id')

@@ -254,9 +254,9 @@ export class Get2TradeService {
         + `<p><b>الاسم:</b> ${esc(dto.name)}<br>${dto.company ? `<b>الشركة:</b> ${esc(dto.company)}<br>` : ''}<b>الهاتف:</b> ${esc(dto.phone)}<br><b>البريد:</b> ${esc(dto.email)}`
         + `${space ? `<br><b>المساحة:</b> ${esc(space.nameAr)}` : ''}${pack ? `<br><b>الباقة:</b> ${esc(pack.nameAr)}` : ''}${dto.startDate ? `<br><b>تاريخ البدء:</b> ${esc(dto.startDate)}` : ''}${dto.people ? `<br><b>عدد الأشخاص:</b> ${dto.people}` : ''}${b.spaceKind ? `<br><b>نوع المساحة:</b> ${KIND_AR[b.spaceKind] ?? esc(b.spaceKind)}` : ''}${b.durationValue && b.durationUnit ? `<br><b>مدة الحجز:</b> ${b.durationValue} ${UNIT_AR[b.durationUnit] ?? ''}` : ''}${dto.extraServices ? `<br><b>خدمات إضافية:</b> ${esc(dto.extraServices)}` : ''}</p>`
         + `${dto.message ? `<p style="white-space:pre-wrap">${esc(dto.message)}</p>` : ''}</div>`;
-      void this.mail.send(st.notifyEmail, `${what} ${ref}`, html);
+      void this.mail.as('get2trade').send(st.notifyEmail, `${what} ${ref}`, html);
     }
-    void this.mail.send(dto.email, 'استلمنا طلبك', `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك ${esc(dto.name)}، استلمنا طلبك في غيت تو تريد. رقم الطلب: <b>${ref}</b>. سنتواصل معك قريباً.</p></div>`);
+    void this.mail.as('get2trade').send(dto.email, 'استلمنا طلبك', `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك ${esc(dto.name)}، استلمنا طلبك في غيت تو تريد. رقم الطلب: <b>${ref}</b>. سنتواصل معك قريباً.</p></div>`);
     return { id: Number(b.id), reference: ref, message: 'تم استلام طلبك' };
   }
 
@@ -303,7 +303,7 @@ export class Get2TradeService {
     await this.audit.log({ category: 'get2trade', action: 'update', description: `تحديث الطلب ${reference(saved)} (${saved.status})`, actorId: actor.id, entityType: 'g2t_bookings', entityId: id });
     if (before !== saved.status && (saved.status === 'accepted' || saved.status === 'rejected')) {
       const ok = saved.status === 'accepted';
-      void this.mail.send(saved.email, ok ? 'تم تأكيد طلبك في غيت تو تريد' : 'بخصوص طلبك في غيت تو تريد',
+      void this.mail.as('get2trade').send(saved.email, ok ? 'تم تأكيد طلبك في غيت تو تريد' : 'بخصوص طلبك في غيت تو تريد',
         `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>${ok ? 'يسرّنا إبلاغكم بتأكيد طلبكم' : 'نأسف لإبلاغكم بتعذّر تلبية طلبكم حالياً'} (${reference(saved)}).${ok ? ' سنتواصل معكم قريباً لاستكمال التفاصيل.' : ''}</p></div>`);
     }
     return this.presentBooking(saved);

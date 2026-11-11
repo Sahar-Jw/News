@@ -239,7 +239,7 @@ export class ExpoService {
       if (!to) return;
       const row = (k: string, v?: string | null) => (v ? `<p><b>${k}:</b> ${esc(v)}</p>` : '');
       const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>${KIND_AR[a.kind] ?? 'طلب جديد'} — DCC EXPO</h3>${row('الاسم', a.name)}${row('الشركة', a.company)}${row('الصفة الوظيفية', a.jobTitle)}${row('البريد', a.email)}${row('الهاتف', a.phone)}${row('الدولة', a.country)}${row('المدينة', a.city)}${row('مجال العمل', a.sector)}${row('المنتجات / الخدمات', a.products)}${row('المساحة', a.area)}${row('نوع الجناح', a.participationType)}${row('الاهتمام', a.interest)}${row('نوع الاستفسار', a.inquiryType)}${row('الملاحظات / النص', a.message)}${a.profileFile ? row('ملف التعريف', 'مرفق في لوحة التحكم') : ''}</div>`;
-      await this.mail.send(to, `${KIND_AR[a.kind] ?? 'طلب جديد'}: ${a.name}`, html);
+      await this.mail.as('expo').send(to, `${KIND_AR[a.kind] ?? 'طلب جديد'}: ${a.name}`, html);
     } catch (e) {
       this.logger.error(`Could not notify the EXPO team: ${(e as Error).message}`);
     }

@@ -310,7 +310,7 @@ export class TrainingService {
         name: pick(course.nameAr, course.nameEn, en), startDate: course.startDate, endDate: course.endDate, location: pick(course.locationAr, course.locationEn, en),
         hours: course.hours, fee: pick(course.feeAr, course.feeEn, en), trainer: t ? pick(t.title, t.x.nameEn, en) : '',
       });
-      await this.mail.send(email, mail.subject, mail.html);
+      await this.mail.as('training').send(email, mail.subject, mail.html);
     } catch (e) {
       this.logger.error(`Could not send the registration confirmation: ${(e as Error).message}`);
     }
@@ -326,7 +326,7 @@ export class TrainingService {
         name: dto.name.trim(), email, phone: dto.phone.trim(), workplace: dto.workplace.trim(), organization: dto.organization.trim(), jobTitle: dto.jobTitle.trim(),
         qualification: dto.qualification.trim(), experience: dto.experience?.trim() || null, notes: dto.notes?.trim() || null,
       });
-      await this.mail.send(to, m.subject, m.html);
+      await this.mail.as('training').send(to, m.subject, m.html);
     } catch (e) {
       this.logger.error(`Could not notify the training officer: ${(e as Error).message}`);
     }

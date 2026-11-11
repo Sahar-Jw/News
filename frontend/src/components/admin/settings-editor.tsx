@@ -8,6 +8,7 @@ import { SETTING_GROUPS, groupOf, type GroupId } from '@/lib/setting-groups';
 import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { ShortcutsEditor } from '@/components/admin/shortcuts-editor';
+import { HeroButtonsEditor } from '@/components/admin/hero-buttons-editor';
 
 interface Row { id: number; category: string; key: string; valueType: 'text' | 'number' | 'boolean' | 'url' | 'color' | 'file' | 'json'; value: any; fileUrl?: string }
 const SETTINGS_PAGE_SIZE = 20;
@@ -218,7 +219,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
       {rows && only && (
         <>
         {filterBar}
-        {only.includes('home') && can('settings.read') && !hasFilters && <ShortcutsEditor />}
+        {only.includes('home') && can('settings.read') && !hasFilters && <><HeroButtonsEditor /><ShortcutsEditor /></>}
         <div className="space-y-6">
           {groups.flatMap((g) => g.cats).map((cat) => ({ ...cat, list: cat.list.filter((r) => visibleIds.has(r.id)) })).filter((cat) => cat.list.length > 0).map(catBlock)}
           {totalMatches === 0 && <p className="py-8 text-center text-gray-500">{T.noMatch}</p>}
@@ -250,7 +251,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
           </div>
 
           {filterBar}
-          {can('settings.read') && !hasFilters && <ShortcutsEditor />}
+          {can('settings.read') && !hasFilters && <><HeroButtonsEditor /><ShortcutsEditor /></>}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="flex-1" />
             <Button type="button" size="sm" variant="outline" onClick={() => setOpen(groups.map((g) => g.id))}>{T.all}</Button>

@@ -287,13 +287,18 @@ export function ShortcutsGrid() {
 }
 
 /**
- * Home hero. The picture always spans the full width of the page (object-cover). Slides crossfade without scaling the images, the title rises word by word,
- * and story-style bars at the bottom fill while a slide is on screen (pause on hover, clickable).
+ * Home hero: clean card. The picture is always shown whole (never cropped), over a soft blurred copy of itself; the title, the description
+ * and the slide's button (a page chosen in Settings, with its own text) sit in a plain strip under the picture so nothing covers the image.
  */
 export function HeroSlider() {
   const { s, loc, img } = useSite();
+  const { t, href } = useI18n();
   const slides = [1, 2, 3, 4, 5]
-    .map((n) => ({ image: img('hero', `slide${n}_image`), title: loc('hero', `slide${n}_title`), desc: loc('hero', `slide${n}_description`), has: !!(s('hero', `slide${n}_image`) || s('hero', `slide${n}_title_ar`) || s('hero', `slide${n}_title_en`)) }))
+    .map((n) => ({
+      image: img('hero', `slide${n}_image`), title: loc('hero', `slide${n}_title`), desc: loc('hero', `slide${n}_description`),
+      link: String(s('hero', `slide${n}_link`) ?? '').trim(), button: loc('hero', `slide${n}_button`),
+      has: !!(s('hero', `slide${n}_image`) || s('hero', `slide${n}_title_ar`) || s('hero', `slide${n}_title_en`)),
+    }))
     .filter((x) => x.has);
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -304,48 +309,54 @@ export function HeroSlider() {
     return () => window.clearTimeout(timer);
   }, [i, many, paused, slides.length]);
   if (!slides.length) return null;
+  const cur = slides[Math.min(i, slides.length - 1)];
+  const go = (d: number) => setI((c) => (c + d + slides.length) % slides.length);
+  const btnCls = 'inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:bg-secondary hover:shadow-lift active:scale-[0.97]';
+  const label = cur.button || t('hero.more');
+  const arrow = <span aria-hidden="true" className="rtl:-scale-x-100">→</span>;
+  let button: React.ReactNode = null;
+  if (cur.link) {
+    if (/^https?:\/\//i.test(cur.link)) button = <a href={cur.link} target="_blank" rel="noopener noreferrer" className={btnCls}>{label}{arrow}</a>;
+    else { const [path, hash] = cur.link.split('#'); button = <Link href={`${href(path || '/')}${hash ? `#${hash}` : ''}`} className={btnCls}>{label}{arrow}</Link>; }
+  }
+  const nav = 'absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-lg text-secondary shadow-card ring-1 ring-line transition hover:bg-white hover:text-primary active:scale-95';
   return (
-    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="hero relative h-[280px] overflow-hidden rounded-b-[2.5rem] border-b-[3px] border-accent bg-secondary shadow-lift md:h-[440px]" aria-roledescription="carousel">
-      {slides.map((sl, k) => {
-        const on = k === i;
-        return (
-          <div key={k} aria-hidden={!on} className={`absolute inset-0 transition-opacity duration-[1200ms] ease-in-out ${on ? 'hero-in opacity-100' : 'pointer-events-none opacity-0'}`}>
-            <div className="absolute inset-0">
-              <FitImage src={sl.image} cover />
+    <section id="sec-hero" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="mx-auto max-w-7xl px-4 pt-4" aria-roledescription="carousel">
+      <div className="overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-line">
+        <div className="relative h-[220px] bg-secondary/5 sm:h-[320px] md:h-[440px]">
+          {slides.map((sl, k) => (
+            <div key={k} aria-hidden={k !== i} className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+              <FitImage src={sl.image} alt={sl.title} />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/35 to-secondary/5" />
-            <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 via-transparent to-transparent rtl:bg-gradient-to-l" />
-            <div className="corner-light absolute inset-0 rtl:-scale-x-100" aria-hidden="true" />
-            <div className="dots absolute inset-x-0 bottom-0 h-2/3" aria-hidden="true" />
-            <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-12 text-white md:px-12 md:pb-16">
-              <div className="hero-desc mb-4 h-1 w-14 rounded-full bg-accent" aria-hidden="true" />
-              {sl.title && (
-                <h2 className="max-w-3xl text-xl font-extrabold leading-snug md:text-3xl">
-                  {sl.title.split(' ').flatMap((w, wi) => [
-                    <span key={wi} className="inline-block overflow-hidden align-bottom"><span className="hero-word inline-block pb-1" style={{ animationDelay: `${150 + wi * 70}ms` }}>{w}</span></span>,
-                    ' ',
-                  ])}
-                </h2>
+          ))}
+          {many && (
+            <>
+              <button type="button" aria-label={t('hero.prev')} onClick={() => go(-1)} className={`${nav} start-3`}><span aria-hidden="true" className="rtl:-scale-x-100">‹</span></button>
+              <button type="button" aria-label={t('hero.next')} onClick={() => go(1)} className={`${nav} end-3`}><span aria-hidden="true" className="rtl:-scale-x-100">›</span></button>
+            </>
+          )}
+        </div>
+        {(cur.title || cur.desc || button || many) && (
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line px-5 py-4 md:px-8">
+            <div key={i} className="hero-in min-w-0 flex-1 basis-72">
+              {cur.title && <h2 className="hero-desc text-lg font-extrabold leading-snug text-secondary md:text-2xl">{cur.title}</h2>}
+              {cur.desc && <p className="hero-desc mt-1 line-clamp-2 text-sm leading-7 text-gray-600 md:text-base">{cur.desc}</p>}
+            </div>
+            <div className="flex items-center gap-4">
+              {many && (
+                <div className="flex items-center gap-1.5" role="tablist">
+                  {slides.map((_, k) => (
+                    <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="py-2">
+                      <span className={`block h-2 rounded-full transition-all ${k === i ? 'w-6 bg-accent' : 'w-2 bg-line hover:bg-primary/40'}`} />
+                    </button>
+                  ))}
+                </div>
               )}
-              {sl.desc && <p className="hero-desc mt-3 max-w-2xl text-sm text-white/85 md:text-base">{sl.desc}</p>}
+              {button}
             </div>
           </div>
-        );
-      })}
-      <div className="sheen" aria-hidden="true" />
-      <div className="edge-glow pointer-events-none absolute inset-x-0 bottom-0" aria-hidden="true" />
-      {many && (
-        <div className="absolute inset-x-0 bottom-0 z-10 mx-auto flex max-w-7xl gap-2 px-6 pb-5 md:px-12" role="tablist">
-          {slides.map((_, k) => (
-            <button key={k} type="button" role="tab" aria-selected={k === i} aria-label={`slide ${k + 1}`} onClick={() => setI(k)} className="h-5 flex-1 py-2">
-              <span className="block h-1 overflow-hidden rounded-full bg-white/25">
-                {k < i && <span className="block h-full w-full bg-white" />}
-                {k === i && <span key={`${i}-${slides.length}`} className="seg-fill block h-full bg-accent" />}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

@@ -14,6 +14,8 @@ import { SettingsListQueryDto } from './settings.dto';
 /** Quick links under the home hero: how many there are (the home page shows up to 6). */
 export const SHORTCUT_SLOTS = 6;
 /** Pages that are not in the main menu but make sense as a quick link. */
+/** Slides of the home hero (each can have a button). */
+const HERO_SLIDES = 5;
 const EXTRA_PAGES: PageOption[] = [
   { url: '/', titleAr: 'الصفحة الرئيسية', titleEn: 'Home page', group: null },
   { url: '/agenda', titleAr: 'أجندة الغرفة', titleEn: 'Chamber agenda', group: null },
@@ -227,6 +229,43 @@ export class SettingsService {
     await this.repo.save(toSave);
     await this.audit.log({ category: 'settings', action: 'update', description: 'تعديل الروابط السريعة للصفحة الرئيسية', actorId: actor.id, entityType: 'site_settings', details: { links: chosen.map((o) => o?.url ?? null) } });
     return this.shortcuts();
+  }
+
+  // ---------------------------------------------------------------- home hero: each slide can have a button to one of the site's pages
+  private heroRows() {
+    return this.repo.createQueryBuilder('s').where("s.category = 'hero'").getMany();
+  }
+
+  /** What is saved now (one entry per slide) and the pages that can be chosen. A saved link that is no longer a menu page stays selectable. */
+  async heroButtons() {
+    const rows = await this.heroRows();
+    const val = (k: string) => (rows.find((r) => r.key === k)?.value ?? '').trim();
+    const items = Array.from({ length: HERO_SLIDES }, (_, n) => ({ url: val(`slide${n + 1}_link`), textAr: val(`slide${n + 1}_button_ar`), textEn: val(`slide${n + 1}_button_en`) }));
+    const options = await this.pageOptions();
+    for (const it of items) if (it.url && !options.some((o) => o.url === it.url)) options.push({ url: it.url, titleAr: it.url, titleEn: it.url, group: null });
+    return { items, options };
+  }
+
+  /** Saves the buttons: the page comes from the page list (never typed), the button text is free (empty text = the site's default wording). */
+  async saveHeroButtons(items: { url?: string | null; textAr?: string | null; textEn?: string | null }[], actor: AuthUser) {
+    const { options } = await this.heroButtons();
+    const rows = await this.heroRows();
+    const toSave: SiteSetting[] = [];
+    const set = (key: string, value: string | null) => {
+      const row = rows.find((r) => r.key === key);
+      if (row) { row.value = value; toSave.push(row); } else toSave.push(this.repo.create({ category: 'hero', key, value, valueType: 'text' }));
+    };
+    for (let n = 0; n < HERO_SLIDES; n++) {
+      const it = items[n] ?? {};
+      const url = (it.url ?? '').trim();
+      if (url && !options.some((o) => o.url === url)) throw new BadRequestException('\u0627\u0644\u0635\u0641\u062d\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629 \u0641\u064a \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0635\u0641\u062d\u0627\u062a');
+      set(`slide${n + 1}_link`, url || null);
+      set(`slide${n + 1}_button_ar`, url ? (it.textAr ?? '').trim() || null : null);
+      set(`slide${n + 1}_button_en`, url ? (it.textEn ?? '').trim() || null : null);
+    }
+    await this.repo.save(toSave);
+    await this.audit.log({ category: 'settings', action: 'update', description: '\u062a\u0639\u062f\u064a\u0644 \u0623\u0632\u0631\u0627\u0631 \u0634\u0631\u0627\u0626\u062d \u0627\u0644\u0634\u0631\u064a\u0637 \u0627\u0644\u0631\u0626\u064a\u0633\u064a', actorId: actor.id, entityType: 'site_settings', details: { links: Array.from({ length: HERO_SLIDES }, (_, n) => (items[n]?.url ?? '').trim() || null) } });
+    return this.heroButtons();
   }
 
   /** { category: { key: typedValue } } – used by the public home endpoint. */

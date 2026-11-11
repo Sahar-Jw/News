@@ -5,7 +5,7 @@ export interface SettingGroup { id: GroupId; ar: string; en: string; hintAr: str
 
 export const SETTING_GROUPS: SettingGroup[] = [
   { id: 'home', ar: 'الصفحة الرئيسية', en: 'Home page', hintAr: 'الشريط الرئيسي، ترتيب الأقسام، الاختصارات والبانر', hintEn: 'Hero slider, section order, shortcuts and banner', icon: '⌂', color: '#0f6b4a', categories: ['hero', 'sections_home', 'shortcuts', 'promo'] },
-  { id: 'identity', ar: 'الهوية والتواصل', en: 'Identity & contact', hintAr: 'الشعار، الألوان، بيانات التواصل، التذييل ووسائل التواصل', hintEn: 'Logo, colours, contact details, footer and social links', icon: '✦', color: '#b8892b', categories: ['branding', 'appearance', 'contact', 'social', 'footer', 'labels'] },
+  { id: 'identity', ar: 'الهوية والتواصل', en: 'Identity & contact', hintAr: 'الشعار، الألوان، بيانات التواصل، التذييل ووسائل التواصل', hintEn: 'Logo, colours, contact details, footer and social links', icon: '✦', color: '#b8892b', categories: ['branding', 'appearance', 'contact', 'mail', 'social', 'footer', 'labels'] },
   { id: 'expo', ar: 'DCC EXPO (المعرض)', en: 'DCC EXPO', hintAr: 'معلومات المعرض وألوانه وبيانات التواصل', hintEn: 'Expo info, colours and contact', icon: '◈', color: '#4b1d7a', categories: ['expo'] },
   { id: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'شعار الصفحة وألوانها ونصوصها', hintEn: 'Page logo, colours and identity', icon: '✿', color: '#8b3d63', categories: ['women'] },
   { id: 'training', ar: 'مركز التدريب', en: 'Training centre', hintAr: 'نصوص وإعدادات صفحة التدريب', hintEn: 'Training page texts and options', icon: '✎', color: '#2563eb', categories: ['training'] },

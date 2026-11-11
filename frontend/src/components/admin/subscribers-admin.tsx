@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
+import { MailCheck } from '@/components/admin/mail-check';
 import { Button, Modal } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
@@ -61,6 +62,7 @@ export function SubscribersAdmin() {
   return (
     <RequirePerm any={['subscribers.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.subscribers')}</h1>
+      {can('settings.read') && <MailCheck />}
       <DataTable<Row>
         endpoint="/admin/subscribers"
         columns={cols}

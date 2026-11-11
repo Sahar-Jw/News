@@ -37,7 +37,7 @@ export class SubscribersService {
       <p style="text-align:center;margin:28px 0"><a href="${link}" style="background:#2748e8;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;display:inline-block">${ar ? 'تأكيد الاشتراك' : 'Confirm subscription'}</a></p>
       <p style="color:#6b7280;font-size:13px">${ar ? 'إذا لم يعمل الزر، انسخ هذا الرابط إلى المتصفح:' : 'If the button does not work, copy this link into your browser:'}<br><a href="${link}">${link}</a></p>
       <p style="color:#9ca3af;font-size:12px">${ar ? 'إذا لم تطلب هذا الاشتراك فتجاهل الرسالة، أو' : 'If you did not ask for this, ignore this message, or'} <a href="${unsub}">${ar ? 'ألغِ الاشتراك' : 'unsubscribe'}</a>.</p></div>`;
-    await this.mail.send(s.email, ar ? 'تأكيد الاشتراك في النشرة' : 'Confirm your newsletter subscription', html);
+    await this.mail.as('newsletter').send(s.email, ar ? 'تأكيد الاشتراك في النشرة' : 'Confirm your newsletter subscription', html);
   }
 
   // ---------------------------------------------------------------- public

@@ -7,8 +7,11 @@ import { NEWSLETTER_TOPIC_KEYS, NewsletterTopics } from './newsletter-topics';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Home section: an e-mail box and a button. Title, small label and subtitle come from Settings (sections_home → subscribe_*). */
-export function SubscribeSection({ openTopics = false }: { openTopics?: boolean } = {}) {
+/**
+ * An e-mail box and a button. Title, small label and subtitle come from Settings (sections_home → subscribe_*).
+ * On the home page visitors do not choose topics: a new subscriber receives everything. The topic picker (`showTopics`) is only for the /subscribe page.
+ */
+export function SubscribeSection({ showTopics = false }: { showTopics?: boolean } = {}) {
   const { t, lang } = useI18n();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
@@ -19,10 +22,10 @@ export function SubscribeSection({ openTopics = false }: { openTopics?: boolean 
     e.preventDefault();
     const v = email.trim();
     if (!EMAIL_RE.test(v) || v.length > 190) { setState('error'); setMsg(t('sub.invalid')); return; }
-    if (topics.length === 0) { setState('error'); setMsg(t('sub.noneChosen')); return; }
+    if (showTopics && topics.length === 0) { setState('error'); setMsg(t('sub.noneChosen')); return; }
     setState('busy');
     try {
-      const r = await api<{ message: string }>('/public/subscribe', { method: 'POST', body: { email: v, lang, topics } });
+      const r = await api<{ message: string }>('/public/subscribe', { method: 'POST', body: { email: v, lang, topics: showTopics ? topics : [...NEWSLETTER_TOPIC_KEYS] } });
       setState('done'); setMsg(r.message); setEmail('');
     } catch (err: any) {
       setState('error'); setMsg(err.message);
@@ -42,11 +45,11 @@ export function SubscribeSection({ openTopics = false }: { openTopics?: boolean 
           {state === 'busy' ? t('sub.sending') : t('sub.button')}
         </button>
       </form>
-      <details open={openTopics} className="mt-3 rounded-xl border border-line bg-white/70 px-4 py-3 text-start">
+      {showTopics && <details open className="mt-3 rounded-xl border border-line bg-white/70 px-4 py-3 text-start">
         <summary className="cursor-pointer text-sm font-semibold text-secondary">{t('sub.topics')}</summary>
         <p className="mb-2 mt-2 text-xs text-gray-500">{t('sub.topicsHint')}</p>
         <NewsletterTopics value={topics} onChange={(v) => { setTopics(v); if (state !== 'busy') setState('idle'); }} />
-      </details>
+      </details>}
       <p role="status" aria-live="polite" className={`text-center text-sm ${msg && (state === 'done' || state === 'error') ? 'mt-3' : ''} ${state === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>{state === 'done' || state === 'error' ? msg : ''}</p>
     </Reveal>
   );

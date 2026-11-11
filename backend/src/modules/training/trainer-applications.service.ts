@@ -84,12 +84,12 @@ export class TrainerApplicationsService {
   private async notify(app: TrainerApplication, ref: string, lang: 'ar' | 'en') {
     try {
       const c = trainerApplicationConfirmation(lang, app.fullName, ref);
-      await this.mail.send(app.email, c.subject, c.html);
+      await this.mail.as('training').send(app.email, c.subject, c.html);
       const get = async (category: string, key: string) => ((await this.settings.findOne({ where: { category, key } }))?.value ?? '').toString().trim();
       const to = (await get('training', 'officer_email')) || (await get('contact', 'email'));
       if (!to) return;
       const o = officerTrainerApplication(ref, { fullName: app.fullName, email: app.email, phone: app.phone, specializations: app.specializations, trainingFields: app.trainingFields, qualification: app.qualification, certificates: app.certificates.length });
-      await this.mail.send(to, o.subject, o.html);
+      await this.mail.as('training').send(to, o.subject, o.html);
     } catch (e) {
       this.logger.error(`Could not send the trainer application e-mails: ${(e as Error).message}`);
     }

@@ -5,7 +5,7 @@ const ar: Record<string, string> = {
   'app.back': 'رجوع', 'app.all': 'الكل', 'app.none': '—', 'app.saved': 'تم الحفظ بنجاح', 'app.deleted': 'تم الحذف', 'app.actions': 'إجراءات',
   'app.next': 'التالي', 'app.prev': 'السابق', 'app.sending': 'جارٍ الإرسال…', 'app.reset': 'إعادة ضبط', 'app.apply': 'تطبيق',
   // site
-  'site.home': 'الرئيسية', 'site.categories': 'التصنيفات', 'site.subcategories': 'الفئات الفرعية', 'site.sections': 'الأقسام', 'site.language': 'English', 'site.readMore': 'اقرأ المزيد',
+  'site.home': 'الرئيسية', 'site.categories': 'التصنيفات', 'site.subcategories': 'الفئات الفرعية', 'site.sections': 'الأقسام', 'site.language': 'English', 'hero.more': 'اعرف المزيد', 'hero.prev': 'الشريحة السابقة', 'hero.next': 'الشريحة التالية', 'site.readMore': 'اقرأ المزيد',
   'site.share': 'مشاركة', 'site.views': 'مشاهدة', 'site.breaking': 'عاجل', 'site.noNews': 'لا توجد أخبار', 'site.related': 'مقالات ذات صلة',
   'site.searchPlaceholder': 'ابحث في الأخبار…', 'site.searchMin': 'اكتب حرفين على الأقل', 'site.results': 'نتائج البحث', 'site.topics': 'المواضيع',
   'site.filters': 'تصفية الأخبار', 'site.search': 'بحث', 'site.category': 'التصنيف', 'site.subcategory': 'التصنيف الفرعي', 'site.allCategories': 'كل التصنيفات', 'site.allSubcategories': 'كل التصنيفات الفرعية', 'site.dateFrom': 'من تاريخ', 'site.dateTo': 'إلى تاريخ', 'site.dateRangeInvalid': 'يجب أن يكون تاريخ البداية قبل تاريخ النهاية', 'site.sortBy': 'الترتيب', 'site.sortNewest': 'الأحدث أولاً', 'site.sortOldest': 'الأقدم أولاً', 'site.sortViews': 'الأكثر مشاهدة', 'site.applyFilters': 'تطبيق', 'site.resetFilters': 'إعادة ضبط',
@@ -237,7 +237,7 @@ const en: Record<string, string> = {
   'app.add': 'Add', 'app.view': 'View', 'app.chooseFile': 'Choose file', 'app.chooseFiles': 'Choose files', 'app.filesSelected': 'files selected', 'app.close': 'Close', 'app.search': 'Search', 'app.confirm': 'Confirm', 'app.yes': 'Yes', 'app.no': 'No',
   'app.back': 'Back', 'app.all': 'All', 'app.none': '—', 'app.saved': 'Saved successfully', 'app.deleted': 'Deleted', 'app.actions': 'Actions',
   'app.next': 'Next', 'app.prev': 'Previous', 'app.sending': 'Sending…', 'app.reset': 'Reset', 'app.apply': 'Apply',
-  'site.home': 'Home', 'site.categories': 'Categories', 'site.subcategories': 'Subcategories', 'site.sections': 'Sections', 'site.language': 'العربية', 'site.readMore': 'Read more',
+  'site.home': 'Home', 'site.categories': 'Categories', 'site.subcategories': 'Subcategories', 'site.sections': 'Sections', 'site.language': 'العربية', 'hero.more': 'Learn more', 'hero.prev': 'Previous slide', 'hero.next': 'Next slide', 'site.readMore': 'Read more',
   'site.share': 'Share', 'site.views': 'views', 'site.breaking': 'Breaking', 'site.noNews': 'No news found', 'site.related': 'Related articles',
   'site.searchPlaceholder': 'Search news…', 'site.searchMin': 'Type at least 2 characters', 'site.results': 'Search results', 'site.topics': 'Topics',
   'site.filters': 'Filter news', 'site.search': 'Search', 'site.category': 'Category', 'site.subcategory': 'Subcategory', 'site.allCategories': 'All categories', 'site.allSubcategories': 'All subcategories', 'site.dateFrom': 'From date', 'site.dateTo': 'To date', 'site.dateRangeInvalid': 'Start date must be before end date', 'site.sortBy': 'Sort by', 'site.sortNewest': 'Newest first', 'site.sortOldest': 'Oldest first', 'site.sortViews': 'Most viewed', 'site.applyFilters': 'Apply', 'site.resetFilters': 'Reset',
