@@ -1,12 +1,13 @@
 import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { NavItem } from '../nav/nav.entity';
 import { SiteSetting } from './site-setting.entity';
 import { SettingsController } from './settings.controller';
 import { SettingsService } from './settings.service';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([SiteSetting])],
+  imports: [TypeOrmModule.forFeature([SiteSetting, NavItem])],
   controllers: [SettingsController],
   providers: [SettingsService],
   exports: [SettingsService],

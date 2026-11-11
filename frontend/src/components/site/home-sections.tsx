@@ -15,7 +15,7 @@ export { BreakingTicker } from './breaking-ticker';
 export { SubscribeSection } from './subscribe-section';
 
 /** Background band per section, so the page has rhythm instead of one flat sheet. */
-const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', contact: 'tint', testimonials: 'dark' };
+const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', testimonials: 'dark' };
 
 /**
  * Section frame: optional eyebrow (small label above), title, accent bar and optional subtitle.
@@ -63,20 +63,36 @@ function SmartLink({ link, className, children }: { link: string; className: str
 
 interface AgendaItem { id: number; title: string; date: string; images: string[] }
 
+/** Small heading of one column of the agenda row (same look as the section titles: title, gold ornament, optional subtitle). */
+function ColumnTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-5 text-center">
+      <h2 className="text-xl font-extrabold leading-tight text-secondary md:text-2xl">{title}</h2>
+      <div className="mt-3 flex items-center justify-center gap-2.5" aria-hidden="true">
+        <span className="h-px w-14 bg-gradient-to-r from-transparent to-accent" />
+        <span className="relative h-2.5 w-2.5 rotate-45 border border-accent"><span className="absolute inset-[2px] bg-accent" /></span>
+        <span className="h-px w-14 bg-gradient-to-l from-transparent to-accent" />
+      </div>
+      {subtitle && <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[color:var(--muted)]">{subtitle}</p>}
+    </div>
+  );
+}
+
 /**
- * "Chamber agenda" (wireframe W01): the next occasions, next to a promo banner (DCC EXPO) that is filled from Settings (promo → title, text, button, link, image).
- * Nothing is drawn while there are no upcoming occasions and no banner title.
+ * One row with two columns, each with its own title: the chamber agenda (what is coming up or happening now) and the DCC EXPO banner
+ * (filled from Settings; the "promo" settings, when filled, replace its content). Both columns are always there: with nothing on the agenda
+ * the left column says so instead of disappearing.
  */
 export function AgendaSection({ code, title }: { code: string; title: string }) {
   const { lang, t, href } = useI18n();
   const { s, loc, img } = useSite();
   const [items, setItems] = useState<AgendaItem[] | null>(null);
   useEffect(() => {
-    api<{ data: AgendaItem[] }>('/public/occasions', { params: { lang, scope: 'upcoming', limit: 4 }, cache: 'no-store' }).then((r) => setItems(r.data)).catch(() => setItems([]));
+    // 'agenda' = upcoming + happening now; with 'upcoming' alone the column emptied as soon as an event had started
+    api<{ data: AgendaItem[] }>('/public/occasions', { params: { lang, scope: 'agenda', limit: 4 }, cache: 'no-store' }).then((r) => setItems(r.data)).catch(() => setItems([]));
   }, [lang]);
   const promoTitle = loc('promo', 'title'), promoText = loc('promo', 'text'), promoButton = loc('promo', 'button');
   const promoLink = String(s('promo', 'link') ?? '').trim(), promoImage = img('promo', 'image');
-  // DCC EXPO banner (wireframe P1): always beside the agenda. The "promo" settings, when filled, replace its content.
   const hasPromo = !!promoTitle;
   const expoName = loc('expo', 'name') || 'DCC EXPO';
   const expoTagline = loc('expo', 'tagline');
@@ -88,46 +104,55 @@ export function AgendaSection({ code, title }: { code: string; title: string }) 
   if (items === null) return null;
   const bannerCls = 'relative flex min-h-[200px] flex-col justify-center overflow-hidden rounded-2xl p-6 text-white shadow-card';
   return (
-    <SectionWrap code={code} title={title} action={items.length ? <Link href={href('/agenda')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link> : undefined}>
-      <div className={`grid gap-5 ${items.length ? 'lg:grid-cols-2' : ''}`}>
-        {items.length > 0 && (
-          <ul className="space-y-3">
-            {items.map((o) => (
-              <li key={o.id}>
-                <Link href={href(`/occasions/view?id=${o.id}`)} className="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
-                  <Thumb src={o.images[0]} alt="" className="h-16 w-24 shrink-0 rounded-xl" />
-                  <span className="min-w-0">
-                    <span className="block text-xs font-semibold text-primary">{fmtDay(lang, o.date)}</span>
-                    <span className="mt-0.5 line-clamp-2 block font-bold text-secondary group-hover:text-primary">{o.title}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        {hasPromo ? (
-          <div className={`${bannerCls} bg-gradient-to-br from-secondary to-primary`}>
-            {promoImage && <img src={promoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
-            <div className="relative">
-              <h3 className="text-2xl font-extrabold leading-tight">{promoTitle}</h3>
-              {promoText && <p className="mt-2 max-w-md text-sm leading-7 text-white/85">{promoText}</p>}
-              {promoLink && promoButton && <SmartLink link={promoLink} className="mt-4 inline-block rounded-full bg-accent px-5 py-2 text-sm font-bold text-secondary transition hover:brightness-110">{promoButton}</SmartLink>}
-            </div>
+    <section id={`sec-${code}`} className="relative scroll-mt-20">
+      <div className="relative mx-auto max-w-7xl px-4 py-8 md:py-10">
+        <Reveal className="grid items-start gap-8 lg:grid-cols-2">
+          <div>
+            <ColumnTitle title={title} subtitle={loc('sections_home', `${code}_subtitle`)} />
+            {items.length > 0 ? (
+              <ul className="space-y-3">
+                {items.map((o) => (
+                  <li key={o.id}>
+                    <Link href={href(`/occasions/view?id=${o.id}`)} className="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+                      <Thumb src={o.images[0]} alt="" className="h-16 w-24 shrink-0 rounded-xl" />
+                      <span className="min-w-0">
+                        <span className="block text-xs font-semibold text-primary">{fmtDay(lang, o.date)}</span>
+                        <span className="mt-0.5 line-clamp-2 block font-bold text-secondary group-hover:text-primary">{o.title}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="rounded-2xl bg-white p-6 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t('pub.noOccasions')}</p>}
+            <div className="mt-5 text-center"><Link href={href('/agenda')} className="text-sm font-semibold text-primary">{t('home.allEvents')} →</Link></div>
           </div>
-        ) : (
-          <Link href={href('/expo')} className={`${bannerCls} group`} style={{ backgroundImage: `linear-gradient(135deg, ${expoFrom}, ${expoFrom}d9)` }}>
-            {expoImage && <img src={expoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30 transition duration-500 group-hover:scale-105" />}
-            <div className="relative">
-              <span className="inline-block rounded-full px-3 py-1 text-xs font-bold text-secondary" style={{ backgroundColor: expoAccent }}>{expoDates || t('home.expoSoon')}</span>
-              <h3 className="mt-3 text-3xl font-extrabold leading-tight">{expoName}</h3>
-              {expoTagline && <p className="mt-1 text-base text-white/90">{expoTagline}</p>}
-              {expoVenue && <p className="mt-2 text-sm text-white/75">{expoVenue}</p>}
-              <span className="mt-4 inline-block rounded-full px-5 py-2 text-sm font-bold text-secondary transition group-hover:brightness-110" style={{ backgroundColor: expoAccent }}>{t('home.expoCta')} →</span>
-            </div>
-          </Link>
-        )}
+          <div>
+            <ColumnTitle title={hasPromo ? t('home.promoHeading') : expoName} />
+            {hasPromo ? (
+              <div className={`${bannerCls} bg-gradient-to-br from-secondary to-primary`}>
+                {promoImage && <img src={promoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30" />}
+                <div className="relative">
+                  <h3 className="text-2xl font-extrabold leading-tight">{promoTitle}</h3>
+                  {promoText && <p className="mt-2 max-w-md text-sm leading-7 text-white/85">{promoText}</p>}
+                  {promoLink && promoButton && <SmartLink link={promoLink} className="mt-4 inline-block rounded-full bg-accent px-5 py-2 text-sm font-bold text-secondary transition hover:brightness-110">{promoButton}</SmartLink>}
+                </div>
+              </div>
+            ) : (
+              <Link href={href('/expo')} className={`${bannerCls} group`} style={{ backgroundImage: `linear-gradient(135deg, ${expoFrom}, ${expoFrom}d9)` }}>
+                {expoImage && <img src={expoImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-30 transition duration-500 group-hover:scale-105" />}
+                <div className="relative">
+                  <span className="inline-block rounded-full px-3 py-1 text-xs font-bold text-secondary" style={{ backgroundColor: expoAccent }}>{expoDates || t('home.expoSoon')}</span>
+                  <h3 className="mt-3 text-3xl font-extrabold leading-tight">{expoName}</h3>
+                  {expoTagline && <p className="mt-1 text-base text-white/90">{expoTagline}</p>}
+                  {expoVenue && <p className="mt-2 text-sm text-white/75">{expoVenue}</p>}
+                  <span className="mt-4 inline-block rounded-full px-5 py-2 text-sm font-bold text-secondary transition group-hover:brightness-110" style={{ backgroundColor: expoAccent }}>{t('home.expoCta')} →</span>
+                </div>
+              </Link>
+            )}
+          </div>
+        </Reveal>
       </div>
-    </SectionWrap>
+    </section>
   );
 }
 
@@ -579,28 +604,6 @@ export function Company({ items }: { items: Card[] }) {
         </Link>
       ))}
     </Stagger>
-  );
-}
-
-/** Home: a short card that opens the contact page (the full details and the form moved to /contact). */
-export function ContactTeaser() {
-  const { t, href } = useI18n();
-  const { s } = useSite();
-  const phone = s('contact', 'phone');
-  const email = s('contact', 'email');
-  return (
-    <Reveal className="flex flex-col items-center gap-4 rounded-2xl bg-white p-6 text-center shadow-card ring-1 ring-line md:flex-row md:justify-between md:text-start">
-      <div>
-        <p className="text-sm leading-7 text-gray-700">{t('ct.teaser')}</p>
-        {(phone || email) && (
-          <p className="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm font-semibold text-secondary md:justify-start">
-            {phone && <a href={telHref(phone)} className="hover:text-primary"><bdi dir="ltr">{phone}</bdi></a>}
-            {email && <a href={`mailto:${email}`} className="hover:text-primary"><bdi dir="ltr">{email}</bdi></a>}
-          </p>
-        )}
-      </div>
-      <Link href={href('/contact')} className="shrink-0 rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('ct.open')}</Link>
-    </Reveal>
   );
 }
 

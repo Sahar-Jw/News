@@ -8,7 +8,21 @@ import { escapeLike } from '../../common/utils/text';
 import { SiteSetting } from './site-setting.entity';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
+import { NavItem } from '../nav/nav.entity';
 import { SettingsListQueryDto } from './settings.dto';
+
+/** Quick links under the home hero: how many there are (the home page shows up to 6). */
+export const SHORTCUT_SLOTS = 6;
+/** Pages that are not in the main menu but make sense as a quick link. */
+const EXTRA_PAGES: PageOption[] = [
+  { url: '/', titleAr: 'الصفحة الرئيسية', titleEn: 'Home page', group: null },
+  { url: '/agenda', titleAr: 'أجندة الغرفة', titleEn: 'Chamber agenda', group: null },
+  { url: '/occasions', titleAr: 'المعارض والفعاليات', titleEn: 'Exhibitions & events', group: null },
+  { url: '/contact', titleAr: 'اتصل بنا', titleEn: 'Contact us', group: null },
+  { url: '/subscribe', titleAr: 'الاشتراك في النشرة البريدية', titleEn: 'Newsletter subscription', group: null },
+];
+
+export interface PageOption { url: string; titleAr: string; titleEn: string; group: { ar: string; en: string } | null }
 
 @Injectable()
 export class SettingsService {
@@ -16,6 +30,7 @@ export class SettingsService {
     @InjectRepository(SiteSetting) private readonly repo: Repository<SiteSetting>,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
+    @InjectRepository(NavItem) private readonly navItems: Repository<NavItem>,
   ) {}
 
   /** Typed value for API consumers. */
@@ -148,6 +163,70 @@ export class SettingsService {
     await this.storage.remove(old);
     await this.audit.log({ category: 'settings', action: 'update.file', description: `تحديث ملف الإعداد ${s.category}.${s.key}`, actorId: actor.id, entityType: 'site_settings', entityId: id });
     return this.present(s);
+  }
+
+  // ---------------------------------------------------------------- home quick links: the admin picks pages, the titles come with them
+  /** The pages that can be chosen: the active links of the main menu (with both titles) and a few more pages. The first one of a url wins. */
+  async pageOptions(): Promise<PageOption[]> {
+    const items = await this.navItems.createQueryBuilder('i').innerJoinAndSelect('i.group', 'g').where('i.isActive = true AND g.isActive = true').orderBy('g.sortOrder', 'ASC').addOrderBy('i.sortOrder', 'ASC').addOrderBy('i.id', 'ASC').getMany();
+    const seen = new Set<string>();
+    const out: PageOption[] = [];
+    for (const i of items) {
+      const url = i.url.trim();
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      out.push({ url, titleAr: i.titleAr, titleEn: i.titleEn?.trim() || i.titleAr, group: { ar: i.group.titleAr, en: i.group.titleEn?.trim() || i.group.titleAr } });
+    }
+    for (const e of EXTRA_PAGES) if (!seen.has(e.url)) { seen.add(e.url); out.push(e); }
+    return out;
+  }
+
+  private shortcutRows() {
+    return this.repo.createQueryBuilder('s').where("s.category = 'shortcuts'").getMany();
+  }
+
+  /** What is saved now (one entry per slot, null when empty) and what can be chosen. A saved link that is no longer a menu page stays selectable. */
+  async shortcuts() {
+    const rows = await this.shortcutRows();
+    const val = (k: string) => (rows.find((r) => r.key === k)?.value ?? '').trim();
+    const items = Array.from({ length: SHORTCUT_SLOTS }, (_, n) => {
+      const url = val(`item${n + 1}_link`);
+      const titleAr = val(`item${n + 1}_title_ar`);
+      return url && titleAr ? { url, titleAr, titleEn: val(`item${n + 1}_title_en`) || titleAr } : null;
+    });
+    const options = await this.pageOptions();
+    for (const it of items) if (it && !options.some((o) => o.url === it.url)) options.push({ ...it, group: null });
+    return { items, options };
+  }
+
+  /** Saves the chosen pages (`urls[n]` = the url of slot n + 1, null / '' = empty). Titles are taken from the page list, never typed. */
+  async saveShortcuts(urls: (string | null)[], actor: AuthUser) {
+    if (urls.length > SHORTCUT_SLOTS) throw new BadRequestException('عدد الروابط السريعة كبير');
+    const { options } = await this.shortcuts();
+    const rows = await this.shortcutRows();
+    const chosen: (PageOption | null)[] = [];
+    for (let n = 0; n < SHORTCUT_SLOTS; n++) {
+      const url = (urls[n] ?? '').trim();
+      if (!url) { chosen.push(null); continue; }
+      const o = options.find((x) => x.url === url);
+      if (!o) throw new BadRequestException('الصفحة المختارة غير موجودة في قائمة الصفحات');
+      chosen.push(o);
+    }
+    const dup = chosen.filter((o): o is PageOption => !!o).map((o) => o.url).find((u, i, a) => a.indexOf(u) !== i);
+    if (dup) throw new BadRequestException('لا يمكن اختيار الصفحة نفسها مرتين');
+    const toSave: SiteSetting[] = [];
+    const set = (key: string, value: string | null) => {
+      const row = rows.find((r) => r.key === key);
+      if (row) { row.value = value; toSave.push(row); } else toSave.push(this.repo.create({ category: 'shortcuts', key, value, valueType: 'text' }));
+    };
+    chosen.forEach((o, n) => {
+      set(`item${n + 1}_title_ar`, o?.titleAr ?? null);
+      set(`item${n + 1}_title_en`, o?.titleEn ?? null);
+      set(`item${n + 1}_link`, o?.url ?? null);
+    });
+    await this.repo.save(toSave);
+    await this.audit.log({ category: 'settings', action: 'update', description: 'تعديل الروابط السريعة للصفحة الرئيسية', actorId: actor.id, entityType: 'site_settings', details: { links: chosen.map((o) => o?.url ?? null) } });
+    return this.shortcuts();
   }
 
   /** { category: { key: typedValue } } – used by the public home endpoint. */

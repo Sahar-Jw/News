@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions } from '../../common/decorators';
 import { AuthUser } from '../../common/types';
-import { SettingsListQueryDto, UpdateSettingDto } from './settings.dto';
+import { SaveShortcutsDto, SettingsListQueryDto, UpdateSettingDto } from './settings.dto';
 import { SettingsService } from './settings.service';
 
 @Controller('admin/settings')
@@ -21,6 +21,19 @@ export class SettingsController {
   @Permissions(PERM.SETTINGS_READ)
   categories() {
     return this.service.categories();
+  }
+
+  /** Home quick links: what is saved and the pages that can be chosen (both titles come with each page). */
+  @Get('shortcuts')
+  @Permissions(PERM.SETTINGS_READ)
+  shortcuts() {
+    return this.service.shortcuts();
+  }
+
+  @Put('shortcuts')
+  @Permissions(PERM.SETTINGS_UPDATE)
+  saveShortcuts(@Body() dto: SaveShortcutsDto, @CurrentUser() u: AuthUser) {
+    return this.service.saveShortcuts(dto.urls, u);
   }
 
   @Patch(':id')

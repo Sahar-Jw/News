@@ -8,7 +8,6 @@ import { useI18n } from '@/lib/i18n';
 import { useSite } from './site-context';
 import { useNavGroups } from './use-nav';
 import { useFooterGroups, type FooterLinkItem } from './use-footer';
-import { FooterNewsletter } from './footer-newsletter';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { HUB_PERMS } from '@/lib/hubs-meta';
 import { CONTENT_TYPES, contentTypeLabel, contentTypeUrl } from '@/lib/content-types';
@@ -443,7 +442,6 @@ export function Footer() {
   const official = groups.find((g) => g.kind === 'official');
   const legal = groups.filter((g) => g.kind === 'legal').flatMap((g) => g.items);
   const hasSocial = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'].some((k) => s('social', k));
-  const showNewsletter = String(s('footer', 'show_newsletter')) !== 'false';
   const tagline = loc('footer', 'tagline');
   const rights = loc('footer', 'rights');
   const phone = s('contact', 'phone');
@@ -487,13 +485,6 @@ export function Footer() {
             <div className="mt-4">
               <div className="mb-1.5 text-xs font-bold text-white">{official.title}</div>
               <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-stone-300">{official.items.map((i) => <li key={i.id}><FootLink item={i} href={href} /></li>)}</ul>
-            </div>
-          )}
-          {showNewsletter && (
-            <div className="mt-4">
-              <div className="text-xs font-bold text-white">{loc('footer', 'newsletter_title')}</div>
-              {loc('footer', 'newsletter_text') && <p className="mb-2 mt-0.5 text-xs text-stone-400">{loc('footer', 'newsletter_text')}</p>}
-              <FooterNewsletter />
             </div>
           )}
         </div>

@@ -7,6 +7,7 @@ import { categoryLabel, keyLabel } from '@/lib/setting-labels';
 import { SETTING_GROUPS, groupOf, type GroupId } from '@/lib/setting-groups';
 import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { ShortcutsEditor } from '@/components/admin/shortcuts-editor';
 
 interface Row { id: number; category: string; key: string; valueType: 'text' | 'number' | 'boolean' | 'url' | 'color' | 'file' | 'json'; value: any; fileUrl?: string }
 const SETTINGS_PAGE_SIZE = 20;
@@ -126,7 +127,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     return textMatch && categoryMatch && typeMatch;
   };
   const eligibleRows = (rows ?? []).filter((r) =>
-    r.key !== 'page_links' && !(r.category === 'one_stop' && r.key === 'schedule') && (only ? only.includes(groupOf(r.category)) : r.category !== 'pages'),
+    r.key !== 'page_links' && r.category !== 'shortcuts' && !(r.category === 'one_stop' && r.key === 'schedule') && (only ? only.includes(groupOf(r.category)) : r.category !== 'pages'),
   );
   const categories = [...new Set(eligibleRows.map((r) => r.category))].sort();
   const typeRows = eligibleRows.filter((r) => !categoryFilter || r.category === categoryFilter);
@@ -142,7 +143,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const groups = useMemo(() => {
     const m = new Map<GroupId, Map<string, Row[]>>();
     for (const r of rows ?? []) {
-      if (r.key === 'page_links' || (r.category === 'one_stop' && r.key === 'schedule') || (!only && r.category === 'pages')) continue;
+      if (r.key === 'page_links' || r.category === 'shortcuts' || (r.category === 'one_stop' && r.key === 'schedule') || (!only && r.category === 'pages')) continue;
       const g = groupOf(r.category);
       if (only && only.length && !only.includes(g)) continue;
       if (!m.has(g)) m.set(g, new Map());
@@ -208,6 +209,8 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     <>
       {loadErr && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p>}
       {!rows && !loadErr && <p className="py-10 text-center text-gray-500">{t('app.loading')}</p>}
+
+      {rows && (!only || only.includes('home')) && can('settings.read') && !hasFilters && <ShortcutsEditor />}
 
       {rows && only && (
         <>

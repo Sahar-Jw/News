@@ -89,7 +89,6 @@ export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[]
   { code: 'statistics', titleAr: 'إحصائياتنا', titleEn: 'Our Statistics' },
   { code: 'company', titleAr: 'الشركات الشريكة', titleEn: 'Partner Companies' },
   { code: 'subscribe', titleAr: 'اشترك في نشرتنا', titleEn: 'Subscribe to our newsletter' },
-  { code: 'contact', titleAr: 'تواصل معنا', titleEn: 'Contact Us' },
 ];
 
 /** Default quick links of the home page (all point to pages that already exist). */
@@ -356,20 +355,15 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('media', 'kit_about_ar', 'text'),
   s('media', 'kit_about_en', 'text'),
   s('media', 'kit_hq_album', 'number'),
-  // Footer: titles, the newsletter text, the tagline and the rights line (the link columns live in footer_groups / footer_links)
+  // Footer: titles, the tagline and the rights line (the link columns live in footer_groups / footer_links)
   s('footer', 'contact_title_ar', 'text', 'تواصل معنا'),
   s('footer', 'contact_title_en', 'text', 'Contact us'),
   s('footer', 'social_title_ar', 'text', 'منصات التواصل'),
   s('footer', 'social_title_en', 'text', 'Social media'),
-  s('footer', 'newsletter_title_ar', 'text', 'نشرة البريد'),
-  s('footer', 'newsletter_title_en', 'text', 'Newsletter'),
-  s('footer', 'newsletter_text_ar', 'text', 'اشترك ليصلك جديد الغرفة'),
-  s('footer', 'newsletter_text_en', 'text', 'Subscribe to receive the chamber news'),
   s('footer', 'tagline_ar', 'text', 'غرفة تجارة دمشق - بيت كل تاجر'),
   s('footer', 'tagline_en', 'text', 'Damascus Chamber of Commerce — the home of every merchant'),
   s('footer', 'rights_ar', 'text', '© جميع الحقوق محفوظة لغرفة تجارة دمشق'),
   s('footer', 'rights_en', 'text', '© All rights reserved to the Damascus Chamber of Commerce'),
-  s('footer', 'show_newsletter', 'boolean', 'true'),
   // homepage sections: titles, order, visibility
   ...HOME_SECTIONS.flatMap((sec, i) => [
     s('sections_home', `${sec.code}_title_ar`, 'text', sec.titleAr),
