@@ -7,18 +7,11 @@ name: Build and push Docker images
 #   DOCKERHUB_USERNAME  - your Docker Hub username
 #   DOCKERHUB_TOKEN     - a Docker Hub access token with Read & Write permission
 #
-# Frontend API URL (baked in at build time), in order of priority:
-#   1. "api_url" input when you click Run workflow
-#   2. repository variable NEXT_PUBLIC_API_URL
-#   e.g. https://<backend-temp-domain>/api
+# The frontend runs as a Node server and reads the backend URL at RUNTIME from the API_URL
+# environment variable of the container, so nothing needs to be baked in at build time.
 
 on:
   workflow_dispatch:
-    inputs:
-      api_url:
-        description: "Backend API URL for the frontend (e.g. https://xxxx.ghaymah.app/api)"
-        required: false
-        default: ""
   push:
     branches: [main]
 
@@ -57,8 +50,6 @@ jobs:
           context: ./frontend
           platforms: linux/amd64
           push: true
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ inputs.api_url || vars.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/news-frontend:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/news-frontend:${{ github.run_number }}

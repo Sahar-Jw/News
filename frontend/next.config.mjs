@@ -1,7 +1,8 @@
-/** Static export: the whole site is plain files, ideal for cPanel shared hosting.
- *  All data is fetched in the browser from the NestJS API (NEXT_PUBLIC_API_URL). */
+/** Server mode (standalone): Next.js runs as a Node server inside the container.
+ *  The backend URL is NOT baked in at build time: it is read from the API_URL environment variable when the
+ *  container starts and handed to the browser through /runtime-config.js (see src/app/runtime-config.js/route.ts). */
 const nextConfig = {
-  // output: 'export',
+  output: 'standalone',
   trailingSlash: true,
   images: { unoptimized: true },
   reactStrictMode: true,

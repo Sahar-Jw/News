@@ -1,4 +1,10 @@
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api').replace(/\/$/, '');
+/** Backend URL, read at RUNTIME: in the browser from /runtime-config.js (window.__ENV), on the server from process.env.API_URL. */
+const RAW_API_URL =
+  (typeof window !== 'undefined' ? (window as unknown as { __ENV?: { API_URL?: string } }).__ENV?.API_URL : undefined) ??
+  process.env.API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:3001/api';
+export const API_URL = RAW_API_URL.replace(/\/$/, '');
 
 /** Backend returns file URLs like /api/files/news/x.jpg – rebase them on the configured API URL. */
 export function fileUrl(p?: string | null): string {

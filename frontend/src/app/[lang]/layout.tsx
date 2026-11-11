@@ -27,6 +27,8 @@ export default async function LangLayout({ children, params }: { children: React
     // suppressHydrationWarning: the boot script below adds the remembered colours to <html style> before React starts
     <html lang={l} dir={l === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <head>
+        {/* backend URL from the container's environment; must run before any bundle */}
+        <script src="/runtime-config.js" />
         {/* applies the last saved brand colours before the first paint, so the default colours never flash */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         {/* choose open vs refresh synchronously, before any page content can paint */}
