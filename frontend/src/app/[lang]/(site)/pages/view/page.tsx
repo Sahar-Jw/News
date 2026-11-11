@@ -1,12 +1,37 @@
 'use client';
+import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { hubUrl } from '@/lib/hubs-meta';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
 interface PageData { id: number; slug: string; title: string; body: string }
+
+/** The static pages the admin can edit (tabs of the "Static pages" hub in Settings). */
+const EDITABLE = ['about', 'privacy', 'terms'];
+
+/** Bar at the top of the page, only for people who may manage static pages: one button that opens this page in the admin editor. */
+function PageControls({ slug }: { slug: string }) {
+  const { lang, href } = useI18n();
+  const { can } = useAuth();
+  if (!EDITABLE.includes(slug) || !can('pages.read', 'pages.update')) return null;
+  const ar = lang === 'ar';
+  return (
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-card ring-1 ring-primary/25">
+      <span className="flex items-center gap-2 text-sm font-bold text-secondary">
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10" aria-hidden="true">⚙</span>
+        {ar ? 'أدوات إدارة الصفحة' : 'Page controls'}
+      </span>
+      <Link href={href(hubUrl('pages', slug))} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110">
+        {can('pages.update') ? `✎ ${ar ? 'تعديل الصفحة' : 'Edit page'}` : `⚙ ${ar ? 'إدارة الصفحة' : 'Manage page'}`}
+      </Link>
+    </div>
+  );
+}
 
 /** Static page (about the chamber, ...): /pages/view?slug=about. The body is HTML sanitised by the API. */
 function View() {
@@ -25,6 +50,7 @@ function View() {
   if (state === '404' || !p) return <NotFoundContent lang={lang} />;
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      <PageControls slug={p.slug} />
       <article className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-line md:p-10">
         <h1 className="text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{p.title}</h1>
         <div className="mt-3 flex items-center gap-1.5" aria-hidden="true">
