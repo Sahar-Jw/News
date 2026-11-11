@@ -45,12 +45,12 @@ export function readableOn(hex: string) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? '#111827' : '#ffffff';
 }
 
-/** The first-visit skeleton is never kept longer than this (ms). */
+/** The first-visit loader is never kept longer than this (ms). */
 export const THEME_PENDING_MAX_MS = 2000;
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 
-/** Lifts the first-visit skeleton (the colours are known, or the API did not answer). */
+/** Lifts the first-visit loader (the colours are known, or the API did not answer). */
 export function themeReady() {
   document.documentElement.removeAttribute('data-theme-pending');
 }

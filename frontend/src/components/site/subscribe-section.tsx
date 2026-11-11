@@ -8,7 +8,7 @@ import { NEWSLETTER_TOPIC_KEYS, NewsletterTopics } from './newsletter-topics';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /** Home section: an e-mail box and a button. Title, small label and subtitle come from Settings (sections_home → subscribe_*). */
-export function SubscribeSection() {
+export function SubscribeSection({ openTopics = false }: { openTopics?: boolean } = {}) {
   const { t, lang } = useI18n();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
@@ -42,7 +42,7 @@ export function SubscribeSection() {
           {state === 'busy' ? t('sub.sending') : t('sub.button')}
         </button>
       </form>
-      <details className="mt-3 rounded-xl border border-line bg-white/70 px-4 py-3 text-start">
+      <details open={openTopics} className="mt-3 rounded-xl border border-line bg-white/70 px-4 py-3 text-start">
         <summary className="cursor-pointer text-sm font-semibold text-secondary">{t('sub.topics')}</summary>
         <p className="mb-2 mt-2 text-xs text-gray-500">{t('sub.topicsHint')}</p>
         <NewsletterTopics value={topics} onChange={(v) => { setTopics(v); if (state !== 'busy') setState('idle'); }} />

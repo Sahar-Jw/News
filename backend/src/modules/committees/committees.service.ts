@@ -26,6 +26,8 @@ const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE :
 const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
 const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE, CC.COMMITTEE_SUCCESS] as string[];
 const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
+/** A success story is never upcoming: it has no date, or a date that is today or earlier. */
+const storyDate = (kind: string, d?: string | null) => { const v = d ? d.slice(0, 10) : null; return kind === 'success' && v && v > today() ? null : v; };
 const activityKind = (code: string) => code.replace(/^COMMITTEE_/, '').toLowerCase() as ActivityKind;
 
 /** newest first, undated activities first (what ORDER BY event_date DESC does in PostgreSQL), then newest id first */
@@ -233,7 +235,7 @@ export class CommitteesService {
           parentId: committeeId, titleEn: dto.titleEn?.trim() || null, bodyEn: sanitizeRichText(dto.bodyEn),
           goalsAr: sanitizeRichText(dto.goalsAr), goalsEn: sanitizeRichText(dto.goalsEn),
           resultsAr: sanitizeRichText(dto.resultsAr), resultsEn: sanitizeRichText(dto.resultsEn),
-          eventDate: dto.eventDate ? dto.eventDate.slice(0, 10) : null, ...this.activityExtras(dto), archived: dto.archived ?? false,
+          eventDate: storyDate(dto.kind, dto.eventDate), ...this.activityExtras(dto), archived: dto.archived ?? false,
         },
       });
       await this.audit.log({ category: 'committees', action: 'update', description: `إضافة نشاط إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: r.id });
@@ -259,7 +261,7 @@ export class CommitteesService {
           goalsEn: dto.goalsEn === undefined ? undefined : sanitizeRichText(dto.goalsEn),
           resultsAr: dto.resultsAr === undefined ? undefined : sanitizeRichText(dto.resultsAr),
           resultsEn: dto.resultsEn === undefined ? undefined : sanitizeRichText(dto.resultsEn),
-          eventDate: dto.eventDate === undefined ? undefined : dto.eventDate ? dto.eventDate.slice(0, 10) : null, ...this.activityExtras(dto),
+          eventDate: dto.eventDate === undefined ? undefined : storyDate(dto.kind ?? activityKind(cur.code), dto.eventDate), ...this.activityExtras(dto),
         },
       });
       await this.audit.log({ category: 'committees', action: 'update', description: `تعديل نشاط لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_activities', entityId: id });
@@ -350,7 +352,7 @@ export class CommitteesService {
       id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en),
       goals: pick(r.x.goalsAr, r.x.goalsEn, en), results: pick(r.x.resultsAr, r.x.resultsEn, en),
       subtitle: pick(v.subtitleAr, v.subtitleEn, en), eventType: v.eventType, archived: v.archived, image: v.imageUrl,
-      eventDate: v.eventDate, upcoming: !!v.eventDate && v.eventDate >= t && !v.archived,
+      eventDate: v.eventDate, upcoming: v.kind !== 'success' && !!v.eventDate && v.eventDate >= t && !v.archived,
     });
     let newsList: unknown[] = [];
     if (newsIds.length || newsCategories?.length) {

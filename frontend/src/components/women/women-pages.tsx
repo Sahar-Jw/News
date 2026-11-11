@@ -10,6 +10,7 @@ import { useSite } from '@/components/site/site-context';
 import { ContactForm } from '@/components/site/contact-form';
 import { ContactIcon, SocialIcon } from '@/components/site/icons';
 import type { CommitteeData, Activity, Member, NewsItem } from '@/components/site/committee-view';
+import { Paged } from './women-pager';
 import { ActGroup, DialogState, Dialogs, ItemTools, ManageButton, WomenAdminProvider, useCanManage, useTr } from './women-manage';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -97,8 +98,8 @@ function ActCard({ a, tools, showType = true }: { a: Activity; tools?: React.Rea
       <div className="flex flex-1 flex-col gap-2 p-5">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {showType && <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-semibold text-primary">{typeName(typeOf(a))}</span>}
-          {a.eventDate && <span className="text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
-          {a.upcoming && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">{tr('قريباً', 'Upcoming')}</span>}
+          {a.eventDate && (a.kind !== 'success' || a.eventDate <= todayStr()) && <span className="text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
+          {a.upcoming && a.kind !== 'success' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">{tr('قريباً', 'Upcoming')}</span>}
           {isArchived(a) && <span className="rounded-full bg-stone-200 px-2 py-0.5 text-stone-600">{tr('أرشيف', 'Archive')}</span>}
         </div>
         <h3 className="text-lg font-extrabold leading-snug text-secondary">{a.title}</h3>
@@ -182,9 +183,10 @@ function EditActTools({ a, group, open }: { a: Activity; group: ActGroup; open: 
   return <ItemTools kind="activity" id={a.id} archived={a.archived} canArchive={!autoArchived(a)} onEdit={() => open({ type: 'activity', group, editId: a.id })} />;
 }
 
-function ActGrid({ items, group, open, showType }: { items: Activity[]; group: ActGroup; open: Open; showType?: boolean }) {
+const PAGE_SIZE = 9;
+function ActGrid({ items, group, open, showType, resetKey }: { items: Activity[]; group: ActGroup; open: Open; showType?: boolean; resetKey?: string }) {
   if (!items.length) return <Empty />;
-  return <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{items.map((a) => <ActCard key={a.id} a={a} showType={showType} tools={<EditActTools a={a} group={group} open={open} />} />)}</div>;
+  return <Paged items={items} size={PAGE_SIZE} resetKey={resetKey} render={(slice) => <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{slice.map((a) => <ActCard key={a.id} a={a} showType={showType} tools={<EditActTools a={a} group={group} open={open} />} />)}</div>} />;
 }
 
 // ---------------------------------------------------------------- home: the committee as a small site of its own
@@ -337,7 +339,7 @@ function Structure({ c, open }: { c: CommitteeData; open: Open }) {
       </Box>
       <Box>
         <Heading>{tr('العضوات', 'Members')} <span className="text-sm font-normal text-gray-500">({members.length})</span></Heading>
-        {members.length ? <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">{members.map((m) => <PersonCard key={m.id} m={m} tools={tools(m)} />)}</div> : <Empty />}
+        {members.length ? <Paged items={members} size={18} render={(slice) => <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">{slice.map((m) => <PersonCard key={m.id} m={m} tools={tools(m)} />)}</div>} /> : <Empty />}
       </Box>
       {(c.duties || traits.length > 0) && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -364,7 +366,7 @@ function Initiatives({ c, open }: { c: CommitteeData; open: Open }) {
         <Tabs value={tab} onChange={(k) => setTab(k as 'current' | 'archive')} tabs={[{ key: 'current', label: tr('الحالية', 'Current'), count: current.length }, { key: 'archive', label: tr('الأرشيف', 'Archive'), count: past.length }]} />
         <ManageButton onClick={() => open({ type: 'activity', group: 'initiative' })}>＋ {tr('إضافة مبادرة / مشروع', 'Add an initiative / project')}</ManageButton>
       </div>
-      <ActGrid items={tab === 'current' ? current : past} group="initiative" open={open} showType={false} />
+      <ActGrid items={tab === 'current' ? current : past} group="initiative" open={open} showType={false} resetKey={tab} />
     </div>
   );
 }
@@ -388,7 +390,7 @@ function Activities({ c, open }: { c: CommitteeData; open: Open }) {
         <ManageButton onClick={() => open({ type: 'activity', group: 'activity' })}>＋ {tr('إضافة نشاط / فعالية', 'Add an activity / event')}</ManageButton>
       </div>
       <Tabs value={type} onChange={setType} tabs={[{ key: 'all', label: tr('الكل', 'All'), count: pool.length }, ...types.map((k) => ({ key: k, label: typeName(k), count: pool.filter((a) => typeOf(a) === k).length }))]} />
-      <ActGrid items={shown} group="activity" open={open} />
+      <ActGrid items={shown} group="activity" open={open} resetKey={`${tab}|${type}`} />
     </div>
   );
 }
@@ -416,7 +418,7 @@ function NewsPage({ c }: { c: CommitteeData }) {
     <div className="space-y-6">
       <PageTitle icon="📰" title={tr('الأخبار', 'News')} hint={tr('كل خبر تصنيفه الرئيسي «سيدات أعمال» يظهر هنا تلقائياً', 'Every news item whose main category is "businesswomen" appears here automatically')} />
       {can('news.create') && <div className="flex justify-end"><Link href={href('/admin/news/edit')} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-110">＋ {tr('إضافة خبر', 'Add a news item')}</Link></div>}
-      {c.news.length ? <NewsGrid items={c.news} /> : <Empty />}
+      {c.news.length ? <Paged items={c.news} size={PAGE_SIZE} render={(slice) => <NewsGrid items={slice} />} /> : <Empty />}
     </div>
   );
 }
@@ -434,7 +436,7 @@ function ArchivePage({ c, open }: { c: CommitteeData; open: Open }) {
     <div className="space-y-6">
       <PageTitle icon="🗄" title={tr('الأرشيف', 'Archive')} hint={tr('المبادرات والأنشطة السابقة', 'Past initiatives and activities')} />
       <Tabs value={type} onChange={setType} tabs={[{ key: 'all', label: tr('الكل', 'All'), count: all.length }, ...kinds.map((k) => ({ key: k, label: typeName(k), count: all.filter((a) => typeOf(a) === k).length }))]} />
-      {shown.length ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{shown.map((a) => <ActCard key={a.id} a={a} tools={<EditActTools a={a} group={group(a)} open={open} />} />)}</div> : <Empty />}
+      {shown.length ? <Paged items={shown} size={PAGE_SIZE} resetKey={type} render={(slice) => <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{slice.map((a) => <ActCard key={a.id} a={a} tools={<EditActTools a={a} group={group(a)} open={open} />} />)}</div>} /> : <Empty />}
     </div>
   );
 }

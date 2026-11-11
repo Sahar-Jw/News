@@ -11,7 +11,7 @@ import { LANGS, type Lang } from '@/lib/utils';
 import { ToastProvider } from '@/components/ui/toast';
 import { NavigationLoader } from '@/components/site/navigation-loader';
 import { INTRO_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from '@/lib/theme';
-import { PageSkeletonOverlay } from '@/components/ui/page-skeleton';
+import { PageLoaderOverlay } from '@/components/ui/page-loader';
 import { IntroSplash } from '@/components/site/intro-splash';
 
 export const dynamicParams = false;
@@ -35,7 +35,7 @@ export default async function LangLayout({ children, params }: { children: React
       <body>
         <div id="intro-boot-cover" aria-hidden="true" />
         {/* brand-color intro cover is enabled synchronously on every open of the site, never on a refresh */}
-        <div id="boot-skeleton" aria-hidden="true"><PageSkeletonOverlay /></div>
+        <div id="boot-loader" aria-hidden="true"><PageLoaderOverlay /></div>
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Center } from '@/components/ui/ui';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageLoader } from '@/components/ui/page-loader';
 import { Card } from '@/components/site/cards';
 import { AgendaSection, WomenCommitteeSection, BreakingTicker, Company, Experts, FeaturedCarousel, GallerySection, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, ShortcutsGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
 import { AdMiddle } from '@/components/site/ad-slot';
@@ -51,7 +51,7 @@ export default function HomePage() {
   }, [home]);
 
   if (err) return <Center>{err}</Center>;
-  if (!home || !ready) return <PageSkeleton label={t('app.loadingPage')} />;
+  if (!home || !ready) return <PageLoader label={t('app.loadingPage')} />;
 
   const sh = settings.sections_home ?? {};
   const order = [...SECTION_ORDER_KEYS].filter((k) => sh[`${k}_visible`] !== false).sort((a, b) => (sh[`${a}_order`] ?? 99) - (sh[`${b}_order`] ?? 99));

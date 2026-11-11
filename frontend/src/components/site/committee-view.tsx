@@ -10,6 +10,8 @@ import { NotFoundContent } from '@/components/site/not-found-content';
 import { ContactIcon, SocialIcon } from './icons';
 import { readWomenMenu, WOMEN_BUILT_IN_PAGES } from '@/lib/women-menu';
 import { WomenPages } from '@/components/women/women-pages';
+import { Paged } from '@/components/women/women-pager';
+import { WomenError, WomenLoader, WomenNotFound } from '@/components/women/women-states';
 
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
@@ -93,8 +95,8 @@ function ActivityList({ items, empty }: { items: Activity[]; empty: string }) {
         <li key={a.id} className="rounded-xl border border-line p-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">{t(`cm.act.${a.kind}`)}</span>
-            {a.eventDate && <span className="text-xs text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
-            {a.upcoming && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t('cm.upcoming')}</span>}
+            {a.eventDate && (a.kind !== 'success' || a.eventDate <= new Date().toISOString().slice(0, 10)) && <span className="text-xs text-gray-500">{fmtDay(lang, a.eventDate)}</span>}
+            {a.upcoming && a.kind !== 'success' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t('cm.upcoming')}</span>}
           </div>
           <h3 className="mt-2 font-bold text-secondary">{a.title}</h3>
           {a.body && <div className="prose-news mt-2" dangerouslySetInnerHTML={{ __html: a.body }} />}
@@ -116,12 +118,12 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const { lang, t, href } = useI18n();
   const { loc, s } = useSite();
   const [c, setC] = useState<CommitteeData | null>(null);
-  const [state, setState] = useState<'load' | 'ok' | '404'>('load');
+  const [state, setState] = useState<'load' | 'ok' | '404' | 'error'>('load');
   const [tab, setTab] = useState('overview');
 
   const load = useCallback((quiet = false) => {
     if (!quiet) setState('load');
-    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); }).catch(() => { if (!quiet) setState('404'); });
+    api<CommitteeData>(path, { params: { lang }, cache: 'no-store' }).then((r) => { setC(r); setState('ok'); }).catch((e) => { if (!quiet) setState(e?.status === 404 ? '404' : 'error'); });
   }, [path, lang]);
   useEffect(() => { load(); }, [load]);
   // changes made from the page itself (add / edit / archive) show up without a reload
@@ -160,8 +162,10 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
     ].filter((x) => x.show);
   }, [c]);
 
-  if (state === 'load') return <Center><Spinner /></Center>;
-  if (state === '404' || !c) return <NotFoundContent lang={lang} />;
+  const isWomenPath = path.includes('/women');
+  if (state === 'load') return isWomenPath ? <WomenLoader lang={lang} /> : <Center><Spinner /></Center>;
+  if (state === 'error') return isWomenPath ? <WomenError lang={lang} onRetry={() => load()} /> : <Center>{t('app.error')}</Center>;
+  if (state === '404' || !c) return isWomenPath ? <WomenNotFound lang={lang} /> : <NotFoundContent lang={lang} />;
   const allActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? []), ...c.recommendations, ...(c.outputs ?? []), ...c.initiatives, ...(c.successStories ?? [])];
   const upcoming = [...c.meetings, ...(c.events ?? [])].filter((m) => m.upcoming).sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
   const vision = loc('women', 'vision');
@@ -178,7 +182,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
     .flatMap((entry) => entry.type === 'page' ? [entry] : entry.items)
     .find((entry) => entry.slug === womenPage && !WOMEN_BUILT_IN_PAGES.has(entry.slug));
   const women = c.kind === 'women';
-  if (women && !WOMEN_BUILT_IN_PAGES.has(womenPage) && !customPage) return <NotFoundContent lang={lang} />;
+  if (women && !WOMEN_BUILT_IN_PAGES.has(womenPage) && !customPage) return <WomenNotFound lang={lang} />;
 
   const OWN = ['home', 'about', 'organization', 'initiatives', 'activities', 'success', 'news', 'archive', 'contact'];
   if (women && OWN.includes(womenPage)) {
@@ -297,7 +301,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
       {women && womenPage === 'archive' && <div id="archive" className="scroll-mt-24"><Box><Heading>{t('women.archive')}</Heading><ActivityList items={archived} empty={t('cm.noContent')} /></Box></div>}
       {women && womenPage === 'news' && <div id="news" className="scroll-mt-24"><Box><Heading>{t('women.news')}</Heading><NewsList items={c.news} /></Box></div>}
       {women && womenPage === 'media' && <div id="media" className="scroll-mt-24"><Box><Heading>{t('women.media')}</Heading>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{c.gallery.map((g) => <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">{g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}<span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}</span></Link>)}</div>
+        <Paged items={c.gallery} size={12} render={(slice) => <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{slice.map((g) => <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group block overflow-hidden rounded-xl ring-1 ring-line transition hover:ring-accent">{g.cover ? <img src={fileUrl(g.cover)} alt="" loading="lazy" className="h-32 w-full object-cover" /> : <span className="flex h-32 items-center justify-center bg-primary/10 text-3xl" aria-hidden="true">🖼</span>}<span className="block px-3 py-2 text-sm font-semibold text-secondary group-hover:text-primary">{g.title}</span></Link>)}</div>} />
       </Box></div>}
       {women && womenPage === 'contact' && <div id="contact" className="scroll-mt-24">
         <Box><Heading>{t('women.contact')}</Heading>

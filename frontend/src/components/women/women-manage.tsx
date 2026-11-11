@@ -105,7 +105,7 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
       const fd = new FormData();
       fd.set('kind', f.kind);
       for (const k of ['titleAr', 'titleEn', 'subtitleAr', 'subtitleEn', 'bodyAr', 'bodyEn', 'goalsAr', 'goalsEn', 'resultsAr', 'resultsEn'] as const) fd.set(k, f[k]);
-      fd.set('eventDate', f.eventDate);
+      fd.set('eventDate', isStory && f.eventDate > new Date().toISOString().slice(0, 10) ? '' : f.eventDate);
       fd.set('eventType', f.kind === 'event' ? f.eventType : '');
       fd.set('archived', String(f.archived));
       if (image) fd.set('image', image);
@@ -141,7 +141,7 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
                 </select>
               </Field>
             )}
-            <Field label={tr('التاريخ', 'Date')}><input type="date" className={inputCls} value={f.eventDate} onChange={(e) => set('eventDate', e.target.value)} /></Field>
+            <Field label={isStory ? tr('التاريخ (اختياري، لا يمكن أن يكون في المستقبل)', 'Date (optional, cannot be in the future)') : tr('التاريخ', 'Date')}><input type="date" className={inputCls} value={f.eventDate} max={isStory ? new Date().toISOString().slice(0, 10) : undefined} onChange={(e) => set('eventDate', e.target.value)} /></Field>
           </div>
           <Field label={`${tr('العنوان', 'Title')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('title')] as string} onChange={(e) => set(L('title'), e.target.value)} /></Field>
           {(isInit || isStory) && <Field label={`${isStory ? tr('صاحبة التجربة / المشروع', 'Woman / project') : tr('الجهة أو الشريك (اختياري)', 'Partner (optional)')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('subtitle')] as string} onChange={(e) => set(L('subtitle'), e.target.value)} /></Field>}

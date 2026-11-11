@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { getActiveApiRequests, subscribeToApiRequests } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { PageSkeletonOverlay } from '@/components/ui/page-skeleton';
+import { PageLoaderOverlay } from '@/components/ui/page-loader';
 
 type PendingNavigation = { target: string; arrived: boolean };
 
@@ -12,8 +12,6 @@ type PendingNavigation = { target: string; arrived: boolean };
 const SHOW_DELAY = 250;
 /** Once it appeared it stays at least this long (ms), so it does not blink. */
 const MIN_VISIBLE = 400;
-/** Safety net: the loader never keeps the page blocked longer than this (ms), whatever happens. */
-const MAX_VISIBLE = 20000;
 /** A server request that starts within this time (ms) after a click / submit / change counts as caused by it. */
 const ARM_WINDOW = 1500;
 /** Wait this long (ms) after the last request ended before treating the action as finished (covers chained requests). */
@@ -30,8 +28,8 @@ function locationKey(pathname: string, search: string) {
 /**
  * One loader for the whole app (public site and admin). It only appears when the visitor did something and the
  * result takes a while, and it comes in two sizes:
- *  - PAGE SKELETON (full screen, blocks the page): clicking a link to another page, until the new page has arrived and
- *    its data has loaded. Same as the route-level loading.tsx.
+ *  - PAGE LOADER (full screen, blocks the page): clicking a link to another page, until the new page has arrived and
+ *    its data requests have finished. Same as the route-level loading.tsx.
  *  - SMALL (a thin bar + a small badge at the top, never blocks anything): clicking a button, submitting a form or
  *    changing a filter / file while the request it started is still running. Dialogs, buttons and the success / error
  *    messages (toasts) stay usable and visible.
@@ -52,7 +50,6 @@ export function NavigationLoader() {
   const actionBusyRef = useRef(false);
   const settleTimer = useRef<number | undefined>(undefined);
   const shownAt = useRef(0);
-  const gaveUp = useRef(false);
 
   // ---- server requests started right after a user action
   useEffect(() => {
@@ -123,12 +120,6 @@ export function NavigationLoader() {
   }, [currentLocation, pending]);
 
   useEffect(() => {
-    if (!pending) return;
-    const timeout = window.setTimeout(() => setPending(null), 15000);
-    return () => window.clearTimeout(timeout);
-  }, [pending]);
-
-  useEffect(() => {
     if (!pending?.arrived || activeRequests > 0) return;
     const timeout = window.setTimeout(() => setPending(null), 180);
     return () => window.clearTimeout(timeout);
@@ -139,32 +130,22 @@ export function NavigationLoader() {
 
   useEffect(() => {
     if (busy) {
-      if (visible || gaveUp.current) return;
+      if (visible) return;
       const timer = window.setTimeout(() => {
         shownAt.current = Date.now();
         setVisible(true);
       }, SHOW_DELAY);
       return () => window.clearTimeout(timer);
     }
-    gaveUp.current = false;
     if (!visible) return;
     const timer = window.setTimeout(() => setVisible(false), Math.max(0, MIN_VISIBLE - (Date.now() - shownAt.current)));
     return () => window.clearTimeout(timer);
   }, [busy, visible]);
 
-  useEffect(() => {
-    if (!visible) return;
-    const timer = window.setTimeout(() => {
-      gaveUp.current = true;
-      setVisible(false);
-    }, MAX_VISIBLE);
-    return () => window.clearTimeout(timer);
-  }, [visible]);
-
   if (!visible) return null;
 
-  // moving to another page: a skeleton of the page (same one as the route-level loading.tsx)
-  if (pending !== null) return <PageSkeletonOverlay label={t('app.loadingPage')} />;
+  // moving to another page: wait for its data requests, like the route-level loading.tsx
+  if (pending !== null) return <PageLoaderOverlay label={t('app.loadingPage')} />;
 
   // an action on the current page (save, delete, upload, filter ...): small, and the page stays usable.
   // pointer-events-none = clicks go straight through; z-[90] = below the messages (toasts are z-[300]).
