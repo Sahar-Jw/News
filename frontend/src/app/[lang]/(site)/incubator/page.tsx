@@ -34,7 +34,6 @@ export default function IncubatorPage() {
   const topic = L('news_topic');
 
   const [data, setData] = useState<Data | null>(null);
-  const [tab, setTab] = useState<'incubated' | 'graduated'>('incubated');
   const [section, setSection] = useState('');
   const [pp, setPp] = useState(1);
   const [news, setNews] = useState<Card[]>([]);
@@ -110,20 +109,31 @@ export default function IncubatorPage() {
     </section>
   );
   const bullets = (items: string[]) => <ul className="space-y-2 text-sm leading-7 text-gray-700">{items.map((x, i) => <li key={i} className="flex gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-sm bg-accent" /><span>{x}</span></li>)}</ul>;
-  const shown = data ? data[tab] : null;
+  // every section of the page is its own tab; a section without content has no tab
+  const tabs = ([
+    about ? ['about', t('inc.about')] : null,
+    vision ? ['vision', t('inc.vision')] : null,
+    goals.length > 0 ? ['goals', t('inc.goals')] : null,
+    how.length > 0 ? ['how', t('inc.how')] : null,
+    ['projects', t('inc.incubatedProjects')],
+    purpose ? ['purpose', t('inc.purpose')] : null,
+    entrepreneurs ? ['entrepreneurs', t('inc.entrepreneurs')] : null,
+    opportunities.length > 0 ? ['opportunities', t('inc.availableOpps')] : null,
+    (opportunities.length > 0 || (data?.incubated.length ?? 0) > 0) ? ['current', t('inc.currentTab')] : null,
+    news.length > 0 ? ['news', t('inc.news')] : null,
+    ['success', t('inc.graduated')],
+  ] as (string[] | null)[]).filter((x): x is string[] => !!x);
+  const current = tabs.some(([id]) => id === section) ? section : tabs[0][0];
+  const isStory = current === 'success';
+  // the project cards of the "incubated projects" and "success stories" tabs, 6 per page
+  const shown = data ? (isStory ? data.graduated : data.incubated) : null;
   const pages = shown ? Math.max(1, Math.ceil(shown.length / PROJECTS_PER_PAGE)) : 1;
   const pageItems = shown ? shown.slice((Math.min(pp, pages) - 1) * PROJECTS_PER_PAGE, Math.min(pp, pages) * PROJECTS_PER_PAGE) : null;
-  // the sections of the page are tabs: one overview (about, goals, how it works, purpose, who it is for), the projects, opportunities and news
-  const hasOverview = !!(about || vision || goals.length || how.length || purpose || entrepreneurs);
-  const tabs = [
-    hasOverview ? ['overview', t('inc.about')] : null, ['projects', t('inc.projects')], opportunities.length > 0 ? ['opportunities', t('inc.opportunities')] : null, news.length > 0 ? ['news', t('inc.news')] : null,
-  ].filter((x): x is string[] => !!x);
-  const current = tabs.some(([id]) => id === section) ? section : tabs[0][0];
   const mayRequests = can('incubator.applications.read'), mayProjects = can('incubator.read'), maySettings = can('settings.read');
-  const goTab = (id: string) => { setSection(id); window.history.replaceState(null, '', `#${id}`); };
-  // an old link such as /incubator#projects (or #how, #purpose ...) opens its tab
-  useEffect(() => { const id = window.location.hash.replace('#', ''); if (id) setSection(['about', 'how', 'purpose', 'entrepreneurs'].includes(id) ? 'overview' : id); }, []);
-  const tabCls = (x: string) => `rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === x ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`;
+  const goTab = (id: string) => { setSection(id); setPp(1); window.history.replaceState(null, '', `#${id}`); };
+  // an old link such as /incubator#projects (or #graduated, #how ...) opens its tab
+  useEffect(() => { const id = window.location.hash.replace('#', ''); if (id) setSection(id === 'graduated' ? 'success' : id === 'overview' ? 'about' : id); }, []);
+  const prose = (text: string) => <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{text}</p>;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
@@ -148,48 +158,49 @@ export default function IncubatorPage() {
         </div>
       </header>
 
-      <div role="tablist" aria-label={t('nav.incubator')} className="flex flex-wrap gap-2">
-        {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${current === id ? 'bg-secondary text-white' : 'bg-primary/10 text-secondary hover:bg-primary/20'}`}>{label}</button>)}
+      {/* the tabs stay in view while scrolling, with the apply button always in reach */}
+      <div className="sticky top-0 z-10 flex items-center gap-2 rounded-full bg-white/90 px-2 py-1.5 shadow-card ring-1 ring-line backdrop-blur">
+        <div role="tablist" aria-label={t('nav.incubator')} className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+          {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${current === id ? 'bg-secondary text-white' : 'text-secondary hover:bg-primary/10 hover:text-primary'}`}>{label}</button>)}
+        </div>
+        {open && <button type="button" onClick={start} className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px">{t('inc.submit')}</button>}
       </div>
 
-      {current === 'overview' && (
-        <div className="space-y-5">
-          {(about || vision || goals.length > 0) && (
-            <div className="grid gap-5 md:grid-cols-2">
-              {(about || vision) && card(t('inc.about'), <div className="space-y-3 text-sm leading-8 text-gray-700">{about && <p className="whitespace-pre-line">{about}</p>}{vision && <p className="whitespace-pre-line rounded-xl bg-primary/5 p-3"><b className="text-secondary">{t('inc.vision')}: </b>{vision}</p>}</div>)}
-              {goals.length > 0 && card(t('inc.goals'), bullets(goals))}
-            </div>
-          )}
-          {how.length > 0 && card(t('inc.how'), (
-            <ol className="flex flex-wrap items-center gap-2">
-              {how.map((x, i) => (
-                <li key={i} className="flex items-center gap-2">
-                  <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-secondary">{i + 1}. {x}</span>
-                  {i < how.length - 1 && <span className="text-accent rtl:rotate-180" aria-hidden="true">◂</span>}
-                </li>
-              ))}
-            </ol>
+      {current === 'about' && card(t('inc.about'), prose(about))}
+      {current === 'vision' && card(t('inc.vision'), prose(vision))}
+      {current === 'goals' && card(t('inc.goals'), bullets(goals))}
+      {current === 'how' && card(t('inc.how'), (
+        <ol className="flex flex-wrap items-center gap-2">
+          {how.map((x, i) => (
+            <li key={i} className="flex items-center gap-2">
+              <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-secondary">{i + 1}. {x}</span>
+              {i < how.length - 1 && <span className="text-accent rtl:rotate-180" aria-hidden="true">◂</span>}
+            </li>
           ))}
-          {(purpose || entrepreneurs) && (
-            <div className="grid gap-5 md:grid-cols-2">
-              {purpose && card(t('inc.purpose'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{purpose}</p>)}
-              {entrepreneurs && card(t('inc.entrepreneurs'), <p className="whitespace-pre-line text-sm leading-8 text-gray-700">{entrepreneurs}</p>)}
-            </div>
-          )}
+        </ol>
+      ))}
+      {current === 'purpose' && card(t('inc.purpose'), prose(purpose))}
+      {current === 'entrepreneurs' && card(t('inc.entrepreneurs'), prose(entrepreneurs))}
+      {current === 'opportunities' && card(t('inc.availableOpps'), bullets(opportunities))}
+
+      {/* current projects and opportunities: who is being incubated now, and what is open to apply for */}
+      {current === 'current' && (
+        <div className="space-y-5">
+          {data && data.incubated.length > 0 && card(t('inc.incubated'), (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {data.incubated.map((p) => <li key={p.id} className="rounded-xl bg-primary/5 p-3"><b className="text-secondary">{p.name}</b>{p.sector && <span className="ms-2 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-primary ring-1 ring-line">{p.sector}</span>}{p.summary && <span className="mt-1 line-clamp-2 block text-xs leading-6 text-gray-600">{p.summary}</span>}</li>)}
+            </ul>
+          ))}
+          {opportunities.length > 0 && card(t('inc.availableOpps'), bullets(opportunities))}
         </div>
       )}
 
-      {current === 'projects' && (
-      <section aria-label={t('inc.projects')}>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-extrabold text-secondary">{t('inc.projects')}</h2>
-          <div className="flex gap-2" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === 'incubated'} className={tabCls('incubated')} onClick={() => { setTab('incubated'); setPp(1); }}>{t('inc.incubated')}</button>
-            <button type="button" role="tab" aria-selected={tab === 'graduated'} className={tabCls('graduated')} onClick={() => { setTab('graduated'); setPp(1); }}>{t('inc.graduated')}</button>
-          </div>
-        </div>
-        {!pageItems || !shown ? <p className="py-10 text-center text-sm text-gray-500">{t('app.loading')}</p> : shown.length === 0 ? <p className="rounded-2xl bg-white py-10 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t(tab === 'incubated' ? 'inc.noIncubated' : 'inc.noGraduated')}</p> : (
+      {(current === 'projects' || current === 'success') && (
+      <section aria-label={isStory ? t('inc.graduated') : t('inc.incubatedProjects')}>
+        <h2 className="mb-4 text-xl font-extrabold text-secondary">{isStory ? t('inc.graduated') : t('inc.incubatedProjects')}</h2>
+        {!pageItems || !shown ? <p className="py-10 text-center text-sm text-gray-500">{t('app.loading')}</p> : shown.length === 0 ? <p className="rounded-2xl bg-white py-10 text-center text-sm text-gray-500 shadow-card ring-1 ring-line">{t(isStory ? 'inc.noGraduated' : 'inc.noIncubated')}</p> : (
           <>
+          <Pager page={Math.min(pp, pages)} totalPages={pages} onPage={setPp} className="mb-4" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pageItems.map((p) => (
               <article key={p.id} className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
@@ -202,7 +213,7 @@ export default function IncubatorPage() {
                   </div>
                   {p.founder && <p className="mt-2 text-xs text-gray-500">👤 {p.founder}</p>}
                   {p.summary && <p className="mt-2 whitespace-pre-line text-sm leading-7 text-gray-600">{p.summary}</p>}
-                  {tab === 'graduated' && p.story && <blockquote className="mt-3 whitespace-pre-line rounded-xl border-s-4 border-accent bg-accent/10 p-3 text-sm leading-7 text-gray-700"><b className="block text-secondary">{t('inc.story')}</b>{p.story}</blockquote>}
+                  {isStory && p.story && <blockquote className="mt-3 whitespace-pre-line rounded-xl border-s-4 border-accent bg-accent/10 p-3 text-sm leading-7 text-gray-700"><b className="block text-secondary">{t('inc.story')}</b>{p.story}</blockquote>}
                   {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-sm font-bold text-primary hover:underline">{t('ex.visit')} ↗</a>}
                 </div>
               </article>
@@ -213,8 +224,6 @@ export default function IncubatorPage() {
         )}
       </section>
       )}
-
-      {current === 'opportunities' && card(t('inc.opportunities'), bullets(opportunities))}
 
       {current === 'news' && news.length > 0 && (
         <section>

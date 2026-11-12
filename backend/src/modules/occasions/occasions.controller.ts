@@ -9,7 +9,7 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
-import { CreateOccasionDto, LinkEventNewsDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
+import { CreateOccasionDto, LinkEventNewsDto, OccasionsAdminQueryDto, OccasionsFeedQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { OccasionsService } from './occasions.service';
 
 const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
@@ -110,6 +110,12 @@ export class OccasionsPublicController {
   @Get()
   list(@Query() q: PublicOccasionsQueryDto) {
     return this.service.publicList(q);
+  }
+
+  @Public()
+  @Get('feed')
+  feed(@Query() q: OccasionsFeedQueryDto) {
+    return this.service.feed(q);
   }
 
   @Public()

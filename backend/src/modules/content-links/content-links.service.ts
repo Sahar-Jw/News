@@ -19,6 +19,13 @@ export class ContentLinksService {
     return rows.map((r) => ({ newsId: Number(r.newsId), kind: r.kind ?? null }));
   }
 
+  /** The links of many entities of one type at once (one query): entity, news and kind. */
+  async linksOfMany(type: LinkEntityType, entityIds: number[]): Promise<{ entityId: number; newsId: number; kind: string | null }[]> {
+    if (!entityIds.length) return [];
+    const rows = await this.repo.find({ where: { entityType: type, entityId: In(entityIds) }, select: ['entityId', 'newsId', 'kind'] });
+    return rows.map((r) => ({ entityId: Number(r.entityId), newsId: Number(r.newsId), kind: r.kind ?? null }));
+  }
+
   /** Attach news (idempotent: an already linked id only gets its kind updated when one is given). */
   async link(type: LinkEntityType, entityId: number, newsIds: number[], kind?: string | null) {
     const unique = [...new Set(newsIds)];

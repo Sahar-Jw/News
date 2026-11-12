@@ -19,6 +19,9 @@ export default function CommitteesPage() {
   const toast = useToast();
   const [all, setAll] = useState<Card[] | null>(null);
   const [q, setQ] = useState('');
+  const [tag, setTag] = useState('');
+  const [chair, setChair] = useState('');
+  const [sort, setSort] = useState<'order' | 'az' | 'za'>('order');
   // manager tools: the committee window (id = committee being edited, none = a new one) and the committee waiting for the delete confirmation
   const [dialog, setDialog] = useState<{ id?: number } | null>(null);
   const [ask, setAsk] = useState<Card | null>(null);
@@ -46,11 +49,24 @@ export default function CommitteesPage() {
   };
 
   const needle = q.trim().toLowerCase();
-  const items = useMemo(
-    // the search looks at the committee / sector NAME only (not its summary, chair or tags)
-    () => (all ?? []).filter((c) => !needle || c.name.toLowerCase().includes(needle)),
-    [all, needle],
-  );
+  // the lists of the filters come from the committees themselves
+  const tags = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const c of all ?? []) for (const x of c.tags) n.set(x, (n.get(x) ?? 0) + 1);
+    return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], lang)).map(([x]) => x);
+  }, [all, lang]);
+  const chairs = useMemo(() => [...new Set((all ?? []).map((c) => c.chairName).filter(Boolean))].sort((a, b) => a.localeCompare(b, lang)), [all, lang]);
+  const items = useMemo(() => {
+    // the search looks at the name, the summary, the chair and the activity tags (the filters below narrow the result further)
+    const list = (all ?? []).filter((c) =>
+      (!needle || [c.name, c.summary, c.chairName, ...c.tags].some((v) => v.toLowerCase().includes(needle)))
+      && (!tag || c.tags.includes(tag))
+      && (!chair || c.chairName === chair));
+    return sort === 'order' ? list : [...list].sort((a, b) => (sort === 'az' ? 1 : -1) * a.name.localeCompare(b.name, lang));
+  }, [all, needle, tag, chair, sort, lang]);
+  const filtered = !!(needle || tag || chair || sort !== 'order');
+  const reset = () => { setQ(''); setTag(''); setChair(''); setSort('order'); };
+  const sel = 'h-10 rounded-full border border-line bg-white px-4 text-sm outline-none focus:border-primary';
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -63,7 +79,14 @@ export default function CommitteesPage() {
       </PageManageBar>
       <div className="mx-auto mb-8 max-w-3xl space-y-3" role="search">
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cm.search')} aria-label={t('cm.search')} className="h-11 w-full rounded-full border border-line bg-white px-5 text-sm outline-none focus:border-primary" />
-        {q && all && <p className="text-center text-sm text-gray-500">{items.length} {t('cm.count')} <button type="button" onClick={() => { setQ(''); }} className="ms-2 font-semibold text-primary hover:underline">{t('app.reset')}</button></p>}
+        {(tags.length > 0 || chairs.length > 1) && (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {tags.length > 0 && <select aria-label={lang === 'ar' ? 'النشاط' : 'Activity'} className={sel} value={tag} onChange={(e) => setTag(e.target.value)}><option value="">{lang === 'ar' ? 'كل الأنشطة' : 'All activities'}</option>{tags.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
+            {chairs.length > 1 && <select aria-label={t('cm.chair')} className={sel} value={chair} onChange={(e) => setChair(e.target.value)}><option value="">{lang === 'ar' ? 'كل رؤساء اللجان' : 'All chairs'}</option>{chairs.map((x) => <option key={x} value={x}>{x}</option>)}</select>}
+            <select aria-label={lang === 'ar' ? 'الترتيب' : 'Sort'} className={sel} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}><option value="order">{lang === 'ar' ? 'الترتيب الافتراضي' : 'Default order'}</option><option value="az">{lang === 'ar' ? 'الاسم (أ → ي)' : 'Name (A → Z)'}</option><option value="za">{lang === 'ar' ? 'الاسم (ي → أ)' : 'Name (Z → A)'}</option></select>
+          </div>
+        )}
+        {filtered && all && <p className="text-center text-sm text-gray-500">{items.length} {t('cm.count')} <button type="button" onClick={reset} className="ms-2 font-semibold text-primary hover:underline">{t('app.reset')}</button></p>}
       </div>
       {dialog && <CommitteeDialog key={dialog.id ?? 'new'} id={dialog.id} onClose={() => setDialog(null)} onChanged={() => load(true)} />}
       {ask && <ConfirmDelete busy={busy} onConfirm={remove} onClose={() => setAsk(null)} />}

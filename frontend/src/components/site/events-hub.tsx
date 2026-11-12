@@ -91,6 +91,8 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   const [organizer, setOrganizer] = useState('');
   const [participation, setParticipation] = useState('');
   const [year, setYear] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [day, setDay] = useState<string | null>(null);
   const [cal, setCal] = useState<CalItem[]>([]);
   const [page, setPage] = useState(1);
@@ -100,7 +102,7 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   const [debounced, setDebounced] = useState('');
 
   useEffect(() => { const h = setTimeout(() => setDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
-  useEffect(() => { setPage(1); }, [status, debounced, sector, organizer, participation, year, day, lang]);
+  useEffect(() => { setPage(1); }, [status, debounced, sector, organizer, participation, year, from, to, day, lang]);
   // the calendar marks every day of every event of this type (upcoming, current and previous), loaded 50 at a time
   useEffect(() => {
     let live = true;
@@ -122,14 +124,14 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   useEffect(() => {
     let live = true;
     setData(null); setError('');
-    api<Result>('/public/occasions', { params: { lang, type, scope: day ? 'all' : status, day: day || undefined, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' })
+    api<Result>('/public/occasions', { params: { lang, type, scope: day ? 'all' : status, day: day || undefined, from: from || undefined, to: to || undefined, q: debounced || undefined, sector: sector || undefined, organizer: organizer || undefined, participation: participation || undefined, year: year || undefined, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' })
       .then((r) => { if (live) setData(r); })
       .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [lang, type, status, debounced, sector, organizer, participation, year, day, page]);
+  }, [lang, type, status, debounced, sector, organizer, participation, year, from, to, day, page]);
 
-  const filtered = !!(debounced || sector || organizer || participation || year);
-  const reset = () => { setQ(''); setSector(''); setOrganizer(''); setParticipation(''); setYear(''); };
+  const filtered = !!(debounced || sector || organizer || participation || year || from || to);
+  const reset = () => { setQ(''); setSector(''); setOrganizer(''); setParticipation(''); setYear(''); setFrom(''); setTo(''); };
   const statusLabel = (s: EventStatus) => s === 'previous' && type === 'exhibition' ? (ar ? 'أرشيف المعارض' : 'Exhibitions archive') : LABEL[s][ar ? 0 : 1];
   const sel = `${inputCls} !w-auto min-w-36`;
 
@@ -148,7 +150,14 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={ar ? 'ابحث باسم المعرض أو القطاع أو الجهة …' : 'Search by name, sector or organizer …'} aria-label={ar ? 'بحث' : 'Search'} className={`${inputCls} !w-auto min-w-48 flex-1`} />
         {facets.sectors.length > 0 && <select aria-label={ar ? 'القطاع' : 'Sector'} className={sel} value={sector} onChange={(e) => setSector(e.target.value)}><option value="">{ar ? 'كل القطاعات' : 'All sectors'}</option>{facets.sectors.map((s) => <option key={s} value={s}>{s}</option>)}</select>}
         {facets.organizers.length > 0 && <select aria-label={ar ? 'الجهة المنظمة' : 'Organizer'} className={sel} value={organizer} onChange={(e) => setOrganizer(e.target.value)}><option value="">{ar ? 'كل الجهات المنظمة' : 'All organizers'}</option>{facets.organizers.map((s) => <option key={s} value={s}>{s}</option>)}</select>}
-        {type === 'exhibition' && <select aria-label={ar ? 'نوع المشاركة' : 'Participation'} className={sel} value={participation} onChange={(e) => setParticipation(e.target.value)}><option value="">{ar ? 'كل أنواع المشاركة' : 'All participation types'}</option><option value="organized">{participationLabel('organized', ar)}</option><option value="participating">{participationLabel('participating', ar)}</option></select>}
+        {type === 'exhibition' && (
+          <div role="group" aria-label={ar ? 'نوع المشاركة' : 'Participation'} className="flex shrink-0 gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-line">
+            {([['', ar ? 'كل المعارض' : 'All exhibitions'], ['organized', ar ? 'تنظمها الغرفة' : 'Organized by the Chamber'], ['participating', ar ? 'تشارك فيها الغرفة' : 'The Chamber takes part']] as const).map(([v, l]) => (
+              <button key={v} type="button" aria-pressed={participation === v} onClick={() => setParticipation(v)} className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${participation === v ? 'bg-primary text-white' : 'text-secondary hover:bg-gray-100'}`}>{l}</button>
+            ))}
+          </div>
+        )}
+        <span className="flex items-center gap-1 text-xs text-gray-600">{ar ? 'من' : 'From'}<input type="date" aria-label={ar ? 'من تاريخ' : 'From date'} value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className={`${inputCls} !w-auto`} />{ar ? 'إلى' : 'to'}<input type="date" aria-label={ar ? 'إلى تاريخ' : 'To date'} value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className={`${inputCls} !w-auto`} /></span>
         {facets.years.length > 0 && <select aria-label={ar ? 'السنة' : 'Year'} className={sel} value={year} onChange={(e) => setYear(e.target.value)}><option value="">{ar ? 'كل السنوات' : 'All years'}</option>{facets.years.map((y) => <option key={y} value={y}>{y}</option>)}</select>}
         {filtered && <button type="button" onClick={reset} className="rounded-lg border border-line px-3 py-2 text-sm font-semibold text-primary hover:bg-gray-50">{ar ? 'مسح التصفية' : 'Clear filters'}</button>}
       </div>
@@ -278,6 +287,89 @@ export function EventsManageBar() {
   );
 }
 
+const FEED: ['news' | 'visits' | 'media' | 'coverage', string, string][] = [
+  ['news', 'الأخبار', 'News'], ['visits', 'الزيارات واللقاءات', 'Visits & meetings'], ['media', 'الصور والفيديو', 'Photos & video'], ['coverage', 'التغطية الإعلامية', 'Media coverage'],
+];
+interface FeedItem { id: number; title: string; excerpt?: string; image: string | null; publishAt: string | null; kind: string; eventId: number; eventTitle: string; url?: string; source?: string; videoId?: string; date?: string }
+
+/** Under the list of a tab: the news, the visits and meetings, the photos and videos and the media coverage of ALL its exhibitions (or occasions), 6 per page. */
+function EventsFeed({ type }: { type: 'exhibition' | 'occasion' }) {
+  const { lang, href } = useI18n();
+  const ar = lang === 'ar';
+  const [group, setGroup] = useState<(typeof FEED)[number][0]>('news');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<{ data: FeedItem[]; meta: { totalPages: number; total: number } } | null>(null);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  useEffect(() => { setPage(1); }, [group, type, lang]);
+  useEffect(() => {
+    let live = true;
+    // how many items each section has, so a section without anything is not offered
+    Promise.all(FEED.map(([g]) => api<{ meta: { total: number } }>('/public/occasions/feed', { params: { lang, type, group: g, limit: 1 }, cache: 'no-store' }).then((r) => [g, r.meta.total] as const).catch(() => [g, 0] as const)))
+      .then((x) => { if (live) setCounts(Object.fromEntries(x)); });
+    return () => { live = false; };
+  }, [type, lang]);
+  useEffect(() => {
+    let live = true;
+    setData(null);
+    api<{ data: FeedItem[]; meta: { totalPages: number; total: number } }>('/public/occasions/feed', { params: { lang, type, group, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' }).then((r) => { if (live) setData(r); }).catch(() => { if (live) setData({ data: [], meta: { totalPages: 1, total: 0 } }); });
+    return () => { live = false; };
+  }, [lang, type, group, page]);
+  const available = FEED.filter(([g]) => (counts[g] ?? 0) > 0);
+  if (available.length === 0) return null;
+  const current = available.some(([g]) => g === group) ? group : available[0][0];
+  if (current !== group) setGroup(current);
+  const who = (x: FeedItem) => <Link href={href(`/occasions/view?id=${x.eventId}`)} className="text-xs font-semibold text-primary hover:underline">{x.eventTitle}</Link>;
+  return (
+    <section className="mt-10" aria-label={ar ? 'أخبار وتغطية' : 'News and coverage'}>
+      <h2 className="mb-3 border-s-4 border-accent ps-3 text-xl font-extrabold text-secondary">{type === 'exhibition' ? (ar ? 'أخبار المعارض والتغطية' : 'Exhibition news & coverage') : (ar ? 'أخبار المناسبات والتغطية' : 'Occasion news & coverage')}</h2>
+      <div role="tablist" className="mb-4 flex flex-wrap gap-2">
+        {available.map(([g, a, e]) => <button key={g} type="button" role="tab" aria-selected={current === g} onClick={() => setGroup(g)} className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${current === g ? 'bg-secondary text-white' : 'bg-white text-secondary ring-1 ring-line hover:text-primary'}`}>{ar ? a : e}<span className="ms-1.5 text-xs opacity-70">{counts[g]}</span></button>)}
+      </div>
+      {!data ? <Center><Spinner /></Center> : (
+        <>
+          {current === 'media' ? (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data.data.map((x, i) => (
+                <li key={`${x.eventId}-${i}`}>
+                  <Link href={href(`/occasions/view?id=${x.eventId}`)} className="group relative block overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
+                    <Thumb src={x.videoId ? `https://i.ytimg.com/vi/${x.videoId}/hqdefault.jpg` : x.image} alt={x.eventTitle} className="h-44 w-full" />
+                    {x.videoId && <span aria-hidden="true" className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white">▶</span>}
+                    <span className="block px-3 py-2 text-xs font-semibold text-secondary group-hover:text-primary">{x.eventTitle}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="grid gap-4 md:grid-cols-2">
+              {data.data.map((x) => {
+                const body = (
+                  <>
+                    <Thumb src={x.image} alt={x.title} className="h-20 w-28 shrink-0 rounded-xl" />
+                    <div className="min-w-0">
+                      <h3 className="line-clamp-2 text-sm font-bold group-hover:text-primary">{x.title}</h3>
+                      {x.publishAt && <p className="mt-1 text-xs text-gray-500">{fmtDay(lang, x.publishAt.slice(0, 10))}</p>}
+                      {x.source && <p className="mt-1 text-xs text-gray-500">{x.source} ↗</p>}
+                      {x.excerpt && <p className="mt-1 line-clamp-2 text-xs text-gray-600">{x.excerpt}</p>}
+                    </div>
+                  </>
+                );
+                const cls = 'group flex gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:ring-accent';
+                return (
+                  <li key={`${x.id}-${x.eventId}`} className="flex flex-col gap-1">
+                    {x.url ? <a href={x.url} target="_blank" rel="noopener noreferrer" className={cls}>{body}</a> : <Link href={href(`/news/view?id=${x.id}`)} className={cls}>{body}</Link>}
+                    <span className="px-1">{who(x)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage} />
+        </>
+      )}
+    </section>
+  );
+}
+
 function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatus: EventStatus }) {
   const { lang } = useI18n();
   const ar = lang === 'ar';
@@ -297,8 +389,8 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
             className={`rounded-full px-5 py-2 text-sm font-bold transition ${tab === t ? 'bg-primary text-white shadow' : 'bg-white text-secondary ring-1 ring-line hover:text-primary'}`}>{LABEL[t][ar ? 0 : 1]}</button>
         ))}
       </div>
-      {tab === 'exhibitions' && <EventList type="exhibition" initialStatus={initialStatus} />}
-      {tab === 'occasions' && <EventList type="occasion" initialStatus={initialStatus} />}
+      {tab === 'exhibitions' && <><EventList type="exhibition" initialStatus={initialStatus} /><EventsFeed type="exhibition" /></>}
+      {tab === 'occasions' && <><EventList type="occasion" initialStatus={initialStatus} /><EventsFeed type="occasion" /></>}
       <CategoryNews category="events" className="mt-10 !px-0 !pb-0" />
     </div>
   );

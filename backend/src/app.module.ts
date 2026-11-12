@@ -40,6 +40,7 @@ import { ContentModule } from './modules/content/content.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
+import { SiteSearchModule } from './modules/site-search/site-search.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -77,6 +78,7 @@ import { UsersModule } from './modules/users/users.module';
     CountriesModule,
     ContactModule,
     NewsModule,
+    SiteSearchModule,
     OccasionsModule,
     ContentModule,
     FaqsModule,

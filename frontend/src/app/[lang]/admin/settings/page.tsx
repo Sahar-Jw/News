@@ -48,7 +48,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
-  'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin />,
+  'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin kind="sector" />,
   'media.gallery': () => <GalleryAdmin />,
   'occasions.events': () => <OccasionsAdmin />,
   'women.content': () => <CommitteesAdmin kind="women" />,

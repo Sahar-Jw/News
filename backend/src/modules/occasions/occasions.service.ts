@@ -15,7 +15,7 @@ import { ContentStore, Rec, pick } from '../content/content.store';
 import { News } from '../news/news.entity';
 import { applyEligibility } from '../news/news.eligibility';
 import { by, filterByCf, matches } from '../content/mem';
-import { CreateOccasionDto, OccasionsAdminQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
+import { CreateOccasionDto, OccasionsAdminQueryDto, OccasionsFeedQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { removedChanges } from '../audit/audit-snapshot';
 
 /** 'agenda' = what is still to come or happening now (upcoming + current). */
@@ -327,6 +327,9 @@ export class OccasionsService {
     if (scope === 'agenda') rows = rows.filter((r) => this.statusOf(r, today) !== 'previous');
     if (scope === 'exhibitions') rows = rows.filter((r) => this.eventType(r) === 'exhibition');
     rows = this.publicRows(q, rows);
+    // a date range: the events that run at any time inside it
+    if (q.from) rows = rows.filter((r) => (r.finishAt ?? this.eventDate(r)) >= q.from!);
+    if (q.to) rows = rows.filter((r) => this.eventDate(r) <= q.to!);
     if (q.day) rows = rows.filter((r) => this.eventDate(r) <= q.day! && (r.finishAt ?? this.eventDate(r)) >= q.day!);
     if (q.month) {
       const [year, month] = q.month.split('-').map(Number);
@@ -354,6 +357,48 @@ export class OccasionsService {
       organizers: uniq(rows.map((r) => pick(r.x.organizerAr, r.x.organizerEn, en))),
       years: [...years].sort().reverse(),
     };
+  }
+
+  /**
+   * What the exhibitions & events page shows besides the lists: the news, the visits and meetings and the media coverage that editors linked
+   * to the events (newest first), and the photos and videos of the events. Each item says which event it belongs to.
+   */
+  async feed(q: OccasionsFeedQueryDto) {
+    const en = q.lang === 'en';
+    const lang = en ? 'en' : 'ar';
+    const rows = (await this.all()).filter((r) => !q.type || this.eventType(r) === q.type);
+    const title = new Map(rows.map((r) => [r.id, pick(r.title, r.x.titleEn, en)]));
+    const p = publicPage(q, 12);
+    if (q.group === 'media') {
+      const items = rows.flatMap((r) => {
+        const card = this.publicCard(r, lang);
+        const base = { eventId: r.id, eventTitle: card.title, date: card.date };
+        return [
+          ...card.images.map((image) => ({ ...base, kind: 'photo' as const, image, videoId: '' })),
+          ...this.videosOf(r).map((u) => parseYoutubeId(u)).filter((v): v is string => !!v).map((videoId) => ({ ...base, kind: 'video' as const, image: '', videoId })),
+        ];
+      }).sort((a, b) => b.date.localeCompare(a.date));
+      return paged(items.slice(p.skip, p.skip + p.limit), items.length, p);
+    }
+    const kinds = q.group === 'visits' ? ['visit', 'meeting'] : q.group === 'coverage' ? ['coverage'] : ['news'];
+    const links = (await this.links.linksOfMany('occasion', rows.map((r) => r.id))).filter((l) => kinds.includes(l.kind ?? 'news'));
+    const eventOf = new Map(links.map((l) => [l.newsId, l.entityId]));
+    let items: { id: number; title: string; excerpt: string; image: string | null; publishAt: Date | string | null; kind: string; eventId: number; eventTitle: string; url?: string; source?: string }[] = [];
+    if (links.length) {
+      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...ids)', { ids: [...eventOf.keys()] });
+      applyEligibility(qb, 'n', { lang, authenticated: false });
+      items = (await qb.getMany()).map((n) => ({
+        id: Number(n.id), title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt,
+        kind: links.find((l) => l.newsId === Number(n.id))?.kind ?? 'news', eventId: eventOf.get(Number(n.id)) ?? 0, eventTitle: title.get(eventOf.get(Number(n.id)) ?? 0) ?? '',
+      }));
+    }
+    // the external media-coverage links written on the events themselves
+    if (q.group === 'coverage') {
+      for (const r of rows) for (const c of this.coverageOf(r)) items.push({ id: -r.id, title: c.title || c.url, excerpt: '', image: null, publishAt: null, kind: 'coverage', eventId: r.id, eventTitle: title.get(r.id) ?? '', url: c.url, source: c.source });
+    }
+    const at = (x: { publishAt: Date | string | null }) => (x.publishAt ? new Date(x.publishAt).getTime() : 0);
+    items.sort((a, b) => at(b) - at(a));
+    return paged(items.slice(p.skip, p.skip + p.limit), items.length, p);
   }
 
   async publicOne(id: number, lang = 'ar') {

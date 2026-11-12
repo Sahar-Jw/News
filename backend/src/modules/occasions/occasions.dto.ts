@@ -97,6 +97,9 @@ export class PublicOccasionsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsIn(['all', 'upcoming', 'current', 'previous', 'exhibitions', 'agenda']) scope?: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
   @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/) month?: string;
+  /** only the events that run at some time between these two days (yyyy-mm-dd), either one may be left out */
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/) from?: string;
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/) to?: string;
   /** only the events running on this day (yyyy-mm-dd), for the calendar of the public page */
   @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/) day?: string;
   /** free text over the name, sector, organizer and place */
@@ -105,6 +108,13 @@ export class PublicOccasionsQueryDto extends PublicListQueryDto {
   @IsOptional() @IsString() @MaxLength(200) organizer?: string;
   @IsOptional() @IsIn(['organized', 'participating']) participation?: string;
   @IsOptional() @Matches(/^\d{4}$/) year?: string;
+}
+
+/** The page-level feed of the exhibitions & events page: what was linked to the events (news, visits and meetings, media coverage) or their photos and videos. */
+export class OccasionsFeedQueryDto extends PublicListQueryDto {
+  @IsOptional() @IsIn(['ar', 'en']) lang?: string;
+  @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
+  @IsIn(['news', 'visits', 'coverage', 'media']) group: string;
 }
 
 export class LinkEventNewsDto {

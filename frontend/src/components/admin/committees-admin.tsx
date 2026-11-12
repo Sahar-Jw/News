@@ -19,7 +19,6 @@ type Row = CommitteeRow;
 interface Full extends Row { members: Member[]; activities: Activity[]; news: LinkedNews[] }
 type Draft = Omit<Row, 'id' | 'sortOrder'> & { id?: number; sortOrder: string };
 
-const KINDS = ['sector', 'women'];
 const ROLES = ['chair', 'secretary', 'vice', 'member'];
 const ACTS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative', 'success'];
 const EMPTY: Draft = { kind: 'sector', nameAr: '', nameEn: '', summaryAr: '', summaryEn: '', dutiesAr: '', dutiesEn: '', chairNameAr: '', chairNameEn: '', activityTagsAr: '', activityTagsEn: '', logoUrl: null, sortOrder: '0', isActive: true };
@@ -31,7 +30,7 @@ const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyE
  * Used by the Settings table and by the public Committees pages (so a manager does not have to leave the page).
  * Give `row` (already loaded) or `id` (loaded here); with neither it adds a new committee. `onChanged` runs when the window closes after a change.
  */
-export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged }: { row?: Row | null; id?: number; kind?: 'women'; initialTab?: 'details' | 'members' | 'activities' | 'news'; onClose: () => void; onChanged: () => void }) {
+export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose, onChanged }: { row?: Row | null; id?: number; /** what a NEW committee is: a sector committee (default) or the businesswomen one; an existing record keeps its own kind */ kind?: 'sector' | 'women'; initialTab?: 'details' | 'members' | 'activities' | 'news'; onClose: () => void; onChanged: () => void }) {
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -52,9 +51,6 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
   const [found, setFound] = useState<LinkedNews[]>([]);
 
   const canUpdate = can('committees.update');
-  // the businesswomen committee is a single page: once it exists the "women" kind is no longer offered for a new / other committee
-  const [womenExists, setWomenExists] = useState(false);
-  useEffect(() => { api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 1 } }).then((r) => setWomenExists(r.meta.total > 0)).catch(() => setWomenExists(false)); }, []);
   const dirty = useRef(false); // something was saved: the page behind the window reloads when it closes
   const loadFull = async (cid: number) => {
     const f = await api<Full>(`/admin/committees/${cid}/full`);
@@ -64,7 +60,7 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
   useEffect(() => {
     if (row) { setDraft({ ...row, sortOrder: String(row.sortOrder) }); loadFull(row.id).catch((err: any) => toast(err.message, 'err')); return; }
     if (id) { loadFull(id).then((f) => setDraft({ ...f, sortOrder: String(f.sortOrder) })).catch((err: any) => { toast(err.message, 'err'); onClose(); }); return; }
-    setDraft({ ...EMPTY, ...(kind ? { kind } : {}) });
+    setDraft({ ...EMPTY, kind });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const close = () => { if (dirty.current) onChanged(); onClose(); };
 
@@ -175,7 +171,6 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
         {tab === 'details' && (
           <form onSubmit={saveDetails} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
-              {!kind && <Field label={t('cm.kind')}><select className={inputCls} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>{KINDS.filter((k) => k !== 'women' || draft.kind === 'women' || !womenExists).map((k) => <option key={k} value={k}>{t(`cm.kind.${k}`)}</option>)}</select></Field>}
               <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
               <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
               <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
@@ -301,7 +296,8 @@ export function CommitteeDialog({ row, id, kind, initialTab, onClose, onChanged 
 }
 
 /** Committees (sector + businesswomen): the table of Settings; the window of a committee is `CommitteeDialog`. */
-export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
+/** `kind` picks the table: sector committees (Committees settings, the default) or the businesswomen committee (Women settings). */
+export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women' } = {}) {
   const { t, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -320,7 +316,6 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
   const cols: Col<Row>[] = [
     { key: 'nameAr', label: t('pg.titleAr'), render: (r) => <span className="flex items-center gap-2">{r.logoUrl && <img src={fileUrl(r.logoUrl)} alt="" className="h-8 w-8 rounded object-contain" />}{r.nameAr}</span>, text: (r) => r.nameAr },
     { key: 'nameEn', label: t('pg.titleEn') },
-    ...(!kind ? [{ key: 'kind', searchable: false, label: t('cm.kind'), render: (r: Row) => t(`cm.kind.${r.kind}`), text: (r: Row) => t(`cm.kind.${r.kind}`) }] as Col<Row>[] : []),
     { key: 'chairNameAr', label: t('cm.chair') },
     { key: 'sortOrder', searchable: false, label: t('faq.order'), render: (r) => r.sortOrder, text: (r) => String(r.sortOrder) },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
@@ -341,7 +336,7 @@ export function CommitteesAdmin({ kind }: { kind?: 'women' } = {}) {
       <h1 className="mb-4 text-2xl font-bold">{t('adm.committees')}</h1>
       <DataTable<Row>
         endpoint="/admin/committees"
-        baseParams={kind ? { kind } : undefined}
+        baseParams={{ kind }}
         columns={cols}
         refreshKey={key}
         exportable={false}
