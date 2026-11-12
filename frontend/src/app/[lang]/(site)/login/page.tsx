@@ -22,7 +22,9 @@ export default function LoginPage() {
     try {
       await login(email, password);
       // Everyone lands on the normal site; the navbar shows what this user is allowed to do.
-      router.push(href('/'));
+      // back to the page the session ran out on (a path of this site only), else the home page
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.push(next && /^\/(?![/\\])/.test(next) ? next : href('/'));
     } catch (e: any) {
       setErr(e.message);
     } finally { setBusy(false); }

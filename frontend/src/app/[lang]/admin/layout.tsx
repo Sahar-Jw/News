@@ -17,7 +17,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { href } = useI18n();
   const router = useRouter();
 
-  useEffect(() => { if (!loading && !me) router.replace(href('/login')); }, [loading, me, router, href]);
+  // signed out (or the session ran out while the page was open): log in again, then come back to this page
+  useEffect(() => {
+    if (loading || me) return;
+    const back = window.location.pathname + window.location.search;
+    router.replace(href(`/login?next=${encodeURIComponent(back)}`));
+  }, [loading, me, router, href]);
   if (loading || !me) return <Center><Spinner /></Center>;
 
   return (

@@ -43,6 +43,9 @@ export function currentLang(): 'ar' | 'en' {
   return m ? (m[1] as 'ar' | 'en') : document.documentElement.lang === 'en' ? 'en' : 'ar';
 }
 
+/** Fired when a call that needs the signed-in account is refused with 401 (the session cookie ran out): the auth context re-checks the session. */
+export const SESSION_EXPIRED_EVENT = 'auth:expired';
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -115,6 +118,8 @@ export async function api<T = any>(path: string, opts: { method?: string; params
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;
   } catch (e) {
+    // /auth/* answers 401 by itself (wrong password, nobody signed in): only the other calls mean "your session ended"
+    if (e instanceof ApiError && e.status === 401 && !path.startsWith('/auth/') && typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     if (e instanceof TypeError) throw new ApiError(0, currentLang() === 'ar' ? 'تعذّر الاتصال بالخادم، تحقق من الاتصال أو من حجم الملف' : 'Could not reach the server - check the connection or the file size');
     throw e;
   } finally {
