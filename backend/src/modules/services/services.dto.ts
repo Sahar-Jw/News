@@ -31,7 +31,7 @@ export class CreateServiceDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeEn?: string | null;
-  @blankToNull() @IsOptional() @IsUrl(URL_OPTS, { message: 'formUrl must be a valid http(s) link' }) @MaxLength(500) formUrl?: string | null;
+  @blankToNull() @IsOptional() @Matches(/^(https?:\/\/\S+|\/(?![/\\])\S*)$/, { message: 'formUrl must be a link or a path starting with /' }) @MaxLength(500) formUrl?: string | null;
   @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
   @toBool() @IsOptional() @IsBoolean() isActive?: boolean;
   /** "true" removes the current picture */
@@ -60,7 +60,7 @@ export class UpdateServiceDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeEn?: string | null;
-  @blankToNull() @IsOptional() @IsUrl(URL_OPTS, { message: 'formUrl must be a valid http(s) link' }) @MaxLength(500) formUrl?: string | null;
+  @blankToNull() @IsOptional() @Matches(/^(https?:\/\/\S+|\/(?![/\\])\S*)$/, { message: 'formUrl must be a link or a path starting with /' }) @MaxLength(500) formUrl?: string | null;
   @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
   @toBool() @IsOptional() @IsBoolean() isActive?: boolean;
   @toBool() @IsOptional() @IsBoolean() removeImage?: boolean;

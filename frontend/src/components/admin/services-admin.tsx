@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { PageSelect } from '@/components/admin/page-select';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { SERVICE_KINDS } from '@/components/site/services-shared';
@@ -39,6 +40,7 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
       .catch((e) => { toast(e.message, 'err'); onClose(); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const hasFile = !!draft && (!!formFile || (!!draft.formFileUrl && !draft.removeForm));
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
 
   const pickImage = (f: File | undefined) => {
@@ -104,8 +106,10 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
               {pair('svc.steps', 'stepsAr', 'stepsEn', { area: true, max: 3000, hint: t('svc.linesHint') })}
               {pair('svc.location', 'locationAr', 'locationEn', { max: 255 })}
               {pair('svc.department', 'departmentAr', 'departmentEn', { max: 150 })}
-              <Field label={t('svc.deptUrl')} hint={t('svc.deptUrlHint')}><input maxLength={300} dir="ltr" placeholder="/contact" className={inputCls} value={draft.departmentUrl} onChange={(e) => up({ departmentUrl: e.target.value })} /></Field>
-              <Field label={t('svc.link')} hint={t('svc.linkHint')}><input type="url" maxLength={500} dir="ltr" placeholder="https://" className={inputCls} value={draft.formUrl} onChange={(e) => up({ formUrl: e.target.value })} /></Field>
+              <Field label={t('svc.deptUrl')} hint={t('svc.deptUrlHint')}><PageSelect label={t('svc.deptUrl')} value={draft.departmentUrl} onChange={(v) => up({ departmentUrl: v })} /></Field>
+              <Field label={t('svc.link')} hint={hasFile ? undefined : t('svc.linkHint')}>
+                {hasFile ? <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">{t('svc.linkFileNote')}</p> : <PageSelect label={t('svc.link')} value={draft.formUrl} onChange={(v) => up({ formUrl: v })} />}
+              </Field>
               {pair('svc.duration', 'durationAr', 'durationEn', { max: 100 })}
               {pair('svc.fee', 'feeAr', 'feeEn', { max: 150, hint: t('svc.feeHint') })}
               <div className="md:col-span-2">

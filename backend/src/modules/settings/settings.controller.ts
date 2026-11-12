@@ -36,6 +36,12 @@ export class SettingsController {
     return this.service.saveShortcuts(dto.urls, u);
   }
 
+  /** The site's pages as a pick-list (menu pages and a few fixed ones) for any editor that needs to link to a page; any signed-in user. */
+  @Get('page-options')
+  pageOptions() {
+    return this.service.pageOptions();
+  }
+
   /** Home hero: the button of each slide (page from the page list + its text). */
   @Get('hero-buttons')
   @Permissions(PERM.SETTINGS_READ)

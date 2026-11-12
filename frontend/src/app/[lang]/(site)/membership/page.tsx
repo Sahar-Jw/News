@@ -49,7 +49,7 @@ function DeptLink({ s }: { s: PublicService }) {
 
 /** One service, fully explained: what it is, who it is for, the department in charge, then (details) documents, steps, fees, duration and place. */
 function ServiceCard({ s, onApply, applyOpen, actions }: { s: PublicService; onApply: () => void; applyOpen: boolean; actions?: React.ReactNode }) {
-  const { t } = useI18n();
+  const { t, href } = useI18n();
   const [more, setMore] = useState(false);
   const apply = APPLY_KINDS.includes(s.kind);
   const hasMore = !!(s.audience || s.documents.length || s.steps.length || s.location);
@@ -80,7 +80,14 @@ function ServiceCard({ s, onApply, applyOpen, actions }: { s: PublicService; onA
       )}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         {apply && applyOpen && <button type="button" onClick={onApply} className="rounded-full bg-accent px-5 py-2 text-sm font-extrabold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('sv.apply')}</button>}
-        {!apply && s.formUrl && <a href={s.formUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-white transition hover:brightness-110">{s.kind === 'eservices' && !s.formIsFile ? t('sv.open') : t('svc.form')}</a>}
+        {!apply && s.formUrl && (() => {
+          const cls = 'rounded-full bg-primary px-5 py-2 text-sm font-bold text-white transition hover:brightness-110';
+          const label = s.kind === 'eservices' && !s.formIsFile ? t('sv.open') : t('svc.form');
+          // a page of this site opens in the same tab; a file or another website opens in a new one
+          return s.formIsFile || /^https?:/i.test(s.formUrl)
+            ? <a href={s.formUrl} target="_blank" rel="noopener noreferrer" className={cls}>{label}</a>
+            : <Link href={href(s.formUrl)} className={cls}>{label}</Link>;
+        })()}
         {hasMore && <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="rounded-full border border-line px-4 py-2 text-sm font-semibold text-primary hover:bg-gray-50">{more ? t('sv.less') : t('sv.details')}</button>}
       </div>
       {actions}

@@ -374,7 +374,8 @@ export class OccasionsService {
         const card = this.publicCard(r, lang);
         const base = { eventId: r.id, eventTitle: card.title, date: card.date };
         return [
-          ...card.images.map((image) => ({ ...base, kind: 'photo' as const, image, videoId: '' })),
+          // the first picture is the event's cover (already the thumbnail of its card in the list above): only the other photos belong here
+          ...card.images.slice(1).map((image) => ({ ...base, kind: 'photo' as const, image, videoId: '' })),
           ...this.videosOf(r).map((u) => parseYoutubeId(u)).filter((v): v is string => !!v).map((videoId) => ({ ...base, kind: 'video' as const, image: '', videoId })),
         ];
       }).sort((a, b) => b.date.localeCompare(a.date));
