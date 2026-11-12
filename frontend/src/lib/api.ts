@@ -46,6 +46,29 @@ export function currentLang(): 'ar' | 'en' {
 /** Fired when a call that needs the signed-in account is refused with 401 (the session cookie ran out): the auth context re-checks the session. */
 export const SESSION_EXPIRED_EVENT = 'auth:expired';
 
+/**
+ * "Was someone signed in on this browser?" (a flag only, no secret). The sign-in cookie itself is HttpOnly, so the page cannot see it; this flag
+ * lets the page try a silent renewal only for people who were signed in, and not for every anonymous visitor.
+ */
+const SESSION_HINT = 'dcc_session';
+export const sessionHint = {
+  set() { try { localStorage.setItem(SESSION_HINT, '1'); } catch { /* storage blocked */ } },
+  clear() { try { localStorage.removeItem(SESSION_HINT); } catch { /* storage blocked */ } },
+  has() { try { return localStorage.getItem(SESSION_HINT) === '1'; } catch { return false; } },
+};
+
+let renewing: Promise<boolean> | null = null;
+/** Asks the server for a fresh short sign-in cookie using the refresh cookie. Calls made at the same moment share one request. */
+function renewSession(): Promise<boolean> {
+  if (!renewing) {
+    renewing = fetch(API_URL + '/auth/refresh', { method: 'POST', credentials: 'include', headers: { 'X-Lang': currentLang() } })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => { renewing = null; });
+  }
+  return renewing;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -103,7 +126,7 @@ async function parse(res: Response) {
   return data;
 }
 
-export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache } = {}): Promise<T> {
+export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = { 'X-Lang': currentLang() };
   let body: BodyInit | undefined;
   if (opts.form) body = opts.form;
@@ -118,8 +141,16 @@ export async function api<T = any>(path: string, opts: { method?: string; params
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;
   } catch (e) {
-    // /auth/* answers 401 by itself (wrong password, nobody signed in): only the other calls mean "your session ended"
-    if (e instanceof ApiError && e.status === 401 && !path.startsWith('/auth/') && typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    if (e instanceof ApiError && e.status === 401 && typeof window !== 'undefined') {
+      // the short sign-in cookie ran out: renew it silently from the refresh cookie and repeat this call once
+      const own = /^\/auth\/(login|refresh|logout)/.test(path);
+      if (!own && !opts._retried && sessionHint.has()) {
+        if (await renewSession()) return api<T>(path, { ...opts, _retried: true });
+        sessionHint.clear(); // the sign-in is really over
+      }
+      // /auth/* answers 401 by itself (wrong password, nobody signed in): only the other calls mean "your session ended"
+      if (!path.startsWith('/auth/')) window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
     if (e instanceof TypeError) throw new ApiError(0, currentLang() === 'ar' ? 'تعذّر الاتصال بالخادم، تحقق من الاتصال أو من حجم الملف' : 'Could not reach the server - check the connection or the file size');
     throw e;
   } finally {

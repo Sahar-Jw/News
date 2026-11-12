@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
-import { createHash, randomBytes } from 'crypto';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { createHash, randomBytes, randomUUID } from 'crypto';
+import { IsNull, LessThan, MoreThan, Repository } from 'typeorm';
 import { Role } from '../access/role.entity';
 import { User } from '../users/user.entity';
 import { AuditService } from '../audit/audit.service';
@@ -12,11 +12,20 @@ import { PermissionsService } from '../access/permissions.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { MailService } from '../mail/mail.service';
 import { PasswordReset } from './password-reset.entity';
+import { RefreshToken } from './refresh-token.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
 import { invalidateSessionUser } from '../../common/guards/jwt-auth.guard';
 
+/** A second use of a token that was rotated a moment ago is two tabs refreshing at once, not theft. */
+const REFRESH_GRACE_MS = 30_000;
 const RESET_TTL_MS = 60 * 60 * 1000; // a reset link works for one hour
 const RESET_COOLDOWN_MS = 60 * 1000; // at most one e-mail per minute per account
+/** "30m", "8h", "30d", "90s" or plain seconds -> milliseconds. */
+export function ttlToMs(v: string, fallbackMs = 30 * 60_000): number {
+  const m = /^(\d+)\s*([smhd]?)$/.exec(String(v).trim());
+  if (!m) return fallbackMs;
+  return Number(m[1]) * ({ '': 1000, s: 1000, m: 60_000, h: 3600_000, d: 86_400_000 } as Record<string, number>)[m[2]];
+}
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
 // Used to equalise timing when the e-mail does not exist.
@@ -30,6 +39,7 @@ export class AuthService {
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Role) private readonly roles: Repository<Role>,
     @InjectRepository(PasswordReset) private readonly resets: Repository<PasswordReset>,
+    @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>,
     private readonly mail: MailService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
@@ -102,10 +112,55 @@ export class AuthService {
       throw new ForbiddenException('الحساب بانتظار التفعيل');
     }
 
-    const expiresIn = this.config.get<string>('JWT_EXPIRES_IN', '8h');
+    const expiresIn = this.config.get<string>('JWT_EXPIRES_IN', '30m');
     const accessToken = await this.jwt.signAsync({ sub: user.id });
+    const refresh = await this.newRefresh(user.id);
+    void this.refreshTokens.delete({ expiresAt: LessThan(new Date(Date.now() - 86_400_000)) }).catch(() => undefined); // tidy up old rows
     await this.audit.log({ category: 'auth', action: 'login', description: 'تسجيل دخول', actorId: user.id });
-    return { accessToken, expiresIn, user: await this.toMe(user) };
+    return { accessToken, expiresIn, refresh, user: await this.toMe(user) };
+  }
+
+  // ---------------------------------------------------------------- refresh tokens (long sign-in behind the short access cookie)
+  private refreshTtlMs() {
+    return ttlToMs(this.config.get<string>('REFRESH_EXPIRES_IN', '30d'), 30 * 86_400_000);
+  }
+
+  /** A new random refresh token (only its hash is stored). `familyId` stays the same through every rotation of one sign-in. */
+  private async newRefresh(userId: number, familyId: string = randomUUID()) {
+    const token = randomBytes(48).toString('base64url');
+    const maxAgeMs = this.refreshTtlMs();
+    await this.refreshTokens.save(this.refreshTokens.create({ userId, tokenHash: sha256(token), familyId, expiresAt: new Date(Date.now() + maxAgeMs), revokedAt: null }));
+    return { token, maxAgeMs };
+  }
+
+  /**
+   * Silent renewal: a valid refresh token gives a fresh access token and a NEW refresh token (rotation). A token that was already rotated
+   * and shows up again later means a copy is in use somewhere else, so the whole sign-in family is revoked.
+   */
+  async refresh(raw: string | undefined) {
+    const fail = () => new UnauthorizedException('انتهت الجلسة، سجّل الدخول من جديد');
+    if (!raw) throw fail();
+    const row = await this.refreshTokens.findOne({ where: { tokenHash: sha256(raw) } });
+    if (!row) throw fail();
+    const now = new Date();
+    const revokeFamily = () => this.refreshTokens.update({ familyId: row.familyId, revokedAt: IsNull() }, { revokedAt: now });
+    if (row.revokedAt) {
+      if (now.getTime() - row.revokedAt.getTime() > REFRESH_GRACE_MS) await revokeFamily();
+      throw fail();
+    }
+    if (row.expiresAt.getTime() <= now.getTime()) throw fail();
+    const user = await this.users.findOne({ where: { id: row.userId }, relations: { role: true, city: true } });
+    // a deactivated account, or a password changed after this sign-in started, ends the sign-in for good
+    if (!user || !user.isActive || (user.passwordChangedAt && user.passwordChangedAt.getTime() > row.createdAt.getTime())) {
+      await revokeFamily();
+      throw fail();
+    }
+    // claim the old token first: two requests with the same token cannot both succeed
+    const claimed = await this.refreshTokens.update({ id: row.id, revokedAt: IsNull() }, { revokedAt: now });
+    if (!claimed.affected) throw fail();
+    const refresh = await this.newRefresh(user.id, row.familyId);
+    const accessToken = await this.jwt.signAsync({ sub: user.id });
+    return { accessToken, expiresIn: this.config.get<string>('JWT_EXPIRES_IN', '30m'), refresh, user: await this.toMe(user) };
   }
 
   private front() {
@@ -159,13 +214,19 @@ export class AuthService {
     const now = new Date();
     await this.users.update({ id: row.userId }, { passwordHash: await bcrypt.hash(password, 12), passwordChangedAt: now });
     invalidateSessionUser(row.userId); // every open session of this account ends on the next request
+    await this.refreshTokens.delete({ userId: row.userId }); // and no refresh token can bring a session back
     await this.resets.delete({ userId: row.userId }); // every other open link of this account is void too
     await this.audit.log({ category: 'auth', action: 'password.reset', description: 'إعادة تعيين كلمة المرور عبر البريد', actorId: row.userId });
     return { message: 'تم تغيير كلمة المرور، يمكنك تسجيل الدخول الآن' };
   }
 
-  async logout(userId: number) {
-    await this.audit.log({ category: 'auth', action: 'logout', description: 'تسجيل خروج', actorId: userId });
+  /** Ends this sign-in (its refresh token family). The access cookie may already be gone, so `userId` can be missing. */
+  async logout(userId: number | undefined, rawRefresh?: string) {
+    if (rawRefresh) {
+      const row = await this.refreshTokens.findOne({ where: { tokenHash: sha256(rawRefresh) } });
+      if (row) await this.refreshTokens.update({ familyId: row.familyId, revokedAt: IsNull() }, { revokedAt: new Date() });
+    }
+    if (userId) await this.audit.log({ category: 'auth', action: 'logout', description: 'تسجيل خروج', actorId: userId });
   }
 
   async me(userId: number) {

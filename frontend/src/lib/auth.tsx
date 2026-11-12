@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { ApiError, SESSION_EXPIRED_EVENT, api } from './api';
+import { ApiError, SESSION_EXPIRED_EVENT, api, currentLang, sessionHint } from './api';
 
 export interface Me {
   id: number;
@@ -50,6 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  // remember (as a plain flag) that this browser has a sign-in, so an expired short cookie is renewed silently instead of showing "login required"
+  useEffect(() => { if (me) sessionHint.set(); }, [me]);
+
   // The sign-in cookie lasts a few hours. A tab left open past that still looks signed in, so the first call that needs the account fails with
   // 401 ("login required"). Re-check the session then (and when the tab comes back into view): if it is really over, `me` becomes null and the
   // management pages send the user to the login page, which brings them back here afterwards.
@@ -67,6 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const r = await api<{ user: Me }>('/auth/login', { method: 'POST', body: { email, password } });
+    // The password was right, but is the sign-in cookie really kept and sent back? (Browsers that block cross-site cookies, or a site and API on
+    // different domains without COOKIE_SAMESITE=none, accept the login and then refuse every next call with "login required".) Check at once
+    // and say so, instead of showing a signed-in page that cannot do anything.
+    try { await api<Me>('/auth/me'); } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        setMe(null);
+        throw new ApiError(401, currentLang() === 'ar'
+          ? 'تم التحقق من كلمة المرور لكن المتصفح لم يحتفظ بجلسة الدخول. اسمح بملفات تعريف الارتباط (cookies) لهذا الموقع، أو أخبر مدير الموقع أن إعدادات الكوكيز في الخادم (COOKIE_SAMESITE / COOKIE_SECURE) غير صحيحة.'
+          : 'Your password was accepted but the browser did not keep the sign-in session. Allow cookies for this site, or tell the site administrator that the server cookie settings (COOKIE_SAMESITE / COOKIE_SECURE) are wrong.');
+      }
+    }
     setMe(r.user);
     return r.user;
   };
@@ -74,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api('/auth/logout', { method: 'POST' });
     } finally {
+      sessionHint.clear();
       setMe(null);
     }
   };

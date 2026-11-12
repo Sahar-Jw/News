@@ -6,6 +6,7 @@ import { City } from '../modules/cities/city.entity';
 import { Country } from '../modules/countries/country.entity';
 import { ContactMessage } from '../modules/contact/contact-message.entity';
 import { PasswordReset } from '../modules/auth/password-reset.entity';
+import { RefreshToken } from '../modules/auth/refresh-token.entity';
 import { Appointment } from '../modules/appointments/appointment.entity';
 import { Customer } from '../modules/customers/customer.entity';
 import { Ad } from '../modules/ads/ad.entity';
@@ -25,4 +26,4 @@ import { User } from '../modules/users/user.entity';
 import { FooterGroup, FooterLink } from '../modules/footer/footer.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, Customer, Appointment, CourseRegistration, TrainerApplication, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, RefreshToken, Customer, Appointment, CourseRegistration, TrainerApplication, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink];

@@ -5,18 +5,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from '../access/role.entity';
 import { User } from '../users/user.entity';
 import { PasswordReset } from './password-reset.entity';
+import { RefreshToken } from './refresh-token.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, PasswordReset]),
+    TypeOrmModule.forFeature([User, Role, PasswordReset, RefreshToken]),
     JwtModule.registerAsync({
       global: true, // the global JwtAuthGuard needs JwtService
       inject: [ConfigService],
       useFactory: (c: ConfigService) => ({
         secret: c.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: c.get<string>('JWT_EXPIRES_IN', '8h') as any },
+        signOptions: { expiresIn: c.get<string>('JWT_EXPIRES_IN', '30m') as any },
       }),
     }),
   ],

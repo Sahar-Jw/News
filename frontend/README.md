@@ -16,6 +16,7 @@ Production: `npm run build` -> upload the contents of `out/` to `public_html` (t
 - Auth uses the HttpOnly cookie set by `/auth/login` (`credentials: 'include'`, no token in JS).
   - Same site (site and API on the same domain/subdomains): `COOKIE_SAMESITE=lax`, `COOKIE_SECURE=true` over HTTPS.
   - Different domains: `COOKIE_SAMESITE=none` and `COOKIE_SECURE=true` (HTTPS required).
+  - Sign-in length: `JWT_EXPIRES_IN` is the short access cookie (default `30m`); it is renewed silently from the rotating refresh cookie, which lasts `REFRESH_EXPIRES_IN` (default `30d`) and is only sent to `/api/auth` (`REFRESH_COOKIE_PATH` if a proxy changes the prefix). People who keep working are never signed out; someone idle longer than `REFRESH_EXPIRES_IN` signs in again.
 - The API also needs the new `GET /public/settings` endpoint (included in the updated backend zip).
 
 ## Routes
