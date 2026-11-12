@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUrl, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { SERVICE_KINDS } from './service.entity';
 
@@ -25,6 +25,8 @@ export class CreateServiceDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) departmentAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) departmentEn?: string | null;
+  /** where the responsible department's page / contact is: a full link or a path inside the site (/contact) */
+  @blankToNull() @IsOptional() @Matches(/^(https?:\/\/|\/)\S+$/, { message: 'departmentUrl must be a link or a path starting with /' }) @MaxLength(300) departmentUrl?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;
@@ -52,6 +54,8 @@ export class UpdateServiceDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) departmentAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) departmentEn?: string | null;
+  /** where the responsible department's page / contact is: a full link or a path inside the site (/contact) */
+  @blankToNull() @IsOptional() @Matches(/^(https?:\/\/|\/)\S+$/, { message: 'departmentUrl must be a link or a path starting with /' }) @MaxLength(300) departmentUrl?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(100) durationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;

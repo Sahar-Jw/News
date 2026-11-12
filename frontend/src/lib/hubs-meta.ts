@@ -46,8 +46,8 @@ export const HUBS: HubMeta[] = [
     tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
   },
   {
-    key: 'membership', ar: 'الانتساب', en: 'Membership', hintAr: 'طلبات الانتساب ومحتوى الصفحة', hintEn: 'Membership requests and page content', icon: '☑', color: '#0f766e',
-    tabs: [{ key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['membership.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['membership.read'] }],
+    key: 'membership', ar: 'الانتساب والخدمات', en: 'Membership & services', hintAr: 'خدمات الغرفة وطلبات الانتساب ومحتوى الصفحة', hintEn: 'Chamber services, membership requests and page content', icon: '☑', color: '#0f766e',
+    tabs: [{ key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['membership.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['membership.read'] }],
   },
   {
     key: 'incubator', ar: 'حاضنة الأعمال', en: 'Business incubator', hintAr: 'المشاريع والطلبات ونصوص الصفحة', hintEn: 'Projects, requests and page texts', icon: '❖', color: '#c7878d',

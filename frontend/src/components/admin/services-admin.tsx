@@ -10,12 +10,12 @@ import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { SERVICE_KINDS } from '@/components/site/services-shared';
 
-type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'audienceAr' | 'audienceEn' | 'documentsAr' | 'documentsEn' | 'stepsAr' | 'stepsEn' | 'locationAr' | 'locationEn' | 'departmentAr' | 'departmentEn' | 'durationAr' | 'durationEn' | 'feeAr' | 'feeEn';
+type Text = 'nameEn' | 'descriptionAr' | 'descriptionEn' | 'audienceAr' | 'audienceEn' | 'documentsAr' | 'documentsEn' | 'stepsAr' | 'stepsEn' | 'locationAr' | 'locationEn' | 'departmentAr' | 'departmentEn' | 'departmentUrl' | 'formUrl' | 'durationAr' | 'durationEn' | 'feeAr' | 'feeEn';
 type Fields = Record<Text, string>;
 interface Row extends Fields { id: number; kind: string; nameAr: string; sortOrder: number; isActive: boolean; imageUrl: string | null; formFileUrl: string | null }
 interface Draft extends Fields { id?: number; kind: string; nameAr: string; sortOrder: string; isActive: boolean; imageUrl: string | null; removeImage: boolean; formFileUrl: string | null; removeForm: boolean }
 
-const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn', 'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'durationAr', 'durationEn', 'feeAr', 'feeEn'];
+const TEXT: Text[] = ['nameEn', 'descriptionAr', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn', 'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'departmentUrl', 'formUrl', 'durationAr', 'durationEn', 'feeAr', 'feeEn'];
 const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fields;
 const EMPTY: Draft = { ...blank(), kind: 'other', nameAr: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false, formFileUrl: null, removeForm: false };
 
@@ -104,6 +104,8 @@ export function ServiceDialog({ id, onClose, onSaved }: { id?: number; onClose: 
               {pair('svc.steps', 'stepsAr', 'stepsEn', { area: true, max: 3000, hint: t('svc.linesHint') })}
               {pair('svc.location', 'locationAr', 'locationEn', { max: 255 })}
               {pair('svc.department', 'departmentAr', 'departmentEn', { max: 150 })}
+              <Field label={t('svc.deptUrl')} hint={t('svc.deptUrlHint')}><input maxLength={300} dir="ltr" placeholder="/contact" className={inputCls} value={draft.departmentUrl} onChange={(e) => up({ departmentUrl: e.target.value })} /></Field>
+              <Field label={t('svc.link')} hint={t('svc.linkHint')}><input type="url" maxLength={500} dir="ltr" placeholder="https://" className={inputCls} value={draft.formUrl} onChange={(e) => up({ formUrl: e.target.value })} /></Field>
               {pair('svc.duration', 'durationAr', 'durationEn', { max: 100 })}
               {pair('svc.fee', 'feeAr', 'feeEn', { max: 150, hint: t('svc.feeHint') })}
               <div className="md:col-span-2">

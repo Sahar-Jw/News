@@ -13,7 +13,7 @@ import { CreateServiceDto, PublicServicesQueryDto, ServicesAdminQueryDto, Update
 /** text fields the admin form edits that live in `extra` (the Arabic description is the news body) */
 const X_TEXT_FIELDS = [
   'nameEn', 'descriptionEn', 'audienceAr', 'audienceEn', 'documentsAr', 'documentsEn', 'stepsAr', 'stepsEn',
-  'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'durationAr', 'durationEn', 'feeAr', 'feeEn', 'formUrl',
+  'locationAr', 'locationEn', 'departmentAr', 'departmentEn', 'departmentUrl', 'durationAr', 'durationEn', 'feeAr', 'feeEn', 'formUrl',
 ] as const;
 
 const lines = (v: string | null | undefined) => (v ?? '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
@@ -133,7 +133,7 @@ export class ServicesService {
     const x = r.x;
     return {
       id: r.id, kind: x.kind ?? 'other', name: pick(r.title, x.nameEn, en), description: pick(r.body, x.descriptionEn, en),
-      audience: pick(x.audienceAr, x.audienceEn, en), department: pick(x.departmentAr, x.departmentEn, en), duration: pick(x.durationAr, x.durationEn, en),
+      audience: pick(x.audienceAr, x.audienceEn, en), department: pick(x.departmentAr, x.departmentEn, en), departmentUrl: s(x.departmentUrl), duration: pick(x.durationAr, x.durationEn, en),
       fee: pick(x.feeAr, x.feeEn, en), location: pick(x.locationAr, x.locationEn, en), formUrl: this.storage.url(x.formFile ?? null) ?? s(x.formUrl), formIsFile: !!x.formFile,
       imageUrl: this.storage.url(r.images[0] ?? null),
       documents: lines(en && x.documentsEn ? x.documentsEn : x.documentsAr), steps: lines(en && x.stepsEn ? x.stepsEn : x.stepsAr),

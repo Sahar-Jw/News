@@ -44,7 +44,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'expo.links': () => <WomenMenuAdmin site="expo" />,
   'expo.about': () => <ExpoSettingsAdmin section="about" />, 'expo.sectors': () => <ExpoSettingsAdmin section="sectors" />, 'expo.info': () => <ExpoSettingsAdmin section="info" />,
   'expo.contact': () => <ExpoSettingsAdmin section="contact" />, 'expo.identity': () => <ExpoSettingsAdmin section="identity" />,
-  'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
+  'membership.services': () => <ServicesAdmin />, 'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
   'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,

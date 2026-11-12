@@ -12,7 +12,7 @@ import { CategoryNews } from '@/components/site/category-news';
 
 interface Card { id: number; name: string; summary: string; chairName: string; tags: string[]; logoUrl: string | null }
 
-/** Committees and sectors, with a text search. */
+/** Committees and sectors, with a search by name. */
 export default function CommitteesPage() {
   const { lang, t, href } = useI18n();
   const { can } = useAuth();
@@ -47,7 +47,8 @@ export default function CommitteesPage() {
 
   const needle = q.trim().toLowerCase();
   const items = useMemo(
-    () => (all ?? []).filter((c) => (!needle || `${c.name} ${c.summary} ${c.chairName} ${c.tags.join(' ')}`.toLowerCase().includes(needle))),
+    // the search looks at the committee / sector NAME only (not its summary, chair or tags)
+    () => (all ?? []).filter((c) => !needle || c.name.toLowerCase().includes(needle)),
     [all, needle],
   );
 
