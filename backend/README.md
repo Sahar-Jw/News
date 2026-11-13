@@ -22,6 +22,7 @@ The seed is idempotent and additive: it creates permissions, roles, default sett
 - Node.js App: startup file `dist/main.js`, set the env vars from `.env.example` in the app settings.
 - Run `npm run migration:run:prod` and `npm run seed:prod` from the cPanel terminal (or set `RUN_MIGRATIONS_ON_START=true` once).
 - `sharp` is an optional dependency. If it can't install on shared hosting the app still works; images are validated but not resized/compressed.
+- Images are resized on upload: a picture wider than 1920 px is scaled down (never up) and saved at high quality (`IMAGE_QUALITY`, default 92, allowed 60-100); a picture that is already small enough is stored exactly as uploaded, a PNG is only repacked losslessly. Animated images are stored as uploaded.
 - Keep `STORAGE_DIR` outside the public web root. Files are served only through `GET /api/files/*`.
 - Passwords use `bcryptjs` (pure JS, no native build).
 

@@ -33,6 +33,9 @@ try {
   // optional dependency – the app works without it (images stored as uploaded)
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   sharp = require('sharp');
+  // the site stores a lot of images: keep the image library's memory and CPU use small so a burst of uploads cannot starve the server
+  sharp.cache({ memory: 64, files: 0, items: 32 });
+  sharp.concurrency(2);
 } catch {
   sharp = null;
 }
@@ -53,11 +56,14 @@ export class FileStorageService implements OnModuleInit {
   private cfgInfo = '';
   private readonly seedDir: string;
   private readonly seedEnabled: boolean;
+  /** quality of a picture that had to be scaled down (JPEG / WebP); IMAGE_QUALITY=60..100, default 92 = no visible loss */
+  private readonly imageQuality: number;
 
   constructor(private readonly config: ConfigService) {
     this.root = path.resolve(config.get<string>('STORAGE_DIR') || './storage');
     this.seedDir = path.resolve(config.get<string>('SEED_DIR') || './storage-seed');
     this.seedEnabled = config.get<string>('S3_SEED') !== 'false';
+    this.imageQuality = Math.min(100, Math.max(60, Number(config.get<string>('IMAGE_QUALITY')) || 92));
 
     // first non-empty variable wins; the AWS_* names are what S3 providers hand out in their ".env" snippet
     const used: Record<string, string> = {}; // which variable each value came from (shown in the startup log)
@@ -292,11 +298,25 @@ export class FileStorageService implements OnModuleInit {
     if (!det) throw new BadRequestException(`الملف ${file.originalname} ليس صورة مدعومة (${allowIco ? 'ICO, ' : ''}JPG, PNG, WEBP, GIF)`);
     if (!sharp || det.ext === 'gif') return { buffer: file.buffer, ext: det.ext };
     try {
-      let pipe = sharp(file.buffer, { failOn: 'error' }).rotate().resize({ width: maxWidth, withoutEnlargement: true });
-      if (det.ext === 'jpg') pipe = pipe.jpeg({ quality: 80, mozjpeg: true });
-      else if (det.ext === 'png') pipe = pipe.png({ compressionLevel: 9, palette: true });
-      else pipe = pipe.webp({ quality: 80 });
-      return { buffer: await pipe.toBuffer(), ext: det.ext };
+      const meta = await sharp(file.buffer, { failOn: 'error' }).metadata();
+      if ((meta.pages ?? 1) > 1) return { buffer: file.buffer, ext: det.ext }; // animated: stored as uploaded
+      const turned = (meta.orientation ?? 1) > 1; // phone photos carry a "rotate me" flag
+      const small = (meta.width ?? 0) <= maxWidth;
+      if (small && !turned) {
+        // Already small enough: the file is stored exactly as uploaded - no re-encoding, so the quality cannot change.
+        // (A PNG is only repacked losslessly, and only when that makes it smaller.)
+        if (det.ext !== 'png') return { buffer: file.buffer, ext: det.ext };
+        const packed = await sharp(file.buffer, { failOn: 'error' }).png({ compressionLevel: 9 }).toBuffer();
+        return { buffer: packed.length < file.buffer.length ? packed : file.buffer, ext: det.ext };
+      }
+      // Too wide (or needs turning): scale it down (never up) and save it again at high quality - visually the same picture, far fewer bytes.
+      let pipe = sharp(file.buffer, { failOn: 'error' }).rotate().resize({ width: maxWidth, withoutEnlargement: true, kernel: 'lanczos3' });
+      if (det.ext === 'jpg') pipe = pipe.jpeg({ quality: this.imageQuality, mozjpeg: true, chromaSubsampling: '4:4:4' });
+      else if (det.ext === 'png') pipe = pipe.png({ compressionLevel: 9 }); // lossless: no colour reduction
+      else pipe = pipe.webp({ quality: this.imageQuality });
+      const out = await pipe.toBuffer();
+      // never make a picture bigger than the one that was sent (only possible when it only needed turning)
+      return small && out.length >= file.buffer.length && !turned ? { buffer: file.buffer, ext: det.ext } : { buffer: out, ext: det.ext };
     } catch {
       throw new BadRequestException(`الصورة ${file.originalname} تالفة أو غير قابلة للمعالجة`);
     }

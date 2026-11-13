@@ -7,17 +7,21 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditListQueryDto } from './audit.dto';
 import { AuditLog } from './audit-log.entity';
-import { AuditService } from './audit.service';
+import { AuditService, outcomeOf } from './audit.service';
 import { requestLang } from '../../common/i18n/request-lang';
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'id', label: '#', value: (r) => r.id },
   { key: 'createdAt', label: ar ? 'التاريخ' : 'Date', value: (r) => r.createdAt },
-  { key: 'category', label: ar ? 'الفئة' : 'Category', value: (r) => r.category },
+  { key: 'actor', label: ar ? 'المنفّذ' : 'Actor', value: (r) => r.actor?.fullName ?? (r.details?.email ? String(r.details.email) : '') },
+  { key: 'email', label: ar ? 'البريد الإلكتروني' : 'Email', value: (r) => r.actor?.email ?? '' },
+  { key: 'category', label: ar ? 'القسم' : 'Module', value: (r) => r.category },
   { key: 'action', label: ar ? 'الإجراء' : 'Action', value: (r) => r.action },
+  { key: 'outcome', label: ar ? 'النتيجة' : 'Result', value: (r) => outcomeOf(r.action) },
   { key: 'description', label: ar ? 'الوصف' : 'Description', value: (r) => r.description },
-  { key: 'actor', label: ar ? 'المنفّذ' : 'Actor', value: (r) => r.actor?.fullName ?? '' },
   { key: 'entity', label: ar ? 'السجل المتأثر' : 'Record', value: (r) => (r.entityType ? `${r.entityType}${r.entityId ? ` #${r.entityId}` : ''}` : '') },
+  { key: 'ip', label: ar ? 'عنوان IP' : 'IP address', value: (r) => r.ip ?? '' },
+  { key: 'request', label: ar ? 'الطلب' : 'Request', value: (r) => (r.method ? `${r.method} ${r.route ?? ''}`.trim() : '') },
   { key: 'changes', label: ar ? 'التغييرات (قبل ← بعد)' : 'Changes (before → after)', value: (r) => changesText(r.changes) },
 ];
 
@@ -43,6 +47,12 @@ export class AuditController {
   @Get()
   list(@Query() q: AuditListQueryDto, @Req() req: any) {
     return this.service.list(q, requestLang(req));
+  }
+
+  /** the lists behind the filter bar (modules, actions, record types, users) */
+  @Get('facets')
+  facets() {
+    return this.service.facets();
   }
 
   @Get('export')
