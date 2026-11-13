@@ -69,7 +69,7 @@ const SECTIONS: Record<Section, { titleAr: string; titleEn: string; hintAr: stri
       one('start_date', 'date', 'تاريخ البداية', 'Start date'), one('end_date', 'date', 'تاريخ النهاية', 'End date'), p('venue', 'text', 'مكان المعرض', 'Venue'),
       one('primary_color', 'color', 'اللون الأساسي', 'Primary colour'), one('accent_color', 'color', 'لون التمييز (الذهبي)', 'Accent colour'), one('header_color', 'color', 'لون شريط التنقل', 'Header colour'),
       one('footer_color', 'color', 'لون التذييل', 'Footer colour'), one('background_color', 'color', 'لون خلفية الصفحة', 'Page background'), one('text_color', 'color', 'لون النص', 'Text colour'),
-      p('footer_text', 'area', 'نص التذييل', 'Footer text'), p('rights', 'text', 'سطر الحقوق أسفل التذييل', 'Rights line'),
+      p('footer_text', 'area', 'ملخص عن المعرض (يظهر تحت الشعار في التذييل)', 'Summary (shown under the logo in the footer)'), p('rights', 'text', 'سطر الحقوق أسفل التذييل', 'Rights line'),
     ],
   },
 };

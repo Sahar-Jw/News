@@ -27,6 +27,7 @@ const BASE_AR: Record<string, string> = {
   social_title: 'عنوان منصات التواصل',
   tagline: 'السطر السفلي (الشعار)',
   rights: 'سطر الحقوق',
+  company_summary: 'ملخص عن الشركة (يظهر تحت الشعار في التذييل)',
   // branding
   site_name: 'اسم الموقع',
   site_description: 'وصف الموقع',
@@ -113,7 +114,7 @@ const HOME_SECTION_AR: Record<string, string> = {
 const EXPO_AR: Record<string, string> = {
   name: 'اسم المعرض', tagline: 'الشعار النصي (العنوان الرئيسي)', about: 'عن المعرض', why: 'لماذا تشارك؟ (كل نقطة في سطر)',
   start_date: 'تاريخ البداية (YYYY-MM-DD)', end_date: 'تاريخ النهاية (YYYY-MM-DD)', venue: 'مكان المعرض', hero_image: 'صورة الواجهة', logo: 'شعار المعرض',
-  primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص', floor_plan: 'مخطط المعرض أو معلومات المكان', footer_text: 'نص التذييل',
+  primary_color: 'اللون الأساسي', accent_color: 'اللون الذهبي (التمييز)', header_color: 'لون شريط التنقل', footer_color: 'لون التذييل', background_color: 'لون خلفية الصفحة', text_color: 'لون النص', floor_plan: 'مخطط المعرض أو معلومات المكان', footer_text: 'ملخص عن اللجنة (يظهر تحت الشعار في التذييل)',
   page_links: 'روابط قائمة المعرض وتذييله',
   news_topic: 'وسم أخبار المعرض', register_open: 'التسجيل مفتوح (عارضون وزوار)',
 };

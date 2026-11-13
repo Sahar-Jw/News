@@ -360,6 +360,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('footer', 'social_title_en', 'text', 'Social media'),
   s('footer', 'tagline_ar', 'text', 'غرفة تجارة دمشق - بيت كل تاجر'),
   s('footer', 'tagline_en', 'text', 'Damascus Chamber of Commerce — the home of every merchant'),
+  s('footer', 'company_summary_ar', 'text'),
+  s('footer', 'company_summary_en', 'text'),
   s('footer', 'rights_ar', 'text', '© جميع الحقوق محفوظة لغرفة تجارة دمشق'),
   s('footer', 'rights_en', 'text', '© All rights reserved to the Damascus Chamber of Commerce'),
   // homepage sections: titles, order, visibility

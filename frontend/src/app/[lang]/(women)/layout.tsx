@@ -1,4 +1,5 @@
 'use client';
+import { FooterBrand } from '@/components/site/footer-brand';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
@@ -197,9 +198,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
         <div className="h-1 bg-gradient-to-r from-accent via-primary to-transparent" aria-hidden="true" />
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm">
           <div>
-            <div className="font-extrabold text-white">{name}</div>
-            {tagline && <p className="mt-1 text-white/75">{tagline}</p>}
-            {footerText && <p className="mt-2 max-w-xl leading-6 text-white/75">{footerText}</p>}
+            <FooterBrand logo={logo || '/brand/women-committee-icon.svg'} name={name} summary={footerText || tagline} />
           </div>
           <div className="flex flex-wrap items-start gap-3">
             {footerEntries.map((entry, index) => entry.type === 'page'

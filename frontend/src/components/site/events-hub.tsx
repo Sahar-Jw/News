@@ -287,89 +287,6 @@ export function EventsManageBar() {
   );
 }
 
-const FEED: ['news' | 'visits' | 'media' | 'coverage', string, string][] = [
-  ['news', 'الأخبار', 'News'], ['visits', 'الزيارات واللقاءات', 'Visits & meetings'], ['media', 'الصور والفيديو', 'Photos & video'], ['coverage', 'التغطية الإعلامية', 'Media coverage'],
-];
-interface FeedItem { id: number; title: string; excerpt?: string; image: string | null; publishAt: string | null; kind: string; eventId: number; eventTitle: string; url?: string; source?: string; videoId?: string; date?: string }
-
-/** Under the list of a tab: the news, the visits and meetings, the photos and videos and the media coverage of ALL its exhibitions (or occasions), 6 per page. */
-function EventsFeed({ type }: { type: 'exhibition' | 'occasion' }) {
-  const { lang, href } = useI18n();
-  const ar = lang === 'ar';
-  const [group, setGroup] = useState<(typeof FEED)[number][0]>('news');
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<{ data: FeedItem[]; meta: { totalPages: number; total: number } } | null>(null);
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  useEffect(() => { setPage(1); }, [group, type, lang]);
-  useEffect(() => {
-    let live = true;
-    // how many items each section has, so a section without anything is not offered
-    Promise.all(FEED.map(([g]) => api<{ meta: { total: number } }>('/public/occasions/feed', { params: { lang, type, group: g, limit: 1 }, cache: 'no-store' }).then((r) => [g, r.meta.total] as const).catch(() => [g, 0] as const)))
-      .then((x) => { if (live) setCounts(Object.fromEntries(x)); });
-    return () => { live = false; };
-  }, [type, lang]);
-  useEffect(() => {
-    let live = true;
-    setData(null);
-    api<{ data: FeedItem[]; meta: { totalPages: number; total: number } }>('/public/occasions/feed', { params: { lang, type, group, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' }).then((r) => { if (live) setData(r); }).catch(() => { if (live) setData({ data: [], meta: { totalPages: 1, total: 0 } }); });
-    return () => { live = false; };
-  }, [lang, type, group, page]);
-  const available = FEED.filter(([g]) => (counts[g] ?? 0) > 0);
-  if (available.length === 0) return null;
-  const current = available.some(([g]) => g === group) ? group : available[0][0];
-  if (current !== group) setGroup(current);
-  const who = (x: FeedItem) => <Link href={href(`/occasions/view?id=${x.eventId}`)} className="text-xs font-semibold text-primary hover:underline">{x.eventTitle}</Link>;
-  return (
-    <section className="mt-10" aria-label={ar ? 'أخبار وتغطية' : 'News and coverage'}>
-      <h2 className="mb-3 border-s-4 border-accent ps-3 text-xl font-extrabold text-secondary">{type === 'exhibition' ? (ar ? 'أخبار المعارض والتغطية' : 'Exhibition news & coverage') : (ar ? 'أخبار المناسبات والتغطية' : 'Occasion news & coverage')}</h2>
-      <div role="tablist" className="mb-4 flex flex-wrap gap-2">
-        {available.map(([g, a, e]) => <button key={g} type="button" role="tab" aria-selected={current === g} onClick={() => setGroup(g)} className={`rounded-full px-4 py-1.5 text-sm font-bold transition ${current === g ? 'bg-secondary text-white' : 'bg-white text-secondary ring-1 ring-line hover:text-primary'}`}>{ar ? a : e}<span className="ms-1.5 text-xs opacity-70">{counts[g]}</span></button>)}
-      </div>
-      {!data ? <Center><Spinner /></Center> : (
-        <>
-          {current === 'media' ? (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.data.map((x, i) => (
-                <li key={`${x.eventId}-${i}`}>
-                  <Link href={href(`/occasions/view?id=${x.eventId}`)} className="group relative block overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-                    <Thumb src={x.videoId ? `https://i.ytimg.com/vi/${x.videoId}/hqdefault.jpg` : x.image} alt={x.eventTitle} className="h-44 w-full" />
-                    {x.videoId && <span aria-hidden="true" className="absolute inset-0 m-auto flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white">▶</span>}
-                    <span className="block px-3 py-2 text-xs font-semibold text-secondary group-hover:text-primary">{x.eventTitle}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <ul className="grid gap-4 md:grid-cols-2">
-              {data.data.map((x) => {
-                const body = (
-                  <>
-                    <Thumb src={x.image} alt={x.title} className="h-20 w-28 shrink-0 rounded-xl" />
-                    <div className="min-w-0">
-                      <h3 className="line-clamp-2 text-sm font-bold group-hover:text-primary">{x.title}</h3>
-                      {x.publishAt && <p className="mt-1 text-xs text-gray-500">{fmtDay(lang, x.publishAt.slice(0, 10))}</p>}
-                      {x.source && <p className="mt-1 text-xs text-gray-500">{x.source} ↗</p>}
-                      {x.excerpt && <p className="mt-1 line-clamp-2 text-xs text-gray-600">{x.excerpt}</p>}
-                    </div>
-                  </>
-                );
-                const cls = 'group flex gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:ring-accent';
-                return (
-                  <li key={`${x.id}-${x.eventId}`} className="flex flex-col gap-1">
-                    {x.url ? <a href={x.url} target="_blank" rel="noopener noreferrer" className={cls}>{body}</a> : <Link href={href(`/news/view?id=${x.id}`)} className={cls}>{body}</Link>}
-                    <span className="px-1">{who(x)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage} />
-        </>
-      )}
-    </section>
-  );
-}
-
 function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatus: EventStatus }) {
   const { lang } = useI18n();
   const ar = lang === 'ar';
@@ -389,8 +306,8 @@ function Hub({ initialTab, initialStatus }: { initialTab: EventTab; initialStatu
             className={`rounded-full px-5 py-2 text-sm font-bold transition ${tab === t ? 'bg-primary text-white shadow' : 'bg-white text-secondary ring-1 ring-line hover:text-primary'}`}>{LABEL[t][ar ? 0 : 1]}</button>
         ))}
       </div>
-      {tab === 'exhibitions' && <><EventList type="exhibition" initialStatus={initialStatus} /><EventsFeed type="exhibition" /></>}
-      {tab === 'occasions' && <><EventList type="occasion" initialStatus={initialStatus} /><EventsFeed type="occasion" /></>}
+      {tab === 'exhibitions' && <><EventList type="exhibition" initialStatus={initialStatus} /></>}
+      {tab === 'occasions' && <><EventList type="occasion" initialStatus={initialStatus} /></>}
       <CategoryNews category="events" className="mt-10 !px-0 !pb-0" />
     </div>
   );

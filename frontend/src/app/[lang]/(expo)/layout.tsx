@@ -1,4 +1,5 @@
 'use client';
+import { FooterBrand } from '@/components/site/footer-brand';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -127,10 +128,8 @@ function Chrome({ children }: { children: React.ReactNode }) {
         <div className="h-1 bg-gradient-to-r from-accent via-primary to-transparent" aria-hidden="true" />
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 text-sm md:grid-cols-[1.2fr_1.6fr_1fr]">
           <div>
-            <div className="text-lg font-extrabold text-white">{x.name}</div>
-            {x.tagline && <p className="mt-2 leading-7 text-white/75">{x.tagline}</p>}
-            {x.footerText && <p className="mt-2 leading-7 text-white/75">{x.footerText}</p>}
-            <div className="mt-3 space-y-1.5 text-white/85">
+            <FooterBrand logo={x.logo} name={x.name} summary={x.footerText || x.tagline} />
+            <div className="mt-4 space-y-1.5 text-white/85">
               {x.start && <div>📅 {fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</div>}
               {x.venue && <div>📍 {x.venue}</div>}
             </div>

@@ -11,6 +11,7 @@ import { useFooterGroups, type FooterLinkItem } from './use-footer';
 import { SECTIONS, newsPerm, prettyUrl, telHref } from '@/lib/utils';
 import { HUB_PERMS } from '@/lib/hubs-meta';
 import { ContactIcon, SocialIcon } from './icons';
+import { FooterBrand } from './footer-brand';
 
 type NavItem = { label: string; to: string; show: boolean; newTab?: boolean };
 type AdminGroup = { key: string; label: string; items: NavItem[] };
@@ -434,12 +435,15 @@ function FootLink({ item, href }: { item: FooterLinkItem; href: (p: string) => s
  */
 export function Footer() {
   const { lang, t, href } = useI18n();
-  const { s, loc } = useSite();
+  const { s, loc, img } = useSite();
   const groups = useFooterGroups(lang) ?? [];
   const columns = groups.filter((g) => g.kind === 'links');
   const official = groups.find((g) => g.kind === 'official');
   const legal = groups.filter((g) => g.kind === 'legal').flatMap((g) => g.items);
   const hasSocial = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'].some((k) => s('social', k));
+  const siteName = loc('branding', 'site_name');
+  // the short company summary under the logo: Settings -> Footer, falling back to the site description
+  const summary = loc('footer', 'company_summary') || loc('branding', 'site_description');
   const tagline = loc('footer', 'tagline');
   const rights = loc('footer', 'rights');
   const phone = s('contact', 'phone');
@@ -454,7 +458,8 @@ export function Footer() {
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="corner-light pointer-events-none absolute inset-0 opacity-60 rtl:-scale-x-100" aria-hidden="true" />
       <div className="sheen" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-7xl gap-x-8 gap-y-9 px-4 py-10 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="relative mx-auto grid max-w-7xl gap-x-8 gap-y-9 px-4 py-10 sm:grid-cols-2 lg:grid-cols-8">
+        <FooterBrand className="sm:col-span-2 lg:col-span-2" logo={img('branding', 'logo')} name={siteName} summary={summary} />
         {columns.map((g) => (
           <div key={g.id} className={SPAN[g.columns] ?? SPAN[1]}>
             <FootTitle>{g.title}</FootTitle>
