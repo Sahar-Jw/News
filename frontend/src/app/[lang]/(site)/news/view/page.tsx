@@ -1,4 +1,5 @@
 'use client';
+import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -22,6 +23,7 @@ function View() {
   const id = useSearchParams().get('id');
   const [n, setN] = useState<Detail | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
+  useCrumbTitle(n?.title);
 
   useEffect(() => {
     if (!id) { setState('404'); return; }

@@ -1,4 +1,5 @@
 'use client';
+import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -104,6 +105,7 @@ function PartPage({ part }: { part: Part | 'all' }) {
   const router = useRouter();
   const sp = useSearchParams();
   const def = part === 'all' ? null : PARTS.find((p) => p.key === part)!;
+  useCrumbTitle(def ? t(def.title) : null);
   const chips = part === 'all' ? [] : CHIPS[part];
   const sub = chips.find((c) => c.key === sp.get('sub'))?.key ?? '';
   const chosen = chips.find((c) => c.key === sub);
@@ -158,7 +160,6 @@ function PartPage({ part }: { part: Part | 'all' }) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <nav aria-label="breadcrumb" className="mb-3 text-sm text-gray-500"><Link href={href('/documents')} className="hover:text-primary">{t('doc.title')}</Link><span className="mx-1.5">›</span><span className="text-ink">{def ? t(def.title) : t('doc.searchBtn')}</span></nav>
       <Header title={def ? t(def.title) : t('doc.title')} text={def ? t(def.text) : undefined} />
       {manage.bar}
       {chips.length > 0 && (

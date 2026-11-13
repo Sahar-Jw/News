@@ -6,12 +6,16 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NewsletterTopics } from './newsletter-topics';
+import { saveSubscription } from './subscription-device';
 
 interface Prefs { email: string; isActive: boolean; topics: string[] }
 
-function Prefs() {
+/**
+ * The subscriber's own panel: the topics (save), unsubscribe, and subscribe again. Used by the e-mail link page and by /subscribe.
+ * `onForget` (only on /subscribe) adds "not you? forget this browser"; `onBad` tells /subscribe that the remembered key no longer works.
+ */
+export function SubscriptionManager({ token, onForget, onBad }: { token: string; onForget?: () => void; onBad?: () => void }) {
   const { t, href } = useI18n();
-  const token = useSearchParams().get('token') ?? '';
   const [state, setState] = useState<'busy' | 'ready' | 'bad'>('busy');
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [topics, setTopics] = useState<string[]>([]);
@@ -19,11 +23,11 @@ function Prefs() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!/^[a-f0-9]{48}$/.test(token)) { setState('bad'); return; }
+    if (!/^[a-f0-9]{48}$/.test(token)) { setState('bad'); onBad?.(); return; }
     api<Prefs>('/public/subscribe/preferences', { method: 'POST', body: { token } })
-      .then((r) => { setPrefs(r); setTopics(r.topics); setState('ready'); })
-      .catch(() => setState('bad'));
-  }, [token]);
+      .then((r) => { setPrefs(r); setTopics(r.topics); setState('ready'); saveSubscription(token); })
+      .catch(() => { setState('bad'); onBad?.(); });
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = async () => {
     if (topics.length === 0) { setMsg({ ok: false, text: t('sub.noneChosen') }); return; }
@@ -62,10 +66,16 @@ function Prefs() {
         <button type="button" disabled={saving} onClick={save} className="h-11 rounded-xl bg-primary px-6 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60">{t('sub.save')}</button>
         {prefs.isActive && <button type="button" disabled={saving} onClick={unsubscribe} className="h-11 rounded-xl border border-red-300 px-6 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60">{t('sub.unsubscribe')}</button>}
       </div>
+      {onForget && <button type="button" onClick={onForget} className="mt-4 text-xs text-gray-500 underline">{t('sub.notYou')}</button>}
       <p role="status" aria-live="polite" className={`mt-3 text-sm ${msg?.ok ? 'text-emerald-700' : 'text-red-600'}`}>{msg?.text ?? ''}</p>
       <Link href={href('/')} className="mt-8 inline-block text-sm text-primary">← {t('sub.home')}</Link>
     </div>
   );
+}
+
+function Prefs() {
+  const token = useSearchParams().get('token') ?? '';
+  return <SubscriptionManager token={token} />;
 }
 
 /** Landing page of "Choose topics" in the newsletter e-mails: pick the topics, save, or unsubscribe. */

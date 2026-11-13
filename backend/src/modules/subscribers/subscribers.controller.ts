@@ -8,7 +8,7 @@ import { AuthUser } from '../../common/types';
 import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkDeleteDto } from '../news/news.dto';
-import { PreferencesDto, SetActiveDto, SubscribeDto, SubscribersQueryDto, TokenDto } from './subscribers.dto';
+import { ManageLinkDto, PreferencesDto, SetActiveDto, SubscribeDto, SubscribersQueryDto, TokenDto } from './subscribers.dto';
 import { SubscribersService } from './subscribers.service';
 
 const yn = (ar: boolean, v: boolean) => (v ? (ar ? 'نعم' : 'Yes') : ar ? 'لا' : 'No');
@@ -54,6 +54,15 @@ export class SubscribersController {
   @HttpCode(200)
   unsubscribe(@Body() dto: TokenDto) {
     return this.service.unsubscribe(dto.token);
+  }
+
+  /** "I am already subscribed": e-mails the subscriber a private link to change topics or unsubscribe. Always answers the same. */
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('public/subscribe/manage-link')
+  @HttpCode(200)
+  manageLink(@Body() dto: ManageLinkDto) {
+    return this.service.sendManageLink(dto.email, dto.lang === 'en' ? 'en' : 'ar');
   }
 
   @Public()

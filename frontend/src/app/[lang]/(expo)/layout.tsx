@@ -9,6 +9,7 @@ import { fileUrl } from '@/lib/api';
 import { SiteProvider, useSite } from '@/components/site/site-context';
 import { useExpoInfo } from '@/components/site/expo-shared';
 import { BackToTop } from '@/components/site/shell';
+import { Breadcrumbs } from '@/components/site/breadcrumbs';
 import { BrandedDropdown } from '@/components/site/branded-dropdown';
 import { ExpoManageBar } from '@/components/site/expo-manage-bar';
 import { SocialIcon } from '@/components/site/icons';
@@ -123,7 +124,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
       </header>
       {/* control buttons for people with permission; the wrapper disappears when the bar renders nothing */}
       <div className="mx-auto max-w-7xl px-4 pt-6 empty:hidden"><ExpoManageBar /></div>
-      <main className="min-h-[60vh] min-w-0">{children}</main>
+      <main className="min-h-[60vh] min-w-0"><Breadcrumbs scope="expo" />{children}</main>
       <footer className="mt-12 text-white/90" style={{ backgroundColor: 'var(--expo-footer)' }}>
         <div className="h-1 bg-gradient-to-r from-accent via-primary to-transparent" aria-hidden="true" />
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 text-sm md:grid-cols-[1.2fr_1.6fr_1fr]">

@@ -1,4 +1,5 @@
 'use client';
+import { Breadcrumbs } from '@/components/site/breadcrumbs';
 import { FooterBrand } from '@/components/site/footer-brand';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -193,7 +194,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
           </div>}
         </nav>}
       </header>
-      <main className="min-h-[60vh] min-w-0">{children}</main>
+      <main className="min-h-[60vh] min-w-0"><Breadcrumbs scope="women" />{children}</main>
       <footer className="mt-12 text-white/90" style={{ backgroundColor: 'var(--footer-bg)' }}>
         <div className="h-1 bg-gradient-to-r from-accent via-primary to-transparent" aria-hidden="true" />
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm">

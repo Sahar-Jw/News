@@ -11,6 +11,11 @@ export class SubscribeDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) topics?: string[];
 }
 
+export class ManageLinkDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value)) @IsEmail() @MaxLength(190) email: string;
+  @IsOptional() @IsIn(['ar', 'en']) lang?: string;
+}
+
 export class TokenDto {
   @IsString() @Matches(/^[a-f0-9]{48}$/, { message: 'الرابط غير صالح' }) token: string;
 }

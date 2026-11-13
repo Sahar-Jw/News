@@ -1,4 +1,5 @@
 'use client';
+import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, fileUrl, onSiteChange } from '@/lib/api';
@@ -126,6 +127,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const { loc, s } = useSite();
   const [c, setC] = useState<CommitteeData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404' | 'error'>('load');
+  useCrumbTitle(path.includes('/women') ? null : c?.name);
   const [tab, setTab] = useState('overview');
   const [mediaType, setMediaType] = useState<'all' | 'photos' | 'video'>('all');
   const { can } = useAuth();
@@ -237,15 +239,6 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   return (
     <div className={women ? 'women-theme' : undefined}>
     <div className="mx-auto max-w-6xl px-4 py-6">
-      {/* the committee's own menu has the way home, so the businesswomen page has no breadcrumb */}
-      {!women && (
-        <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500">
-          <Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link>
-          <span className="mx-1.5">›</span>
-          <Link href={href('/committees')} className="hover:text-primary">{t('cm.title')}</Link><span className="mx-1.5">›</span>
-          <span className="text-ink">{c.name}</span>
-        </nav>
-      )}
 
       {women ? (
         <header id="about" className="relative mb-5 scroll-mt-24 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">

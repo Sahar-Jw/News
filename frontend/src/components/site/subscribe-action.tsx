@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
+import { saveSubscription } from './subscription-device';
 
 function Action({ action }: { action: 'verify' | 'unsubscribe' }) {
   const { t, href } = useI18n();
@@ -14,7 +15,7 @@ function Action({ action }: { action: 'verify' | 'unsubscribe' }) {
   useEffect(() => {
     if (!/^[a-f0-9]{48}$/.test(token)) { setState('bad'); return; }
     setState('busy');
-    api(`/public/subscribe/${action}`, { method: 'POST', body: { token } }).then(() => setState('ok')).catch(() => setState('bad'));
+    api(`/public/subscribe/${action}`, { method: 'POST', body: { token } }).then(() => { setState('ok'); if (action === 'verify') saveSubscription(token); }).catch(() => setState('bad'));
   }, [token, action]);
 
   return (

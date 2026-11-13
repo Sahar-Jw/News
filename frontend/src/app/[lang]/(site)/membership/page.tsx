@@ -211,8 +211,6 @@ export default function ServicesPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      <nav aria-label="breadcrumb" className="text-sm text-gray-500"><Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link><span className="mx-1.5">›</span><span className="text-ink">{t('sv.title')}</span></nav>
-
       <PageManageBar show={mayRequests || maySvc || mayAddSvc || mayAddFaq || mayEditFaq || mayDeleteFaq} settingsUrl={maySvc ? '/admin/settings?page=membership&tab=services' : undefined}>
         {mayAddSvc && <ManageBtn onClick={() => setSvcDialog({})}>＋ {t('sv.add')}</ManageBtn>}
         {maySvc && <ManageLink tone="solid" to="/admin/settings?page=membership&tab=services">▤ {t('sv.manage')}</ManageLink>}

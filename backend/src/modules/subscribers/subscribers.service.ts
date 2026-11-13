@@ -13,6 +13,10 @@ import { SubscribersQueryDto } from './subscribers.dto';
 import { removedChanges } from '../audit/audit-snapshot';
 import { normalizeTopics, NEWSLETTER_TOPICS } from '../../common/newsletter-topics';
 
+const MANAGE_MESSAGE = {
+  ar: 'إذا كان هذا البريد مشتركاً في النشرة فقد أرسلنا إليه رابطاً خاصاً لتغيير المواضيع أو إلغاء الاشتراك.',
+  en: 'If this address is subscribed to the newsletter, we sent it a private link to change topics or unsubscribe.',
+};
 const OK_MESSAGE = { ar: 'شكراً لك! أرسلنا إليك رسالة لتأكيد بريدك الإلكتروني.', en: 'Thank you! We sent you an e-mail to confirm your address.' };
 
 @Injectable()
@@ -41,6 +45,25 @@ export class SubscribersService {
   }
 
   // ---------------------------------------------------------------- public
+  /** The private "manage my subscription" link goes only to the address itself, and the answer never tells whether the address is subscribed. */
+  async sendManageLink(email: string, lang: 'ar' | 'en' = 'ar') {
+    const s = await this.repo.findOne({ where: { email } });
+    if (s && s.isVerified) {
+      const ar = lang === 'ar';
+      const manage = `${this.front()}/${lang}/subscribe/preferences/?token=${s.rememberToken}`;
+      const unsub = `${this.front()}/${lang}/subscribe/unsubscribe/?token=${s.rememberToken}`;
+      const html = `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:Tahoma,Arial,sans-serif;line-height:1.9;color:#1f2937;max-width:520px;margin:auto">
+        <p>${ar ? 'مرحباً،' : 'Hello,'}</p>
+        <p>${ar ? 'طلبتَ إدارة اشتراكك في نشرتنا. من الزر أدناه يمكنك اختيار المواضيع التي تصلك أو إلغاء الاشتراك:' : 'You asked to manage your newsletter subscription. With the button below you can choose the topics you receive or unsubscribe:'}</p>
+        <p style="text-align:center;margin:28px 0"><a href="${manage}" style="background:#2748e8;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;display:inline-block">${ar ? 'إدارة الاشتراك' : 'Manage subscription'}</a></p>
+        <p style="color:#6b7280;font-size:13px">${ar ? 'لإلغاء الاشتراك مباشرة:' : 'To unsubscribe right away:'} <a href="${unsub}">${ar ? 'ألغِ الاشتراك' : 'unsubscribe'}</a></p>
+        <p style="color:#9ca3af;font-size:12px">${ar ? 'إذا لم تطلب هذه الرسالة فتجاهلها.' : 'If you did not ask for this, ignore this message.'}</p></div>`;
+      await this.mail.as('newsletter').send(s.email, ar ? 'إدارة الاشتراك في النشرة' : 'Manage your newsletter subscription', html);
+      await this.audit.log({ category: 'subscribers', action: 'manage-link', description: 'طلب رابط إدارة الاشتراك في النشرة', entityType: 'subscribers', entityId: s.id });
+    }
+    return { message: MANAGE_MESSAGE[lang] };
+  }
+
   /** Always answers the same way, so nobody can use the form to find out who is subscribed. */
   async subscribe(email: string, lang: 'ar' | 'en' = 'ar', topics?: string[]) {
     let s = await this.repo.findOne({ where: { email } });

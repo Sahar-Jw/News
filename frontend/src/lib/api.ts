@@ -17,6 +17,8 @@ export function fileUrl(p?: string | null): string {
   return API_URL + p.replace(/^\/api/, '');
 }
 
+import { endUpload, startUpload, updateUpload } from './upload-progress';
+
 /** Fired after any successful change made through /admin/*: the site shell (settings, categories) reloads itself. */
 export const SITE_CHANGED = 'site-data-changed';
 const SITE_CHANNEL = 'site-data';
@@ -126,6 +128,29 @@ async function parse(res: Response) {
   return data;
 }
 
+/** The bytes of the files inside a form (0 = nothing to upload, a plain form). */
+function filesSize(form: FormData): number {
+  let n = 0;
+  form.forEach((v) => { if (typeof v !== 'string') n += (v as File).size; });
+  return n;
+}
+
+/** fetch() cannot report how much of a request body was sent, so a form with files goes through XMLHttpRequest, which can. The answer is the same Response. */
+function sendWithProgress(url: string, init: { method: string; headers: Record<string, string>; body: FormData }, bytes: number): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const id = startUpload(bytes);
+    const xhr = new XMLHttpRequest();
+    xhr.open(init.method, url);
+    xhr.withCredentials = true;
+    for (const [k, v] of Object.entries(init.headers)) xhr.setRequestHeader(k, v);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) updateUpload(id, (e.loaded / e.total) * bytes); };
+    xhr.onload = () => { endUpload(id); resolve(new Response(xhr.status === 204 || xhr.status === 205 ? null : xhr.responseText, { status: xhr.status || 200, statusText: xhr.statusText })); };
+    xhr.onerror = () => { endUpload(id); reject(new TypeError('network')); };
+    xhr.onabort = () => { endUpload(id); reject(new TypeError('aborted')); };
+    xhr.send(init.body);
+  });
+}
+
 export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean } = {}): Promise<T> {
   const headers: Record<string, string> = { 'X-Lang': currentLang() };
   let body: BodyInit | undefined;
@@ -136,7 +161,11 @@ export async function api<T = any>(path: string, opts: { method?: string; params
   }
   updateActiveApiRequests(1);
   try {
-    const res = await fetch(API_URL + path + qs(opts.params), { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache ?? 'no-store' }); // never serve a stale list after an add / edit
+    const url = API_URL + path + qs(opts.params);
+    const bytes = opts.form ? filesSize(opts.form) : 0;
+    const res = bytes > 0 && typeof XMLHttpRequest !== 'undefined'
+      ? await sendWithProgress(url, { method: opts.method ?? 'POST', headers, body: opts.form as FormData }, bytes)
+      : await fetch(url, { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache ?? 'no-store' }); // never serve a stale list after an add / edit
     const out = await parse(res);
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;

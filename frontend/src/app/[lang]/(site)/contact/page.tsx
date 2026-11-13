@@ -12,7 +12,6 @@ export default function ContactPage() {
   const subtitle = loc('contact', 'subtitle') || t('ct.subtitle');
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <nav aria-label="breadcrumb" className="mb-4 text-sm text-gray-500"><Link href={href('/')} className="hover:text-primary">{t('site.home')}</Link><span className="mx-1.5">›</span><span className="text-ink">{title}</span></nav>
       <header className="mb-6 text-center">
         <h1 className="text-2xl font-extrabold text-secondary md:text-3xl">{title}</h1>
         {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
