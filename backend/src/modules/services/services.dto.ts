@@ -70,6 +70,8 @@ export class UpdateServiceDto {
 
 export class ServicesAdminQueryDto extends AdminListQueryDto {
   @IsOptional() @IsIn(KINDS) kind?: string;
+  /** shown on the site / hidden from it */
+  @IsOptional() @IsIn(['active', 'hidden']) status?: string;
 }
 
 export class PublicServicesQueryDto {

@@ -43,6 +43,7 @@ export class ServicesService {
   async list(q: ServicesAdminQueryDto) {
     let rows = (await this.store.list(CC.SERVICE)).map((r) => ({ r, v: this.view(r) }));
     if (q.kind) rows = rows.filter(({ v }) => v.kind === q.kind);
+    if (q.status) rows = rows.filter(({ r }) => isActive(r) === (q.status === 'active'));
     if (q.q) rows = rows.filter(({ v }) => matches([v.nameAr, v.nameEn, v.departmentAr], q.q!));
     rows = filterByCf(rows, q.cf, { nameAr: (x) => [x.v.nameAr], nameEn: (x) => [x.v.nameEn], departmentAr: (x) => [x.v.departmentAr], feeAr: (x) => [x.v.feeAr] });
     rows.sort(by((x) => sortOf(x.r), (x) => x.r.id));

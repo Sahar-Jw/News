@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -21,6 +21,10 @@ export default function RolesPage() {
   const [orig, setOrig] = useState<Set<string>>(new Set());
   const [edit, setEdit] = useState<null | Partial<Role>>(null);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+  // filters of the permission list: text (name or code), one section, and granted / not granted
+  const [fq, setFq] = useState('');
+  const [fmod, setFmod] = useState('');
+  const [fstate, setFstate] = useState<'all' | 'on' | 'off'>('all');
 
   const loadRoles = useCallback(() => api<Role[]>('/admin/roles').then(setRoles).catch((e) => toast(e.message, 'err')), [toast]);
   useEffect(() => { loadRoles(); api<Perm[]>('/admin/permissions').then(setPerms).catch(() => {}); }, [loadRoles]);
@@ -60,19 +64,28 @@ export default function RolesPage() {
     } catch (e: any) { toast(e.message, 'err'); }
   };
 
-  const modules = [...new Set(perms.map((p) => p.module))];
+  const allModules = [...new Set(perms.map((p) => p.module))];
+  const needle = fq.trim().toLowerCase();
+  const visible = useMemo(() => perms.filter((p) =>
+    (!fmod || p.module === fmod)
+    && (fstate === 'all' || (fstate === 'on') === checked.has(p.code))
+    && (!needle || `${p.nameAr} ${p.nameEn} ${p.code}`.toLowerCase().includes(needle)),
+  ), [perms, fmod, fstate, needle, checked]);
+  const modules = allModules.filter((m) => visible.some((p) => p.module === m));
+  const filtering = !!(needle || fmod || fstate !== 'all');
+  const resetFilters = () => { setFq(''); setFmod(''); setFstate('all'); };
   const canAssign = can('permissions.assign');
   const dirty = checked.size !== orig.size || [...checked].some((c) => !orig.has(c));
   const name = (x: { nameAr: string; nameEn: string }) => (lang === 'ar' ? x.nameAr : x.nameEn);
   const moduleLabel = (m: string) => {
-    if (m.startsWith('news.')) return t(`section.${m.slice(5).toUpperCase()}`);
+    if (m.startsWith('news.')) return `${t(`section.${m.slice(5).toUpperCase()}`)} · ${t('r.homeSection')}`;
     const l = t(`mod.${m}`);
     return l === `mod.${m}` ? m : l;
   };
   // UI hint only: the server rejects granting permissions you don't hold; removing is always allowed
   const grantable = (code: string) => canAssign && !!me?.permissions.includes(code);
   const toggleModule = (m: string) => {
-    const codes = perms.filter((p) => p.module === m).map((p) => p.code);
+    const codes = visible.filter((p) => p.module === m).map((p) => p.code);
     const allOn = codes.every((c) => checked.has(c) || !grantable(c));
     const n = new Set(checked);
     for (const c of codes) {
@@ -107,19 +120,34 @@ export default function RolesPage() {
           {!sel ? <Center>{t('r.pickRole')}</Center> : (
             <>
               <div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{name(sel)}</h2>{canAssign && <Button disabled={!dirty} onClick={savePerms}>{t('r.savePerms')}</Button>}</div>
+              <div className="mb-4 flex flex-wrap items-center gap-2" role="search">
+                <input type="search" value={fq} onChange={(e) => setFq(e.target.value)} placeholder={t('r.search')} aria-label={t('r.search')} className={`${inputCls} !w-auto min-w-48 flex-1`} />
+                <select aria-label={t('r.module')} className={`${inputCls} !w-auto`} value={fmod} onChange={(e) => setFmod(e.target.value)}>
+                  <option value="">{t('r.allModules')}</option>
+                  {allModules.map((m) => <option key={m} value={m}>{moduleLabel(m)}</option>)}
+                </select>
+                <select aria-label={t('r.state')} className={`${inputCls} !w-auto`} value={fstate} onChange={(e) => setFstate(e.target.value as 'all' | 'on' | 'off')}>
+                  <option value="all">{t('r.allStates')}</option>
+                  <option value="on">{t('r.onlyGranted')}</option>
+                  <option value="off">{t('r.onlyMissing')}</option>
+                </select>
+                {filtering && <button type="button" onClick={resetFilters} className="text-sm font-semibold text-primary hover:underline">{t('r.resetFilters')}</button>}
+                <span className="text-xs text-gray-500" aria-live="polite">{visible.length}/{perms.length} {t('r.matches')}</span>
+              </div>
               <div className="space-y-4">
+                {modules.length === 0 && <p className="py-6 text-center text-sm text-gray-500">{t('r.noMatch')}</p>}
                 {modules.map((m) => (
                   <div key={m}>
                     <div className="mb-1 flex items-center justify-between border-b pb-1">
-                      <div className="text-xs font-bold uppercase text-gray-500">{moduleLabel(m)}</div>
+                      <div className="text-xs font-bold uppercase text-gray-500">{moduleLabel(m)} <span className="font-normal normal-case text-gray-400">({visible.filter((p) => p.module === m && checked.has(p.code)).length}/{visible.filter((p) => p.module === m).length})</span></div>
                       {canAssign && (() => {
-                        const codes = perms.filter((p) => p.module === m).map((p) => p.code);
+                        const codes = visible.filter((p) => p.module === m).map((p) => p.code);
                         const allOn = codes.every((c) => checked.has(c) || !grantable(c));
                         return <button type="button" className="text-xs text-primary hover:underline" onClick={() => toggleModule(m)}>{allOn ? t('r.clearAll') : t('r.selectAll')}</button>;
                       })()}
                     </div>
                     <div className="grid gap-1 sm:grid-cols-2">
-                      {perms.filter((p) => p.module === m).map((p) => {
+                      {visible.filter((p) => p.module === m).map((p) => {
                         // UI hint only: the server rejects granting permissions you don't hold
                         const mine = me?.permissions.includes(p.code);
                         return (

@@ -61,7 +61,7 @@ export const NEWS_ACTIONS: NewsAction[] = ['read', 'create', 'update', 'delete']
 /** Arabic / English label of each special section (used to name its permissions). */
 export const SECTION_LABELS: Record<SpecialCategory, { ar: string; en: string }> = {
   [SpecialCategory.BREAKING]: { ar: 'الأخبار العاجلة', en: 'Breaking news' },
-  [SpecialCategory.SERVICES]: { ar: 'الخدمات', en: 'Services' },
+  [SpecialCategory.SERVICES]: { ar: 'خدمات الصفحة الرئيسية', en: 'Home-page services' },
   [SpecialCategory.TEAM]: { ar: 'الفريق', en: 'Team' },
   [SpecialCategory.TESTIMONIALS]: { ar: 'آراء العملاء', en: 'Testimonials' },
   [SpecialCategory.PARTNERS]: { ar: 'الشركاء', en: 'Partners' },

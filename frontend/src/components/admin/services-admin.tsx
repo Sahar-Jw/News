@@ -174,6 +174,10 @@ export function ServicesAdmin() {
       <DataTable<Row>
         endpoint="/admin/services"
         columns={cols}
+        filters={[
+          { key: 'kind', label: t('svc.kind'), options: SERVICE_KINDS.map((k) => ({ value: k, label: t(`svc.kind.${k}`) })) },
+          { key: 'status', label: t('svc.f.status'), options: [{ value: 'active', label: t('svc.f.active') }, { value: 'hidden', label: t('svc.f.hidden') }] },
+        ]}
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/services/bulk-delete', can: can('services.delete') }}
