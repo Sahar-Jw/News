@@ -44,6 +44,8 @@ import { NewsModule } from './modules/news/news.module';
 import { SiteSearchModule } from './modules/site-search/site-search.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
+import { FormsModule } from './modules/forms/forms.module';
+import { BackupModule } from './modules/backup/backup.module';
 
 @Module({
   imports: [
@@ -102,6 +104,8 @@ import { UsersModule } from './modules/users/users.module';
     AdsModule,
     CustomersModule,
     AppointmentsModule,
+    FormsModule,
+    BackupModule,
   ],
   providers: [
     // order matters: rate-limit -> authenticate -> authorize

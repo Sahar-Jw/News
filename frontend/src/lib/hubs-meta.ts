@@ -64,6 +64,10 @@ export const HUBS: HubMeta[] = [
       { key: 'dashboard', ar: 'لوحة المواعيد', en: 'Appointments dashboard', perms: ['appointments.dashboard'] }, { key: 'customers', ar: 'العملاء', en: 'Customers', perms: ['customers.read'] }, settings(['services']),
     ],
   },
+  {
+    key: 'forms', ar: 'النماذج والطلبات', en: 'Forms & requests', hintAr: 'بناء النماذج وتعديل حقولها، مراجعة الطلبات وفرزها والتواصل مع المتقدمين، التصدير والنسخ الاحتياطي', hintEn: 'Build and edit forms, review, sort and contact applicants, export, and backups', icon: '✎', color: '#0f766e',
+    tabs: [{ key: 'submissions', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] }, { key: 'builder', ar: 'النماذج', en: 'Forms', perms: ['forms.read'] }, { key: 'backups', ar: 'النسخ الاحتياطي', en: 'Backups', perms: ['backups.read'] }],
+  },
   { key: 'documents', ar: 'القرارات والتعاميم والمكتبة', en: 'Documents & digital archive', hintAr: 'الوثائق والمكتبة والأرشيف الرقمي', hintEn: 'Documents, library and digital archive', icon: '▤', color: '#7c3aed', tabs: [{ key: 'documents', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }, { key: 'library', ar: 'المكتبة والأرشيف الرقمي', en: 'Library & digital archive', perms: ['documents.read'] }] },
   { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },
   { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }] },

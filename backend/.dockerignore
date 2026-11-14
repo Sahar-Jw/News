@@ -5,3 +5,6 @@ out
 .env*
 !.env.example
 .git
+
+# Backups contain personal data
+backups/

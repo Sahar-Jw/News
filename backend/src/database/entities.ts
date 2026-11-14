@@ -24,6 +24,7 @@ import { News } from '../modules/news/news.entity';
 import { SiteSetting } from '../modules/settings/site-setting.entity';
 import { User } from '../modules/users/user.entity';
 import { FooterGroup, FooterLink } from '../modules/footer/footer.entity';
+import { FormDefinition, FormSubmission, FormSubmissionFile, FormSubmissionMessage } from '../modules/forms/forms.entity';
 
 /** Single registration point for TypeORM; each entity lives inside its own feature module. */
-export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, RefreshToken, Customer, Appointment, CourseRegistration, TrainerApplication, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink];
+export const ALL_ENTITIES = [User, Role, Permission, RolePermission, News, City, Country, AuditLog, SiteSetting, ContactMessage, Gallery, Subscriber, Ad, PasswordReset, RefreshToken, Customer, Appointment, CourseRegistration, TrainerApplication, ContentLink, NavGroup, NavItem, ExpoApplication, MembershipSettings, MembershipApplication, MembershipFile, Get2TradeSettings, G2tBooking, IncubatorApplication, FooterGroup, FooterLink, FormDefinition, FormSubmission, FormSubmissionFile, FormSubmissionMessage];

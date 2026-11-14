@@ -4,7 +4,8 @@ import { AuditChange, auditRequestContext } from './audit-context';
 import { auditValue } from './audit-snapshot';
 
 /** Tables whose rows never go into the audit trail (the log itself, one-time tokens, migration bookkeeping). */
-const IGNORED_TABLES = new Set(['audit_logs', 'password_resets', 'refresh_tokens', 'typeorm_migrations']);
+// form_submissions / form_submission_messages hold the applicants' personal data: the trail records WHO did WHAT to which request, never the content
+const IGNORED_TABLES = new Set(['audit_logs', 'password_resets', 'refresh_tokens', 'typeorm_migrations', 'form_submissions', 'form_submission_messages']);
 // timestamps, and values that are derived from another column (news.excerpt is computed from body)
 const NOISE_COLUMNS = new Set(['createdAt', 'updatedAt', 'excerpt']);
 const MAX_CHANGES_PER_REQUEST = 50;

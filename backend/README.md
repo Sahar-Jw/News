@@ -82,3 +82,39 @@ JSON or `multipart/form-data` (field `images`, up to 20 files, 5 MB each, conten
 
 ## Naming notes
 The SRS mixes names (`permissions_role` / `role_permissions`, `settings_site` / `site_settings`, `logs_audit` / `audit_logs`). This code uses the ERD names: `role_permissions`, `site_settings`, `audit_logs`.
+
+## Dashboard-managed forms (Settings → Forms & requests)
+
+Forms are data, not code. **Forms** tab = builder (any field type; add / edit / delete / reorder; conditional fields; attachments with allowed types / count / size; statuses; categories). **Requests** tab = review, sort, classify, change status, contact the applicant by e-mail, export to Excel. Public page: `/ar/forms?slug=<slug>` (list at `/ar/forms`).
+
+- **Field types:** text, long text, number, e-mail, phone, link, date, dropdown, single / multiple choice, checkbox, attachment, section heading, note. A new type = one entry in `modules/forms/field-schema.ts` + one renderer in `frontend/src/components/site/dynamic-form.tsx`.
+- **Editing a form never loses data:** each request stores a snapshot of the fields it answered.
+- **New-request notification:** e-mail to the form's staff addresses (no answers inside), receipt to the applicant, unread banner + toast on every management page.
+- **Personal-data protection:** consent stored with a timestamp; every value validated server-side, unknown keys dropped; attachments under `private/forms/` (content-sniffed, random names, served only to users with `forms.submissions.read` **and** `forms.submissions.sensitive`); fields marked "sensitive" are AES-256-GCM encrypted (`FORMS_ENCRYPTION_KEY`) and masked for staff without `forms.submissions.sensitive`; answers never enter the audit log (it records who opened / changed which request); e-mails carry no answers; honeypot + rate limit on the public endpoint; per-form retention (auto-delete after N days); per-request erasure; Excel export has its own permission and honours the masking.
+- **Integrations:** per form, signed webhooks (`X-Signature: sha256=<HMAC-SHA256 of the body>`) on *new request* and *status change*; https only, private addresses refused; only non-sensitive answers are sent. This is the hook for the chamber's own systems / databases.
+- **New permissions:** `forms.read|create|update|delete`, `forms.submissions.read|update|contact|export|delete|sensitive`, `backups.read|create|download|delete` (run `npm run seed:prod`; the technical admin gets them).
+- **Migration:** `1766800000000-AddDynamicForms` (`npm run migration:run:prod`).
+
+```dotenv
+FORMS_ENCRYPTION_KEY=   # long random secret. Keep a copy elsewhere: if lost, "sensitive" answers cannot be read again
+```
+
+## Backups
+
+Settings → Forms & requests → Backups, or automatic (default every 24 h, keep 14). A backup = the whole database (`backup-….json.gz`) + the uploaded files when they are on local disk (`backup-….files.tar.gz`; with S3 enable bucket versioning). Encrypted when `BACKUP_ENCRYPTION_KEY` is set. **Copy `BACKUP_DIR` off the server** and keep the key somewhere else.
+
+```dotenv
+BACKUP_DIR=./backups          # mount as a volume
+BACKUP_ENABLED=true           # false = no automatic backup
+BACKUP_INTERVAL_HOURS=24
+BACKUP_KEEP=14
+BACKUP_ENCRYPTION_KEY=        # needed to restore
+BACKUP_INCLUDE_FILES=true
+```
+
+Restore (REPLACES all data; stop the API, run the migrations of the same version first):
+```bash
+BACKUP_ENCRYPTION_KEY=... npm run backup:restore:prod -- /path/backup-YYYYMMDD-HHMMSS.json.gz --yes
+tar -xzf backup-….files.tar.gz -C "$STORAGE_DIR"   # an encrypted archive must be decrypted first (AES-256-GCM: "DCCBK1" | iv 12 B | data | tag 16 B)
+```
+It runs in one transaction: a wrong key, a damaged file or a missing table changes nothing.

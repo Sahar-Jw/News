@@ -33,6 +33,7 @@ import { ScheduleAdmin } from '@/components/admin/schedule-admin';
 import { ServicesAdmin } from '@/components/admin/services-admin';
 import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
 import { TrainerApplicationsAdmin } from '@/components/admin/trainer-applications-admin';
+import { BackupsAdmin, FormSubmissionsAdmin, FormsBuilderAdmin } from '@/components/admin/forms-admin';
 import { TrainersAdmin } from '@/components/admin/trainers-admin';
 import { WomenMenuAdmin } from '@/components/admin/women-menu-admin';
 
@@ -55,6 +56,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'women.links': () => <WomenMenuAdmin />,
   'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
   'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
+  'forms.submissions': () => <FormSubmissionsAdmin />, 'forms.builder': () => <FormsBuilderAdmin />, 'forms.backups': () => <BackupsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,
 };
 

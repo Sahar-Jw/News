@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { SiteProvider } from '@/components/site/site-context';
 import { BackToTop, Footer, Navbar, TopBar } from '@/components/site/shell';
+import { FormsInbox } from '@/components/admin/forms-inbox';
 
 /**
  * Management pages open inside the normal site shell (top bar + navbar + footer).
@@ -29,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <SiteProvider>
       <TopBar />
       <Navbar />
-      <main className="mx-auto min-h-[60vh] max-w-7xl px-4 py-6">{children}</main>
+      <main className="mx-auto min-h-[60vh] max-w-7xl px-4 py-6"><FormsInbox />{children}</main>
       <Footer />
       <BackToTop />
     </SiteProvider>

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SiteSetting } from '../settings/site-setting.entity';
 
 /** The parts of the site that send mail. Each can have its own sender name and reply-to address (Settings -> Identity & contact -> mail). */
-export const MAIL_PAGES = ['system', 'newsletter', 'membership', 'get2trade', 'training', 'incubator', 'expo'] as const;
+export const MAIL_PAGES = ['system', 'newsletter', 'membership', 'get2trade', 'training', 'incubator', 'expo', 'forms'] as const;
 export type MailPage = (typeof MAIL_PAGES)[number];
 
 let nodemailer: any = null;

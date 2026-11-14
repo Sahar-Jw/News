@@ -248,6 +248,21 @@ export const PERMISSIONS: PermissionDef[] = [
   { code: 'appointments.delete', module: 'appointments', nameAr: 'حذف موعد', nameEn: 'Delete dates' },
   { code: 'appointments.export', module: 'appointments', nameAr: 'تصدير المواعيد', nameEn: 'Export dates' },
   { code: 'appointments.dashboard', module: 'appointments', nameAr: 'لوحة المواعيد', nameEn: 'Dates dashboard' },
+  // dashboard-managed forms: the builder (forms.*), the requests people send (forms.submissions.*) and the backups (backups.*)
+  { code: 'forms.read', module: 'forms', nameAr: 'عرض النماذج', nameEn: 'View forms' },
+  { code: 'forms.create', module: 'forms', nameAr: 'إنشاء نموذج', nameEn: 'Create forms' },
+  { code: 'forms.update', module: 'forms', nameAr: 'تعديل النماذج وحقولها وحالاتها وربطها', nameEn: 'Edit forms, fields, statuses and integrations' },
+  { code: 'forms.delete', module: 'forms', nameAr: 'حذف نموذج', nameEn: 'Delete forms' },
+  { code: 'forms.submissions.read', module: 'forms', nameAr: 'عرض طلبات النماذج', nameEn: 'View form submissions' },
+  { code: 'forms.submissions.update', module: 'forms', nameAr: 'فرز الطلبات وتصنيفها وتحديث حالتها', nameEn: 'Sort, classify and update submission status' },
+  { code: 'forms.submissions.contact', module: 'forms', nameAr: 'مراسلة صاحب الطلب', nameEn: 'Contact the applicant' },
+  { code: 'forms.submissions.export', module: 'forms', nameAr: 'تصدير الطلبات إلى إكسل', nameEn: 'Export submissions to Excel' },
+  { code: 'forms.submissions.delete', module: 'forms', nameAr: 'حذف الطلبات أو مسح بياناتها الشخصية', nameEn: 'Delete submissions or erase their personal data' },
+  { code: 'forms.submissions.sensitive', module: 'forms', nameAr: 'عرض الحقول الحساسة والمرفقات في الطلبات', nameEn: 'See sensitive fields and attachments of submissions' },
+  { code: 'backups.read', module: 'backups', nameAr: 'عرض النسخ الاحتياطية', nameEn: 'View backups' },
+  { code: 'backups.create', module: 'backups', nameAr: 'إنشاء نسخة احتياطية', nameEn: 'Create backups' },
+  { code: 'backups.download', module: 'backups', nameAr: 'تنزيل النسخ الاحتياطية', nameEn: 'Download backups' },
+  { code: 'backups.delete', module: 'backups', nameAr: 'حذف نسخة احتياطية', nameEn: 'Delete backups' },
 ];
 
 export const PERM = {
@@ -371,6 +386,20 @@ export const PERM = {
   APPOINTMENTS_DELETE: 'appointments.delete',
   APPOINTMENTS_EXPORT: 'appointments.export',
   APPOINTMENTS_DASHBOARD: 'appointments.dashboard',
+  FORMS_READ: 'forms.read',
+  FORMS_CREATE: 'forms.create',
+  FORMS_UPDATE: 'forms.update',
+  FORMS_DELETE: 'forms.delete',
+  FORMS_SUBMISSIONS_READ: 'forms.submissions.read',
+  FORMS_SUBMISSIONS_UPDATE: 'forms.submissions.update',
+  FORMS_SUBMISSIONS_CONTACT: 'forms.submissions.contact',
+  FORMS_SUBMISSIONS_EXPORT: 'forms.submissions.export',
+  FORMS_SUBMISSIONS_DELETE: 'forms.submissions.delete',
+  FORMS_SUBMISSIONS_SENSITIVE: 'forms.submissions.sensitive',
+  BACKUPS_READ: 'backups.read',
+  BACKUPS_CREATE: 'backups.create',
+  BACKUPS_DOWNLOAD: 'backups.download',
+  BACKUPS_DELETE: 'backups.delete',
 } as const;
 
 export const AD_PLACEMENTS = ['golden', 'bronze', 'silver'] as const; // golden = top of the page, bronze = middle of the page, silver = bottom
