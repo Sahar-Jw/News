@@ -35,7 +35,7 @@ function DocsTab({ kind }: { kind: 'press' | 'mediakit' }) {
         {res.data.map((d) => (
           <li key={d.id} className="flex items-start justify-between gap-3 rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
             <div className="min-w-0">
-              <Link href={href(`/documents/view?id=${d.id}`)} className="font-bold text-secondary hover:text-primary">{d.title}</Link>
+              <Link href={href(`/documents/${d.id}`)} className="font-bold text-secondary hover:text-primary">{d.title}</Link>
               {d.docDate && <p className="mt-0.5 text-xs text-gray-500">{fmtDate(lang, d.docDate)}</p>}
               {d.summary && <p className="mt-1 line-clamp-2 text-sm leading-7 text-gray-600">{d.summary}</p>}
             </div>

@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
@@ -12,10 +12,10 @@ import { NotFoundContent } from '@/components/site/not-found-content';
 
 interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string }
 
-/** One document: details and the PDF drawn in the page: /documents/view?id=5 */
+/** One document: details and the PDF drawn in the page: /documents/5 */
 function View() {
   const { lang, t, href } = useI18n();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [d, setD] = useState<Doc | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(d?.title);

@@ -149,7 +149,7 @@ export function BoardAdmin() {
         toolbar={can('board.create') && <Button onClick={() => setDialog({})}>＋ {t('board.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <Link href={href(`/board/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
+            <Link href={href(`/board/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
             {can('board.update') && <Button size="sm" variant="outline" onClick={() => setDialog({ row: r })}>{t('app.edit')}</Button>}
             {can('board.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>

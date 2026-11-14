@@ -148,7 +148,7 @@ export class NewsPublicController {
     const d = await this.service.shareData(id, origin);
     const front = (process.env.FRONTEND_URL || (process.env.CORS_ORIGINS ?? '').split(',')[0] || '').trim().replace(/\/+$/, '');
     const nonce = randomBytes(16).toString('base64');
-    const html = renderSharePage({ ...d, shareUrl: `${origin}${req.originalUrl.split('?')[0]}`, target: `${front}/${d.lang}/news/view/?id=${id}`, nonce });
+    const html = renderSharePage({ ...d, shareUrl: `${origin}${req.originalUrl.split('?')[0]}`, target: `${front}/${d.lang}/news/${id}/`, nonce });
     res
       .set({
         'Content-Type': 'text/html; charset=utf-8',

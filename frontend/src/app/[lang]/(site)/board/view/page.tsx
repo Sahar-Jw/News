@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
@@ -11,10 +11,10 @@ import { NotFoundContent } from '@/components/site/not-found-content';
 
 interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null; bio: string; duties: string; news: { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }[] }
 
-/** One board member: picture, name, position, bio, committees and duties: /board/view?id=3. The HTML is sanitised by the API. */
+/** One board member: picture, name, position, bio, committees and duties: /board/3. The HTML is sanitised by the API. */
 function View() {
   const { lang, t, href } = useI18n();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [m, setM] = useState<Member | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(m?.name);
@@ -49,7 +49,7 @@ function View() {
             <ul className="space-y-3">
               {m.news.map((n) => (
                 <li key={n.id}>
-                  <Link href={href(`/news/view?id=${n.id}`)} className="group flex items-start gap-3">
+                  <Link href={href(`/news/${n.id}`)} className="group flex items-start gap-3">
                     {n.image && <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-16 w-24 shrink-0 rounded-lg object-cover" />}
                     <span className="min-w-0">
                       <span className="block font-semibold text-secondary group-hover:text-primary">{n.title}</span>

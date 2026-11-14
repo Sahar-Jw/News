@@ -105,7 +105,7 @@ export default function GalleryPage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {data.data.map((g) => (
               <div key={g.id} className="flex flex-col gap-2">
-              <Link href={href(`/gallery/view?id=${g.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
+              <Link href={href(`/gallery/${g.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
                 <div className="relative">
                   <Thumb src={g.thumb} alt={g.title} className="h-44 w-full" />
                   {g.hasVideo && <PlayBadge />}

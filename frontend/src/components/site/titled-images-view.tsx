@@ -1,7 +1,7 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
@@ -14,7 +14,7 @@ interface Item { id: number; title: string; images: string[]; date?: string; you
 
 function View({ endpoint, back, backLabel }: { endpoint: string; back: string; backLabel: string }) {
   const { lang, t, href } = useI18n();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [item, setItem] = useState<Item | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
 

@@ -152,7 +152,7 @@ export function GalleryAdmin() {
         toolbar={can('gallery.create') && <Button onClick={() => setDialog({})}>＋ {t('gl.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <a href={`/${lang}/gallery/view/?id=${r.id}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{t('app.view')}</Button></a>
+            <a href={`/${lang}/gallery/${r.id}`} target="_blank" rel="noreferrer"><Button size="sm" variant="ghost">{t('app.view')}</Button></a>
             {can('gallery.update') && <Button size="sm" variant="outline" onClick={() => setDialog({ id: r.id })}>{t('app.edit')}</Button>}
             {can('gallery.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>

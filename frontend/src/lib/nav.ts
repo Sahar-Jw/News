@@ -12,7 +12,7 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'about',
     label: 'nav.about',
     items: [
-      { label: 'nav.aboutChamber', to: '/pages/view?slug=about', ready: true },
+      { label: 'nav.aboutChamber', to: '/pages/about', ready: true },
       { label: 'site.board', to: '/board', ready: true },
       { label: 'nav.committees', to: '/committees', ready: true },
       { label: 'nav.women', to: '/committees/women', ready: true },

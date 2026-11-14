@@ -1,7 +1,7 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
@@ -25,7 +25,7 @@ function NewsList({ items }: { items: EventNews[] }) {
     <ul className="grid gap-4 sm:grid-cols-2">
       {items.map((n) => (
         <li key={n.id}>
-          <Link href={href(`/news/view?id=${n.id}`)} className="group flex h-full gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:ring-accent">
+          <Link href={href(`/news/${n.id}`)} className="group flex h-full gap-3 overflow-hidden rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:ring-accent">
             <Thumb src={n.image} alt={n.title} className="h-20 w-28 shrink-0 rounded-xl" />
             <div className="min-w-0">
               <h4 className="line-clamp-2 text-sm font-bold group-hover:text-primary">{n.title}</h4>
@@ -42,7 +42,7 @@ function NewsList({ items }: { items: EventNews[] }) {
 function View() {
   const { lang, href } = useI18n();
   const ar = lang === 'ar';
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [d, setD] = useState<Detail | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   const [section, setSection] = useState<Section>('overview');
@@ -93,7 +93,7 @@ function View() {
           {part && <span className="rounded-full bg-gray-100 px-3 py-0.5 text-xs font-semibold text-gray-700">{part}</span>}
         </div>
         <h1 className="mt-3 text-2xl font-extrabold leading-snug md:text-3xl">{d.title}</h1>
-        {d.parent && <p className="mt-2 text-sm text-gray-600">{ar ? 'ضمن المعرض: ' : 'Part of: '}<Link href={href(`/occasions/view?id=${d.parent.id}`)} className="font-semibold text-primary">{d.parent.title}</Link></p>}
+        {d.parent && <p className="mt-2 text-sm text-gray-600">{ar ? 'ضمن المعرض: ' : 'Part of: '}<Link href={href(`/occasions/${d.parent.id}`)} className="font-semibold text-primary">{d.parent.title}</Link></p>}
         <div role="tablist" aria-label={ar ? 'أقسام' : 'Sections'} className="mt-6 flex flex-wrap gap-1.5 border-b border-line pb-3">
           {sections.filter((x) => x[2]).map(([key, label]) => (
             <button key={key} type="button" role="tab" aria-selected={section === key} onClick={() => setSection(key)}

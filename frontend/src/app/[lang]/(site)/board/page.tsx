@@ -17,7 +17,7 @@ function Card({ m, big, tools }: { m: Member; big?: boolean; tools?: React.React
   const { t, href } = useI18n();
   return (
     <div className="flex flex-col items-center gap-2">
-    <Link href={href(`/board/view?id=${m.id}`)} className={`group flex flex-col items-center rounded-2xl bg-white p-5 text-center shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent ${big ? 'w-64' : 'w-52'}`}>
+    <Link href={href(`/board/${m.id}`)} className={`group flex flex-col items-center rounded-2xl bg-white p-5 text-center shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent ${big ? 'w-64' : 'w-52'}`}>
       {m.photoUrl
         ? <img src={fileUrl(m.photoUrl)} alt="" loading="lazy" className={`rounded-full object-cover ring-2 ring-accent/60 ${big ? 'h-32 w-32' : 'h-24 w-24'}`} />
         : <span className={`flex items-center justify-center rounded-full bg-primary/10 text-3xl text-primary ${big ? 'h-32 w-32' : 'h-24 w-24'}`} aria-hidden="true">👤</span>}

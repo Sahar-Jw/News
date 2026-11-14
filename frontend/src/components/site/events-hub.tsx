@@ -60,7 +60,7 @@ export function EventCard({ event }: { event: PublicEvent }) {
   const ar = lang === 'ar';
   const part = participationLabel(event.participation, ar);
   return (
-    <Link href={href(`/occasions/view?id=${event.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
+    <Link href={href(`/occasions/${event.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
       <Thumb src={event.images[0]} alt={event.title} className="h-40 w-full" />
       <div className="flex flex-1 flex-col p-4">
         <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}{timeRange(event) && <span dir="ltr" className="ms-2 text-gray-500">{timeRange(event)}</span>}</p>

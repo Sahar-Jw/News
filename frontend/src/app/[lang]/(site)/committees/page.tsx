@@ -94,7 +94,7 @@ export default function CommitteesPage() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((c) => (
             <div key={c.id} className="flex flex-col gap-2">
-            <Link href={href(`/committees/view?id=${c.id}`)} className="group flex flex-1 flex-col rounded-2xl bg-white p-5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+            <Link href={href(`/committees/${c.id}`)} className="group flex flex-1 flex-col rounded-2xl bg-white p-5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
               <div className="flex items-center gap-3">
                 {c.logoUrl ? <img src={fileUrl(c.logoUrl)} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl bg-canvas object-contain" /> : <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-2xl text-primary" aria-hidden="true">🏛</span>}
                 <h2 className="font-bold leading-snug text-secondary group-hover:text-primary">{c.name}</h2>

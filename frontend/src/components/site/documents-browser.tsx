@@ -18,7 +18,7 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
   const { lang, t, href } = useI18n();
   const actions = (d: Doc) => (
     <div className="flex flex-wrap gap-2 text-sm">
-      <Link href={href(`/documents/view?id=${d.id}`)} className="rounded-lg bg-primary px-3 py-1 font-semibold text-white transition hover:brightness-110">{t('doc.open')}</Link>
+      <Link href={href(`/documents/${d.id}`)} className="rounded-lg bg-primary px-3 py-1 font-semibold text-white transition hover:brightness-110">{t('doc.open')}</Link>
       {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="rounded-lg border border-line px-3 py-1 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('doc.download')}</a>}
     </div>
   );
@@ -48,7 +48,7 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
                     <td className="px-4 py-3 whitespace-nowrap">{d.docNumber ? <bdi dir="ltr">{d.docNumber}</bdi> : '—'}</td>
                     <td className="px-4 py-3">
                       <span className="mb-1 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">{t(`doc.kind.${d.kind}`)}</span>
-                      <Link href={href(`/documents/view?id=${d.id}`)} className="block font-bold text-secondary hover:text-primary">{d.title}</Link>
+                      <Link href={href(`/documents/${d.id}`)} className="block font-bold text-secondary hover:text-primary">{d.title}</Link>
                       {d.summary && <span className="mt-1 line-clamp-2 block text-xs leading-6 text-gray-600">{d.summary}</span>}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{d.docDate ? fmtDate(lang, d.docDate) : '—'}</td>
@@ -69,7 +69,7 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
                   {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
                   {d.issuer && <span>{d.issuer}</span>}
                 </div>
-                <h2 className="mt-2 text-lg font-bold text-secondary"><Link href={href(`/documents/view?id=${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
+                <h2 className="mt-2 text-lg font-bold text-secondary"><Link href={href(`/documents/${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
                 {d.summary && <p className="mt-1 line-clamp-3 text-sm leading-7 text-gray-600">{d.summary}</p>}
                 <div className="mt-3">{actions(d)}{tools(d)}</div>
               </li>

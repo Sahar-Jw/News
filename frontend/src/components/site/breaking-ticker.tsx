@@ -63,7 +63,7 @@ export function BreakingTicker({ items }: { items: Card[] }) {
 
   const ordered = rtl ? [...items].reverse() : items;
   const headline = (n: Card, key: string) => (
-    <Link key={key} dir="auto" href={href(`/news/view?id=${n.id}`)} className="px-5 text-sm hover:underline">● {n.title}</Link>
+    <Link key={key} dir="auto" href={href(`/news/${n.id}`)} className="px-5 text-sm hover:underline">● {n.title}</Link>
   );
 
   return (

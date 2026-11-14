@@ -86,7 +86,7 @@ function Home() {
               <p className="mt-3 text-sm leading-7 text-gray-600">{t(p.text)}</p>
               <ul className="mt-3 flex-1 space-y-2 text-sm">
                 {!r ? <li className="text-gray-400">…</li> : r.data.length === 0 ? <li className="text-gray-400">{t('doc.empty')}</li> : r.data.map((d) => (
-                  <li key={d.id} className="border-t border-line pt-2"><Link href={href(`/documents/view?id=${d.id}`)} className="font-semibold text-secondary hover:text-primary">{d.title}</Link>{d.docDate && <span className="block text-xs text-gray-500">{fmtDate(lang, d.docDate)}</span>}</li>
+                  <li key={d.id} className="border-t border-line pt-2"><Link href={href(`/documents/${d.id}`)} className="font-semibold text-secondary hover:text-primary">{d.title}</Link>{d.docDate && <span className="block text-xs text-gray-500">{fmtDate(lang, d.docDate)}</span>}</li>
                 ))}
               </ul>
               <Link href={href(`/documents?part=${p.key}`)} className="mt-4 rounded-xl bg-primary py-2 text-center text-sm font-semibold text-white transition hover:brightness-110">{t('doc.viewAll')}</Link>

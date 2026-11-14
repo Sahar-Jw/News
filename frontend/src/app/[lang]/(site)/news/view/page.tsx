@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -20,7 +20,7 @@ type Detail = Card & { body: string | null; youtubeId?: string | null; related: 
 function View() {
   const { lang, t, href } = useI18n();
   const { can } = useAuth();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [n, setN] = useState<Detail | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(n?.title);

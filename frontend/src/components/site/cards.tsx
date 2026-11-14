@@ -90,7 +90,7 @@ export function ShareRow({ id, title }: { id: number; title: string }) {
   const [native, setNative] = useState(false);
   // plain link to the article itself (no preview page in between) – paste it anywhere
   const copy = async () => {
-    const link = `${window.location.origin}${href(`/news/view?id=${id}`)}`;
+    const link = `${window.location.origin}${href(`/news/${id}`)}`;
     try {
       await navigator.clipboard.writeText(link);
     } catch {
@@ -145,7 +145,7 @@ function shortExcerpt(text: string) {
 export function NewsCard({ n }: { n: Card }) {
   const { href, lang, t } = useI18n();
   const { can } = useAuth();
-  const link = href(`/news/view?id=${n.id}`);
+  const link = href(`/news/${n.id}`);
   const section = (SECTIONS as readonly string[]).includes(n.mainCategory) ? n.mainCategory : '';
   const mayEdit = can(newsPerm('update', section));
   const chip = 'z-10 transition hover:bg-primary hover:text-white';

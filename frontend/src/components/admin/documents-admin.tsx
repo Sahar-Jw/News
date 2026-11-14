@@ -57,7 +57,7 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
         toolbar={can('documents.create') && <Button onClick={() => open()}>＋ {t('doc.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <Link href={href(`/documents/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
+            <Link href={href(`/documents/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
             {can('documents.update') && <Button size="sm" variant="outline" onClick={() => open(r)}>{t('app.edit')}</Button>}
             {can('documents.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>

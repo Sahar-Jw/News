@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { hubUrl } from '@/lib/hubs-meta';
@@ -34,10 +34,10 @@ function PageControls({ slug }: { slug: string }) {
   );
 }
 
-/** Static page (about the chamber, ...): /pages/view?slug=about. The body is HTML sanitised by the API. */
+/** Static page (about the chamber, ...): /pages/about. The body is HTML sanitised by the API. */
 function View() {
   const { lang, t } = useI18n();
-  const slug = useSearchParams().get('slug');
+  const slug = useRecordId('slug');
   const [p, setP] = useState<PageData | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(p?.title);

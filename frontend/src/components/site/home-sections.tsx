@@ -113,7 +113,7 @@ export function AgendaSection({ code, title }: { code: string; title: string }) 
               <ul className="space-y-3">
                 {items.map((o) => (
                   <li key={o.id}>
-                    <Link href={href(`/occasions/view?id=${o.id}`)} className="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+                    <Link href={href(`/occasions/${o.id}`)} className="group flex items-center gap-4 rounded-2xl bg-white p-3 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
                       <Thumb src={o.images[0]} alt="" className="h-16 w-24 shrink-0 rounded-xl" />
                       <span className="min-w-0">
                         <span className="block text-xs font-semibold text-primary">{fmtDay(lang, o.date)}</span>
@@ -245,7 +245,7 @@ export function GallerySection({ code, title }: { code: string; title: string })
     <SectionWrap code={code} title={title} action={<Link href={href('/gallery')} className="text-sm font-semibold text-primary">{t('home.allPhotos')} →</Link>}>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {items.map((g) => (
-          <Link key={g.id} href={href(`/gallery/view?id=${g.id}`)} className="group relative block overflow-hidden rounded-2xl ring-1 ring-line transition hover:ring-accent">
+          <Link key={g.id} href={href(`/gallery/${g.id}`)} className="group relative block overflow-hidden rounded-2xl ring-1 ring-line transition hover:ring-accent">
             <Thumb src={g.thumb} alt={g.title} className="h-32 w-full md:h-36" />
             {g.kind === 'video' && (
               <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -395,7 +395,7 @@ export function FeaturedCarousel({ items }: { items: Card[] }) {
       {items.map((x, k) => (
         <Link
           key={x.id}
-          href={href(`/news/view?id=${x.id}`)}
+          href={href(`/news/${x.id}`)}
           aria-hidden={k !== i}
           tabIndex={k === i ? 0 : -1}
           className={`absolute inset-0 block transition-opacity duration-700 ${k === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -493,7 +493,7 @@ export function ServicesGrid({ items }: { items: Card[] }) {
   return (
     <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((x) => (
-        <Link key={x.id} href={href(`/news/view?id=${x.id}`)} className="group block rounded-2xl bg-white p-7 text-center shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+        <Link key={x.id} href={href(`/news/${x.id}`)} className="group block rounded-2xl bg-white p-7 text-center shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
           {x.images[0] ? (
             <img src={fileUrl(x.images[0])} alt="" className="mx-auto mb-5 h-16 w-16 object-contain" />
           ) : (
@@ -546,7 +546,7 @@ export function Experts({ items }: { items: Card[] }) {
   return (
     <Stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((x) => (
-        <Link key={x.id} href={href(`/news/view?id=${x.id}`)} className="group block overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
+        <Link key={x.id} href={href(`/news/${x.id}`)} className="group block overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift">
           <div className="h-52 w-full overflow-hidden">
             {x.images[0] ? <Thumb src={x.images[0]} className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-105" alt={x.title} /> : <DefaultAvatar className="h-full w-full" />}
           </div>
@@ -589,7 +589,7 @@ export function Company({ items }: { items: Card[] }) {
       {items.map((x) => (
         <Link
           key={x.id}
-          href={href(`/news/view?id=${x.id}`)}
+          href={href(`/news/${x.id}`)}
           title={x.title}
           className="group relative block aspect-[4/3] w-[calc(50%-0.625rem)] overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:w-[calc(33.333%-0.85rem)] lg:w-[calc(20%-1rem)]"
         >

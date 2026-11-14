@@ -159,7 +159,7 @@ function ServicesTab({ items, tools, onPageChange }: { items: PublicService[] | 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pg.rows.map((x) => (
               <div key={x.id} className="flex flex-col gap-2">
-                <Link href={href(`/services/view?id=${x.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+                <Link href={href(`/services/${x.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
                   <Thumb src={x.imageUrl} alt="" className="h-36 w-full" />
                   <div className="p-4">
                     <h3 className="font-extrabold text-secondary group-hover:text-primary">{x.name}</h3>
@@ -196,7 +196,7 @@ function FeesTab({ items, onPageChange }: { items: PublicService[] | null; onPag
               <tbody>
                 {pg.rows.map((x) => (
                   <tr key={x.id} className="border-t border-line">
-                    <td className="px-3 py-2"><Link href={href(`/services/view?id=${x.id}`)} className="font-semibold text-secondary hover:text-primary">{x.name}</Link></td>
+                    <td className="px-3 py-2"><Link href={href(`/services/${x.id}`)} className="font-semibold text-secondary hover:text-primary">{x.name}</Link></td>
                     <td className="px-3 py-2 text-gray-600">{t(`svc.kind.${x.kind}`)}</td>
                     <td className="px-3 py-2 text-gray-600">{x.department || '—'}</td>
                     <td className="px-3 py-2 text-gray-600">{x.duration || '—'}</td>

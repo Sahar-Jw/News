@@ -158,7 +158,7 @@ function NewsGrid({ items, limit }: { items: NewsItem[]; limit?: number }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {shown.map((n) => (
-        <Link key={n.id} href={href(`/news/view?id=${n.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent/60">
+        <Link key={n.id} href={href(`/news/${n.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent/60">
           {n.image ? <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <span className="grid h-44 place-items-center bg-primary/10 text-4xl" aria-hidden="true">📰</span>}
           <span className="flex flex-1 flex-col gap-1.5 p-4">
             {n.publishAt && <span className="text-xs text-gray-500">{fmtDate(lang, n.publishAt)}</span>}

@@ -344,7 +344,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
         toolbar={(kind === 'women' ? womenCount === 0 : true) && can('committees.create') && <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
+            <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
             {canUpdate && <Button size="sm" variant="outline" onClick={() => setDialog({ row: r })}>{t('app.edit')}</Button>}
             {can('committees.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>

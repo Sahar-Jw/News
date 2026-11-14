@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button, Center, Modal, Spinner } from '@/components/ui/ui';
@@ -14,10 +14,10 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return <section className="mt-6"><h2 className="mb-2 text-lg font-extrabold text-secondary">{title}</h2>{children}</section>;
 }
 
-/** One service: /services/view?id=5 */
+/** One service: /services/5 */
 function View() {
   const { lang, t, href } = useI18n();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [d, setD] = useState<PublicService | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(d?.name);

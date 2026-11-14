@@ -184,7 +184,7 @@ export function ServicesAdmin() {
         toolbar={can('services.create') && <Button onClick={() => setDialog({})}>＋ {t('svc.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
-            <Link href={href(`/services/view?id=${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
+            <Link href={href(`/services/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
             {can('services.update') && <Button size="sm" variant="outline" onClick={() => setDialog({ id: r.id })}>{t('app.edit')}</Button>}
             {can('services.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: r, reload })}>✕</Button>}
           </div>

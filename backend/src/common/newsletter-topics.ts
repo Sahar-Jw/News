@@ -32,11 +32,11 @@ export function topicOfCategory(main: string): NewsletterTopic | null {
 
 /** Site path (after /<lang>) of the page that shows a row. */
 export function pathOfCategory(main: string, id: number | string): string {
-  if (main === CC.COURSE) return `/training/view/?id=${id}`;
-  if (main === CC.OCCASION) return `/occasions/view/?id=${id}`;
-  if (main === 'DOC_DECISION' || main === 'DOC_CIRCULAR') return `/documents/view/?id=${id}`;
+  if (main === CC.COURSE) return `/training/${id}/`;
+  if (main === CC.OCCASION) return `/occasions/${id}/`;
+  if (main === 'DOC_DECISION' || main === 'DOC_CIRCULAR') return `/documents/${id}/`;
   if (main === CC.G2T_PACKAGE || main === CC.G2T_SPACE) return '/get2trade/';
-  return `/news/view/?id=${id}`;
+  return `/news/${id}/`;
 }
 
 /** Keeps only known topics. Nothing chosen, or every topic chosen, is stored as null = "everything" (so new topics reach old subscribers too). */

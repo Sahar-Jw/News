@@ -1,8 +1,8 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
@@ -11,10 +11,10 @@ import { CourseRegister } from '@/components/site/course-register';
 import { NotFoundContent } from '@/components/site/not-found-content';
 import { PublicCourse, courseDates } from '@/components/site/training-shared';
 
-/** One course: /training/view?id=5 */
+/** One course: /training/5 */
 function View() {
   const { lang, t, href } = useI18n();
-  const id = useSearchParams().get('id');
+  const id = useRecordId('id');
   const [c, setC] = useState<PublicCourse | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(c?.name);

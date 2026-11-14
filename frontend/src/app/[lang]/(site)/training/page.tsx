@@ -124,7 +124,7 @@ export default function TrainingPage() {
                 <article key={c.id} className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line sm:flex-row sm:items-center">
                   <Thumb src={c.imageUrl} alt="" className="h-28 w-full shrink-0 rounded-xl sm:w-36" />
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-extrabold text-secondary"><Link href={href(`/training/view?id=${c.id}`)} className="hover:text-primary">{c.name}</Link></h2>
+                    <h2 className="text-lg font-extrabold text-secondary"><Link href={href(`/training/${c.id}`)} className="hover:text-primary">{c.name}</Link></h2>
                     <p className="mt-1 text-sm leading-7 text-gray-600">{meta.map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">

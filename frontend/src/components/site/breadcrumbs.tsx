@@ -62,7 +62,8 @@ function trail(path: string, scope: 'site' | 'expo' | 'women', ar: boolean, cust
   for (let i = scope === 'women' ? 1 : 0; i < segs.length; i++) {
     const key = segs.slice(0, i + 1).join('/');
     const last = i === segs.length - 1;
-    if (segs[i] === 'view') { out.push({ label: custom || pick(DETAILS) }); viewed = true; continue; }
+    // a record page (/news/123/, /pages/about/, or an old /view address) is named by the page itself through useCrumbTitle()
+    if (segs[i] === 'view' || (i > 0 && !(key in SITE) && i === segs.length - 1)) { out.push({ label: custom || pick(DETAILS) }); viewed = true; continue; }
     if (!(key in SITE)) continue;
     const l = SITE[key];
     if (!l) continue;

@@ -1,7 +1,7 @@
 'use client';
+import { useRecordId } from '@/lib/use-record-id';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
@@ -41,7 +41,7 @@ function List() {
       <ul className="grid gap-3 sm:grid-cols-2">
         {items.map((i) => (
           <li key={i.slug}>
-            <Link href={href(`/forms?slug=${encodeURIComponent(i.slug)}`)} className="block h-full rounded-2xl bg-white p-4 shadow-card ring-1 ring-line transition hover:ring-accent">
+            <Link href={href(`/forms/${encodeURIComponent(i.slug)}`)} className="block h-full rounded-2xl bg-white p-4 shadow-card ring-1 ring-line transition hover:ring-accent">
               <b className="text-secondary">{i.title}</b>
               {!i.isOpen && <span className="ms-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">{lang === 'en' ? 'Closed' : 'مغلق'}</span>}
             </Link>
@@ -53,7 +53,7 @@ function List() {
 }
 
 function Router() {
-  const slug = useSearchParams().get('slug');
+  const slug = useRecordId('slug');
   return slug ? <One slug={slug} /> : <List />;
 }
 

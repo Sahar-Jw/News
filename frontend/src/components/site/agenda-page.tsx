@@ -19,7 +19,7 @@ const damascusToday = () => new Date().toLocaleDateString('en-CA', { timeZone: '
 function AgendaCard({ e }: { e: PublicEvent }) {
   const { lang, href } = useI18n();
   const ar = lang === 'ar';
-  const link = href(`/occasions/view?id=${e.id}`);
+  const link = href(`/occasions/${e.id}`);
   const when = `${fmtDay(lang, e.date)}${e.finishDate !== e.date ? ` — ${fmtDay(lang, e.finishDate)}` : ''}`;
   const time = timeRange(e);
   const month = new Intl.DateTimeFormat(ar ? 'ar' : 'en', { month: 'short', timeZone: 'UTC' }).format(new Date(`${e.date}T00:00:00Z`));

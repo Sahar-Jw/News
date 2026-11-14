@@ -10,5 +10,6 @@ const nextConfig = {
   // Several root layouts ((root) and [lang]) and none in app/: unknown URLs (e.g. /ar/l/) are rendered by
   // src/app/global-not-found.tsx, which provides its own <html>/<body>.
   experimental: { globalNotFound: true },
+  // Detail pages have clean addresses (/news/123/, /pages/about/); the old /news/view/?id=123 ones are redirected by src/middleware.ts.
 };
 export default nextConfig;

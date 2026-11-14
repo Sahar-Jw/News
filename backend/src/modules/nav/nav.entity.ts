@@ -21,7 +21,7 @@ export class NavGroup extends TimestampedEntity {
   isActive: boolean;
 }
 
-/** One link inside a dropdown. `url` is a site path ("/news", "/pages/view?slug=about") or a full http(s) address. */
+/** One link inside a dropdown. `url` is a site path ("/news", "/pages/about") or a full http(s) address. */
 @Entity('nav_items')
 @Index('idx_nav_items_group', ['groupId', 'sortOrder'])
 export class NavItem extends TimestampedEntity {

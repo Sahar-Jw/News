@@ -201,7 +201,7 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; on
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={L('عنوان النموذج (عربي) *', 'Title (Arabic) *')}><input className={inputCls} value={f.titleAr} maxLength={200} onChange={(e) => up({ titleAr: e.target.value })} /></Field>
             <Field label={L('عنوان النموذج (إنكليزي)', 'Title (English)')}><input dir="ltr" className={inputCls} value={f.titleEn ?? ''} maxLength={200} onChange={(e) => up({ titleEn: e.target.value })} /></Field>
-            <Field label={L('الرابط المختصر *', 'Slug *')} hint={L('يظهر في رابط النموذج: /forms?slug=…', 'Used in the form link: /forms?slug=…')}><input dir="ltr" className={inputCls} value={f.slug} maxLength={80} onChange={(e) => up({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })} /></Field>
+            <Field label={L('الرابط المختصر *', 'Slug *')} hint={L('يظهر في رابط النموذج: /forms/…', 'Used in the form link: /forms/…')}><input dir="ltr" className={inputCls} value={f.slug} maxLength={80} onChange={(e) => up({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })} /></Field>
             <div className="flex flex-col justify-end gap-2 text-sm">
               <label className="flex items-center gap-2"><input type="checkbox" checked={f.isOpen} onChange={(e) => up({ isOpen: e.target.checked })} />{L('مفتوح لاستقبال الطلبات', 'Open for submissions')}</label>
               <label className="flex items-center gap-2"><input type="checkbox" checked={f.isListed} onChange={(e) => up({ isListed: e.target.checked })} />{L('يظهر في قائمة النماذج العامة', 'Listed on the public forms page')}</label>
@@ -316,7 +316,7 @@ export function FormsBuilderAdmin() {
             {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-gray-500">{L('لا توجد نماذج', 'No forms')}</td></tr>}
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="p-3"><b>{(lang === 'en' && r.titleEn) || r.titleAr}</b><br /><a className="text-xs text-primary underline" dir="ltr" target="_blank" rel="noreferrer" href={href(`/forms?slug=${r.slug}`)}>/forms?slug={r.slug}</a></td>
+                <td className="p-3"><b>{(lang === 'en' && r.titleEn) || r.titleAr}</b><br /><a className="text-xs text-primary underline" dir="ltr" target="_blank" rel="noreferrer" href={href(`/forms/${r.slug}`)}>/forms/{r.slug}</a></td>
                 <td className="p-3">{r.fields.length}</td>
                 <td className="p-3">{r.submissionsTotal ?? 0}{!!r.submissionsUnread && <span className="ms-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{r.submissionsUnread}</span>}</td>
                 <td className="p-3"><span className={`rounded px-1.5 py-0.5 text-[10px] ${r.isOpen ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>{r.isOpen ? L('مفتوح', 'Open') : L('مغلق', 'Closed')}</span></td>

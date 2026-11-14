@@ -104,7 +104,7 @@ export const SHORTCUT_DEFAULTS: { ar: string; en: string; link: string }[] = [
 /** Default main menu (only pages that exist). Used by the seed on an empty database; the migration inserts the same rows. Edited later from Settings -> Main menu. */
 export const NAV_DEFAULTS: { ar: string; en: string; items: { ar: string; en: string; url: string }[] }[] = [
   { ar: 'عن الغرفة', en: 'About', items: [
-    { ar: 'عن الغرفة', en: 'About the chamber', url: '/pages/view?slug=about' },
+    { ar: 'عن الغرفة', en: 'About the chamber', url: '/pages/about' },
     { ar: 'مجلس الإدارة', en: 'Board of Directors', url: '/board' },
     { ar: 'اللجان والقطاعات', en: 'Committees & sectors', url: '/committees' },
     { ar: 'لجنة سيدات الأعمال', en: 'Businesswomen committee', url: '/committees/women' },

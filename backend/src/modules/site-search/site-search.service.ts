@@ -11,21 +11,21 @@ interface Source { group: Group; codes: string[]; url: (r: Rec) => string }
 
 /** Where every kind of content lives on the public site (the page that shows it). */
 const SOURCES: Source[] = [
-  { group: 'events', codes: [CC.OCCASION], url: (r) => `/occasions/view?id=${r.id}` },
-  { group: 'documents', codes: DOC_CODES, url: (r) => `/documents/view?id=${r.id}` },
-  { group: 'committees', codes: [CC.COMMITTEE], url: (r) => `/committees/view?id=${r.id}` },
+  { group: 'events', codes: [CC.OCCASION], url: (r) => `/occasions/${r.id}` },
+  { group: 'documents', codes: DOC_CODES, url: (r) => `/documents/${r.id}` },
+  { group: 'committees', codes: [CC.COMMITTEE], url: (r) => `/committees/${r.id}` },
   { group: 'committees', codes: [CC.WOMEN_COMMITTEE], url: () => '/committees/women' },
-  { group: 'services', codes: [CC.SERVICE], url: (r) => `/services/view?id=${r.id}` },
-  { group: 'training', codes: [CC.COURSE], url: (r) => `/training/view?id=${r.id}` },
+  { group: 'services', codes: [CC.SERVICE], url: (r) => `/services/${r.id}` },
+  { group: 'training', codes: [CC.COURSE], url: (r) => `/training/${r.id}` },
   { group: 'incubator', codes: [CC.INCUBATOR_PROJECT], url: () => '/incubator#projects' },
   { group: 'get2trade', codes: [CC.G2T_PACKAGE], url: () => '/get2trade/packages' },
   { group: 'get2trade', codes: [CC.G2T_SPACE], url: () => '/get2trade/spaces' },
   { group: 'expo', codes: [CC.EXPO_EXHIBITOR], url: () => '/expo/exhibitors' },
   { group: 'expo', codes: [CC.EXPO_SPONSOR], url: () => '/expo/sponsors' },
   { group: 'expo', codes: [CC.EXPO_SESSION], url: () => '/expo/programme' },
-  { group: 'board', codes: [CC.BOARD_MEMBER], url: (r) => `/board/view?id=${r.id}` },
+  { group: 'board', codes: [CC.BOARD_MEMBER], url: (r) => `/board/${r.id}` },
   { group: 'faq', codes: [CC.FAQ], url: () => '/faq' },
-  { group: 'pages', codes: [CC.PAGE], url: (r) => `/pages/view?slug=${encodeURIComponent(s(r.x.slug))}` },
+  { group: 'pages', codes: [CC.PAGE], url: (r) => `/pages/${encodeURIComponent(s(r.x.slug))}` },
 ];
 
 /** every text value of a record's extra data (English texts, sector, organizer, place, tags ...) so the search sees all of it */

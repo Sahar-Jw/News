@@ -58,7 +58,7 @@ function MediaCard({ g }: { g: MediaItem }) {
   const { t, href, lang } = useI18n();
   const meta = [g.count > 0 && `${fmtNum(lang, g.count)} ${t('pub.photos')}`, g.hasVideo && t('gl.video')].filter(Boolean).join(' • ');
   return (
-    <Link href={href(`/gallery/view?id=${g.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+    <Link href={href(`/gallery/${g.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
       <div className="relative">
         <Thumb src={g.cover} alt={g.title} className="h-36 w-full" />
         {g.hasVideo && <PlayBadge small />}
@@ -80,7 +80,7 @@ function NewsList({ items, limit }: { items: NewsItem[]; limit?: number }) {
     <ul className="space-y-3">
       {shown.map((n) => (
         <li key={n.id}>
-          <Link href={href(`/news/view?id=${n.id}`)} className="group flex items-start gap-3">
+          <Link href={href(`/news/${n.id}`)} className="group flex items-start gap-3">
             {n.image && <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-16 w-24 shrink-0 rounded-lg object-cover" />}
             <span className="min-w-0">
               <span className="block font-semibold text-secondary group-hover:text-primary">{n.title}</span>

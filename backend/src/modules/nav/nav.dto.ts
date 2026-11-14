@@ -3,7 +3,7 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, 
 
 const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
 
-/** a site path ("/news", "/pages/view?slug=about", "/#sec-contact") or a full http(s) address; no spaces, no "//host" shortcuts, no javascript: */
+/** a site path ("/news", "/pages/about", "/#sec-contact") or a full http(s) address; no spaces, no "//host" shortcuts, no javascript: */
 export const NAV_URL = /^(\/(?!\/)\S*|https?:\/\/\S+)$/i;
 
 export class NavItemDto {
