@@ -3,7 +3,7 @@ import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api, fileUrl } from '@/lib/api';
+import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button, Center, Modal, Spinner } from '@/components/ui/ui';
 import { ContactForm } from '@/components/site/contact-form';
@@ -55,7 +55,7 @@ function View() {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => setInquiry(true)}>{t('os.inquiry')}</Button>
             {d.formUrl && (d.formIsFile || /^https?:/i.test(d.formUrl)
-              ? <a href={fileUrl(d.formUrl)} {...(d.formIsFile ? { download: true } : {})} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">{d.formIsFile ? '\u2b07 ' : '\u2197 '}{t(d.formIsFile ? 'svc.formDownload' : 'svc.form')}</a>
+              ? <a href={d.formIsFile ? downloadUrl(d.formUrl, d.name) : fileUrl(d.formUrl)} {...(d.formIsFile ? { download: true } : {})} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">{d.formIsFile ? '\u2b07 ' : '\u2197 '}{t(d.formIsFile ? 'svc.formDownload' : 'svc.form')}</a>
               : <Link href={href(d.formUrl)} className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary hover:text-white">{'\u2197 '}{t('svc.form')}</Link>)}
             <button type="button" disabled title={t('os.soon')} className="cursor-not-allowed rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-500">{t('os.applyOnlineSoon')}</button>
           </div>

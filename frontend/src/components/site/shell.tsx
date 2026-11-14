@@ -1,4 +1,5 @@
 'use client';
+import { NEWS_MAIN_CATEGORIES } from '@/lib/news-categories';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -247,6 +248,8 @@ export function Navbar() {
   // (UI hint only - the API still enforces every permission).
   const manageItems: NavItem[] = [
     { label: t('adm.news'), to: '/admin/news', show: can(newsPerm('read')) },
+    // the fixed main categories: each opens the list of its news, and "add" there is locked to that category
+    ...NEWS_MAIN_CATEGORIES.map((c) => ({ label: lang === 'en' ? c.en : c.ar, to: `/admin/news?category=${c.key}`, show: can(newsPerm('read')) })),
     ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can(newsPerm('read', s)) })),
     { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
   ];

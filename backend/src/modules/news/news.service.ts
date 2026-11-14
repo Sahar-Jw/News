@@ -16,7 +16,7 @@ import {
 } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
-import { fixedNewsCategories, fixedNewsCategoryKey, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, NewsMainCategoryKey } from '../../common/news-categories';
+import { fixedNewsCategories, fixedNewsCategoryKey, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, newsCategoryLabels, NewsMainCategoryKey } from '../../common/news-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { isYmd } from '../../common/utils/dates';
@@ -123,6 +123,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       else if (SPECIAL_CATEGORY_CODES.includes(sec)) qb.andWhere('n.mainCategory = :sec', { sec });
       else throw new BadRequestException('قسم غير معروف');
     }
+    if (q.categoryKey) qb.andWhere('n.mainCategory IN (:...ckl)', { ckl: newsCategoryLabels(q.categoryKey as NewsMainCategoryKey) });
     if (q.mainCategory) qb.andWhere('n.mainCategory = :mc', { mc: normalizeLabel(q.mainCategory) });
     if (q.subcategory) qb.andWhere('n.subcategory = :sc', { sc: normalizeLabel(q.subcategory) });
     if (q.topic) qb.andWhere('CAST(n.topics AS TEXT) ILIKE :topic', { topic: `%${escapeLike(JSON.stringify(normalizeLabel(q.topic)))}%` });

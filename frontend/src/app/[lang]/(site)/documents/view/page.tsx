@@ -3,7 +3,7 @@ import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api, fileUrl } from '@/lib/api';
+import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
@@ -40,7 +40,7 @@ function View() {
         </div>
         <h1 className="mt-4 text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{d.title}</h1>
         {d.summary && <p className="mt-3 leading-8 text-gray-700">{d.summary}</p>}
-        {d.fileUrl && <a href={fileUrl(d.fileUrl)} download className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
+        {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
         {d.fileUrl && <div className="mt-6"><PdfViewer src={d.fileUrl} title={d.title} /></div>}
       </article>
     </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, fileUrl } from '@/lib/api';
+import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
@@ -19,7 +19,7 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
   const actions = (d: Doc) => (
     <div className="flex flex-wrap gap-2 text-sm">
       <Link href={href(`/documents/view?id=${d.id}`)} className="rounded-lg bg-primary px-3 py-1 font-semibold text-white transition hover:brightness-110">{t('doc.open')}</Link>
-      {d.fileUrl && <a href={fileUrl(d.fileUrl)} download className="rounded-lg border border-line px-3 py-1 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('doc.download')}</a>}
+      {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="rounded-lg border border-line px-3 py-1 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('doc.download')}</a>}
     </div>
   );
   const tools = (d: Doc) => { const x = rowTools?.(d); return x ? <div className="mt-2">{x}</div> : null; };

@@ -41,7 +41,8 @@ async function bootstrap() {
     origin: origins.length ? origins : false, // SRS 21: CORS limited to the frontend origin
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Lang'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Lang', 'Idempotency-Key'],
+    exposedHeaders: ['Idempotent-Replay'],
     maxAge: 600,
   });
 

@@ -128,7 +128,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
   const footerEntries = visibleEntries(links.footer);
 
   return (
-    <div style={theme} className="min-h-screen bg-canvas text-ink">
+    <div style={theme} data-brand-theme className="min-h-screen bg-canvas text-ink">
       <Suspense fallback={null}><WomenActivePageSync onChange={setActiveSlug} /></Suspense>
       <header className="sticky top-0 z-40 text-white shadow-lg" style={{ backgroundColor: 'var(--header-bg)' }}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">

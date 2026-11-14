@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { brandOf } from '@/lib/branded';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
@@ -67,7 +69,7 @@ function layout(name: string, hasLogo: boolean, rtl: boolean): Geo {
   return { W, H, fs, cy, baseY: cy + fs * 0.35, logoR, logoCx, textCx, x1: rtl ? left + total : left, x2: rtl ? left : left + total };
 }
 
-export function IntroSplash() {
+function IntroSplashInner() {
   const { lang } = useI18n();
   const [geo, setGeo] = useState<Geo | null>(null);
   const [assets, setAssets] = useState<{ name: string; logo: string }>({ name: '', logo: '' });
@@ -214,4 +216,11 @@ export function IntroSplash() {
       </svg>
     </div>
   );
+}
+
+/** The chamber's opening animation. The brand sites (EXPO, Women Business Committee) never show it: they have their own look. */
+export function IntroSplash() {
+  const pathname = usePathname();
+  if (brandOf(pathname)) return null;
+  return <IntroSplashInner />;
 }

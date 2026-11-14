@@ -228,3 +228,6 @@ input[type="file"]:hover::file-selector-button { filter: brightness(1.1); }
 input[type="file"]:active::file-selector-button { transform: scale(0.97); }
 /* the FilePicker hides its input and draws its own card */
 label > input[type="file"].opacity-0 { padding: 0; border: 0; background: none; }
+
+/* while any change is being saved (see lib/api.ts) every submit button of the page is off: no second press, no record added twice */
+html[data-saving] button[type="submit"] { pointer-events: none; opacity: 0.6; cursor: progress; }

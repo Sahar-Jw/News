@@ -89,6 +89,8 @@ export class NewsAdminQueryDto extends AdminListQueryDto {
   /** A reserved code (special section) or the word "regular" for ordinary news. */
   @IsOptional() @IsString() @MaxLength(100) section?: string;
   @IsOptional() @IsString() @MaxLength(100) mainCategory?: string;
+  /** one of the fixed main categories (chamber, board, ...): matches its Arabic and English label */
+  @IsOptional() @IsIn(NEWS_CATEGORY_KEYS) categoryKey?: string;
   @IsOptional() @IsString() @MaxLength(100) subcategory?: string;
   @IsOptional() @IsString() @MaxLength(100) topic?: string;
   @IsOptional() @toBool() @IsBoolean() isFeatured?: boolean;

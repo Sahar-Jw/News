@@ -1,3 +1,4 @@
+import { BRANDED_PATH_SOURCE } from './branded';
 /**
  * Brand colours chosen in Settings → appearance are loaded from the API after the page has opened. To stop the old
  * (default) colours from showing for a moment on every visit, the last colours are remembered in this browser
@@ -9,6 +10,8 @@
  */
 // v2: the palette changed to the logo's green / gold, so colours remembered by older visits are dropped instead of flashing blue first
 export const THEME_STORAGE_KEY = 'site-theme-v2';
+// the brand sites (EXPO, Women Business Committee) have their own look and loaders: the chamber's cover and loader never run there
+const ON_BRAND_SITE = `new RegExp(${JSON.stringify(BRANDED_PATH_SOURCE)}).test(location.pathname)`;
 /**
  * Decides, before the first paint, whether the opening animation plays: on every OPEN of the site, never on a refresh.
  *  - a reload (F5, the browser's refresh button) and back / forward do not play it;
@@ -18,6 +21,7 @@ export const THEME_STORAGE_KEY = 'site-theme-v2';
  * Nothing is remembered between visits, so there is no "seen" flag to get stuck. If the browser cannot tell, the animation plays.
  */
 export const INTRO_BOOT_SCRIPT = `(function(){var d=document.documentElement;try{
+if(${ON_BRAND_SITE})return;
 var e=performance.getEntriesByType&&performance.getEntriesByType("navigation")[0];
 var type=e?e.type:(performance.navigation?(performance.navigation.type===1?"reload":performance.navigation.type===2?"back_forward":"navigate"):"navigate");
 if(type==="reload"||type==="back_forward")return;
@@ -81,4 +85,4 @@ export function applyTheme(appearance: Record<string, any> | undefined) {
 }
 
 /** Runs synchronously in <head>. Plain ES5 on purpose; every value is validated before it touches the page. */
-export const THEME_BOOT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(!s){d.setAttribute("data-theme-pending","");setTimeout(function(){d.removeAttribute("data-theme-pending")},${THEME_PENDING_MAX_MS});return}var t=JSON.parse(s)||{},r=d.style;for(var k in t){if(/^--[a-z-]+$/.test(k)&&/^#[0-9a-fA-F]{3,8}$/.test(t[k]))r.setProperty(k,t[k])}}catch(e){}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var d=document.documentElement,s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(!s){if(!(${ON_BRAND_SITE})){d.setAttribute("data-theme-pending","");setTimeout(function(){d.removeAttribute("data-theme-pending")},${THEME_PENDING_MAX_MS})}return}var t=JSON.parse(s)||{},r=d.style;for(var k in t){if(/^--[a-z-]+$/.test(k)&&/^#[0-9a-fA-F]{3,8}$/.test(t[k]))r.setProperty(k,t[k])}}catch(e){}})();`;

@@ -1,6 +1,7 @@
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Req, Res } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Response } from 'express';
+import { basename, extname } from 'path';
 import { Readable } from 'stream';
 import { Repository } from 'typeorm';
 import { PERM } from '../../common/constants';
@@ -21,6 +22,21 @@ export class FilesController {
 
   /** Public files are served by a controlled route; private/ (e.g. CVs) needs permission or ownership. */
   @Public()
+  /**
+   * `?download=1` (and optionally `&name=My file`) makes ANY file arrive as a download instead of opening in the browser. The HTML
+   * `download` attribute cannot do this when the site and the API are on different domains: browsers ignore it for another origin.
+   * Private files are always attachments.
+   */
+  private disposition(req: AuthRequest, rel: string, isPrivate: boolean): string | undefined {
+    if (String(req.query?.download ?? '') !== '1') return isPrivate ? 'attachment' : undefined;
+    const ext = extname(rel).replace(/[^.A-Za-z0-9]/g, '').slice(0, 10);
+    let name = String(req.query?.name ?? '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!name) name = basename(rel);
+    else if (ext && !name.toLowerCase().endsWith(ext.toLowerCase())) name += ext;
+    const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+  }
+
   @Get('*path')
   async serve(@Param('path') p: string | string[], @Req() req: AuthRequest, @Res() res: Response) {
     const rel = Array.isArray(p) ? p.join('/') : p;
@@ -55,7 +71,8 @@ export class FilesController {
       res.setHeader('Content-Type', f.contentType);
       if (f.contentLength != null) res.setHeader('Content-Length', String(f.contentLength));
       if (f.lastModified) res.setHeader('Last-Modified', f.lastModified.toUTCString());
-      if (isPrivate) res.setHeader('Content-Disposition', 'attachment');
+      const disposition = this.disposition(req, rel, isPrivate);
+      if (disposition) res.setHeader('Content-Disposition', disposition);
       const body = f.body as Readable;
       res.on('close', () => body.destroy()); // client went away: stop reading from the bucket
       body.on('error', () => res.destroy());
@@ -65,7 +82,8 @@ export class FilesController {
 
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', isPrivate ? 'private, no-store' : 'public, max-age=604800');
-    if (isPrivate) res.setHeader('Content-Disposition', 'attachment');
+    const disposition = this.disposition(req, rel, isPrivate);
+    if (disposition) res.setHeader('Content-Disposition', disposition);
     res.sendFile(abs, { dotfiles: 'deny' }, (err) => {
       if (err && !res.headersSent) res.status(404).json({ statusCode: 404, error: 'Not Found', message: 'الملف غير موجود' });
     });

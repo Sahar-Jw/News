@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { api, fileUrl } from '@/lib/api';
+import { api, downloadUrl, fileUrl, withDownload } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
@@ -39,7 +39,7 @@ function DocsTab({ kind }: { kind: 'press' | 'mediakit' }) {
               {d.docDate && <p className="mt-0.5 text-xs text-gray-500">{fmtDate(lang, d.docDate)}</p>}
               {d.summary && <p className="mt-1 line-clamp-2 text-sm leading-7 text-gray-600">{d.summary}</p>}
             </div>
-            {d.fileUrl && <a href={fileUrl(d.fileUrl)} download className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
+            {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
           </li>
         ))}
       </ul>
@@ -48,7 +48,7 @@ function DocsTab({ kind }: { kind: 'press' | 'mediakit' }) {
 }
 
 function Download({ href: h, children }: { href: string; children: React.ReactNode }) {
-  return <a href={h} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">⬇ {children}</a>;
+  return <a href={withDownload(h)} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110">⬇ {children}</a>;
 }
 function KitBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return <section className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line"><h2 className="mb-4 border-s-4 border-accent ps-3 text-lg font-extrabold text-secondary">{title}</h2>{children}</section>;

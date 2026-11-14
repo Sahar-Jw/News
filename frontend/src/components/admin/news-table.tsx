@@ -11,11 +11,12 @@ import { useToast } from '@/components/ui/toast';
 import { useNewsSaved } from '@/lib/news-events';
 import { Col, DataTable } from './data-table';
 import { NewsFormDialog } from './news-form';
+import type { NewsMainCategoryKey } from '@/lib/news-categories';
 
 interface Row { id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[]; publishAt: string | null; viewCount: number; status: string; language: string; visibility: string }
 
 /** Unified table for regular news (section="regular") and every special section. */
-export function NewsTable({ section }: { section: string }) {
+export function NewsTable({ section, category }: { section: string; category?: NewsMainCategoryKey }) {
   const { t, href, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -24,7 +25,7 @@ export function NewsTable({ section }: { section: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
   useNewsSaved(() => setRefreshKey((n) => n + 1));
   const special = section !== 'regular';
-  const sp = special ? `&section=${section}` : '';
+  const sp = special ? `&section=${section}` : category ? `&category=${category}&from=${encodeURIComponent(`/admin/news?category=${category}`)}` : '';
   // each action is checked against THIS section only (regular news: news.<action>, a section: news.<action>.<section>)
   const may = (a: 'create' | 'update' | 'delete') => can(newsPerm(a, special ? section : undefined));
   const statusBadge = (s: string) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${s === 'published' ? 'bg-emerald-100 text-emerald-700' : s === 'scheduled' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{t(`s.${s}`)}</span>;
@@ -42,7 +43,8 @@ export function NewsTable({ section }: { section: string }) {
     { key: 'title', label: t('f.title') },
     { key: 'subject', label: t('f.subject') },
     ...(special ? [] : [
-      { key: 'mainCategory', label: t('f.mainCategory') } as Col<Row>,
+      // inside one fixed category the category column says nothing new
+      ...(category ? [] : [{ key: 'mainCategory', label: t('f.mainCategory') } as Col<Row>]),
       { key: 'subcategory', label: t('f.subcategory') } as Col<Row>,
     ]),
     { key: 'topics', label: t('site.topics'), render: (r) => asList(r.topics).join(lang === 'ar' ? '، ' : ', '), text: (r) => asList(r.topics).join(', ') },
@@ -56,11 +58,11 @@ export function NewsTable({ section }: { section: string }) {
     <>
     <DataTable<Row>
       endpoint="/admin/news"
-      baseParams={{ section }}
+      baseParams={{ section, ...(category ? { categoryKey: category } : {}) }}
       columns={cols}
       dateFilter
       exportable={can('news.export')}
-      exportName={special ? section.toLowerCase() : 'news'}
+      exportName={special ? section.toLowerCase() : category ? `news-${category}` : 'news'}
       filters={[
         { key: 'status', label: t('f.status'), options: ['scheduled', 'published'].map((s) => ({ value: s, label: t(`s.${s}`) })) },
         { key: 'language', label: t('f.language'), options: ['ar', 'en'].map((s) => ({ value: s, label: t(`l.${s}`) })) },
@@ -77,7 +79,7 @@ export function NewsTable({ section }: { section: string }) {
         </div>
       )}
     />
-    {adding && <NewsFormDialog section={special ? section : undefined} onClose={() => setAdding(false)} />}
+    {adding && <NewsFormDialog section={special ? section : undefined} category={category} onClose={() => setAdding(false)} />}
     <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
       <p className="mb-5">{t('tbl.confirmDelete')}</p>
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={removeNews}>{t('app.delete')}</Button></div>

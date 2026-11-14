@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { getActiveApiRequests, subscribeToApiRequests } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { PageLoaderOverlay } from '@/components/ui/page-loader';
+import { BRAND_DEFAULTS, brandOf, type Brand } from '@/lib/branded';
 
 type PendingNavigation = { target: string; arrived: boolean };
 
@@ -144,6 +145,11 @@ export function NavigationLoader() {
 
   if (!visible) return null;
 
+  // EXPO and the Women Business Committee are separate sites: the chamber's full-screen loader and badge never appear there. Moving between
+  // their pages shows the page's own loading screen (loading.tsx, inside their header and footer); an action shows a slim bar in their colours.
+  const brand = brandOf(pathname);
+  if (brand) return pending !== null ? null : <BrandedBar brand={brand} />;
+
   // moving to another page: wait for its data requests, like the route-level loading.tsx
   if (pending !== null) return <PageLoaderOverlay label={t('app.loadingPage')} />;
 
@@ -157,6 +163,23 @@ export function NavigationLoader() {
       <div className="mx-auto mt-2 flex w-fit items-center gap-2 rounded-full border border-line bg-white/95 px-3 py-1.5 text-xs text-gray-600 shadow-card">
         <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/25 border-t-primary" aria-hidden="true" />
         {t('app.loading')}
+      </div>
+    </div>
+  );
+}
+
+/** The thin "something is being saved" bar of a brand site, in that site's own accent colour (read from its themed wrapper). */
+function BrandedBar({ brand }: { brand: Brand }) {
+  const [color, setColor] = useState(BRAND_DEFAULTS[brand].accent);
+  useEffect(() => {
+    const el = document.querySelector('[data-brand-theme]');
+    const v = el ? getComputedStyle(el).getPropertyValue('--accent').trim() : '';
+    if (v) setColor(v);
+  }, []);
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90]" role="status" aria-live="polite" aria-busy="true">
+      <div dir="ltr" className="h-1 w-full overflow-hidden" style={{ backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)` }}>
+        <div className="loader-bar h-full w-1/3 rounded-full" style={{ backgroundColor: color }} />
       </div>
     </div>
   );

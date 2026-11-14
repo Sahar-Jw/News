@@ -7,6 +7,16 @@ const RAW_API_URL =
 // a stray space or a doubled value in the environment variable ("https://x/api   https://x/api") must not break every file link: use the first address
 export const API_URL = (RAW_API_URL.match(/https?:\/\/\S+/)?.[0] ?? RAW_API_URL.trim()).replace(/\/$/, '');
 
+/**
+ * The same file address, asking the server to send it as a DOWNLOAD (Content-Disposition: attachment) with a readable file name.
+ * The HTML `download` attribute is ignored by browsers when the file is on another domain than the page, so the file would just open.
+ */
+export function withDownload(url: string, name?: string): string {
+  if (!url || !url.startsWith(API_URL)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}download=1${name ? `&name=${encodeURIComponent(name)}` : ''}`;
+}
+export const downloadUrl = (p?: string | null, name?: string) => withDownload(fileUrl(p), name);
+
 /** Backend returns file URLs like /api/files/news/x.jpg – rebase them on the configured API URL. */
 export function fileUrl(p?: string | null): string {
   if (!p) return '';
@@ -142,6 +152,8 @@ function sendWithProgress(url: string, init: { method: string; headers: Record<s
     const xhr = new XMLHttpRequest();
     xhr.open(init.method, url);
     xhr.withCredentials = true;
+    xhr.timeout = 10 * 60 * 1000; // a dead connection must not keep the sender waiting for ever
+    xhr.ontimeout = () => { endUpload(id); reject(new TypeError('timeout')); };
     for (const [k, v] of Object.entries(init.headers)) xhr.setRequestHeader(k, v);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) updateUpload(id, (e.loaded / e.total) * bytes); };
     xhr.onload = () => { endUpload(id); resolve(new Response(xhr.status === 204 || xhr.status === 205 ? null : xhr.responseText, { status: xhr.status || 200, statusText: xhr.statusText })); };
@@ -151,21 +163,88 @@ function sendWithProgress(url: string, init: { method: string; headers: Record<s
   });
 }
 
-export async function api<T = any>(path: string, opts: { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean } = {}): Promise<T> {
+type ApiOpts = { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean; _key?: string };
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Safe "add": one press of a button must never create two records, even on a slow or dropped connection.
+//  - the same add (same address and same content) that is still on its way is not sent again: the second call gets the first one's answer;
+//  - every add carries an Idempotency-Key. When the connection fails and nobody knows whether the server got the request, pressing the
+//    button again reuses the SAME key for a few minutes, and the server (which remembers the answer) does not run it a second time;
+//  - while any change is being saved, every submit button of the page is switched off (see globals.css, html[data-saving]).
+// ---------------------------------------------------------------------------------------------------------------------------
+const inflight = new Map<string, Promise<unknown>>();
+const pendingKeys = new Map<string, { key: string; at: number }>();
+const KEY_TTL_MS = 5 * 60 * 1000;
+let saving = 0;
+
+function setSaving(change: number) {
+  saving = Math.max(0, saving + change);
+  if (typeof document === 'undefined') return;
+  if (saving > 0) document.documentElement.setAttribute('data-saving', '1');
+  else document.documentElement.removeAttribute('data-saving');
+}
+
+function newKey(): string {
+  const c = typeof crypto !== 'undefined' ? crypto : undefined;
+  const raw = c?.randomUUID ? c.randomUUID() : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  return raw.replace(/[^A-Za-z0-9_-]/g, '');
+}
+
+/** What makes two calls "the same add": the address plus the content (for files: name, size and date, not the bytes). */
+function signature(path: string, opts: ApiOpts): string {
+  let content = '';
+  if (opts.form) {
+    const parts: string[] = [];
+    opts.form.forEach((v, k) => parts.push(typeof v === 'string' ? `${k}=${v}` : `${k}=file:${(v as File).name}:${(v as File).size}:${(v as File).lastModified}`));
+    content = parts.join('&');
+  } else if (opts.body !== undefined) content = JSON.stringify(opts.body);
+  return `${path}${qs(opts.params)}|${content}`;
+}
+
+export function api<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
+  const method = (opts.method ?? 'GET').toUpperCase();
+  if (method === 'GET') return request<T>(path, opts);
+  const track = <R,>(p: Promise<R>): Promise<R> => { setSaving(1); return p.finally(() => setSaving(-1)); };
+  // sign-in has its own rules (cookies), and the call repeated after a silent renewal is the same call, not a new one
+  if (method !== 'POST' || opts._retried || path.startsWith('/auth/')) return track(request<T>(path, opts));
+
+  const sig = signature(path, opts);
+  const running = inflight.get(sig);
+  if (running) return running as Promise<T>;
+  const prev = pendingKeys.get(sig);
+  const key = prev && Date.now() - prev.at < KEY_TTL_MS ? prev.key : newKey();
+  pendingKeys.set(sig, { key, at: Date.now() });
+  const p = track(request<T>(path, { ...opts, _key: key }))
+    .then((v) => { pendingKeys.delete(sig); return v; }, (e) => {
+      // the server answered (a validation error, a refusal): that attempt is over, the next one is new. No answer (status 0): keep the key.
+      if (e instanceof ApiError && e.status !== 0) pendingKeys.delete(sig);
+      throw e;
+    })
+    .finally(() => { inflight.delete(sig); });
+  inflight.set(sig, p);
+  return p;
+}
+
+async function request<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
   const headers: Record<string, string> = { 'X-Lang': currentLang() };
+  if (opts._key) headers['Idempotency-Key'] = opts._key;
   let body: BodyInit | undefined;
   if (opts.form) body = opts.form;
   else if (opts.body !== undefined) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(opts.body);
   }
+  let timer: ReturnType<typeof setTimeout> | undefined;
   updateActiveApiRequests(1);
   try {
     const url = API_URL + path + qs(opts.params);
     const bytes = opts.form ? filesSize(opts.form) : 0;
+    // a connection that went silent ends after a while instead of leaving the button disabled for ever
+    const ctrl = new AbortController();
+    timer = setTimeout(() => ctrl.abort(), 90_000);
     const res = bytes > 0 && typeof XMLHttpRequest !== 'undefined'
       ? await sendWithProgress(url, { method: opts.method ?? 'POST', headers, body: opts.form as FormData }, bytes)
-      : await fetch(url, { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache ?? 'no-store' }); // never serve a stale list after an add / edit
+      : await fetch(url, { method: opts.method ?? 'GET', headers, body, credentials: 'include', cache: opts.cache ?? 'no-store', signal: ctrl.signal }); // never serve a stale list after an add / edit
     const out = await parse(res);
     if ((opts.method ?? 'GET') !== 'GET' && path.startsWith('/admin/')) announceSiteChange();
     return out;
@@ -180,9 +259,16 @@ export async function api<T = any>(path: string, opts: { method?: string; params
       // /auth/* answers 401 by itself (wrong password, nobody signed in): only the other calls mean "your session ended"
       if (!path.startsWith('/auth/')) window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
     }
-    if (e instanceof TypeError) throw new ApiError(0, currentLang() === 'ar' ? 'تعذّر الاتصال بالخادم، تحقق من الاتصال أو من حجم الملف' : 'Could not reach the server - check the connection or the file size');
+    if (e instanceof TypeError || (e as { name?: string })?.name === 'AbortError') {
+      const write = (opts.method ?? 'GET').toUpperCase() !== 'GET';
+      const ar = currentLang() === 'ar';
+      throw new ApiError(0, write
+        ? (ar ? 'انقطع الاتصال أو كان بطيئاً ولم يصلنا تأكيد. تحقق من الإنترنت ثم أعد المحاولة، ولن يُسجَّل الطلب مرتين.' : 'The connection dropped or was too slow, so we got no confirmation. Check your internet and try again - it will not be saved twice.')
+        : (ar ? 'تعذّر الاتصال بالخادم، تحقق من الاتصال أو من حجم الملف' : 'Could not reach the server - check the connection or the file size'));
+    }
     throw e;
   } finally {
+    clearTimeout(timer);
     updateActiveApiRequests(-1);
   }
 }

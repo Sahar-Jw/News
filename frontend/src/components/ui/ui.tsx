@@ -13,7 +13,9 @@ export function Center({ children }: { children: React.ReactNode }) {
 }
 
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' | 'outline'; size?: 'sm' | 'md' };
-export function Button({ variant = 'primary', size = 'md', className, ...p }: BtnProps) {
+export function Button({ variant = 'primary', size = 'md', className, onClick, disabled, ...p }: BtnProps) {
+  // a click handler that returns a promise (a save, a delete) keeps the button off until it ends: no second press while it is still working
+  const [pending, setPending] = useState(false);
   const v = {
     primary: 'bg-primary text-white shadow-md shadow-primary/25 ring-1 ring-inset ring-accent/40 hover:-translate-y-px hover:shadow-lg hover:shadow-primary/30 hover:brightness-110',
     ghost: 'bg-transparent text-ink/80 hover:bg-primary/10 hover:text-primary',
@@ -23,6 +25,15 @@ export function Button({ variant = 'primary', size = 'md', className, ...p }: Bt
   return (
     <button
       {...p}
+      disabled={disabled || pending}
+      aria-busy={pending || undefined}
+      onClick={onClick && ((e) => {
+        const out: unknown = onClick(e);
+        if (out && typeof (out as Promise<unknown>).then === 'function') {
+          setPending(true);
+          void (out as Promise<unknown>).then(() => setPending(false), () => setPending(false));
+        }
+      })}
       className={cn('inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-200 active:translate-y-0 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50', size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-5 py-2.5 text-sm', v, className)}
     />
   );

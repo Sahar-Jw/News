@@ -68,14 +68,14 @@ function Chrome({ children }: { children: React.ReactNode }) {
   const rights = x.L('rights');
 
   return (
-    <div style={theme} className="min-h-screen bg-canvas text-ink">
+    <div style={theme} data-brand-theme className="min-h-screen bg-canvas text-ink">
       <header className="sticky top-0 z-40 bg-secondary text-white shadow-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <Link href={href('/expo')} className="flex items-center gap-3">
             {x.logo ? <img src={x.logo} alt="" className="h-10 w-10 rounded-full bg-white object-contain p-0.5" /> : <span className="grid h-10 w-10 place-items-center rounded-full bg-accent font-extrabold text-secondary">E</span>}
             <span className="text-lg font-extrabold tracking-wide">{x.name}</span>
           </Link>
-          <nav aria-label={x.name} className="hidden max-w-[62vw] items-center gap-1 xl:flex">
+          <nav aria-label={x.name} className="hidden max-w-[52vw] items-center gap-1 xl:flex 2xl:max-w-[62vw]">
             {navEntries.map((e, i) => e.type === 'page'
               ? <div key={`n-${e.slug}`}>{link(e, navClass(e))}</div>
               : <BrandedDropdown key={`g-${i}`} label={ar ? e.titleAr : e.titleEn} active={groupActive(e)}>
@@ -83,7 +83,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
               </BrandedDropdown>)}
           </nav>
           <div className="flex items-center gap-2">
-            <Link href={href('/')} title={t('ex.backToChamber')} className="hidden items-center gap-1 rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 2xl:inline-flex"><span aria-hidden="true" className="rtl:rotate-180">←</span>{t('ex.backToChamber')}</Link>
+            <Link href={href('/')} title={t('ex.backToChamber')} aria-label={t('ex.backToChamber')} className="hidden items-center gap-1.5 rounded-full border border-white/40 px-3 py-1.5 text-xs font-bold transition hover:bg-white/15 sm:inline-flex"><span aria-hidden="true" className="rtl:rotate-180">←</span><span aria-hidden="true">⌂</span><span className="hidden 2xl:inline">{t('ex.backToChamber')}</span></Link>
             {x.registerOpen && <Link href={href('/expo/register')} className="hidden rounded-full bg-accent px-4 py-2 text-sm font-extrabold text-secondary shadow transition hover:brightness-110 sm:inline-block">{t('ex.registerExhibitor')}</Link>}
             <Link href={otherLangHref(pathname)} onClick={() => { try { localStorage.setItem('lang', ar ? 'en' : 'ar'); } catch {} }} className="rounded-full border border-white/30 px-3 py-1.5 text-xs font-bold hover:bg-white/15">{t('site.language')}</Link>
             {me && <BrandedDropdown label={me.fullName} align="end" trigger={
