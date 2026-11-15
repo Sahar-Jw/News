@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, LessThan, Repository } from 'typeorm';
+import { Brackets, EntityManager, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { applyColumnFilters } from '../../common/utils/column-filters';
@@ -12,6 +12,8 @@ import { MailService } from '../mail/mail.service';
 import { ContactApplicantDto, SaveFormDto, SubmissionsQueryDto, SubmitFormDto, UpdateSubmissionDto } from './forms.dto';
 import { FormDefinition, FormSubmission, FormSubmissionFile, FormSubmissionMessage } from './forms.entity';
 import { FormsWebhookService } from './forms-webhook.service';
+import { Get2TradeService } from '../get2trade/get2trade.service';
+import { TrainingService } from '../training/training.service';
 import { decryptValue, encryptValue, encryptionEnabled } from './forms-crypto';
 import { DEFAULT_STATUSES, DISPLAY_TYPES, FieldDef, cleanAnswers, cleanCategories, cleanFields, cleanIntegrations, cleanStatuses, displayValue, isValidSlug } from './field-schema';
 
@@ -36,6 +38,8 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     private readonly storage: FileStorageService,
     private readonly mail: MailService,
     private readonly hooks: FormsWebhookService,
+    private readonly training: TrainingService,
+    private readonly g2t: Get2TradeService,
   ) {}
 
   onModuleInit() {
@@ -89,6 +93,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
       fields: cleanFields(dto.fields ?? []), statuses: cleanStatuses(dto.statuses), categories: cleanCategories(dto.categories),
       integrations: this.mergeIntegrations(dto.integrations),
       notifyEmails: dto.notifyEmails ?? null, sendReceipt: dto.sendReceipt ?? true, requireConsent: dto.requireConsent ?? true, retentionDays: dto.retentionDays ?? null, version: 1,
+      contextType: null, dedupe: dto.dedupe ?? null,
     });
     const saved = await this.forms.save(f);
     await this.audit.log({ category: 'forms', action: 'create', description: `إنشاء نموذج ${saved.slug}`, actorId: actor.id, entityType: 'form_definitions', entityId: saved.id });
@@ -115,6 +120,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     if (dto.sendReceipt !== undefined) f.sendReceipt = dto.sendReceipt;
     if (dto.requireConsent !== undefined) f.requireConsent = dto.requireConsent;
     if (dto.retentionDays !== undefined) f.retentionDays = dto.retentionDays;
+    if (dto.dedupe !== undefined) f.dedupe = dto.dedupe; // contextType is never set from the dashboard: it is wired to code (course / g2t)
     if (dto.categories !== undefined) f.categories = cleanCategories(dto.categories);
     if (dto.integrations !== undefined) f.integrations = this.mergeIntegrations(dto.integrations, f.integrations);
     if (dto.statuses !== undefined) {
@@ -142,7 +148,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     if (!src) throw new NotFoundException('النموذج غير موجود');
     if (await this.forms.exist({ where: { slug } })) throw new ConflictException('الرابط المختصر مستخدم لنموذج آخر');
     const { id: _i, createdAt: _c, updatedAt: _u, submissions: _s, integrations, ...rest } = src as any;
-    const copy = await this.forms.save(this.forms.create({ ...rest, slug, titleAr: `${src.titleAr} (نسخة)`, isOpen: false, integrations: [], version: 1 }));
+    const copy = await this.forms.save(this.forms.create({ ...rest, slug, titleAr: `${src.titleAr} (نسخة)`, isOpen: false, integrations: [], contextType: null, version: 1 }));
     await this.audit.log({ category: 'forms', action: 'create', description: `نسخ نموذج ${src.slug} إلى ${slug}`, actorId: actor.id, entityType: 'form_definitions', entityId: (copy as any).id });
     return this.one((copy as any).id);
   }
@@ -166,13 +172,21 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     return rows.map((f) => ({ slug: f.slug, title: (en && f.titleEn) || f.titleAr, description: (en && f.descriptionEn) || f.descriptionAr, isOpen: f.isOpen }));
   }
 
+  /** dropdowns filled from the chamber's own records (Get2Trade spaces / packages): the options are read when the form is shown and again when it is sent */
+  private async withSourcedOptions(fields: FieldDef[]): Promise<FieldDef[]> {
+    return Promise.all(fields.map(async (f) => (f.optionsSource ? { ...f, options: await this.g2t.formOptions(f.optionsSource) } : f)));
+  }
+
   /** the definition a visitor needs to draw the form: nothing about staff, e-mails, integrations or retention */
   async publicOne(slug: string) {
     const f = await this.forms.findOne({ where: { slug } });
     if (!f) throw new NotFoundException('النموذج غير موجود');
+    let isOpen = f.isOpen;
+    // the Get2Trade "booking open" switch keeps working: a closed booking form still leaves the inquiry form open
+    if (isOpen && f.contextType === 'g2t' && f.slug.endsWith('-booking')) isOpen = await this.g2t.isBookingOpen();
     return {
-      slug: f.slug, titleAr: f.titleAr, titleEn: f.titleEn, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn, isOpen: f.isOpen, requireConsent: f.requireConsent,
-      fields: f.fields,
+      slug: f.slug, titleAr: f.titleAr, titleEn: f.titleEn, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn, isOpen, requireConsent: f.requireConsent,
+      contextType: f.contextType, fields: await this.withSourcedOptions(f.fields),
     };
   }
 
@@ -192,6 +206,16 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     throw new BadRequestException(`نوع الملف "${file.originalname}" غير مسموح في "${field.labelAr}"`);
   }
 
+  private parseJson(raw: string | undefined): Record<string, any> {
+    if (!raw) return {};
+    try {
+      const v = JSON.parse(raw);
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    } catch {
+      throw new BadRequestException('بيانات النموذج غير صالحة');
+    }
+  }
+
   async submit(slug: string, dto: SubmitFormDto, uploads: Express.Multer.File[]) {
     const form = await this.forms.findOne({ where: { slug } });
     if (!form) throw new NotFoundException('النموذج غير موجود');
@@ -200,10 +224,22 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     if (dto.website) return { id: 0, reference: '', message: this.successText(form, lang) }; // honeypot: pretend, store nothing
     if (form.requireConsent && dto.consent !== 'true') throw new BadRequestException('يجب الموافقة على سياسة الخصوصية قبل الإرسال');
 
-    let input: unknown;
-    try { input = JSON.parse(dto.data); } catch { throw new BadRequestException('بيانات النموذج غير صالحة'); }
-    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new BadRequestException('بيانات النموذج غير صالحة');
-    const { answers, fileFields } = cleanAnswers(form.fields, input as Record<string, any>);
+    const input = this.parseJson(dto.data);
+    if (!dto.data) throw new BadRequestException('بيانات النموذج غير صالحة');
+    const ctxInput = this.parseJson(dto.context);
+    const fields = await this.withSourcedOptions(form.fields);
+    const { answers, fileFields } = cleanAnswers(fields, input);
+
+    const roleValue = (role: string) => {
+      const f = form.fields.find((x) => x.role === role);
+      const v = f ? answers[f.key] : undefined;
+      return typeof v === 'string' && v ? v : null;
+    };
+    const email = roleValue('email')?.toLowerCase() ?? null;
+    // the same person sending the same form twice in a row (double click, slow network): the second one is ignored, not stored
+    if (form.dedupe === 'recent-email' && email && (await this.subs.exist({ where: { formId: form.id, applicantEmail: email, createdAt: MoreThan(new Date(Date.now() - 10 * 60_000)) } }))) {
+      return { id: 0, reference: '', message: lang === 'en' ? 'Your request was already received. We will contact you soon.' : 'تم استلام طلبك مسبقاً، سنتواصل معك قريباً' };
+    }
 
     // files: only the files of the form's own file fields are read; everything else that was sent is ignored
     const byField = new Map<string, Express.Multer.File[]>();
@@ -228,24 +264,26 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
       throw e;
     }
 
-    const roleValue = (role: string) => {
-      const f = form.fields.find((x) => x.role === role);
-      const v = f ? answers[f.key] : undefined;
-      return typeof v === 'string' && v ? v : null;
-    };
     const stored: Record<string, any> = {};
     for (const f of form.fields) if (answers[f.key] !== undefined) stored[f.key] = f.sensitive ? encryptValue(answers[f.key]) : answers[f.key];
 
     let sub: FormSubmission;
     try {
-      sub = await this.subs.save(this.subs.create({
-        formId: form.id, formVersion: form.version, fieldsSnapshot: form.fields, answers: stored,
-        applicantName: roleValue('name')?.slice(0, 200) ?? null, applicantEmail: roleValue('email')?.slice(0, 190) ?? null, applicantPhone: roleValue('phone')?.slice(0, 60) ?? null,
-        status: (form.statuses[0] ?? DEFAULT_STATUSES[0]).key, category: null, staffNotes: null, isRead: false, consentAt: form.requireConsent ? new Date() : null, anonymizedAt: null,
-      }));
-      if (saved.length) await this.files.save(saved.map((s) => this.files.create({ submissionId: sub.id, ...s })));
+      // one transaction: the checks that depend on other records (a course seat, an available space) and the insert cannot be separated by another request
+      sub = await this.subs.manager.transaction(async (m) => {
+        const context = await this.resolveContext(m, form, ctxInput, answers, email);
+        await this.assertNotDuplicate(m, form, email, context);
+        const row = await m.save(m.create(FormSubmission, {
+          formId: form.id, formVersion: form.version, fieldsSnapshot: form.fields, answers: stored, context,
+          applicantName: roleValue('name')?.slice(0, 200) ?? null, applicantEmail: email?.slice(0, 190) ?? null, applicantPhone: roleValue('phone')?.slice(0, 60) ?? null,
+          status: (form.statuses[0] ?? DEFAULT_STATUSES[0]).key, category: null, staffNotes: null, isRead: false, consentAt: form.requireConsent ? new Date() : null, anonymizedAt: null,
+        }));
+        if (saved.length) await m.save(saved.map((s) => m.create(FormSubmissionFile, { submissionId: row.id, ...s })));
+        return row;
+      });
     } catch (e) {
       await this.storage.removeMany(saved.map((s) => s.path));
+      if ((e as any)?.code === '23505') throw new ConflictException('هذا الطلب مسجّل بالفعل');
       throw e;
     }
 
@@ -253,8 +291,43 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     // the log names the request, never the answers (personal data stays in form_submissions only)
     await this.audit.log({ category: 'forms', action: 'submit', description: `طلب جديد ${ref} (${form.slug})`, entityType: 'form_submissions', entityId: sub.id });
     this.notify(form, sub, ref, saved.length);
-    this.hooks.dispatch(form, 'submitted', this.hookPayload(form, sub, ref, answers));
+    this.hooks.dispatch(form, 'submitted', { ...this.hookPayload(form, sub, ref, answers), context: sub.context });
     return { id: sub.id, reference: ref, message: this.successText(form, lang) };
+  }
+
+  /** the record a form is tied to (course / Get2Trade space), checked against the record itself; null for a plain form */
+  private async resolveContext(m: EntityManager, form: FormDefinition, ctx: Record<string, any>, answers: Record<string, any>, email: string | null): Promise<Record<string, any> | null> {
+    if (form.contextType === 'course') {
+      const courseId = Number(ctx.courseId);
+      if (!Number.isInteger(courseId) || courseId < 1) throw new BadRequestException('الدورة مطلوبة');
+      const c = await this.training.checkCourseForRegistration(m, courseId);
+      return { courseId: c.id, courseName: c.nameAr };
+    }
+    if (form.contextType === 'g2t') {
+      const kind = form.slug.endsWith('-booking') ? 'booking' : 'inquiry';
+      const num = (v: unknown) => (v === undefined || v === null || v === '' ? null : Number(v));
+      // the pickers of the form are fields with role-less keys "space" / "package"; the numbers must be real ids
+      const spaceId = num(answers.space ?? ctx.spaceId);
+      const packageId = num(answers.package ?? ctx.packageId);
+      if ((spaceId !== null && !Number.isInteger(spaceId)) || (packageId !== null && !Number.isInteger(packageId))) throw new BadRequestException('اختيار غير صالح');
+      const dv = num(answers.duration_value);
+      if (!!dv !== !!answers.duration_unit) throw new BadRequestException('حدد مدة الحجز (الرقم والوحدة)');
+      const sel = await this.g2t.checkSelection(m, { kind, spaceId, packageId, people: num(answers.people), email });
+      return { kind, ...sel };
+    }
+    return null;
+  }
+
+  private async assertNotDuplicate(m: EntityManager, form: FormDefinition, email: string | null, context: Record<string, any> | null) {
+    if (!email || !form.dedupe) return;
+    const repo = m.getRepository(FormSubmission);
+    if (form.dedupe === 'open-email' && (await repo.exist({ where: { formId: form.id, applicantEmail: email, status: In(['new', 'in_review']) } }))) {
+      throw new ConflictException('لديك طلب قيد المعالجة بهذا البريد الإلكتروني');
+    }
+    if (form.dedupe === 'context-email' && context?.courseId) {
+      const dup = await repo.createQueryBuilder('s').where('s.formId = :f AND s.applicantEmail = :e', { f: form.id, e: email }).andWhere(`s.context->>'courseId' = :c`, { c: String(context.courseId) }).getCount();
+      if (dup) throw new ConflictException('هذا البريد الإلكتروني مسجّل في الدورة بالفعل');
+    }
   }
 
   private successText(f: FormDefinition, lang: string) {
@@ -273,7 +346,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     const front = (process.env.FRONTEND_URL || (process.env.CORS_ORIGINS ?? '').split(',')[0] || '').trim().replace(/\/+$/, '');
     const link = front ? `${front}/ar/admin/settings/?page=forms&tab=submissions` : '';
     const staff = emails(form.notifyEmails);
-    const name = sub.applicantName ? ` — ${esc(sub.applicantName)}` : '';
+    const name = (sub.applicantName ? ` — ${esc(sub.applicantName)}` : '') + (sub.context?.courseName || sub.context?.spaceName ? ` (${esc(sub.context.courseName || sub.context.spaceName)})` : '');
     for (const to of staff) {
       void this.mail.as('forms').send(to, `طلب جديد ${ref}: ${form.titleAr}`,
         `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>طلب جديد ${ref}</h3><p><b>النموذج:</b> ${esc(form.titleAr)}${name}<br><b>عدد المرفقات:</b> ${fileCount}</p>${link ? `<p><a href="${esc(link)}">فتح لوحة الطلبات</a></p>` : ''}<p style="color:#666;font-size:12px">لحماية البيانات الشخصية لا تتضمن هذه الرسالة محتوى الطلب. افتحه من لوحة التحكم.</p></div>`);
@@ -288,6 +361,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   private build(q: SubmissionsQueryDto) {
     const qb = this.subs.createQueryBuilder('s').leftJoin('s.form', 'f').addSelect(['f.id', 'f.slug', 'f.titleAr', 'f.titleEn', 'f.statuses', 'f.categories']);
     if (q.formId) qb.andWhere('s.formId = :fid', { fid: q.formId });
+    else if (q.formIds) qb.andWhere('s.formId IN (:...fids)', { fids: q.formIds.split(',').map(Number).slice(0, 20) });
     if (q.status) qb.andWhere('s.status = :st', { st: q.status });
     if (q.category) qb.andWhere('s.category = :cat', { cat: q.category });
     if (q.unread === 'true') qb.andWhere('s.isRead = false');
@@ -295,7 +369,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     if (q.to) qb.andWhere('s.createdAt <= :to', { to: dayEnd(q.to) });
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
-      qb.andWhere(new Brackets((b) => b.where('s.applicantName ILIKE :like', { like }).orWhere('s.applicantEmail ILIKE :like', { like }).orWhere('s.applicantPhone ILIKE :like', { like }).orWhere('f.titleAr ILIKE :like', { like })));
+      qb.andWhere(new Brackets((b) => b.where('s.applicantName ILIKE :like', { like }).orWhere('s.applicantEmail ILIKE :like', { like }).orWhere('s.applicantPhone ILIKE :like', { like }).orWhere('f.titleAr ILIKE :like', { like }).orWhere('CAST(s.context AS TEXT) ILIKE :like', { like })));
     }
     applyColumnFilters(qb, q.cf, { applicantName: 's.applicantName', applicantEmail: 's.applicantEmail', applicantPhone: 's.applicantPhone', form: 'f.titleAr', createdAt: 'CAST(s.createdAt AS TEXT)' });
     qb.orderBy('s.createdAt', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC').addOrderBy('s.id', 'DESC');

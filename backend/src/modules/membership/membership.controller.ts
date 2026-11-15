@@ -97,12 +97,5 @@ export class MembershipPublicController {
     return this.service.publicPage(lang === 'en' ? 'en' : 'ar');
   }
 
-  // 3 applications / 10 minutes / IP: a real applicant sends one
-  @Public()
-  @Throttle({ default: { limit: 3, ttl: 600_000 } })
-  @Post('apply')
-  @UseInterceptors(FilesInterceptor('files', MAX_APPLICATION_FILES, { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_APPLICATION_FILES, fieldSize: 1024 * 1024 } }))
-  apply(@Body() dto: ApplyDto, @UploadedFiles() files: Express.Multer.File[] | undefined) {
-    return this.service.apply(dto, files ?? []);
-  }
+  // The public form of this page is now managed from the dashboard (Forms): POST /public/forms/<slug>/submit. The old endpoint was removed so no request lands in a table nobody reads.
 }

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { FormBySlug } from '@/components/site/dynamic-form';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -16,12 +17,6 @@ interface Page { isOpen: boolean; conditions: string; documents: string; fees: s
 interface Faq { id: number; question: string; answer: string }
 
 const PER_PAGE = 6;
-const MAX_FILES = 6;
-const MAX_BYTES = 5 * 1024 * 1024;
-const ACCEPT = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp';
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const EMPTY = { managerName: '', companyName: '', businessType: 'individual', businessTypeOther: '', commercialRegNo: '', registrationDate: '', activity: '', address: '', phone: '', email: '', contactPerson: '', message: '' };
-const todayIso = () => new Date().toISOString().slice(0, 10);
 /** services that start the online membership application */
 const APPLY_KINDS = ['membership', 'renewal'];
 
@@ -111,11 +106,7 @@ export default function ServicesPage() {
   const [pg, setPg] = useState(1);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [form, setForm] = useState(false);
-  const [v, setV] = useState(EMPTY);
-  const [files, setFiles] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
-  const picker = useRef<HTMLInputElement>(null);
   const { can } = useAuth();
   // manager tools (hidden from visitors): the service / question windows (id = edit, none = new) and what waits for the delete confirmation
   const [svcDialog, setSvcDialog] = useState<{ id?: number } | null>(null);
@@ -166,35 +157,7 @@ export default function ServicesPage() {
     } catch (e: any) { toast(e.message, 'err'); } finally { setMgBusy(false); }
   };
 
-  const addFiles = (list: FileList | null) => {
-    if (!list) return;
-    const next = [...files];
-    for (const f of Array.from(list)) {
-      if (f.size > MAX_BYTES) { toast(`${f.name}: ≤ 5MB`, 'err'); continue; }
-      if (next.length >= MAX_FILES) { toast(t('mb.maxFiles'), 'err'); break; }
-      next.push(f);
-    }
-    setFiles(next);
-    if (picker.current) picker.current.value = '';
-  };
-
   const close = () => { setForm(false); setDone(null); };
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!EMAIL_RE.test(v.email.trim())) return toast(t('contact.err.emailInvalid'), 'err');
-    if (v.businessType === 'other' && !v.businessTypeOther.trim()) return toast(t('mb.typeOther'), 'err');
-    if (files.length === 0) return toast(t('mb.needFile'), 'err');
-    const fd = new FormData();
-    for (const [k, val] of Object.entries(v)) fd.set(k, val.trim());
-    files.forEach((f) => fd.append('files', f));
-    setBusy(true);
-    try {
-      const r = await api<{ reference: string }>('/public/membership/apply', { method: 'POST', form: fd });
-      setDone(r.reference);
-      setV(EMPTY); setFiles([]);
-    } catch (err: any) { toast(err.message, 'err'); }
-    finally { setBusy(false); }
-  };
 
   const empty = t('mb.soon');
   const needle = q.trim().toLowerCase();
@@ -296,55 +259,9 @@ export default function ServicesPage() {
       {askFaq && <ConfirmDelete busy={mgBusy} onConfirm={removeFaq} onClose={() => setAskFaq(null)} />}
 
       <Modal open={form} onClose={close} title={t('mb.online')} wide>
-        {done ? (
-          <div className="space-y-4 text-center">
-            <p className="text-lg font-bold text-secondary">{t('mb.received')}</p>
-            <p>{t('mb.reference')}: <b dir="ltr" className="text-primary">{done}</b></p>
-            <p className="text-sm text-gray-600">{t('mb.receivedHint')}</p>
-            <Button type="button" onClick={close}>{t('mb.close')}</Button>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-5">
-            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.owner')}</legend>
-              <Field label={t('mb.manager')} hint={t('mb.ownerHint')}><input required minLength={2} maxLength={150} autoComplete="name" className={inputCls} value={v.managerName} onChange={(e) => setV({ ...v, managerName: e.target.value })} /></Field>
-            </fieldset>
-            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.business')}</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t('mb.company')}><input required minLength={2} maxLength={255} className={inputCls} value={v.companyName} onChange={(e) => setV({ ...v, companyName: e.target.value })} /></Field>
-                <Field label={t('mb.businessType')}>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 rounded-xl border border-line bg-white px-3 py-2 text-sm">
-                    {['individual', 'company', 'other'].map((k) => <label key={k} className="flex items-center gap-1.5"><input type="radio" name="businessType" checked={v.businessType === k} onChange={() => setV({ ...v, businessType: k })} />{t(`mb.type.${k}`)}</label>)}
-                  </div>
-                </Field>
-                {v.businessType === 'other' && <Field label={t('mb.typeOther')}><input required maxLength={120} className={inputCls} value={v.businessTypeOther} onChange={(e) => setV({ ...v, businessTypeOther: e.target.value })} /></Field>}
-                <Field label={t('mb.regNo')}><input required maxLength={60} dir="ltr" className={inputCls} value={v.commercialRegNo} onChange={(e) => setV({ ...v, commercialRegNo: e.target.value })} /></Field>
-                <Field label={t('mb.regDate')}><input required type="date" max={todayIso()} dir="ltr" className={inputCls} value={v.registrationDate} onChange={(e) => setV({ ...v, registrationDate: e.target.value })} /></Field>
-                <Field label={t('mb.activity')}><input required minLength={2} maxLength={255} className={inputCls} value={v.activity} onChange={(e) => setV({ ...v, activity: e.target.value })} /></Field>
-              </div>
-              <Field label={t('mb.address')}><textarea required rows={2} minLength={5} maxLength={500} className={inputCls} value={v.address} onChange={(e) => setV({ ...v, address: e.target.value })} /></Field>
-            </fieldset>
-            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.contact')}</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t('mb.phone')}><input required minLength={5} maxLength={50} dir="ltr" autoComplete="tel" className={inputCls} value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} /></Field>
-                <Field label={t('contact.email')}><input required type="email" maxLength={190} dir="ltr" autoComplete="email" className={inputCls} value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} /></Field>
-                <Field label={`${t('mb.contactPerson')} (${t('mb.optional')})`}><input maxLength={150} className={inputCls} value={v.contactPerson} onChange={(e) => setV({ ...v, contactPerson: e.target.value })} /></Field>
-              </div>
-              <Field label={t('mb.message')}><textarea rows={2} maxLength={3000} className={inputCls} value={v.message} onChange={(e) => setV({ ...v, message: e.target.value })} /></Field>
-            </fieldset>
-            <fieldset className="space-y-3"><legend className="mb-2 border-s-4 border-accent ps-3 text-sm font-extrabold text-secondary">{t('mb.sec.docs')}</legend>
-              <p className="text-xs leading-6 text-gray-600">{t('mb.filesRequired')}{page?.documents && <> · <a href="#required-docs" onClick={close} className="font-semibold text-primary underline">{t('mb.seeDocs')}</a></>}</p>
-              <Field label={t('mb.upload')} hint={t('mb.uploadHint')}>
-                <input ref={picker} type="file" multiple accept={ACCEPT} className={inputCls} onChange={(e) => addFiles(e.target.files)} />
-              </Field>
-              {files.length > 0 && (
-                <ul className="space-y-1 text-sm">
-                  {files.map((f, i) => <li key={i} className="flex items-center justify-between gap-3 rounded-lg bg-canvas px-3 py-1.5"><span className="truncate">{f.name}</span><button type="button" aria-label={t('app.delete')} className="text-red-600" onClick={() => setFiles(files.filter((_, j) => j !== i))}>✕</button></li>)}
-                </ul>
-              )}
-            </fieldset>
-            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('mb.submit')}</Button></div>
-          </form>
-        )}
+        {/* the fields are the dashboard form "membership" (Forms → Forms): edit, add and delete them there */}
+        <FormBySlug slug="membership" onDone={(r) => setDone(r.reference)}
+          doneExtra={<><p className="text-sm text-gray-600">{t('mb.receivedHint')}</p>{page?.documents && <a href="#required-docs" onClick={close} className="mt-2 inline-block text-sm font-semibold text-primary underline">{t('mb.documents')}</a>}<div className="mt-3"><Button type="button" onClick={close}>{t('mb.close')}</Button></div></>} />
       </Modal>
     </div>
   );

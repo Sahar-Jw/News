@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { Brackets, EntityManager, In, Repository } from 'typeorm';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { applyColumnFilters } from '../../common/utils/column-filters';
@@ -214,6 +214,47 @@ export class Get2TradeService {
       packages: pk.filter(isActive).sort(by((r) => sortOf(r), (r) => r.id)).map((p) => ({ id: p.id, name: pick(p.title, p.x.nameEn, en), features: lines(en && p.x.featuresEn ? p.x.featuresEn : p.x.featuresAr), price: pick(p.x.priceAr, p.x.priceEn, en) })),
       spaces: sp.filter(isActive).sort(by((r) => sortOf(r), (r) => r.id)).map((x) => ({ id: x.id, kind: x.x.kind ?? 'office', name: pick(x.title, x.x.nameEn, en), description: pick(x.body, x.x.descriptionEn, en), capacity: x.x.capacity ?? null, areaSqm: x.x.areaSqm ?? null, price: pick(x.x.priceAr, x.x.priceEn, en), isAvailable: x.x.isAvailable !== false, imageUrl: this.storage.url(x.images[0] ?? null) })),
     };
+  }
+
+  // ---------------------------------------------------------------- used by the dashboard forms (get2trade-booking / get2trade-inquiry)
+  /** options of a dropdown that is filled from the spaces / packages (active ones, in the order of the page) */
+  async formOptions(source: 'g2t_spaces' | 'g2t_packages') {
+    const rows = await this.store.list(source === 'g2t_spaces' ? CC.G2T_SPACE : CC.G2T_PACKAGE);
+    return rows.filter(isActive).sort(by((r) => sortOf(r), (r) => r.id)).map((r) => ({ value: String(r.id), ar: r.title, en: s(r.x.nameEn) || undefined }));
+  }
+
+  async isBookingOpen() {
+    return (await this.settingsRow()).isOpen;
+  }
+
+  /**
+   * The rules that used to be in book(), now applied to the requests of the dashboard forms: booking closed, space missing / not available / too small,
+   * package missing, and one request in progress per e-mail and space. Runs inside the forms engine's transaction.
+   */
+  async checkSelection(m: EntityManager, a: { kind: 'booking' | 'inquiry'; spaceId: number | null; packageId: number | null; people: number | null; email: string | null }) {
+    if (a.kind === 'booking' && !(await this.isBookingOpen())) throw new BadRequestException('باب الحجز مغلق حالياً، يمكنك إرسال استفسار');
+    let space: ReturnType<Get2TradeService['spaceView']> | null = null;
+    let pack: ReturnType<Get2TradeService['presentPackage']> | null = null;
+    if (a.spaceId) {
+      const r = await this.store.get(a.spaceId, CC.G2T_SPACE);
+      space = r && isActive(r) ? this.spaceView(r) : null;
+      if (!space) throw new BadRequestException('المساحة غير موجودة');
+      if (a.kind === 'booking' && !space.isAvailable) throw new BadRequestException('هذه المساحة غير متاحة حالياً');
+      if (a.people && space.capacity && a.people > space.capacity) throw new BadRequestException(`سعة هذه المساحة ${space.capacity} أشخاص`);
+    }
+    if (a.packageId) {
+      const r = await this.store.get(a.packageId, CC.G2T_PACKAGE);
+      pack = r && isActive(r) ? this.presentPackage(r) : null;
+      if (!pack) throw new BadRequestException('الباقة غير موجودة');
+    }
+    if (a.email) {
+      const open = await m.query(
+        `SELECT 1 FROM form_submissions s JOIN form_definitions f ON f.id = s.form_id WHERE f.context_type = 'g2t' AND s.applicant_email = $1 AND COALESCE(s.context->>'spaceId', '') = $2 AND s.status IN ('new', 'in_review') LIMIT 1`,
+        [a.email, space ? String(space.id) : ''],
+      );
+      if (open.length) throw new ConflictException('لديك طلب قيد المعالجة بهذا البريد لنفس المساحة');
+    }
+    return { spaceId: space?.id ?? null, spaceName: space?.nameAr ?? null, spaceKind: space?.kind ?? null, packageId: pack?.id ?? null, packageName: pack?.nameAr ?? null };
   }
 
   // ---------------------------------------------------------------- public: booking / inquiry

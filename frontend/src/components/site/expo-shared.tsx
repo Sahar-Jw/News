@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, inputCls } from '@/components/ui/ui';
+import { FormBySlug } from '@/components/site/dynamic-form';
 import { useSite } from '@/components/site/site-context';
 import { readBrandedPageLinks } from '@/lib/branded-page-links';
 import { EMAIL_RE, PHONE_RE } from '@/components/site/training-shared';
@@ -77,112 +77,13 @@ const REQUIRED: Record<(typeof APPLICATION_KINDS)[number], FieldKey[]> = {
 const MAX_PROFILE = 10 * 1024 * 1024;
 
 /**
- * The three EXPO request forms → POST /public/expo/apply (multipart):
- * exhibitor (company, contact person, job title, phone, e-mail, country, city, business field, products, area, stand type, notes, optional profile file),
- * visitor (three-part name, company if any, job title, phone, e-mail, country, city, field, interest), information request (three-part name, company if any,
- * phone, e-mail, inquiry type, text). The same required fields are checked by the API.
+ * The three EXPO request forms (exhibitor / visitor / information) are dashboard forms: "expo-exhibitor", "expo-visitor", "expo-info" (Forms → Forms).
+ * `sectors` (suggestions) is no longer used: the sector is a normal text field of the form.
  */
-export function ApplyForm({ kind, sectors }: { kind: (typeof APPLICATION_KINDS)[number]; sectors: string[] }) {
-  const { t, lang } = useI18n();
-  const ar = lang === 'ar';
-  const tr = (a: string, e: string) => (ar ? a : e);
-  const [f, setF] = useState<V>(EMPTY);
-  const [file, setFile] = useState<File | null>(null);
-  const [fileKey, setFileKey] = useState(0);
-  const [errors, setErrors] = useState<Partial<Record<FieldKey | 'file', string>>>({});
-  const [serverError, setServerError] = useState('');
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { setF(EMPTY); setFile(null); setFileKey((k) => k + 1); setErrors({}); setServerError(''); setDone(false); }, [kind]);
-
-  const set = (k: FieldKey, v: string) => { setF((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); setServerError(''); };
-  const req = (k: FieldKey) => REQUIRED[kind].includes(k);
-  const L = (k: FieldKey, label: string) => `${label}${req(k) ? ' *' : ''}`;
-  const pickFile = (picked: File | null) => {
-    setErrors((p) => ({ ...p, file: undefined }));
-    if (!picked) return setFile(null);
-    if (!/\.(pdf|docx?)$/i.test(picked.name)) { setErrors((p) => ({ ...p, file: tr('الملف يجب أن يكون PDF أو Word', 'The file must be PDF or Word') })); setFileKey((k) => k + 1); return setFile(null); }
-    if (picked.size > MAX_PROFILE) { setErrors((p) => ({ ...p, file: tr('حجم الملف يتجاوز 10 ميغابايت', 'The file is larger than 10 MB') })); setFileKey((k) => k + 1); return setFile(null); }
-    setFile(picked);
-  };
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err: typeof errors = {};
-    for (const k of REQUIRED[kind]) if (!f[k].trim()) err[k] = tr('هذا الحقل مطلوب', 'This field is required');
-    if (!err.name && kind !== 'exhibitor' && f.name.trim().split(/\s+/).length < 3) err.name = tr('أدخل الاسم الثلاثي', 'Enter the three-part name');
-    if (!err.email && (!EMAIL_RE.test(f.email.trim()) || f.email.trim().length > 190)) err.email = t('tr.emailInvalid');
-    if (!err.phone && !PHONE_RE.test(f.phone.trim())) err.phone = t('tr.phoneInvalid');
-    if (kind === 'info' && !err.message && f.message.trim().length < 3) err.message = t('contact.err.messageRequired');
-    setErrors(err);
-    if (Object.keys(err).length) return;
-    setBusy(true);
-    setServerError('');
-    try {
-      const fd = new FormData();
-      fd.set('kind', kind);
-      for (const k of Object.keys(EMPTY) as FieldKey[]) if (f[k].trim()) fd.set(k, f[k].trim());
-      if (kind === 'exhibitor' && file) fd.set('profile', file);
-      await api('/public/expo/apply', { method: 'POST', form: fd });
-      setDone(true);
-    } catch (e2: any) { setServerError(e2.message); }
-    finally { setBusy(false); }
-  };
-
-  const text = (k: FieldKey, label: string, extra: { type?: string; dir?: 'ltr'; max?: number; auto?: string; list?: string } = {}) => (
-    <Field label={L(k, label)} error={errors[k]}><input type={extra.type} dir={extra.dir} list={extra.list} className={inputCls} maxLength={extra.max ?? 150} autoComplete={extra.auto} aria-invalid={!!errors[k]} value={f[k]} onChange={(e) => set(k, e.target.value)} /></Field>
-  );
-  const select = (k: 'participationType' | 'interest' | 'inquiryType', label: string) => (
-    <Field label={L(k, label)} error={errors[k]}>
-      <select className={inputCls} aria-invalid={!!errors[k]} value={f[k]} onChange={(e) => set(k, e.target.value)}>
-        <option value="">—</option>{Object.keys(OPTIONS[k]).map((v) => <option key={v} value={v}>{expoOption(k, v, ar)}</option>)}
-      </select>
-    </Field>
-  );
-
-  if (done) return <p role="status" className="rounded-2xl bg-emerald-50 px-5 py-4 text-center text-sm font-semibold text-emerald-700">{t('ex.f.done')}</p>;
-  return (
-    <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-      {kind === 'exhibitor' && <>
-        {text('company', tr('اسم الشركة أو المؤسسة', 'Company / organization name'), { max: 190, auto: 'organization' })}
-        {text('name', tr('اسم الشخص المسؤول', 'Contact person'), { auto: 'name' })}
-        {text('jobTitle', tr('الصفة الوظيفية', 'Job title'), { auto: 'organization-title' })}
-      </>}
-      {kind !== 'exhibitor' && <>
-        {text('name', tr('الاسم الثلاثي', 'Full name (three parts)'), { auto: 'name' })}
-        {text('company', tr('اسم الشركة أو المؤسسة (إن وجد)', 'Company / organization (if any)'), { max: 190, auto: 'organization' })}
-        {kind === 'visitor' && text('jobTitle', tr('المسمى الوظيفي', 'Job title'), { auto: 'organization-title' })}
-      </>}
-      {text('phone', t('site.phone'), { type: 'tel', dir: 'ltr', max: 30, auto: 'tel' })}
-      {text('email', t('contact.email'), { type: 'email', dir: 'ltr', max: 190, auto: 'email' })}
-      {kind !== 'info' && <>
-        {text('country', tr('الدولة', 'Country'), { max: 100, auto: 'country-name' })}
-        {text('city', tr('المدينة', 'City'), { max: 100, auto: 'address-level2' })}
-        <datalist id="expo-sectors">{sectors.map((x) => <option key={x} value={x} />)}</datalist>
-        {text('sector', kind === 'exhibitor' ? tr('مجال عمل الشركة', 'Business field of the company') : tr('مجال العمل أو الاختصاص', 'Field of work / specialization'), { list: 'expo-sectors' })}
-      </>}
-      {kind === 'exhibitor' && <>
-        <div className="sm:col-span-2"><Field label={L('products', tr('المنتجات أو الخدمات التي ترغب الشركة في عرضها', 'Products or services you wish to exhibit'))} error={errors.products}><textarea rows={3} className={inputCls} maxLength={3000} aria-invalid={!!errors.products} value={f.products} onChange={(e) => set('products', e.target.value)} /></Field></div>
-        {text('area', tr('المساحة المطلوبة للمشاركة (م²)', 'Required area (m²)'), { max: 40 })}
-        {select('participationType', tr('نوع الجناح أو المشاركة', 'Stand / participation type'))}
-        <div className="sm:col-span-2"><Field label={tr('ملاحظات إضافية', 'Additional notes')}><textarea rows={3} className={inputCls} maxLength={3000} value={f.message} onChange={(e) => set('message', e.target.value)} /></Field></div>
-        <div className="sm:col-span-2">
-          <Field label={tr('ملف التعريف بالشركة (اختياري - PDF أو Word حتى 10 ميغابايت)', 'Company profile (optional - PDF or Word, up to 10 MB)')} error={errors.file}>
-            <input key={fileKey} type="file" accept=".pdf,.doc,.docx,application/pdf" className={inputCls} onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-          </Field>
-        </div>
-      </>}
-      {kind === 'visitor' && select('interest', tr('طبيعة الاهتمام بالمعرض', 'Interest in the expo'))}
-      {kind === 'info' && <>
-        {select('inquiryType', tr('نوع الاستفسار', 'Inquiry type'))}
-        <div className="sm:col-span-2"><Field label={L('message', tr('نص الاستفسار أو المعلومات المطلوبة', 'Your inquiry / the information you need'))} error={errors.message}><textarea rows={4} className={inputCls} maxLength={3000} aria-invalid={!!errors.message} value={f.message} onChange={(e) => set('message', e.target.value)} /></Field></div>
-      </>}
-      {serverError && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 sm:col-span-2">{serverError}</p>}
-      <div className="sm:col-span-2"><Button disabled={busy}>{busy ? tr('جارٍ الإرسال…', 'Sending…') : t('tr.send')}</Button></div>
-    </form>
-  );
+export function ApplyForm({ kind }: { kind: (typeof APPLICATION_KINDS)[number]; sectors?: string[] }) {
+  return <FormBySlug key={kind} slug={`expo-${kind}`} />;
 }
 
-/** the small gold underline used under every EXPO heading */
 export function Heading({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
     <header className="mb-6 text-center">

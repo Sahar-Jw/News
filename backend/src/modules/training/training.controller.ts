@@ -249,22 +249,7 @@ export class TrainingPublicController {
     return this.service.publicOne(id, lang === 'en' ? 'en' : 'ar');
   }
 
-  // 5 registrations / minute / IP, like the contact form
-  @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @Post('courses/:id/register')
-  @HttpCode(200)
-  register(@Param('id', ParseIntPipe) id: number, @Body() dto: RegisterDto) {
-    return this.service.register(id, dto);
-  }
+  // The public form of this page is now managed from the dashboard (Forms): POST /public/forms/<slug>/submit. The old endpoint was removed so no request lands in a table nobody reads.
 
-  // 3 applications / 10 minutes / IP: a real applicant sends one. Files: "cv" (1, required) and "certificates" (optional).
-  @Public()
-  @Throttle({ default: { limit: 3, ttl: 600_000 } })
-  @Post('trainer-applications')
-  @HttpCode(200)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'cv', maxCount: 1 }, { name: 'certificates', maxCount: MAX_CERTIFICATES }], { storage: memoryStorage(), limits: { fileSize: MAX_DOC_BYTES, files: 1 + MAX_CERTIFICATES, fieldSize: 1024 * 1024 } }))
-  applyAsTrainer(@Body() dto: TrainerApplyDto, @UploadedFiles() files: { cv?: Express.Multer.File[]; certificates?: Express.Multer.File[] } | undefined) {
-    return this.trainerApplications.apply(dto, files?.cv?.[0], files?.certificates ?? []);
-  }
+  // The public form of this page is now managed from the dashboard (Forms): POST /public/forms/<slug>/submit. The old endpoint was removed so no request lands in a table nobody reads.
 }

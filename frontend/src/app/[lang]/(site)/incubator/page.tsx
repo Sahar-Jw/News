@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { FormBySlug } from '@/components/site/dynamic-form';
 import { Pager } from '@/components/site/pager';
 import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 import { Card, NewsCard, Thumb } from '@/components/site/cards';
@@ -50,57 +51,9 @@ export default function IncubatorPage() {
   }, [lang, topic]);
 
   const [showForm, setShowForm] = useState(false);
-  const [f, setF] = useState<V>(EMPTY);
-  const [errors, setErrors] = useState<Err>({});
-  const [profile, setProfile] = useState<File | null>(null);
-  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
-  const [confirmData, setConfirmData] = useState(false);
-  const [ref, setRef] = useState('');
-  const picker = useRef<HTMLInputElement>(null);
-  const [serverError, setServerError] = useState('');
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const set = (k: keyof V, v: string) => { setF((p) => ({ ...p, [k]: v })); setErrors((p) => ({ ...p, [k]: undefined })); setServerError(''); };
-  // the "submit your project" form opens in a window on top of the page
-  const start = () => { setDone(false); setShowForm(true); };
-  const closeForm = () => { setShowForm(false); setDone(false); };
-
-  const pickProfile = (list: FileList | null) => {
-    const file = list?.[0] ?? null;
-    if (file && file.size > MAX_DOC) { setErrors((p) => ({ ...p, profile: t('inc.fileTooBig') })); if (picker.current) picker.current.value = ''; return; }
-    setProfile(file);
-    setErrors((p) => ({ ...p, profile: undefined }));
-  };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err: Err = {};
-    if (f.projectName.trim().length < 2) err.projectName = t('inc.projectReq');
-    if (!THREE_PART_NAME_RE.test(f.founderName.trim())) err.founderName = t('inc.founderReq');
-    if (!EMAIL_RE.test(f.email.trim()) || f.email.trim().length > 190) err.email = t('tr.emailInvalid');
-    if (!PHONE_RE.test(f.phone.trim())) err.phone = t('tr.phoneInvalid');
-    for (const k of REQUIRED) if (f[k].trim().length < 2) err[k] = t('inc.fieldReq');
-    if (f.description.trim().length < 10) err.description = t('inc.descReq');
-    if (f.feasibility.trim().length < 10) err.feasibility = t('inc.descReq');
-    if (!acceptPrivacy || !confirmData) err.accept = t('inc.acceptReq');
-    setErrors(err);
-    if (Object.keys(err).length) return;
-    const fd = new FormData();
-    for (const [k, v] of Object.entries(f)) fd.set(k, v.trim());
-    fd.set('acceptPrivacy', 'true');
-    fd.set('confirmData', 'true');
-    fd.set('lang', lang);
-    if (profile) fd.set('profile', profile);
-    setBusy(true);
-    setServerError('');
-    try {
-      const r = await api<{ reference?: string }>('/public/incubator/apply', { method: 'POST', form: fd });
-      setRef(r.reference ?? '');
-      setDone(true);
-      setF(EMPTY); setProfile(null); setAcceptPrivacy(false); setConfirmData(false);
-    } catch (e2: any) { setServerError(e2.message); }
-    finally { setBusy(false); }
-  };
+  // the "submit your project" form opens in a window on top of the page; its fields are the dashboard form "incubator-application" (Forms → Forms)
+  const start = () => setShowForm(true);
+  const closeForm = () => setShowForm(false);
 
   const card = (title: string, body: React.ReactNode, id?: string) => (
     <section id={id} className="scroll-mt-24 rounded-2xl bg-white p-6 shadow-card ring-1 ring-line">
@@ -234,32 +187,7 @@ export default function IncubatorPage() {
       )}
 
       <Modal open={showForm && open} onClose={closeForm} title={t('inc.submit')} wide>
-        {done ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">{t('inc.done')}{ref && <> {t('inc.reference')}: <b dir="ltr">{ref}</b></>}</p> : (
-            <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
-              <Field label={t('inc.founder')} error={errors.founderName}><input className={inputCls} maxLength={150} autoComplete="name" aria-invalid={!!errors.founderName} value={f.founderName} onChange={(e) => set('founderName', e.target.value)} /></Field>
-              <Field label={t('inc.project')} error={errors.projectName}><input className={inputCls} maxLength={190} aria-invalid={!!errors.projectName} value={f.projectName} onChange={(e) => set('projectName', e.target.value)} /></Field>
-              <Field label={t('site.phone')} error={errors.phone}><input type="tel" dir="ltr" className={inputCls} maxLength={30} autoComplete="tel" aria-invalid={!!errors.phone} value={f.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-              <Field label={t('contact.email')} error={errors.email}><input type="email" dir="ltr" className={inputCls} maxLength={190} autoComplete="email" aria-invalid={!!errors.email} value={f.email} onChange={(e) => set('email', e.target.value)} /></Field>
-              <Field label={t('inc.sector')} error={errors.sector}><input className={inputCls} maxLength={150} aria-invalid={!!errors.sector} value={f.sector} onChange={(e) => set('sector', e.target.value)} /></Field>
-              <Field label={t('inc.stage')} error={errors.stage}><select className={inputCls} aria-invalid={!!errors.stage} value={f.stage} onChange={(e) => set('stage', e.target.value)}><option value="">—</option>{['idea', 'prototype', 'launched'].map((x) => <option key={x} value={x}>{t(`inc.stage.${x}`)}</option>)}</select></Field>
-              <div className="sm:col-span-2"><Field label={t('inc.description')} error={errors.description}><textarea rows={4} className={inputCls} maxLength={5000} aria-invalid={!!errors.description} value={f.description} onChange={(e) => set('description', e.target.value)} /></Field></div>
-              <div className="sm:col-span-2"><Field label={t('inc.feasibility')} error={errors.feasibility}><textarea rows={4} className={inputCls} maxLength={5000} aria-invalid={!!errors.feasibility} value={f.feasibility} onChange={(e) => set('feasibility', e.target.value)} /></Field></div>
-              <Field label={t('inc.audience')} error={errors.targetAudience}><textarea rows={3} className={inputCls} maxLength={3000} aria-invalid={!!errors.targetAudience} value={f.targetAudience} onChange={(e) => set('targetAudience', e.target.value)} /></Field>
-              <Field label={t('inc.team')}><textarea rows={3} className={inputCls} maxLength={3000} value={f.team} onChange={(e) => set('team', e.target.value)} /></Field>
-              <div className="sm:col-span-2"><Field label={t('inc.needs')} error={errors.needs}><textarea rows={3} className={inputCls} maxLength={3000} aria-invalid={!!errors.needs} value={f.needs} onChange={(e) => set('needs', e.target.value)} /></Field></div>
-              <div className="sm:col-span-2">
-                <Field label={t('inc.profile')} hint={t('inc.profileHint')} error={errors.profile}><input ref={picker} type="file" accept=".pdf,.doc,.docx" className={inputCls} aria-invalid={!!errors.profile} onChange={(e) => pickProfile(e.target.files)} /></Field>
-                {profile && <p className="mt-1 truncate rounded-lg bg-canvas px-3 py-1.5 text-sm">{profile.name}</p>}
-              </div>
-              <div className="space-y-2 text-sm sm:col-span-2">
-                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={acceptPrivacy} onChange={(e) => { setAcceptPrivacy(e.target.checked); setErrors((p) => ({ ...p, accept: undefined })); }} /><span>{t('inc.acceptPrivacy')} <Link href={href('/privacy')} target="_blank" className="font-semibold text-primary hover:underline">{t('site.privacy')}</Link></span></label>
-                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={confirmData} onChange={(e) => { setConfirmData(e.target.checked); setErrors((p) => ({ ...p, accept: undefined })); }} /><span>{t('inc.confirmData')}</span></label>
-                {errors.accept && <p role="alert" className="text-xs text-red-600">{errors.accept}</p>}
-              </div>
-              {serverError && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 sm:col-span-2">{serverError}</p>}
-              <div className="sm:col-span-2"><Button disabled={busy}>{busy ? t('app.sending') : t('tr.send')}</Button></div>
-            </form>
-          )}
+        <FormBySlug slug="incubator-application" doneExtra={<Button type="button" onClick={closeForm}>{t('app.close')}</Button>} />
       </Modal>
     </div>
   );

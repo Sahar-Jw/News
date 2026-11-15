@@ -118,3 +118,14 @@ BACKUP_ENCRYPTION_KEY=... npm run backup:restore:prod -- /path/backup-YYYYMMDD-H
 tar -xzf backup-….files.tar.gz -C "$STORAGE_DIR"   # an encrypted archive must be decrypted first (AES-256-GCM: "DCCBK1" | iv 12 B | data | tag 16 B)
 ```
 It runs in one transaction: a wrong key, a damaged file or a missing table changes nothing.
+
+## The old hard-coded forms are now dashboard forms
+
+Membership, trainer application, course registration, incubator, EXPO (exhibitor / visitor / information) and Get2Trade (booking / inquiry) are forms of **Settings → Forms & requests → Forms**, with these slugs: `membership`, `trainer-application`, `course-registration`, `incubator-application`, `expo-exhibitor`, `expo-visitor`, `expo-info`, `get2trade-booking`, `get2trade-inquiry`. Their public pages keep their layout (texts, conditions, tabs); only the form inside is drawn from the form definition, so fields, labels, required / optional, options, attachments, statuses and categories are edited from the dashboard.
+
+- **Migration `1767100000000-MoveLegacyFormsToDynamicForms`** (run `migration:run:prod`, then `seed:prod`): creates the nine definitions; copies every existing request (answers, status, notes, dates, attachments, linked course / space) into the new requests table; copies the staff notification e-mail from the old settings; gives the new permissions to every role that had the matching old ones. Idempotent. The old tables are left untouched as an archive; the old admin tabs now open the new Requests screen filtered to that form.
+- **Rules that still apply (server-side):** course registration needs an open course with seats left (checked under a lock) and one registration per e-mail and course; Get2Trade booking needs the booking switch open, an available space big enough for the people count, an existing package, a start date not in the past, a full duration (number + unit) and no other request in progress for the same e-mail and space; incubator needs the "I confirm" box; trainer application and membership allow one request in progress per e-mail (trainer) / none (membership); the EXPO / incubator forms ignore an identical repeat within 10 minutes.
+- **Keep these field keys** when editing those forms: `space`, `package`, `people`, `duration_value`, `duration_unit` (Get2Trade rules), and the form slugs (the pages load them by slug). Other fields can be renamed, added or deleted freely.
+- **Removed public endpoints:** `POST /public/membership/apply`, `/public/training/courses/:id/register`, `/public/training/trainer-applications`, `/public/incubator/apply`, `/public/expo/apply`, `/public/get2trade/bookings`. All requests now go to `POST /public/forms/<slug>/submit`.
+- **Course seat counts** (public course pages, "full" status) now count the requests of the `course-registration` form.
+- Reference numbers change format (`FRM-YYYY-00042`); old references stay only in the archive tables.

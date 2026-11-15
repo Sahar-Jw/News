@@ -34,7 +34,21 @@ export interface FieldDef {
   maxSizeMb?: number;
   /** show this field only when another field has this value */
   showIf?: { key: string; equals: string };
+  /** text: at least three words (first, father, family name) */
+  threeParts?: boolean;
+  /** date: today or later */
+  notPast?: boolean;
+  /** select / radio: the options come from the chamber's own records (e.g. the Get2Trade spaces), filled in when the form is opened and checked when it is sent */
+  optionsSource?: OptionsSource;
 }
+export const OPTIONS_SOURCES = ['g2t_spaces', 'g2t_packages'] as const;
+export type OptionsSource = (typeof OPTIONS_SOURCES)[number];
+/** a form can be tied to a record of another part of the system (the course being registered for, the space being booked) */
+export const CONTEXT_TYPES = ['course', 'g2t'] as const;
+export type ContextType = (typeof CONTEXT_TYPES)[number];
+/** what to do when the same e-mail sends the same form again */
+export const DEDUPE_MODES = ['open-email', 'context-email', 'recent-email'] as const;
+export type DedupeMode = (typeof DEDUPE_MODES)[number];
 
 export interface FormStatus { key: string; ar: string; en?: string; color?: string }
 export interface FormCategory { key: string; ar: string; en?: string }
@@ -112,7 +126,11 @@ export function cleanFields(input: unknown): FieldDef[] {
       if (!['text', 'email', 'phone'].includes(type)) throw new BadRequestException('دور الحقل يلزمه حقل نصي أو بريد أو هاتف');
       f.role = r.role;
     }
-    if (['select', 'radio', 'multiselect'].includes(type)) {
+    if (['select', 'radio'].includes(type) && r.optionsSource) {
+      if (!OPTIONS_SOURCES.includes(r.optionsSource)) throw new BadRequestException(`مصدر الخيارات غير معروف في "${key}"`);
+      f.optionsSource = r.optionsSource;
+      f.options = []; // filled from the records when the form is shown
+    } else if (['select', 'radio', 'multiselect'].includes(type)) {
       if (!Array.isArray(r.options) || r.options.length < 1) throw new BadRequestException(`الحقل "${key}" يحتاج خياراً واحداً على الأقل`);
       if (r.options.length > 100) throw new BadRequestException('الحد الأقصى 100 خيار');
       const vals = new Set<string>();
@@ -138,7 +156,9 @@ export function cleanFields(input: unknown): FieldDef[] {
       const maxLength = num(r.maxLength, 'الحد الأعلى للطول');
       if (minLength !== undefined) f.minLength = Math.max(0, Math.floor(minLength));
       if (maxLength !== undefined) f.maxLength = Math.min(20000, Math.max(1, Math.floor(maxLength)));
+      if (type === 'text' && r.threeParts) f.threeParts = true;
     }
+    if (type === 'date' && r.notPast) f.notPast = true;
     if (type === 'file') {
       const kinds: FileKind[] = Array.isArray(r.fileKinds) ? r.fileKinds.filter((k: any) => FILE_KINDS.includes(k)) : [];
       f.fileKinds = kinds.length ? [...new Set(kinds)] : ['image', 'pdf', 'doc'];
@@ -240,6 +260,7 @@ function validateValue(f: FieldDef, raw: unknown): any {
       const max = f.maxLength ?? (f.type === 'text' ? 300 : 5000);
       if (s.length > max) throw new BadRequestException(`"${name}" أطول من ${max} حرفاً`);
       if (f.minLength && s.length < f.minLength) throw new BadRequestException(`"${name}" أقصر من ${f.minLength} أحرف`);
+      if (f.threeParts && (s.match(/\S+/g) ?? []).length < 3) throw new BadRequestException(`اكتب الاسم الثلاثي في "${name}"`);
       return s;
     }
     case 'number': {
@@ -269,6 +290,7 @@ function validateValue(f: FieldDef, raw: unknown): any {
     case 'date': {
       const s = String(raw).trim();
       if (!DATE_RE.test(s) || Number.isNaN(new Date(s).getTime())) throw new BadRequestException(`التاريخ في "${name}" غير صالح`);
+      if (f.notPast && s < new Date().toISOString().slice(0, 10)) throw new BadRequestException(`التاريخ في "${name}" لا يمكن أن يكون في الماضي`);
       return s;
     }
     case 'select':
@@ -282,8 +304,11 @@ function validateValue(f: FieldDef, raw: unknown): any {
       if (new Set(arr).size !== arr.length || arr.some((v) => !f.options?.some((o) => o.value === v))) throw new BadRequestException(`خيار غير صالح في "${name}"`);
       return arr;
     }
-    case 'checkbox':
-      return raw === true || raw === 'true' || raw === 'on' || raw === '1' || raw === 1;
+    case 'checkbox': {
+      const on = raw === true || raw === 'true' || raw === 'on' || raw === '1' || raw === 1;
+      if (f.required && !on) throw new BadRequestException(`الحقل "${name}" مطلوب`);
+      return on;
+    }
     default:
       return undefined;
   }

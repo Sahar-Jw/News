@@ -13,5 +13,6 @@ import { TrainingService } from './training.service';
   imports: [TypeOrmModule.forFeature([CourseRegistration, TrainerApplication, SiteSetting]), FilesModule],
   controllers: [CoursesAdminController, TrainersAdminController, RegistrationsAdminController, TrainerApplicationsAdminController, TrainingPublicController],
   providers: [TrainingService, TrainersService, TrainerApplicationsService],
+  exports: [TrainingService],
 })
 export class TrainingModule {}

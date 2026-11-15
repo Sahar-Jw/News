@@ -9,5 +9,6 @@ import { Get2TradeService } from './get2trade.service';
   imports: [TypeOrmModule.forFeature([Get2TradeSettings, G2tBooking]), FilesModule],
   controllers: [Get2TradeAdminController, Get2TradePublicController],
   providers: [Get2TradeService],
+  exports: [Get2TradeService],
 })
 export class Get2TradeModule {}

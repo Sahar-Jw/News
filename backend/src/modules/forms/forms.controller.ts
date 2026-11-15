@@ -139,9 +139,9 @@ export class FormsPublicController {
     return this.service.publicOne(slug);
   }
 
-  // 10 submissions / 10 minutes / IP; every file field of the form arrives as f_<fieldKey>
+  // 20 submissions / 10 minutes / IP (a class registering on one Wi-Fi must not be blocked); every file field of the form arrives as f_<fieldKey>
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 600_000 } })
+  @Throttle({ default: { limit: 20, ttl: 600_000 } })
   @Post(':slug/submit')
   @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 60, fieldSize: 512 * 1024, fields: 10 } }))
   submit(@Param('slug') slug: string, @Body() dto: SubmitFormDto, @UploadedFiles() files: Express.Multer.File[] | undefined) {

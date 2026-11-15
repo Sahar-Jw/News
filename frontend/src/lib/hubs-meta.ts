@@ -28,14 +28,14 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'training', ar: 'مركز التدريب', en: 'Training center', hintAr: 'الدورات والمدربون والمتدربون وطلبات المدربين ونصوص الصفحة', hintEn: 'Courses, trainers, trainees, trainer applications and page texts', icon: '✎', color: '#2563eb',
-    tabs: [{ key: 'courses', ar: 'الدورات', en: 'Courses', perms: ['courses.read'] }, { key: 'trainers', ar: 'المدربون', en: 'Trainers', perms: ['courses.read'] }, { key: 'trainees', ar: 'المتدربون', en: 'Trainees', perms: ['registrations.read'] }, { key: 'trainerApps', ar: 'طلبات المدربين', en: 'Trainer applications', perms: ['registrations.read'] }, settings(['training'])],
+    tabs: [{ key: 'courses', ar: 'الدورات', en: 'Courses', perms: ['courses.read'] }, { key: 'trainers', ar: 'المدربون', en: 'Trainers', perms: ['courses.read'] }, { key: 'trainees', ar: 'المتدربون', en: 'Trainees', perms: ['forms.submissions.read'] }, { key: 'trainerApps', ar: 'طلبات المدربين', en: 'Trainer applications', perms: ['forms.submissions.read'] }, settings(['training'])],
   },
   {
     key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO', hintAr: 'موقع المعرض المستقل: المحتوى والعارضون والبرنامج والطلبات والهوية والقائمة', hintEn: 'The separate EXPO site: content, exhibitors, programme, requests, identity and menus', icon: '◈', color: '#4b1d7a',
     tabs: [
       { key: 'about', ar: 'التعريف بالمعرض', en: 'About', perms: S }, { key: 'sectors', ar: 'القطاعات', en: 'Sectors', perms: S },
       { key: 'exhibitors', ar: 'العارضون', en: 'Exhibitors', perms: ['expo.read'] }, { key: 'sessions', ar: 'البرنامج', en: 'Programme', perms: ['expo.read'] },
-      { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['expo.applications.read'] },
+      { key: 'sponsors', ar: 'الرعاة والشركاء', en: 'Sponsors', perms: ['expo.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] },
       { key: 'faqs', ar: 'الأسئلة الشائعة', en: 'FAQs', perms: ['faqs.read'] }, { key: 'info', ar: 'المعلومات والتسجيل', en: 'Info & registration', perms: S },
       { key: 'contact', ar: 'التواصل والفريق', en: 'Contact & team', perms: S }, { key: 'identity', ar: 'الهوية والمظهر', en: 'Identity & theme', perms: S },
       { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S },
@@ -47,15 +47,15 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'membership', ar: 'الانتساب والخدمات', en: 'Membership & services', hintAr: 'خدمات الغرفة وطلبات الانتساب ومحتوى الصفحة', hintEn: 'Chamber services, membership requests and page content', icon: '☑', color: '#0f766e',
-    tabs: [{ key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['membership.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['membership.read'] }],
+    tabs: [{ key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['membership.read'] }],
   },
   {
     key: 'incubator', ar: 'حاضنة الأعمال', en: 'Business incubator', hintAr: 'المشاريع والطلبات ونصوص الصفحة', hintEn: 'Projects, requests and page texts', icon: '❖', color: '#c7878d',
-    tabs: [{ key: 'projects', ar: 'المشاريع', en: 'Projects', perms: ['incubator.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['incubator.applications.read'] }, settings(['incubator'])],
+    tabs: [{ key: 'projects', ar: 'المشاريع', en: 'Projects', perms: ['incubator.read'] }, { key: 'applications', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] }, settings(['incubator'])],
   },
   {
     key: 'get2trade', ar: 'غيت تو تريد', en: 'Get2Trade', hintAr: 'طلبات الحجز والمساحات والباقات ومحتوى الصفحة', hintEn: 'Booking requests, spaces, packages and page content', icon: '▣', color: '#9333ea',
-    tabs: [{ key: 'bookings', ar: 'الطلبات', en: 'Requests', perms: ['get2trade.read'] }, { key: 'spaces', ar: 'المساحات', en: 'Spaces', perms: ['get2trade.read'] }, { key: 'packages', ar: 'الباقات', en: 'Packages', perms: ['get2trade.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['get2trade.read'] }],
+    tabs: [{ key: 'bookings', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] }, { key: 'spaces', ar: 'المساحات', en: 'Spaces', perms: ['get2trade.read'] }, { key: 'packages', ar: 'الباقات', en: 'Packages', perms: ['get2trade.read'] }, { key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['get2trade.read'] }],
   },
   {
     key: 'services', ar: 'الخدمات والمواعيد', en: 'Services & appointments', hintAr: 'النافذة الواحدة والخدمات والمواعيد والعملاء', hintEn: 'One-stop window, services, appointments and customers', icon: '☰', color: '#0e7490',

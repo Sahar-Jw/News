@@ -132,13 +132,5 @@ export class IncubatorPublicController {
     return this.service.publicAll(q.lang === 'en' ? 'en' : 'ar');
   }
 
-  // 5 requests / minute / IP, like the contact form
-  @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @Post('apply')
-  @HttpCode(200)
-  @UseInterceptors(FileInterceptor('profile', { storage: memoryStorage(), limits: { fileSize: MAX_DOC_BYTES, files: 1, fieldSize: 1024 * 1024 } }))
-  apply(@Body() dto: ApplyDto, @UploadedFile() profile: Express.Multer.File | undefined) {
-    return this.service.apply(dto, profile);
-  }
+  // The public form of this page is now managed from the dashboard (Forms): POST /public/forms/<slug>/submit. The old endpoint was removed so no request lands in a table nobody reads.
 }

@@ -50,7 +50,9 @@ export class FilesController {
       const trainerDoc = rel.startsWith('private/trainers/'); // CV and certificates of a trainer application
       const incubatorDoc = rel.startsWith('private/incubator/'); // project profile / study of an incubator application
       const formDoc = rel.startsWith('private/forms/'); // attachments of a dashboard-managed form: personal documents, so the sensitive permission is needed too
-      const mayRead = formDoc ? req.user.permissions.has(PERM.FORMS_SUBMISSIONS_READ) && req.user.permissions.has(PERM.FORMS_SUBMISSIONS_SENSITIVE) : membershipDoc ? req.user.permissions.has(PERM.MEMBERSHIP_READ) : trainerDoc ? req.user.permissions.has(PERM.REGISTRATIONS_READ) : incubatorDoc ? req.user.permissions.has(PERM.INCUBATOR_APPLICATIONS_READ) : req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
+      // the requests of the old forms now live in the dashboard forms: their attachments keep their old folders, and are opened with the new permissions as well
+      const viaForms = req.user.permissions.has(PERM.FORMS_SUBMISSIONS_READ) && req.user.permissions.has(PERM.FORMS_SUBMISSIONS_SENSITIVE);
+      const mayRead = formDoc ? viaForms : (membershipDoc || trainerDoc || incubatorDoc) && viaForms ? true : membershipDoc ? req.user.permissions.has(PERM.MEMBERSHIP_READ) : trainerDoc ? req.user.permissions.has(PERM.REGISTRATIONS_READ) : incubatorDoc ? req.user.permissions.has(PERM.INCUBATOR_APPLICATIONS_READ) : req.user.permissions.has(PERM.USERS_CV_DOWNLOAD);
       const owner = membershipDoc || trainerDoc || incubatorDoc || formDoc ? null : await this.users.findOne({ where: { cvPath: rel }, select: { id: true } });
       if (!mayRead && owner?.id !== req.user.id) throw new ForbiddenException('ليست لديك صلاحية لهذا الملف');
       // only private files (CVs) are logged; public pictures are served thousands of times and are not sensitive

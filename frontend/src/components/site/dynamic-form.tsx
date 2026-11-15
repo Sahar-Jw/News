@@ -1,17 +1,17 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, FilePicker, inputCls } from '@/components/ui/ui';
+import { Button, Center, Field, FilePicker, Spinner, inputCls } from '@/components/ui/ui';
 
 export interface FieldOption { value: string; ar: string; en?: string }
 export interface FieldDef {
   key: string; type: string; labelAr: string; labelEn?: string; helpAr?: string; helpEn?: string; required?: boolean; options?: FieldOption[];
-  min?: number; max?: number; minLength?: number; maxLength?: number; sensitive?: boolean; role?: string;
+  min?: number; max?: number; minLength?: number; maxLength?: number; sensitive?: boolean; role?: string; threeParts?: boolean; notPast?: boolean; optionsSource?: string;
   fileKinds?: string[]; maxFiles?: number; maxSizeMb?: number; showIf?: { key: string; equals: string };
 }
-export interface PublicForm { slug: string; titleAr: string; titleEn?: string | null; descriptionAr?: string | null; descriptionEn?: string | null; isOpen: boolean; requireConsent: boolean; fields: FieldDef[] }
+export interface PublicForm { slug: string; titleAr: string; titleEn?: string | null; descriptionAr?: string | null; descriptionEn?: string | null; isOpen: boolean; requireConsent: boolean; contextType?: string | null; fields: FieldDef[] }
 
 const ACCEPT: Record<string, string> = { image: '.jpg,.jpeg,.png,.webp', pdf: '.pdf', doc: '.doc,.docx,.pdf' };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -23,10 +23,10 @@ export const isShown = (f: FieldDef, v: Record<string, any>) => {
 };
 
 /** Draws any form built in the dashboard. Everything it shows comes from the field list: no field is hard-coded here. */
-export function DynamicForm({ form }: { form: PublicForm }) {
+export function DynamicForm({ form, context, initial, onDone, doneExtra }: { form: PublicForm; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode }) {
   const { lang, href } = useI18n();
   const L = (ar: string, en?: string | null) => (lang === 'en' && en ? en : ar);
-  const [v, setV] = useState<Record<string, any>>({});
+  const [v, setV] = useState<Record<string, any>>(initial ?? {});
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState('');
@@ -54,6 +54,8 @@ export function DynamicForm({ form }: { form: PublicForm }) {
         else if (f.max !== undefined && n > f.max) e[f.key] = `${L('الحد الأعلى', 'Maximum')} ${f.max}`;
       }
       if ((f.type === 'text' || f.type === 'textarea') && f.minLength && String(x).trim().length < f.minLength) e[f.key] = `${L('الحد الأدنى للأحرف', 'Minimum characters')}: ${f.minLength}`;
+      if (f.threeParts && String(x).trim().split(/\s+/).length < 3) e[f.key] = L('اكتب الاسم الثلاثي (الاسم والأب والعائلة)', 'Enter your three-part name (first, father, family)');
+      if (f.type === 'date' && f.notPast && String(x) < new Date().toISOString().slice(0, 10)) e[f.key] = L('لا يمكن أن يكون التاريخ في الماضي', 'The date cannot be in the past');
     }
     if (form.requireConsent && !consent) e._consent = req;
     setErrs(e);
@@ -83,8 +85,11 @@ export function DynamicForm({ form }: { form: PublicForm }) {
       fd.set('consent', String(consent));
       fd.set('lang', lang);
       fd.set('website', website);
+      if (context) fd.set('context', JSON.stringify(context));
       for (const f of form.fields) if (f.type === 'file' && isShown(f, v)) for (const file of files[f.key] ?? []) fd.append(`f_${f.key}`, file);
-      setDone(await api(`/public/forms/${encodeURIComponent(form.slug)}/submit`, { method: 'POST', form: fd }));
+      const r = await api<{ reference: string; message: string }>(`/public/forms/${encodeURIComponent(form.slug)}/submit`, { method: 'POST', form: fd });
+      setDone(r);
+      onDone?.(r);
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   };
 
@@ -95,6 +100,7 @@ export function DynamicForm({ form }: { form: PublicForm }) {
       <div className="rounded-2xl bg-emerald-50 p-6 text-center ring-1 ring-emerald-200" role="status">
         <p className="text-lg font-bold text-emerald-800">{done.message}</p>
         {done.reference && <p className="mt-2 text-sm text-emerald-700">{L('رقم الطلب', 'Reference')}: <b dir="ltr">{done.reference}</b></p>}
+        {doneExtra && <div className="mt-4">{doneExtra}</div>}
       </div>
     );
   }
@@ -170,4 +176,18 @@ export function DynamicForm({ form }: { form: PublicForm }) {
       <div className="flex justify-end"><Button type="submit" disabled={busy}>{busy ? L('جارٍ الإرسال…', 'Sending…') : L('إرسال الطلب', 'Submit')}</Button></div>
     </form>
   );
+}
+
+/** Loads a form of the dashboard by its slug and draws it. The page around it (title, conditions, tabs) stays as it was. */
+export function FormBySlug({ slug, context, initial, onDone, doneExtra }: { slug: string; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode }) {
+  const { lang } = useI18n();
+  const [form, setForm] = useState<PublicForm | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setForm(null); setFailed(false);
+    api<PublicForm>(`/public/forms/${encodeURIComponent(slug)}`, { cache: 'no-store' }).then(setForm).catch(() => setFailed(true));
+  }, [slug]);
+  if (failed) return <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{lang === 'en' ? 'The form could not be loaded. Please try again later.' : 'تعذّر تحميل النموذج، حاول لاحقاً.'}</p>;
+  if (!form) return <Center><Spinner /></Center>;
+  return <DynamicForm form={form} context={context} initial={initial} onDone={onDone} doneExtra={doneExtra} />;
 }

@@ -1,6 +1,6 @@
 import { BeforeInsert, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TimestampedEntity } from '../../common/entities/base.entity';
-import type { FieldDef, FormIntegration, FormStatus, FormCategory } from './field-schema';
+import type { ContextType, DedupeMode, FieldDef, FormIntegration, FormStatus, FormCategory } from './field-schema';
 
 /**
  * A form built from the dashboard. Fields, statuses, categories and integrations are JSON documents, so adding / editing / deleting a field
@@ -70,6 +70,14 @@ export class FormDefinition extends TimestampedEntity {
   @Column({ type: 'jsonb', default: () => `'[]'` })
   integrations: FormIntegration[];
 
+  /** the form is tied to a record of another part of the system ("course": registering for a course, "g2t": booking a Get2Trade space); null = a plain form */
+  @Column({ name: 'context_type', type: 'varchar', length: 20, nullable: true })
+  contextType: ContextType | null;
+
+  /** what happens when the same e-mail sends it again: open-email = one request in progress per e-mail, context-email = once per e-mail and record (the course), recent-email = a repeat within 10 minutes is ignored */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  dedupe: DedupeMode | null;
+
   /** bumped on every change of the fields */
   @Column({ type: 'int', default: 1 })
   version: number;
@@ -103,6 +111,10 @@ export class FormSubmission extends TimestampedEntity {
   /** { fieldKey: value }; values of "sensitive" fields are encrypted when FORMS_ENCRYPTION_KEY is set */
   @Column({ type: 'jsonb', default: () => `'{}'` })
   answers: Record<string, any>;
+
+  /** the record the request is about: { courseId, courseName } / { spaceId, spaceName, packageId, packageName }; { legacyId } on requests moved from the old forms */
+  @Column({ type: 'jsonb', nullable: true })
+  context: Record<string, any> | null;
 
   /** copied from the fields with role name / email / phone, for the list, the search and "contact the applicant" */
   @Column({ name: 'applicant_name', type: 'varchar', length: 200, nullable: true })

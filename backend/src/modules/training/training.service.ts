@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, In, Repository } from 'typeorm';
+import { Brackets, DataSource, EntityManager, In, Repository } from 'typeorm';
 import { CC } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
@@ -60,7 +60,11 @@ export class TrainingService {
   private async counts(ids: (number | string)[]): Promise<Map<number, number>> {
     const out = new Map<number, number>();
     if (!ids.length) return out;
-    const rows: { course_id: string; n: string }[] = await this.regs.createQueryBuilder('r').select('r.course_id', 'course_id').addSelect('COUNT(*)', 'n').where('r.course_id IN (:...ids)', { ids }).groupBy('r.course_id').getRawMany();
+    // registrations are requests of the dashboard form "course-registration" (context.courseId = the course's news id)
+    const rows: { course_id: string; n: string }[] = await this.ds.query(
+      `SELECT s.context->>'courseId' AS course_id, COUNT(*) AS n FROM form_submissions s JOIN form_definitions f ON f.id = s.form_id WHERE f.slug = 'course-registration' AND s.context->>'courseId' = ANY($1) GROUP BY 1`,
+      [ids.map(String)],
+    );
     rows.forEach((r) => out.set(Number(r.course_id), Number(r.n)));
     return out;
   }
@@ -271,6 +275,21 @@ export class TrainingService {
     if (!r || !isActive(r)) throw new NotFoundException('الدورة غير موجودة');
     const n = await this.counts([id]);
     return this.card(this.view(r), n.get(id) ?? 0, lang === 'en', todayStr(), await this.trainerMap());
+  }
+
+  /**
+   * Called by the forms engine inside its transaction before a course registration is stored: locks the course (two people cannot take the last seat),
+   * refuses a closed / full / missing course and returns what the dashboard shows next to the request.
+   */
+  async checkCourseForRegistration(m: EntityManager, courseId: number) {
+    const row = await m.findOne(News, { where: { id: courseId, mainCategory: CC.COURSE }, lock: { mode: 'pessimistic_write' } });
+    if (!row || row.extra?.isActive === false) throw new NotFoundException('الدورة غير موجودة');
+    const c = this.view({ id: Number(row.id), code: row.mainCategory, title: row.title, body: row.body ?? null, images: row.images ?? [], pdf: row.pdf ?? null, finishAt: row.finishAt ?? null, x: (row.extra ?? {}) as Record<string, any>, createdAt: row.createdAt, updatedAt: row.updatedAt });
+    const [{ n }] = await m.query(`SELECT COUNT(*) AS n FROM form_submissions s JOIN form_definitions f ON f.id = s.form_id WHERE f.slug = 'course-registration' AND s.context->>'courseId' = $1`, [String(courseId)]);
+    const st = registrationStatus(c, Number(n));
+    if (st === 'full') throw new BadRequestException('اكتمل عدد المشاركين في هذه الدورة');
+    if (st !== 'open') throw new BadRequestException('التسجيل في هذه الدورة مغلق');
+    return { id: courseId, nameAr: c.nameAr, startDate: c.startDate };
   }
 
   async register(courseId: number, dto: RegisterDto) {

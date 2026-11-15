@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 
@@ -24,6 +24,7 @@ export class SaveFormDto {
   @blankToNull() @clean() @IsOptional() @IsString() @MaxLength(1000) notifyEmails?: string | null;
   @IsOptional() @IsBoolean() sendReceipt?: boolean;
   @IsOptional() @IsBoolean() requireConsent?: boolean;
+  @IsOptional() @Transform(({ value }) => (value === '' ? null : value)) @IsIn(['open-email', 'context-email', 'recent-email', null]) dedupe?: 'open-email' | 'context-email' | 'recent-email' | null;
   @IsOptional() @Transform(({ value }) => (value === '' ? null : value)) @Type(() => Number) @IsInt() @Min(1) @Max(3650) retentionDays?: number | null;
 }
 
@@ -33,6 +34,8 @@ export class DuplicateFormDto {
 
 export class SubmissionsQueryDto extends AdminListQueryDto {
   @IsOptional() @Type(() => Number) @IsInt() formId?: number;
+  /** several forms at once, comma separated (a page that shows the requests of 2-3 related forms) */
+  @IsOptional() @IsString() @MaxLength(100) @Matches(/^\d+(,\d+)*$/) formIds?: string;
   @IsOptional() @IsString() @MaxLength(40) status?: string;
   @IsOptional() @IsString() @MaxLength(40) category?: string;
   @IsOptional() @IsString() @MaxLength(10) unread?: string;
@@ -65,4 +68,6 @@ export class SubmitFormDto {
   /** honeypot: a real person never fills it */
   @IsOptional() @IsString() @MaxLength(200) website?: string;
   @IsOptional() @IsString() @MaxLength(2) lang?: string;
+  /** the record the request is about, for forms tied to one: { "courseId": 12 } (validated against the course itself) */
+  @IsOptional() @IsString() @MaxLength(500) context?: string;
 }

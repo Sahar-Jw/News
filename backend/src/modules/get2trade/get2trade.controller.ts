@@ -170,12 +170,5 @@ export class Get2TradePublicController {
     return this.service.publicPage(lang === 'en' ? 'en' : 'ar');
   }
 
-  // 3 requests / 10 minutes / IP: a real visitor sends one
-  @Public()
-  @Throttle({ default: { limit: 3, ttl: 600_000 } })
-  @Post('bookings')
-  @HttpCode(200)
-  book(@Body() dto: BookingDto) {
-    return this.service.book(dto);
-  }
+  // The public form of this page is now managed from the dashboard (Forms): POST /public/forms/<slug>/submit. The old endpoint was removed so no request lands in a table nobody reads.
 }

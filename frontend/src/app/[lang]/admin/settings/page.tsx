@@ -11,43 +11,39 @@ import { AdsAdmin } from '@/components/admin/ads-admin';
 import { AppointmentsAdmin } from '@/components/admin/appointments-admin';
 import { BoardAdmin } from '@/components/admin/board-admin';
 import { CommitteesAdmin } from '@/components/admin/committees-admin';
-import { CourseRegistrationsAdmin } from '@/components/admin/course-registrations-admin';
 import { CoursesAdmin } from '@/components/admin/courses-admin';
 import { CustomersAdmin } from '@/components/admin/customers-admin';
 import { DatesDashboard } from '@/components/admin/dates-dashboard';
 import { DocumentsAdmin } from '@/components/admin/documents-admin';
 import { ExpoAdmin } from '@/components/admin/expo-admin';
-import { ExpoApplicationsAdmin } from '@/components/admin/expo-applications-admin';
 import { ExpoSettingsAdmin } from '@/components/admin/expo-settings-admin';
 import { FaqsAdmin } from '@/components/admin/faqs-admin';
 import { FooterAdmin } from '@/components/admin/footer-admin';
 import { GalleryAdmin } from '@/components/admin/gallery-admin';
-import { G2tBookings, G2tContent, G2tPackages, G2tSpaces } from '@/components/admin/get2trade-admin';
-import { IncubatorApplicationsAdmin } from '@/components/admin/incubator-applications-admin';
+import { G2tContent, G2tPackages, G2tSpaces } from '@/components/admin/get2trade-admin';
 import { IncubatorProjectsAdmin } from '@/components/admin/incubator-projects-admin';
-import { MembershipApplications, MembershipContent } from '@/components/admin/membership-admin';
+import { MembershipContent } from '@/components/admin/membership-admin';
 import { NavAdmin } from '@/components/admin/nav-admin';
 import { OccasionsAdmin } from '@/components/admin/occasions-admin';
 import { PagesAdmin } from '@/components/admin/pages-admin';
 import { ScheduleAdmin } from '@/components/admin/schedule-admin';
 import { ServicesAdmin } from '@/components/admin/services-admin';
 import { SubscribersAdmin } from '@/components/admin/subscribers-admin';
-import { TrainerApplicationsAdmin } from '@/components/admin/trainer-applications-admin';
 import { BackupsAdmin, FormSubmissionsAdmin, FormsBuilderAdmin } from '@/components/admin/forms-admin';
 import { TrainersAdmin } from '@/components/admin/trainers-admin';
 import { WomenMenuAdmin } from '@/components/admin/women-menu-admin';
 
 /** what each tab shows: "<hub>.<tab>" (the data about hubs and tabs - names, permissions - lives in lib/hubs-meta.ts) */
 const SCREENS: Record<string, () => React.ReactNode> = {
-  'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <CourseRegistrationsAdmin />, 'training.trainerApps': () => <TrainerApplicationsAdmin />,
-  'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <ExpoApplicationsAdmin />,
+  'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <FormSubmissionsAdmin slugs={['course-registration']} />, 'training.trainerApps': () => <FormSubmissionsAdmin slugs={['trainer-application']} />,
+  'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <FormSubmissionsAdmin slugs={['expo-exhibitor', 'expo-visitor', 'expo-info']} />,
   'expo.faqs': () => <FaqsAdmin scope="expo" />,
   'expo.links': () => <WomenMenuAdmin site="expo" />,
   'expo.about': () => <ExpoSettingsAdmin section="about" />, 'expo.sectors': () => <ExpoSettingsAdmin section="sectors" />, 'expo.info': () => <ExpoSettingsAdmin section="info" />,
   'expo.contact': () => <ExpoSettingsAdmin section="contact" />, 'expo.identity': () => <ExpoSettingsAdmin section="identity" />,
-  'membership.services': () => <ServicesAdmin />, 'membership.applications': () => <MembershipApplications />, 'membership.content': () => <MembershipContent />,
-  'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <IncubatorApplicationsAdmin />,
-  'get2trade.bookings': () => <G2tBookings />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
+  'membership.services': () => <ServicesAdmin />, 'membership.applications': () => <FormSubmissionsAdmin slugs={['membership']} />, 'membership.content': () => <MembershipContent />,
+  'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <FormSubmissionsAdmin slugs={['incubator-application']} />,
+  'get2trade.bookings': () => <FormSubmissionsAdmin slugs={['get2trade-booking', 'get2trade-inquiry']} />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
   'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin kind="sector" />,
   'media.gallery': () => <GalleryAdmin />,

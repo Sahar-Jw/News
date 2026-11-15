@@ -15,7 +15,7 @@ interface Hook { name: string; url: string; secret?: string; events: string[]; e
 interface FormDef {
   id: number; slug: string; titleAr: string; titleEn: string | null; descriptionAr: string | null; descriptionEn: string | null; successAr: string | null; successEn: string | null;
   isOpen: boolean; isListed: boolean; fields: FieldDef[]; statuses: Status[]; categories: Cat[]; notifyEmails: string | null; sendReceipt: boolean; requireConsent: boolean;
-  retentionDays: number | null; integrations: Hook[]; version: number; submissionsTotal?: number; submissionsUnread?: number;
+  retentionDays: number | null; integrations: Hook[]; version: number; contextType?: string | null; dedupe?: string | null; submissionsTotal?: number; submissionsUnread?: number;
 }
 const TYPES: [string, string, string][] = [
   ['text', 'نص قصير', 'Short text'], ['textarea', 'نص طويل', 'Long text'], ['number', 'رقم', 'Number'], ['email', 'بريد إلكتروني', 'Email'], ['phone', 'هاتف', 'Phone'], ['url', 'رابط', 'Link'],
@@ -28,11 +28,15 @@ const DEFAULT_STATUSES: Status[] = [
 ];
 const NEW_FORM: Omit<FormDef, 'id' | 'version'> = {
   slug: '', titleAr: '', titleEn: '', descriptionAr: '', descriptionEn: '', successAr: '', successEn: '', isOpen: true, isListed: true, fields: [], statuses: DEFAULT_STATUSES, categories: [],
-  notifyEmails: '', sendReceipt: true, requireConsent: true, retentionDays: null, integrations: [],
+  notifyEmails: '', sendReceipt: true, requireConsent: true, retentionDays: null, integrations: [], contextType: null, dedupe: null,
 };
+/** forms that a public page of the site is built around: deleting one would leave that page without its form */
+const SYSTEM_SLUGS = ['membership', 'trainer-application', 'course-registration', 'incubator-application', 'expo-exhibitor', 'expo-visitor', 'expo-info', 'get2trade-booking', 'get2trade-inquiry'];
 const kb = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const keyOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z]+/, '');
 const move = <T,>(a: T[], i: number, d: number) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return b; [b[i], b[j]] = [b[j], b[i]]; return b; };
+/** the course / space / package a request is about */
+const ctxText = (c: Record<string, any> | null | undefined) => [c?.courseName, c?.spaceName, c?.packageName].filter(Boolean).join(' · ');
 const chip = (color?: string) => ({ backgroundColor: `${color ?? '#64748b'}22`, color: color ?? '#475569' });
 
 function useL() {
@@ -114,7 +118,18 @@ function FieldEditor({ fields, onChange }: { fields: FieldDef[]; onChange: (f: F
                     <Field label={L('أكبر عدد أحرف', 'Max length')}><input type="number" min={1} max={20000} className={inputCls} value={f.maxLength ?? ''} onChange={(e) => upd(i, { maxLength: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
                   </div>
                 )}
-                {['select', 'radio', 'multiselect'].includes(f.type) && (
+                {f.type === 'text' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!f.threeParts} onChange={(e) => upd(i, { threeParts: e.target.checked })} />{L('يشترط الاسم الثلاثي (ثلاث كلمات على الأقل)', 'Require a three-part name (at least three words)')}</label>}
+                {f.type === 'date' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!f.notPast} onChange={(e) => upd(i, { notPast: e.target.checked })} />{L('لا يقبل تاريخاً في الماضي', 'Do not accept a date in the past')}</label>}
+                {['select', 'radio'].includes(f.type) && (
+                  <Field label={L('مصدر الخيارات', 'Source of the options')}>
+                    <select className={inputCls} value={f.optionsSource ?? ''} onChange={(e) => upd(i, { optionsSource: (e.target.value || undefined) as any, options: e.target.value ? [] : f.options?.length ? f.options : [{ value: 'option_1', ar: '' }] })}>
+                      <option value="">{L('خيارات أكتبها هنا', 'Options I type here')}</option>
+                      <option value="g2t_spaces">{L('مساحات غيت تو تريد (من السجلات)', 'Get2Trade spaces (from the records)')}</option>
+                      <option value="g2t_packages">{L('باقات غيت تو تريد (من السجلات)', 'Get2Trade packages (from the records)')}</option>
+                    </select>
+                  </Field>
+                )}
+                {['select', 'radio', 'multiselect'].includes(f.type) && !f.optionsSource && (
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">{L('الخيارات', 'Options')}</p>
                     {(f.options ?? []).map((o, k) => (
@@ -182,7 +197,7 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; on
     try {
       const body = {
         slug: f.slug, titleAr: f.titleAr, titleEn: f.titleEn, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn, successAr: f.successAr, successEn: f.successEn, isOpen: f.isOpen, isListed: f.isListed,
-        fields: f.fields, statuses: f.statuses, categories: f.categories, notifyEmails: f.notifyEmails, sendReceipt: f.sendReceipt, requireConsent: f.requireConsent, retentionDays: f.retentionDays,
+        fields: f.fields, statuses: f.statuses, categories: f.categories, notifyEmails: f.notifyEmails, sendReceipt: f.sendReceipt, requireConsent: f.requireConsent, retentionDays: f.retentionDays, dedupe: f.dedupe ?? null,
         integrations: f.integrations.map(({ hasSecret, keepSecret, ...h }) => ({ ...h, keepSecret: !h.secret && !!hasSecret })),
       };
       await api(initial ? `/admin/forms/${initial.id}` : '/admin/forms', { method: initial ? 'PATCH' : 'POST', body });
@@ -199,6 +214,7 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; on
         </div>
         {tab === 'general' && (
           <div className="grid gap-3 sm:grid-cols-2">
+            {initial && SYSTEM_SLUGS.includes(initial.slug) && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 sm:col-span-2">{L('هذا النموذج تعرضه إحدى صفحات الموقع (الانتساب، التدريب، الحاضنة، EXPO، غيت تو تريد). عدّل حقوله كما تشاء، لكن لا تغيّر الرابط المختصر ولا تحذفه، ويُفضَّل ألا تغيّر معرّفات الحقول الموجودة.', 'A page of the site shows this form (membership, training, incubator, EXPO, Get2Trade). Edit its fields freely, but do not change or delete its slug, and avoid changing the keys of existing fields.')}{initial.contextType === 'course' && ` ${L('مرتبط بالدورة: يُتحقق من المقاعد المتاحة وعدم تكرار البريد.', 'Tied to the course: seats left and one registration per e-mail are checked.')}`}{initial.contextType === 'g2t' && ` ${L('مرتبط بالمساحات والباقات: حقلا المساحة والباقة (المعرّفان space و package) والعدد (people) والمدة (duration_value و duration_unit) يُتحقق منها.', 'Tied to spaces and packages: the space and package fields (keys space, package), people and duration (duration_value, duration_unit) are checked.')}`}</p>}
             <Field label={L('عنوان النموذج (عربي) *', 'Title (Arabic) *')}><input className={inputCls} value={f.titleAr} maxLength={200} onChange={(e) => up({ titleAr: e.target.value })} /></Field>
             <Field label={L('عنوان النموذج (إنكليزي)', 'Title (English)')}><input dir="ltr" className={inputCls} value={f.titleEn ?? ''} maxLength={200} onChange={(e) => up({ titleEn: e.target.value })} /></Field>
             <Field label={L('الرابط المختصر *', 'Slug *')} hint={L('يظهر في رابط النموذج: /forms/…', 'Used in the form link: /forms/…')}><input dir="ltr" className={inputCls} value={f.slug} maxLength={80} onChange={(e) => up({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })} /></Field>
@@ -247,6 +263,14 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; on
             <Field label={L('بريد الموظفين الذين يُبلَّغون بكل طلب جديد', 'Staff e-mails told about each new request')} hint={L('افصل بينها بفاصلة. لا يحتوي البريد على محتوى الطلب.', 'Comma separated. The e-mail never contains the answers.')}><input dir="ltr" className={inputCls} value={f.notifyEmails ?? ''} maxLength={1000} onChange={(e) => up({ notifyEmails: e.target.value })} /></Field>
             <Field label={L('مدة الاحتفاظ بالطلبات (أيام)', 'Keep requests for (days)')} hint={L('تُحذف الطلبات ومرفقاتها تلقائياً بعد هذه المدة. اتركه فارغاً للاحتفاظ بلا حد.', 'Requests and files are deleted automatically afterwards. Empty = keep.')}><input type="number" min={1} max={3650} className={inputCls} value={f.retentionDays ?? ''} onChange={(e) => up({ retentionDays: e.target.value === '' ? null : Number(e.target.value) })} /></Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.sendReceipt} onChange={(e) => up({ sendReceipt: e.target.checked })} />{L('إرسال إشعار استلام لصاحب الطلب (يلزم حقل بريد بدور «البريد»)', 'Send the applicant a receipt (needs an email field with role Email)')}</label>
+            <Field label={L('تكرار الطلب من نفس البريد', 'Same e-mail sending again')}>
+              <select className={inputCls} value={f.dedupe ?? ''} onChange={(e) => up({ dedupe: e.target.value || null })}>
+                <option value="">{L('السماح دائماً', 'Always allow')}</option>
+                <option value="open-email">{L('طلب واحد قيد المعالجة لكل بريد', 'One request in progress per e-mail')}</option>
+                <option value="context-email">{L('مرة واحدة لكل بريد وكل دورة', 'Once per e-mail and course')}</option>
+                <option value="recent-email">{L('تجاهل التكرار خلال 10 دقائق', 'Ignore a repeat within 10 minutes')}</option>
+              </select>
+            </Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.requireConsent} onChange={(e) => up({ requireConsent: e.target.checked })} />{L('اشتراط الموافقة على سياسة الخصوصية', 'Require consent to the privacy policy')}</label>
           </div>
         )}
@@ -323,7 +347,7 @@ export function FormsBuilderAdmin() {
                 <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
                   <Button size="sm" variant="outline" onClick={() => open(r)}>{can('forms.update') ? L('تعديل', 'Edit') : L('عرض', 'View')}</Button>
                   {can('forms.create') && <Button size="sm" variant="ghost" onClick={() => dup(r)}>{L('نسخ', 'Duplicate')}</Button>}
-                  {can('forms.delete') && <Button size="sm" variant="danger" onClick={() => setDel(r)}>{L('حذف', 'Delete')}</Button>}
+                  {can('forms.delete') && !SYSTEM_SLUGS.includes(r.slug) && <Button size="sm" variant="danger" onClick={() => setDel(r)}>{L('حذف', 'Delete')}</Button>}
                 </span></td>
               </tr>
             ))}
@@ -344,7 +368,7 @@ export function FormsBuilderAdmin() {
 }
 
 // ============================================================================================ submissions
-interface SubRow { id: number; reference: string; formId: number; applicantName: string | null; applicantEmail: string | null; applicantPhone: string | null; status: string; category: string | null; isRead: boolean; createdAt: string; anonymizedAt: string | null; form: { id: number; titleAr: string; titleEn: string | null } | null }
+interface SubRow { context: Record<string, any> | null; id: number; reference: string; formId: number; applicantName: string | null; applicantEmail: string | null; applicantPhone: string | null; status: string; category: string | null; isRead: boolean; createdAt: string; anonymizedAt: string | null; form: { id: number; titleAr: string; titleEn: string | null } | null }
 interface SubFull extends SubRow {
   fields: FieldDef[]; answers: Record<string, any>; statuses: Status[]; categories: Cat[]; staffNotes: string | null; filesHidden: boolean;
   files: { id: number; fieldKey: string; name: string; size: number; path: string }[];
@@ -395,6 +419,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
       {!s ? <Center><Spinner /></Center> : (
         <div className="space-y-5">
           {s.anonymizedAt && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{L('مُسحت البيانات الشخصية لهذا الطلب بناءً على طلب.', 'This request’s personal data was erased.')}</p>}
+          {ctxText(s.context) && <p className="rounded-xl bg-primary/5 p-3 text-sm"><b>{L('مرتبط بـ', 'Linked to')}:</b> {ctxText(s.context)}</p>}
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             {s.fields.filter((f) => f.type !== 'heading' && f.type !== 'note' && f.type !== 'file').map((f) => (
               <div key={f.key} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}><dt className="text-xs text-gray-500">{(lang === 'en' && f.labelEn) || f.labelAr}{f.sensitive && <span className="ms-1 text-[10px] text-red-600">🔒</span>}</dt><dd className="whitespace-pre-wrap font-semibold">{show(f, s.answers[f.key])}</dd></div>
@@ -435,7 +460,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
   );
 }
 
-export function FormSubmissionsAdmin() {
+export function FormSubmissionsAdmin({ slugs }: { slugs?: string[] } = {}) {
   const L = useL();
   const { lang } = useI18n();
   const { can } = useAuth();
@@ -444,9 +469,11 @@ export function FormSubmissionsAdmin() {
   const [formId, setFormId] = useState('');
   const [openId, setOpenId] = useState<number | null>(null);
   const [key, setKey] = useState(0);
-  useEffect(() => { api<FormDef[]>('/admin/forms').then(setForms).catch((e) => toast(e.message, 'err')); }, [toast]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { api<FormDef[]>('/admin/forms').then((all) => { setForms(slugs ? all.filter((f) => slugs.includes(f.slug)) : all); setLoaded(true); }).catch((e) => toast(e.message, 'err')); }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scope = formId ? forms.filter((f) => String(f.id) === formId) : forms;
+  const idsParam = !formId && slugs ? forms.map((f) => f.id).join(',') : '';
   const statuses = new Map<string, Status>();
   const cats = new Map<string, Cat>();
   for (const f of scope) { f.statuses.forEach((s) => !statuses.has(s.key) && statuses.set(s.key, s)); f.categories.forEach((c) => !cats.has(c.key) && cats.set(c.key, c)); }
@@ -459,27 +486,30 @@ export function FormSubmissionsAdmin() {
     { key: 'form', label: L('النموذج', 'Form'), render: title, text: title },
     { key: 'applicantName', label: L('الاسم', 'Name'), render: (r) => r.applicantName ?? '—' },
     { key: 'applicantEmail', label: L('البريد', 'E-mail'), render: (r) => <span dir="ltr">{r.applicantEmail ?? '—'}</span> },
+    { key: 'context', searchable: false, label: L('مرتبط بـ', 'Linked to'), render: (r) => ctxText(r.context) || '—', text: (r) => ctxText(r.context) },
     { key: 'status', searchable: false, label: L('الحالة', 'Status'), render: (r) => { const s = stName(r.status, r.formId); return <span className="rounded px-1.5 py-0.5 text-[10px]" style={chip(s.color)}>{s.label}</span>; }, text: (r) => stName(r.status, r.formId).label },
     { key: 'category', searchable: false, label: L('التصنيف', 'Category'), render: (r) => catName(r.category, r.formId) || '—', text: (r) => catName(r.category, r.formId) },
     { key: 'createdAt', type: 'date', label: L('التاريخ', 'Date'), render: (r) => fmtDate(lang, r.createdAt, true), text: (r) => r.createdAt },
   ];
 
+  if (slugs && !loaded) return <Center><Spinner /></Center>;
+  if (slugs && forms.length === 0) return <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{L('نموذج هذه الصفحة غير موجود. شغّل ترحيل قاعدة البيانات (migration:run) ثم أعد المحاولة.', 'The form of this page does not exist. Run the database migration (migration:run) and try again.')}</p>;
   return (
     <>
       <DataTable<SubRow>
-        key={formId} endpoint="/admin/forms/submissions" columns={cols} dateFilter refreshKey={key} exportable={can('forms.submissions.export')} exportName="form-submissions"
-        baseParams={formId ? { formId } : undefined}
+        key={`${formId}|${idsParam}`} endpoint="/admin/forms/submissions" columns={cols} dateFilter refreshKey={key} exportable={can('forms.submissions.export')} exportName="form-submissions"
+        baseParams={formId ? { formId } : idsParam ? { formIds: idsParam } : undefined}
         filters={[
           { key: 'status', label: L('الحالة', 'Status'), options: [...statuses.values()].map((s) => ({ value: s.key, label: (lang === 'en' && s.en) || s.ar })) },
           { key: 'category', label: L('التصنيف', 'Category'), options: [...cats.values()].map((c) => ({ value: c.key, label: (lang === 'en' && c.en) || c.ar })) },
           { key: 'unread', label: L('القراءة', 'Read'), options: [{ value: 'true', label: L('غير مقروء فقط', 'Unread only') }] },
         ]}
         bulkDelete={{ path: '/admin/forms/submissions/bulk-delete', can: can('forms.submissions.delete') }}
-        toolbar={
+        toolbar={(slugs && forms.length < 2) ? undefined : (
           <select className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm" aria-label={L('النموذج', 'Form')} value={formId} onChange={(e) => setFormId(e.target.value)}>
             <option value="">{L('كل النماذج', 'All forms')}</option>{forms.map((f) => <option key={f.id} value={f.id}>{(lang === 'en' && f.titleEn) || f.titleAr}</option>)}
           </select>
-        }
+        )}
         rowActions={(r) => <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>{L('فتح', 'Open')}</Button>}
       />
       {openId !== null && <SubmissionDialog id={openId} onClose={() => setOpenId(null)} onChanged={() => setKey((k) => k + 1)} />}
