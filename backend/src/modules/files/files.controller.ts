@@ -12,6 +12,11 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from './file-storage.service';
 import { UnauthorizedException } from '@nestjs/common';
 
+/**
+ * Public at class level, so a decorator that slips away from one method can never again turn every picture / PDF into a 401 for visitors.
+ * Private files are still protected inside serve(): the guard attaches req.user when a valid sign-in cookie is sent, and serve() refuses without it.
+ */
+@Public()
 @Controller('files')
 export class FilesController {
   constructor(

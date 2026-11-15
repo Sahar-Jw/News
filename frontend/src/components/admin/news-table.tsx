@@ -1,7 +1,7 @@
 'use client';
 import { asList } from '@/lib/list';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtNum, newsPerm } from '@/lib/utils';
@@ -15,8 +15,12 @@ import type { NewsMainCategoryKey } from '@/lib/news-categories';
 
 interface Row { id: number; title: string; subject: string | null; mainCategory: string; subcategory: string | null; topics: string[]; publishAt: string | null; viewCount: number; status: string; language: string; visibility: string }
 
-/** Unified table for regular news (section="regular") and every special section. */
-export function NewsTable({ section, category }: { section: string; category?: NewsMainCategoryKey }) {
+/**
+ * Unified table for regular news (section="regular") and every special section.
+ * `category` pins one fixed main category, `mainCategory` any other category value, `subcategory` a subcategory (all three only narrow the list);
+ * `returnTo` is the page to come back to after editing a row (the Media center settings tab uses it).
+ */
+export function NewsTable({ section, category, mainCategory, subcategory, returnTo }: { section: string; category?: NewsMainCategoryKey; mainCategory?: string; subcategory?: string; returnTo?: string }) {
   const { t, href, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -25,7 +29,9 @@ export function NewsTable({ section, category }: { section: string; category?: N
   const [refreshKey, setRefreshKey] = useState(0);
   useNewsSaved(() => setRefreshKey((n) => n + 1));
   const special = section !== 'regular';
-  const sp = special ? `&section=${section}` : category ? `&category=${category}&from=${encodeURIComponent(`/admin/news?category=${category}`)}` : '';
+  const back = returnTo ?? (category ? `/admin/news?category=${category}` : '');
+  const sp = special ? `&section=${section}` : `${category ? `&category=${category}` : ''}${back ? `&from=${encodeURIComponent(back)}` : ''}`;
+  const baseParams = useMemo(() => ({ section, ...(category ? { categoryKey: category } : {}), ...(mainCategory ? { mainCategory } : {}), ...(subcategory ? { subcategory } : {}) }), [section, category, mainCategory, subcategory]);
   // each action is checked against THIS section only (regular news: news.<action>, a section: news.<action>.<section>)
   const may = (a: 'create' | 'update' | 'delete') => can(newsPerm(a, special ? section : undefined));
   const statusBadge = (s: string) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${s === 'published' ? 'bg-emerald-100 text-emerald-700' : s === 'scheduled' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{t(`s.${s}`)}</span>;
@@ -44,8 +50,8 @@ export function NewsTable({ section, category }: { section: string; category?: N
     { key: 'subject', label: t('f.subject') },
     ...(special ? [] : [
       // inside one fixed category the category column says nothing new
-      ...(category ? [] : [{ key: 'mainCategory', label: t('f.mainCategory') } as Col<Row>]),
-      { key: 'subcategory', label: t('f.subcategory') } as Col<Row>,
+      ...(category || mainCategory ? [] : [{ key: 'mainCategory', label: t('f.mainCategory') } as Col<Row>]),
+      ...(subcategory ? [] : [{ key: 'subcategory', label: t('f.subcategory') } as Col<Row>]),
     ]),
     { key: 'topics', label: t('site.topics'), render: (r) => asList(r.topics).join(lang === 'ar' ? '، ' : ', '), text: (r) => asList(r.topics).join(', ') },
     { key: 'publishAt', type: 'date', label: t('f.publishAt'), render: (r) => <div>{fmtDate(lang, r.publishAt, true)} {statusBadge(r.status)}</div>, text: (r) => `${fmtDate(lang, r.publishAt)} (${r.status})` },
@@ -58,7 +64,7 @@ export function NewsTable({ section, category }: { section: string; category?: N
     <>
     <DataTable<Row>
       endpoint="/admin/news"
-      baseParams={{ section, ...(category ? { categoryKey: category } : {}) }}
+      baseParams={baseParams}
       columns={cols}
       dateFilter
       exportable={can('news.export')}

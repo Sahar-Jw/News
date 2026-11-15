@@ -145,6 +145,7 @@ function ManageBar() {
   const chip = 'rounded-full bg-primary px-3 py-1 text-xs font-bold text-white hover:brightness-110';
   const items = [
     can('news.create') && { key: 'news', onClick: () => setAdding(true), label: `＋ ${t('md.addNews')}` },
+    can('news.read') && { key: 'manage', to: `/admin/settings?page=media&tab=news${cat ? `&cat=${encodeURIComponent(catKey ?? `o:${cat}`)}` : ''}`, label: `✎ ${t('md.manageNews')}` },
     can('documents.create', 'documents.update') && { key: 'doc', to: '/admin/settings?page=documents&tab=documents', label: `＋ ${t('md.addDoc')}` },
     can('settings.update') && { key: 'kit', to: '/admin/settings?page=media&tab=settings', label: `⚙ ${t('md.kitSettings')}` },
   ].filter(Boolean) as { key: string; label: string; to?: string; onClick?: () => void }[];

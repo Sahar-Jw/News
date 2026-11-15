@@ -72,8 +72,8 @@ export const HUBS: HubMeta[] = [
   { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },
   { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }] },
   {
-    key: 'media', ar: 'المركز الإعلامي', en: 'Media center', hintAr: 'الألبومات وإعدادات المركز الإعلامي', hintEn: 'Albums and media center settings', icon: '✉', color: '#be123c',
-    tabs: [{ key: 'gallery', ar: 'الألبومات', en: 'Albums', perms: ['gallery.read'] }, settings(['media'])],
+    key: 'media', ar: 'المركز الإعلامي', en: 'Media center', hintAr: 'الأخبار (إضافة وتعديل وحذف حسب الفئة) والألبومات وإعدادات المركز الإعلامي', hintEn: 'News (add, edit, delete by category), albums and media center settings', icon: '✉', color: '#be123c',
+    tabs: [{ key: 'news', ar: 'الأخبار', en: 'News', perms: ['news.read'] }, { key: 'gallery', ar: 'الألبومات', en: 'Albums', perms: ['gallery.read'] }, settings(['media'])],
   },
   { key: 'occasions', ar: 'المناسبات والأجندة', en: 'Occasions & agenda', hintAr: 'إدارة المناسبات والمعارض والأجندة فقط، مستقلة عن الأخبار', hintEn: 'Manage occasions, exhibitions and agenda separately from news', icon: '▦', color: '#be123c', tabs: [{ key: 'events', ar: 'المناسبات والمعارض', en: 'Occasions & exhibitions', perms: ['occasions.read'] }] },
   {

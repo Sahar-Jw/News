@@ -64,23 +64,29 @@ export function PdfViewer({ src, title }: { src: string; title: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [doc, setDoc] = useState<PdfDoc | null>(null);
   const [state, setState] = useState<'load' | 'ok' | 'err'>('load');
+  const [why, setWhy] = useState(''); // the real reason when the preview cannot be drawn (shown small under the message)
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
     let dead = false;
     let loaded: PdfDoc | null = null;
     setState('load');
+    setWhy('');
     (async () => {
       const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
       pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url).toString();
-      const res = await fetch(url); // plain GET (no Range header) so no CORS preflight is needed
-      if (!res.ok) throw new Error(String(res.status));
+      // plain GET (no Range header) so no CORS preflight is needed; if the server answers 401/403 (or the first try fails) it is asked once more with the sign-in cookie
+      let res: Response | null = await fetch(url).catch(() => null);
+      if (!res || res.status === 401 || res.status === 403) res = (await fetch(url, { credentials: 'include' }).catch(() => null)) ?? res;
+      if (!res) throw new Error('network / CORS');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = new Uint8Array(await res.arrayBuffer());
+      if (String.fromCharCode(...data.subarray(0, 5)) !== '%PDF-') throw new Error('not a PDF file');
       loaded = await pdfjs.getDocument({ data }).promise;
       if (dead) { void loaded.destroy(); return; }
       setDoc(loaded);
       setState('ok');
-    })().catch(() => { if (!dead) setState('err'); });
+    })().catch((e) => { if (!dead) { setWhy(String(e?.message || e).slice(0, 120)); setState('err'); } });
     return () => { dead = true; void loaded?.destroy(); };
   }, [url]);
 
@@ -109,6 +115,7 @@ export function PdfViewer({ src, title }: { src: string; title: string }) {
         {state === 'err' && (
           <div className="py-12 text-center text-sm text-gray-600">
             {t('site.pdfError')} — <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('site.openPdf')}</a>
+            {why && <span className="mt-2 block text-xs text-gray-400" dir="ltr">{why}</span>}
           </div>
         )}
         {state === 'ok' && doc && width > 0 && (

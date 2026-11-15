@@ -22,6 +22,7 @@ import { FooterAdmin } from '@/components/admin/footer-admin';
 import { GalleryAdmin } from '@/components/admin/gallery-admin';
 import { G2tContent, G2tPackages, G2tSpaces } from '@/components/admin/get2trade-admin';
 import { IncubatorProjectsAdmin } from '@/components/admin/incubator-projects-admin';
+import { MediaNewsAdmin } from '@/components/admin/media-news-admin';
 import { MembershipContent } from '@/components/admin/membership-admin';
 import { NavAdmin } from '@/components/admin/nav-admin';
 import { OccasionsAdmin } from '@/components/admin/occasions-admin';
@@ -46,7 +47,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'get2trade.bookings': () => <FormSubmissionsAdmin slugs={['get2trade-booking', 'get2trade-inquiry']} />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
   'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin kind="sector" />,
-  'media.gallery': () => <GalleryAdmin />,
+  'media.news': () => <MediaNewsAdmin />, 'media.gallery': () => <GalleryAdmin />,
   'occasions.events': () => <OccasionsAdmin />,
   'women.content': () => <CommitteesAdmin kind="women" />,
   'women.links': () => <WomenMenuAdmin />,
