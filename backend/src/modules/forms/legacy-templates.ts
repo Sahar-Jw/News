@@ -166,3 +166,19 @@ export const LEGACY_FORMS: LegacyForm[] = [
     ],
   },
 ];
+
+/**
+ * The contact form (home page, contact page, One-Stop, services, women's committee). Kept apart from LEGACY_FORMS because it is added by its own
+ * migration (1767200000000), so a database that already ran the earlier one gets it too.
+ */
+export const CONTACT_FORM: LegacyForm = {
+  slug: 'contact', titleAr: 'تواصل معنا', titleEn: 'Contact us', contextType: null, dedupe: null, isListed: false,
+  successAr: 'تم إرسال رسالتك بنجاح', successEn: 'Your message was sent successfully',
+  statuses: [st('new', 'جديدة', 'New', '#2563eb'), st('replied', 'تم الرد', 'Replied', '#059669'), st('closed', 'مغلقة', 'Closed', '#475569')], categories: [], notifyFrom: { setting: ['contact', 'email'] },
+  fields: [
+    f('name', 'text', 'الاسم', 'Name', { ...req, role: 'name', minLength: 2, maxLength: 150 }),
+    EMAIL(),
+    f('subject', 'text', 'الموضوع', 'Subject', { ...req, minLength: 2, maxLength: 255 }),
+    f('message', 'textarea', 'الرسالة', 'Message', { ...req, minLength: 5, maxLength: 5000 }),
+  ],
+};

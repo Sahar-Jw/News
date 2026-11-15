@@ -129,3 +129,10 @@ Membership, trainer application, course registration, incubator, EXPO (exhibitor
 - **Removed public endpoints:** `POST /public/membership/apply`, `/public/training/courses/:id/register`, `/public/training/trainer-applications`, `/public/incubator/apply`, `/public/expo/apply`, `/public/get2trade/bookings`. All requests now go to `POST /public/forms/<slug>/submit`.
 - **Course seat counts** (public course pages, "full" status) now count the requests of the `course-registration` form.
 - Reference numbers change format (`FRM-YYYY-00042`); old references stay only in the archive tables.
+
+## Contact form and the form editor
+
+- **Contact form:** every "contact us" box (home page, contact page, One-Stop, services, women's committee) is the dashboard form `contact`. Migration `1767200000000-MoveContactFormToDynamicForms` creates it, copies the existing messages into the requests table (the old `contact_messages` table stays as an archive) and gives the new permissions to whoever had `messages.read` / `messages.export`. `POST /public/contact` was removed; the Messages page now shows the `contact` requests (read, status, reply by e-mail, export).
+- **Not forms of the dashboard (on purpose):** newsletter subscription (it has e-mail verification and topic preferences) and the account forms (register, login, forgot / reset password).
+- **Form editor (Settings → Forms & requests → Forms → Edit):** only the inputs: add one (pick its type), edit its label / required / options / allowed files, move it, delete it. A second tab shows the form exactly as a visitor sees it, to fill in and send for real. Everything else about a form (title, address, statuses, categories, notification e-mails, retention, webhooks) is unchanged and is still available through the API (`PATCH /admin/forms/:id`); the screen simply does not offer it.
+- **Request details** show the applicant's answers inside the form's own inputs (read only), with attachments below.

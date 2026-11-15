@@ -27,13 +27,7 @@ export class ContactController {
     private readonly audit: AuditService,
   ) {}
 
-  // 5 messages / minute / IP (SEC-NFR-007)
-  @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @Post('public/contact')
-  create(@Body() dto: CreateContactDto) {
-    return this.service.create(dto);
-  }
+  // The public contact form is now managed from the dashboard (Forms): POST /public/forms/contact/submit. The old endpoint was removed so no message lands in a table nobody reads.
 
   @Get('admin/messages')
   @Permissions(PERM.MESSAGES_READ)

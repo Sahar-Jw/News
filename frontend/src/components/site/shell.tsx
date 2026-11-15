@@ -251,7 +251,7 @@ export function Navbar() {
     // the fixed main categories: each opens the list of its news, and "add" there is locked to that category
     ...NEWS_MAIN_CATEGORIES.map((c) => ({ label: lang === 'en' ? c.en : c.ar, to: `/admin/news?category=${c.key}`, show: can(newsPerm('read')) })),
     ...SECTIONS.map((s) => ({ label: t(`section.${s}`), to: `/admin/sections/${s}`, show: can(newsPerm('read', s)) })),
-    { label: t('adm.messages'), to: '/admin/messages', show: can('messages.read') },
+    { label: t('adm.messages'), to: '/admin/messages', show: can('forms.submissions.read') },
   ];
   // every content type (reserved main category) with its own editor: one row each, sent to that editor
   // Public dropdowns: managed in Settings -> Main menu (loaded from the API).

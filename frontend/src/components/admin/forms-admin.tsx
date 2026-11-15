@@ -7,7 +7,7 @@ import { fmtDate } from '@/lib/utils';
 import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
-import { FieldDef, FieldOption } from '@/components/site/dynamic-form';
+import { DynamicForm, FieldDef, FieldOption, PublicForm, isShown } from '@/components/site/dynamic-form';
 
 interface Status { key: string; ar: string; en?: string; color?: string }
 interface Cat { key: string; ar: string; en?: string }
@@ -22,16 +22,6 @@ const TYPES: [string, string, string][] = [
   ['date', 'تاريخ', 'Date'], ['select', 'قائمة منسدلة', 'Dropdown'], ['radio', 'اختيار واحد', 'Single choice'], ['multiselect', 'اختيار متعدد', 'Multiple choice'], ['checkbox', 'مربع موافقة', 'Checkbox'],
   ['file', 'مرفق (ملفات)', 'Attachment'], ['heading', 'عنوان قسم', 'Section heading'], ['note', 'نص توضيحي', 'Note'],
 ];
-const DEFAULT_STATUSES: Status[] = [
-  { key: 'new', ar: 'جديد', en: 'New', color: '#2563eb' }, { key: 'in_review', ar: 'قيد المراجعة', en: 'In review', color: '#d97706' }, { key: 'accepted', ar: 'مقبول', en: 'Accepted', color: '#059669' },
-  { key: 'rejected', ar: 'مرفوض', en: 'Rejected', color: '#dc2626' }, { key: 'completed', ar: 'مكتمل', en: 'Completed', color: '#475569' },
-];
-const NEW_FORM: Omit<FormDef, 'id' | 'version'> = {
-  slug: '', titleAr: '', titleEn: '', descriptionAr: '', descriptionEn: '', successAr: '', successEn: '', isOpen: true, isListed: true, fields: [], statuses: DEFAULT_STATUSES, categories: [],
-  notifyEmails: '', sendReceipt: true, requireConsent: true, retentionDays: null, integrations: [], contextType: null, dedupe: null,
-};
-/** forms that a public page of the site is built around: deleting one would leave that page without its form */
-const SYSTEM_SLUGS = ['membership', 'trainer-application', 'course-registration', 'incubator-application', 'expo-exhibitor', 'expo-visitor', 'expo-info', 'get2trade-booking', 'get2trade-inquiry'];
 const kb = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const keyOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z]+/, '');
 const move = <T,>(a: T[], i: number, d: number) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return b; [b[i], b[j]] = [b[j], b[i]]; return b; };
@@ -45,259 +35,166 @@ function useL() {
 }
 
 // ============================================================================================ field editor
+const OPTION_TYPES = ['select', 'radio', 'multiselect'];
+const LAYOUT_TYPES = ['heading', 'note'];
+const IDENTITY_ROLE_TYPES = ['text', 'email', 'phone'];
+
+/** a condition can only look at an earlier field that still exists: drop the ones a delete / move made invalid, so the server never refuses the list for it */
+function tidy(fields: FieldDef[]): FieldDef[] {
+  return fields.map((f, i) => {
+    if (!f.showIf) return f;
+    const at = fields.findIndex((x) => x.key === f.showIf!.key);
+    if (at < 0 || at >= i) { const { showIf: _s, ...rest } = f; return rest; }
+    return f;
+  });
+}
+
+/** Add, delete and edit the inputs of a form; each input has a type, a label (Arabic / English), required or not, and its options when it is a choice. */
 function FieldEditor({ fields, onChange }: { fields: FieldDef[]; onChange: (f: FieldDef[]) => void }) {
   const L = useL();
   const { lang } = useI18n();
-  const upd = (i: number, p: Partial<FieldDef>) => onChange(fields.map((f, j) => (j === i ? { ...f, ...p } : f)));
+  const set = (next: FieldDef[]) => onChange(tidy(next));
+  const upd = (i: number, p: Partial<FieldDef>) => set(fields.map((f, j) => (j === i ? { ...f, ...p } : f)));
   const add = (type: string) => {
     let n = fields.length + 1;
     while (fields.some((f) => f.key === `${type}_${n}`)) n++;
     const f: FieldDef = { key: `${type}_${n}`, type, labelAr: '' };
-    if (['select', 'radio', 'multiselect'].includes(type)) f.options = [{ value: 'option_1', ar: '' }];
+    if (OPTION_TYPES.includes(type)) f.options = [{ value: 'option_1', ar: '' }];
     if (type === 'file') { f.fileKinds = ['pdf', 'image']; f.maxFiles = 1; f.maxSizeMb = 5; }
-    onChange([...fields, f]);
+    set([...fields, f]);
+  };
+  const changeType = (i: number, type: string) => {
+    const f = fields[i];
+    const p: Partial<FieldDef> = { type };
+    if (OPTION_TYPES.includes(type) && !f.options?.length && !f.optionsSource) p.options = [{ value: 'option_1', ar: '' }];
+    if (type === 'file') { p.fileKinds = f.fileKinds ?? ['pdf', 'image']; p.maxFiles = f.maxFiles ?? 1; p.maxSizeMb = f.maxSizeMb ?? 5; }
+    upd(i, p);
+  };
+  const remove = (i: number) => {
+    const f = fields[i];
+    if (f.role && !window.confirm(L('هذا الحقل يحدد هوية المتقدم (الاسم أو البريد أو الهاتف)، وحذفه يعطّل المراسلة أو العرض في القوائم. متأكد من الحذف؟', 'This input identifies the applicant (name, e-mail or phone); deleting it disables contacting them or showing them in lists. Delete anyway?'))) return;
+    set(fields.filter((_, j) => j !== i));
   };
   const setOpt = (i: number, k: number, p: Partial<FieldOption>) => upd(i, { options: fields[i].options!.map((o, j) => (j === k ? { ...o, ...p } : o)) });
-  const earlier = (i: number) => fields.slice(0, i).filter((f) => !['heading', 'note', 'file'].includes(f.type));
 
   return (
     <div className="space-y-3">
-      {fields.length === 0 && <p className="rounded-xl bg-canvas p-4 text-center text-sm text-gray-500">{L('لا توجد حقول بعد. أضف أول حقل من الأزرار أدناه.', 'No fields yet. Add the first one with the buttons below.')}</p>}
+      {fields.length === 0 && <p className="rounded-xl bg-canvas p-4 text-center text-sm text-gray-500">{L('لا توجد حقول. أضف أول حقل من الأزرار أدناه.', 'No inputs yet. Add the first one with the buttons below.')}</p>}
       {fields.map((f, i) => {
-        const display = f.type === 'heading' || f.type === 'note';
-        const typeName = TYPES.find((t) => t[0] === f.type)?.[lang === 'ar' ? 1 : 2] ?? f.type;
+        const layout = LAYOUT_TYPES.includes(f.type);
+        const locked = !!f.role; // identifies the applicant: its kind of input cannot change
         return (
-          <div key={i} className="space-y-3 rounded-2xl border border-line bg-white p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{i + 1}. {typeName}</span>
-              <span className="ms-auto flex gap-1">
-                <Button size="sm" variant="ghost" type="button" onClick={() => onChange(move(fields, i, -1))} aria-label="up">↑</Button>
-                <Button size="sm" variant="ghost" type="button" onClick={() => onChange(move(fields, i, 1))} aria-label="down">↓</Button>
-                <Button size="sm" variant="ghost" type="button" onClick={() => { const c = { ...f, key: `${f.key}_copy`.slice(0, 50) }; onChange([...fields.slice(0, i + 1), c, ...fields.slice(i + 1)]); }}>{L('نسخ', 'Copy')}</Button>
-                <Button size="sm" variant="danger" type="button" onClick={() => onChange(fields.filter((_, j) => j !== i))}>{L('حذف', 'Delete')}</Button>
+          <div key={f.key} className="space-y-2 rounded-2xl border border-line bg-white p-3">
+            <div className="grid gap-2 sm:grid-cols-[11rem_1fr_1fr_auto]">
+              <select className={inputCls} aria-label={L('نوع الحقل', 'Input type')} value={f.type} disabled={locked && !IDENTITY_ROLE_TYPES.includes(f.type)} onChange={(e) => changeType(i, e.target.value)}
+                title={locked ? L('هذا الحقل يحدد هوية المتقدم: يمكن تغيير نوعه بين نص وبريد وهاتف فقط', 'Identifies the applicant: its type can only change between text, e-mail and phone') : undefined}>
+                {TYPES.filter((t) => !locked || IDENTITY_ROLE_TYPES.includes(t[0])).map((t) => <option key={t[0]} value={t[0]}>{t[lang === 'ar' ? 1 : 2]}</option>)}
+              </select>
+              <input className={inputCls} placeholder={L('العنوان بالعربية', 'Label (Arabic)')} value={f.labelAr} maxLength={300} onChange={(e) => upd(i, { labelAr: e.target.value })} />
+              <input dir="ltr" className={inputCls} placeholder={L('العنوان بالإنكليزية', 'Label (English)')} value={f.labelEn ?? ''} maxLength={300} onChange={(e) => upd(i, { labelEn: e.target.value })} />
+              <span className="flex items-center gap-1">
+                <Button size="sm" variant="ghost" type="button" aria-label="up" onClick={() => set(move(fields, i, -1))}>↑</Button>
+                <Button size="sm" variant="ghost" type="button" aria-label="down" onClick={() => set(move(fields, i, 1))}>↓</Button>
+                <Button size="sm" variant="danger" type="button" onClick={() => remove(i)}>{L('حذف', 'Delete')}</Button>
               </span>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={L('العنوان (عربي)', 'Label (Arabic)')}><input className={inputCls} value={f.labelAr} maxLength={300} onChange={(e) => upd(i, { labelAr: e.target.value })} /></Field>
-              <Field label={L('العنوان (إنكليزي)', 'Label (English)')}><input dir="ltr" className={inputCls} value={f.labelEn ?? ''} maxLength={300} onChange={(e) => upd(i, { labelEn: e.target.value })} /></Field>
-              <Field label={L('نوع الحقل', 'Field type')}>
-                <select className={inputCls} value={f.type} onChange={(e) => upd(i, { type: e.target.value, ...(['select', 'radio', 'multiselect'].includes(e.target.value) && !f.options?.length ? { options: [{ value: 'option_1', ar: '' }] } : {}), ...(e.target.value === 'file' ? { fileKinds: f.fileKinds ?? ['pdf', 'image'], maxFiles: f.maxFiles ?? 1, maxSizeMb: f.maxSizeMb ?? 5 } : {}) })}>
-                  {TYPES.map((t) => <option key={t[0]} value={t[0]}>{t[lang === 'ar' ? 1 : 2]}</option>)}
-                </select>
-              </Field>
-              <Field label={L('المعرّف (a-z, 0-9, _)', 'Key (a-z, 0-9, _)')} hint={L('تُخزَّن الإجابات تحت هذا المعرّف؛ غيّره فقط قبل وصول طلبات.', 'Answers are stored under it; only change it before submissions arrive.')}>
-                <input dir="ltr" className={inputCls} value={f.key} maxLength={50} onChange={(e) => upd(i, { key: keyOf(e.target.value) })} />
-              </Field>
-            </div>
-            {!display && (
-              <>
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                  {f.type !== 'checkbox' || true ? <label className="flex items-center gap-2"><input type="checkbox" checked={!!f.required} onChange={(e) => upd(i, { required: e.target.checked })} />{L('مطلوب', 'Required')}</label> : null}
-                  {f.type !== 'file' && <label className="flex items-center gap-2"><input type="checkbox" checked={!!f.sensitive} onChange={(e) => upd(i, { sensitive: e.target.checked })} />{L('حساس (مشفّر ومخفي عمّن لا يملك الصلاحية)', 'Sensitive (encrypted, hidden without permission)')}</label>}
-                  {['text', 'email', 'phone'].includes(f.type) && (
-                    <label className="flex items-center gap-2">{L('يحدد هوية المتقدم:', 'Identifies the applicant:')}
-                      <select className="rounded-lg border border-line px-2 py-1" value={f.role ?? ''} onChange={(e) => upd(i, { role: (e.target.value || undefined) as any })}>
-                        <option value="">—</option><option value="name">{L('الاسم', 'Name')}</option>{f.type === 'email' && <option value="email">{L('البريد', 'Email')}</option>}{f.type === 'phone' && <option value="phone">{L('الهاتف', 'Phone')}</option>}
-                      </select>
-                    </label>
-                  )}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label={L('نص مساعد (عربي)', 'Help (Arabic)')}><input className={inputCls} value={f.helpAr ?? ''} maxLength={500} onChange={(e) => upd(i, { helpAr: e.target.value })} /></Field>
-                  <Field label={L('نص مساعد (إنكليزي)', 'Help (English)')}><input dir="ltr" className={inputCls} value={f.helpEn ?? ''} maxLength={500} onChange={(e) => upd(i, { helpEn: e.target.value })} /></Field>
-                </div>
-                {f.type === 'number' && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label={L('الحد الأدنى', 'Min')}><input type="number" className={inputCls} value={f.min ?? ''} onChange={(e) => upd(i, { min: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
-                    <Field label={L('الحد الأعلى', 'Max')}><input type="number" className={inputCls} value={f.max ?? ''} onChange={(e) => upd(i, { max: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
+            {!layout && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!f.required} onChange={(e) => upd(i, { required: e.target.checked })} />{L('مطلوب', 'Required')}</label>}
+            {f.optionsSource && <p className="text-xs text-gray-500">{L('خيارات هذه القائمة تأتي من سجلات النظام (المساحات / الباقات)، لا تُكتب هنا.', 'The options of this list come from the system records (spaces / packages); they are not typed here.')}</p>}
+            {OPTION_TYPES.includes(f.type) && !f.optionsSource && (
+              <div className="space-y-2">
+                {(f.options ?? []).map((o, k) => (
+                  <div key={k} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                    <input className={inputCls} placeholder={L('نص الخيار بالعربية', 'Option (Arabic)')} value={o.ar} maxLength={200} onChange={(e) => setOpt(i, k, { ar: e.target.value })} />
+                    <input dir="ltr" className={inputCls} placeholder={L('نص الخيار بالإنكليزية', 'Option (English)')} value={o.en ?? ''} maxLength={200} onChange={(e) => setOpt(i, k, { en: e.target.value })} />
+                    <Button size="sm" variant="danger" type="button" disabled={(f.options?.length ?? 0) < 2} onClick={() => upd(i, { options: f.options!.filter((_, j) => j !== k) })}>×</Button>
                   </div>
-                )}
-                {(f.type === 'text' || f.type === 'textarea') && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Field label={L('أقل عدد أحرف', 'Min length')}><input type="number" min={0} className={inputCls} value={f.minLength ?? ''} onChange={(e) => upd(i, { minLength: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
-                    <Field label={L('أكبر عدد أحرف', 'Max length')}><input type="number" min={1} max={20000} className={inputCls} value={f.maxLength ?? ''} onChange={(e) => upd(i, { maxLength: e.target.value === '' ? undefined : Number(e.target.value) })} /></Field>
-                  </div>
-                )}
-                {f.type === 'text' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!f.threeParts} onChange={(e) => upd(i, { threeParts: e.target.checked })} />{L('يشترط الاسم الثلاثي (ثلاث كلمات على الأقل)', 'Require a three-part name (at least three words)')}</label>}
-                {f.type === 'date' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!f.notPast} onChange={(e) => upd(i, { notPast: e.target.checked })} />{L('لا يقبل تاريخاً في الماضي', 'Do not accept a date in the past')}</label>}
-                {['select', 'radio'].includes(f.type) && (
-                  <Field label={L('مصدر الخيارات', 'Source of the options')}>
-                    <select className={inputCls} value={f.optionsSource ?? ''} onChange={(e) => upd(i, { optionsSource: (e.target.value || undefined) as any, options: e.target.value ? [] : f.options?.length ? f.options : [{ value: 'option_1', ar: '' }] })}>
-                      <option value="">{L('خيارات أكتبها هنا', 'Options I type here')}</option>
-                      <option value="g2t_spaces">{L('مساحات غيت تو تريد (من السجلات)', 'Get2Trade spaces (from the records)')}</option>
-                      <option value="g2t_packages">{L('باقات غيت تو تريد (من السجلات)', 'Get2Trade packages (from the records)')}</option>
-                    </select>
-                  </Field>
-                )}
-                {['select', 'radio', 'multiselect'].includes(f.type) && !f.optionsSource && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold">{L('الخيارات', 'Options')}</p>
-                    {(f.options ?? []).map((o, k) => (
-                      <div key={k} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                        <input dir="ltr" className={inputCls} placeholder={L('القيمة', 'Value')} value={o.value} maxLength={100} onChange={(e) => setOpt(i, k, { value: e.target.value })} />
-                        <input className={inputCls} placeholder={L('النص (عربي)', 'Text (Arabic)')} value={o.ar} maxLength={200} onChange={(e) => setOpt(i, k, { ar: e.target.value })} />
-                        <input dir="ltr" className={inputCls} placeholder={L('النص (إنكليزي)', 'Text (English)')} value={o.en ?? ''} maxLength={200} onChange={(e) => setOpt(i, k, { en: e.target.value })} />
-                        <Button size="sm" variant="danger" type="button" onClick={() => upd(i, { options: f.options!.filter((_, j) => j !== k) })}>×</Button>
-                      </div>
-                    ))}
-                    <Button size="sm" variant="outline" type="button" onClick={() => upd(i, { options: [...(f.options ?? []), { value: `option_${(f.options?.length ?? 0) + 1}`, ar: '' }] })}>+ {L('خيار', 'Option')}</Button>
-                  </div>
-                )}
-                {f.type === 'file' && (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <Field label={L('الأنواع المسموحة', 'Allowed types')}>
-                      <span className="flex flex-wrap gap-3 text-sm">
-                        {([['image', L('صور', 'Images')], ['pdf', 'PDF'], ['doc', 'Word']] as const).map(([k, name]) => (
-                          <label key={k} className="flex items-center gap-1"><input type="checkbox" checked={!!f.fileKinds?.includes(k)} onChange={(e) => upd(i, { fileKinds: e.target.checked ? [...(f.fileKinds ?? []), k] : (f.fileKinds ?? []).filter((x) => x !== k) })} />{name}</label>
-                        ))}
-                      </span>
-                    </Field>
-                    <Field label={L('عدد الملفات', 'Max files')}><input type="number" min={1} max={10} className={inputCls} value={f.maxFiles ?? 1} onChange={(e) => upd(i, { maxFiles: Number(e.target.value) })} /></Field>
-                    <Field label={L('حجم الملف (MB)', 'File size (MB)')}><input type="number" min={1} max={10} className={inputCls} value={f.maxSizeMb ?? 5} onChange={(e) => upd(i, { maxSizeMb: Number(e.target.value) })} /></Field>
-                  </div>
-                )}
-              </>
+                ))}
+                <Button size="sm" variant="outline" type="button" onClick={() => {
+                  let n = (f.options?.length ?? 0) + 1;
+                  while (f.options?.some((o) => o.value === `option_${n}`)) n++;
+                  upd(i, { options: [...(f.options ?? []), { value: `option_${n}`, ar: '' }] });
+                }}>+ {L('خيار', 'Option')}</Button>
+              </div>
             )}
-            {earlier(i).length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span>{L('أظهر هذا الحقل فقط عندما', 'Show only when')}</span>
-                <select className="rounded-lg border border-line px-2 py-1" value={f.showIf?.key ?? ''} onChange={(e) => upd(i, { showIf: e.target.value ? { key: e.target.value, equals: f.showIf?.equals ?? '' } : undefined })}>
-                  <option value="">{L('— دائماً —', '— always —')}</option>{earlier(i).map((x) => <option key={x.key} value={x.key}>{x.labelAr || x.key}</option>)}
-                </select>
-                {f.showIf && <><span>=</span><input dir="ltr" className="rounded-lg border border-line px-2 py-1" placeholder={L('القيمة', 'value')} value={f.showIf.equals} onChange={(e) => upd(i, { showIf: { key: f.showIf!.key, equals: e.target.value } })} /></>}
+            {f.type === 'file' && (
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                {([['image', L('صور', 'Images')], ['pdf', 'PDF'], ['doc', 'Word']] as const).map(([k, name]) => (
+                  <label key={k} className="flex items-center gap-1"><input type="checkbox" checked={!!f.fileKinds?.includes(k)} onChange={(e) => upd(i, { fileKinds: e.target.checked ? [...(f.fileKinds ?? []), k] : (f.fileKinds ?? []).filter((x) => x !== k) })} />{name}</label>
+                ))}
+                <label className="flex items-center gap-2">{L('عدد الملفات', 'Files')}<input type="number" min={1} max={10} className="w-16 rounded-lg border border-line px-2 py-1" value={f.maxFiles ?? 1} onChange={(e) => upd(i, { maxFiles: Math.min(10, Math.max(1, Number(e.target.value) || 1)) })} /></label>
               </div>
             )}
           </div>
         );
       })}
       <div className="flex flex-wrap gap-2 rounded-2xl bg-canvas p-3">
-        <span className="w-full text-xs font-bold text-gray-600">{L('إضافة حقل', 'Add a field')}</span>
+        <span className="w-full text-xs font-bold text-gray-600">{L('إضافة حقل جديد (اختر نوعه)', 'Add a new input (pick its type)')}</span>
         {TYPES.map((t) => <Button key={t[0]} size="sm" variant="outline" type="button" onClick={() => add(t[0])}>+ {t[lang === 'ar' ? 1 : 2]}</Button>)}
       </div>
     </div>
   );
 }
 
-// ============================================================================================ form dialog
-type Tab = 'general' | 'fields' | 'workflow' | 'privacy' | 'links';
-
-function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; onClose: () => void; onSaved: () => void }) {
+// ============================================================================================ edit dialog: inputs + live form
+/** The two things a manager does with a form: change its inputs, and try it (fill it in and send it) exactly as a visitor sees it. */
+function FormDialog({ initial, onClose, onSaved }: { initial: FormDef; onClose: () => void; onSaved: () => void }) {
   const L = useL();
+  const { lang } = useI18n();
   const toast = useToast();
   const { can } = useAuth();
-  const [f, setF] = useState<Omit<FormDef, 'id' | 'version'> & { id?: number }>(initial ?? NEW_FORM);
-  const [tab, setTab] = useState<Tab>('general');
+  const [fields, setFields] = useState<FieldDef[]>(initial.fields);
+  const [tab, setTab] = useState<'fields' | 'try'>('fields');
   const [busy, setBusy] = useState(false);
-  const canEdit = initial ? can('forms.update') : can('forms.create');
-  const up = (p: Partial<FormDef>) => setF((o) => ({ ...o, ...p }));
-  const tabs: [Tab, string][] = [['general', L('عام', 'General')], ['fields', `${L('الحقول', 'Fields')} (${f.fields.length})`], ['workflow', L('الحالات والتصنيفات', 'Statuses & categories')], ['privacy', L('الإشعارات والخصوصية', 'Notifications & privacy')], ['links', L('الربط مع الأنظمة', 'Integrations')]];
+  const [sourced, setSourced] = useState<Record<string, FieldOption[]>>({});
+  const [formKey, setFormKey] = useState(0); // a new key = an empty form again after a send
+  const canEdit = can('forms.update');
+  const dirty = JSON.stringify(fields) !== JSON.stringify(initial.fields);
+
+  // lists filled from the system records (Get2Trade spaces / packages) need their real options in the preview
+  useEffect(() => {
+    if (tab !== 'try' || !fields.some((f) => f.optionsSource)) return;
+    api<{ fields: FieldDef[] }>(`/public/forms/${initial.slug}`, { cache: 'no-store' })
+      .then((d) => setSourced(Object.fromEntries(d.fields.filter((f) => f.optionsSource).map((f) => [f.key, f.options ?? []]))))
+      .catch(() => undefined);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = async () => {
     setBusy(true);
     try {
-      const body = {
-        slug: f.slug, titleAr: f.titleAr, titleEn: f.titleEn, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn, successAr: f.successAr, successEn: f.successEn, isOpen: f.isOpen, isListed: f.isListed,
-        fields: f.fields, statuses: f.statuses, categories: f.categories, notifyEmails: f.notifyEmails, sendReceipt: f.sendReceipt, requireConsent: f.requireConsent, retentionDays: f.retentionDays, dedupe: f.dedupe ?? null,
-        integrations: f.integrations.map(({ hasSecret, keepSecret, ...h }) => ({ ...h, keepSecret: !h.secret && !!hasSecret })),
-      };
-      await api(initial ? `/admin/forms/${initial.id}` : '/admin/forms', { method: initial ? 'PATCH' : 'POST', body });
+      await api(`/admin/forms/${initial.id}`, { method: 'PATCH', body: { fields: fields.map((f) => ({ ...f, labelAr: f.labelAr.trim() })) } });
       toast(L('تم الحفظ بنجاح', 'Saved'));
       onSaved();
     } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
   };
 
+  const preview: PublicForm = {
+    slug: initial.slug, titleAr: initial.titleAr, titleEn: initial.titleEn, isOpen: true, requireConsent: initial.requireConsent, contextType: initial.contextType,
+    fields: fields.map((f) => (f.optionsSource ? { ...f, options: sourced[f.key] ?? [] } : f)),
+  };
+
   return (
-    <Modal open onClose={onClose} title={initial ? `${L('تعديل النموذج', 'Edit form')}: ${initial.titleAr}` : L('نموذج جديد', 'New form')} wide closeOnBackdrop={false}>
+    <Modal open onClose={onClose} title={`${L('تعديل النموذج', 'Edit form')}: ${(lang === 'en' && initial.titleEn) || initial.titleAr}`} wide closeOnBackdrop={false}>
       <div className="space-y-4">
         <div className="flex flex-wrap gap-1 border-b border-line pb-2">
-          {tabs.map(([k, name]) => <button key={k} type="button" onClick={() => setTab(k)} className={`rounded-lg px-3 py-1.5 text-sm ${tab === k ? 'bg-primary text-white' : 'bg-canvas text-gray-700'}`}>{name}</button>)}
+          <button type="button" onClick={() => setTab('fields')} className={`rounded-lg px-3 py-1.5 text-sm ${tab === 'fields' ? 'bg-primary text-white' : 'bg-canvas text-gray-700'}`}>{L('الحقول', 'Inputs')} ({fields.length})</button>
+          <button type="button" onClick={() => setTab('try')} className={`rounded-lg px-3 py-1.5 text-sm ${tab === 'try' ? 'bg-primary text-white' : 'bg-canvas text-gray-700'}`}>{L('النموذج كما يراه الزائر', 'The form as visitors see it')}</button>
         </div>
-        {tab === 'general' && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {initial && SYSTEM_SLUGS.includes(initial.slug) && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800 sm:col-span-2">{L('هذا النموذج تعرضه إحدى صفحات الموقع (الانتساب، التدريب، الحاضنة، EXPO، غيت تو تريد). عدّل حقوله كما تشاء، لكن لا تغيّر الرابط المختصر ولا تحذفه، ويُفضَّل ألا تغيّر معرّفات الحقول الموجودة.', 'A page of the site shows this form (membership, training, incubator, EXPO, Get2Trade). Edit its fields freely, but do not change or delete its slug, and avoid changing the keys of existing fields.')}{initial.contextType === 'course' && ` ${L('مرتبط بالدورة: يُتحقق من المقاعد المتاحة وعدم تكرار البريد.', 'Tied to the course: seats left and one registration per e-mail are checked.')}`}{initial.contextType === 'g2t' && ` ${L('مرتبط بالمساحات والباقات: حقلا المساحة والباقة (المعرّفان space و package) والعدد (people) والمدة (duration_value و duration_unit) يُتحقق منها.', 'Tied to spaces and packages: the space and package fields (keys space, package), people and duration (duration_value, duration_unit) are checked.')}`}</p>}
-            <Field label={L('عنوان النموذج (عربي) *', 'Title (Arabic) *')}><input className={inputCls} value={f.titleAr} maxLength={200} onChange={(e) => up({ titleAr: e.target.value })} /></Field>
-            <Field label={L('عنوان النموذج (إنكليزي)', 'Title (English)')}><input dir="ltr" className={inputCls} value={f.titleEn ?? ''} maxLength={200} onChange={(e) => up({ titleEn: e.target.value })} /></Field>
-            <Field label={L('الرابط المختصر *', 'Slug *')} hint={L('يظهر في رابط النموذج: /forms/…', 'Used in the form link: /forms/…')}><input dir="ltr" className={inputCls} value={f.slug} maxLength={80} onChange={(e) => up({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })} /></Field>
-            <div className="flex flex-col justify-end gap-2 text-sm">
-              <label className="flex items-center gap-2"><input type="checkbox" checked={f.isOpen} onChange={(e) => up({ isOpen: e.target.checked })} />{L('مفتوح لاستقبال الطلبات', 'Open for submissions')}</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={f.isListed} onChange={(e) => up({ isListed: e.target.checked })} />{L('يظهر في قائمة النماذج العامة', 'Listed on the public forms page')}</label>
-            </div>
-            <Field label={L('وصف (عربي)', 'Description (Arabic)')}><textarea rows={4} className={inputCls} value={f.descriptionAr ?? ''} onChange={(e) => up({ descriptionAr: e.target.value })} /></Field>
-            <Field label={L('وصف (إنكليزي)', 'Description (English)')}><textarea dir="ltr" rows={4} className={inputCls} value={f.descriptionEn ?? ''} onChange={(e) => up({ descriptionEn: e.target.value })} /></Field>
-            <Field label={L('رسالة النجاح (عربي)', 'Success message (Arabic)')}><input className={inputCls} value={f.successAr ?? ''} maxLength={2000} onChange={(e) => up({ successAr: e.target.value })} /></Field>
-            <Field label={L('رسالة النجاح (إنكليزي)', 'Success message (English)')}><input dir="ltr" className={inputCls} value={f.successEn ?? ''} maxLength={2000} onChange={(e) => up({ successEn: e.target.value })} /></Field>
-          </div>
-        )}
-        {tab === 'fields' && <FieldEditor fields={f.fields} onChange={(fields) => up({ fields })} />}
-        {tab === 'workflow' && (
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="space-y-2">
-              <p className="text-sm font-bold">{L('حالات الطلب (الأولى = حالة الطلب الجديد)', 'Statuses (the first one is given to new requests)')}</p>
-              {f.statuses.map((s, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto_auto] gap-1.5">
-                  <input dir="ltr" className={inputCls} placeholder="key" value={s.key} onChange={(e) => up({ statuses: f.statuses.map((x, j) => (j === i ? { ...x, key: keyOf(e.target.value) } : x)) })} />
-                  <input className={inputCls} placeholder={L('عربي', 'Arabic')} value={s.ar} onChange={(e) => up({ statuses: f.statuses.map((x, j) => (j === i ? { ...x, ar: e.target.value } : x)) })} />
-                  <input dir="ltr" className={inputCls} placeholder="English" value={s.en ?? ''} onChange={(e) => up({ statuses: f.statuses.map((x, j) => (j === i ? { ...x, en: e.target.value } : x)) })} />
-                  <input type="color" aria-label="color" className="h-10 w-10 rounded" value={s.color ?? '#64748b'} onChange={(e) => up({ statuses: f.statuses.map((x, j) => (j === i ? { ...x, color: e.target.value } : x)) })} />
-                  <span className="flex"><Button size="sm" variant="ghost" type="button" onClick={() => up({ statuses: move(f.statuses, i, -1) })}>↑</Button><Button size="sm" variant="danger" type="button" onClick={() => up({ statuses: f.statuses.filter((_, j) => j !== i) })}>×</Button></span>
-                </div>
-              ))}
-              <Button size="sm" variant="outline" type="button" onClick={() => up({ statuses: [...f.statuses, { key: `status_${f.statuses.length + 1}`, ar: '', color: '#64748b' }] })}>+ {L('حالة', 'Status')}</Button>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-bold">{L('تصنيفات الطلبات (للفرز)', 'Categories (for sorting requests)')}</p>
-              {f.categories.map((c, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1.5">
-                  <input dir="ltr" className={inputCls} placeholder="key" value={c.key} onChange={(e) => up({ categories: f.categories.map((x, j) => (j === i ? { ...x, key: keyOf(e.target.value) } : x)) })} />
-                  <input className={inputCls} placeholder={L('عربي', 'Arabic')} value={c.ar} onChange={(e) => up({ categories: f.categories.map((x, j) => (j === i ? { ...x, ar: e.target.value } : x)) })} />
-                  <input dir="ltr" className={inputCls} placeholder="English" value={c.en ?? ''} onChange={(e) => up({ categories: f.categories.map((x, j) => (j === i ? { ...x, en: e.target.value } : x)) })} />
-                  <Button size="sm" variant="danger" type="button" onClick={() => up({ categories: f.categories.filter((_, j) => j !== i) })}>×</Button>
-                </div>
-              ))}
-              <Button size="sm" variant="outline" type="button" onClick={() => up({ categories: [...f.categories, { key: `cat_${f.categories.length + 1}`, ar: '' }] })}>+ {L('تصنيف', 'Category')}</Button>
-            </div>
-          </div>
-        )}
-        {tab === 'privacy' && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={L('بريد الموظفين الذين يُبلَّغون بكل طلب جديد', 'Staff e-mails told about each new request')} hint={L('افصل بينها بفاصلة. لا يحتوي البريد على محتوى الطلب.', 'Comma separated. The e-mail never contains the answers.')}><input dir="ltr" className={inputCls} value={f.notifyEmails ?? ''} maxLength={1000} onChange={(e) => up({ notifyEmails: e.target.value })} /></Field>
-            <Field label={L('مدة الاحتفاظ بالطلبات (أيام)', 'Keep requests for (days)')} hint={L('تُحذف الطلبات ومرفقاتها تلقائياً بعد هذه المدة. اتركه فارغاً للاحتفاظ بلا حد.', 'Requests and files are deleted automatically afterwards. Empty = keep.')}><input type="number" min={1} max={3650} className={inputCls} value={f.retentionDays ?? ''} onChange={(e) => up({ retentionDays: e.target.value === '' ? null : Number(e.target.value) })} /></Field>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.sendReceipt} onChange={(e) => up({ sendReceipt: e.target.checked })} />{L('إرسال إشعار استلام لصاحب الطلب (يلزم حقل بريد بدور «البريد»)', 'Send the applicant a receipt (needs an email field with role Email)')}</label>
-            <Field label={L('تكرار الطلب من نفس البريد', 'Same e-mail sending again')}>
-              <select className={inputCls} value={f.dedupe ?? ''} onChange={(e) => up({ dedupe: e.target.value || null })}>
-                <option value="">{L('السماح دائماً', 'Always allow')}</option>
-                <option value="open-email">{L('طلب واحد قيد المعالجة لكل بريد', 'One request in progress per e-mail')}</option>
-                <option value="context-email">{L('مرة واحدة لكل بريد وكل دورة', 'Once per e-mail and course')}</option>
-                <option value="recent-email">{L('تجاهل التكرار خلال 10 دقائق', 'Ignore a repeat within 10 minutes')}</option>
-              </select>
-            </Field>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.requireConsent} onChange={(e) => up({ requireConsent: e.target.checked })} />{L('اشتراط الموافقة على سياسة الخصوصية', 'Require consent to the privacy policy')}</label>
-          </div>
-        )}
-        {tab === 'links' && (
+        {tab === 'fields' && (canEdit ? <FieldEditor fields={fields} onChange={setFields} /> : <p className="text-sm text-gray-500">{L('ليست لديك صلاحية تعديل النماذج.', 'You cannot edit forms.')}</p>)}
+        {tab === 'try' && (
           <div className="space-y-3">
-            <p className="rounded-xl bg-canvas p-3 text-xs text-gray-600">{L('عند وصول طلب أو تغيّر حالته يُرسَل إشعار JSON موقَّع (HMAC-SHA256 في X-Signature) إلى عنوان https تحدده، ليتصل بأنظمة الغرفة وقواعد بياناتها. تُرسل الحقول غير الحساسة فقط؛ الحقول الحساسة والمرفقات لا تغادر هذا النظام.', 'When a request arrives or changes status, a signed JSON notification (HMAC-SHA256 in X-Signature) is POSTed to the https address you set, so the chamber’s own systems and databases can be connected. Only non-sensitive fields are sent; sensitive fields and files never leave this system.')}</p>
-            {f.integrations.map((h, i) => {
-              const set = (p: Partial<Hook>) => up({ integrations: f.integrations.map((x, j) => (j === i ? { ...x, ...p } : x)) });
-              return (
-                <div key={i} className="grid gap-2 rounded-2xl border border-line p-3 sm:grid-cols-2">
-                  <input className={inputCls} placeholder={L('اسم النظام', 'System name')} value={h.name} onChange={(e) => set({ name: e.target.value })} />
-                  <input dir="ltr" className={inputCls} placeholder="https://…" value={h.url} onChange={(e) => set({ url: e.target.value })} />
-                  <input dir="ltr" type="password" autoComplete="new-password" className={inputCls} placeholder={h.hasSecret ? L('(المفتاح السري محفوظ، اتركه فارغاً لإبقائه)', '(secret stored: leave empty to keep)') : L('مفتاح التوقيع السري', 'Signing secret')} value={h.secret ?? ''} onChange={(e) => set({ secret: e.target.value })} />
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    {(['submitted', 'status_changed'] as const).map((ev) => <label key={ev} className="flex items-center gap-1"><input type="checkbox" checked={h.events.includes(ev)} onChange={(e) => set({ events: e.target.checked ? [...h.events, ev] : h.events.filter((x) => x !== ev) })} />{ev === 'submitted' ? L('طلب جديد', 'New request') : L('تغيّر الحالة', 'Status change')}</label>)}
-                    <label className="flex items-center gap-1"><input type="checkbox" checked={h.enabled} onChange={(e) => set({ enabled: e.target.checked })} />{L('مفعّل', 'Enabled')}</label>
-                    <Button size="sm" variant="danger" type="button" onClick={() => up({ integrations: f.integrations.filter((_, j) => j !== i) })}>×</Button>
-                  </div>
-                </div>
-              );
-            })}
-            <Button size="sm" variant="outline" type="button" onClick={() => up({ integrations: [...f.integrations, { name: '', url: '', events: ['submitted'], enabled: true }] })}>+ {L('ربط جديد', 'New integration')}</Button>
+            <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">
+              {L('هذا هو النموذج بحقوله الحالية. يمكنك تعبئته وإرساله للتجربة: الإرسال حقيقي ويظهر كطلب في «الطلبات».', 'This is the form with its current inputs. You can fill it in and send it to try it: the send is real and appears as a request under "Requests".')}
+              {dirty && <b className="block text-red-700">{L('لديك تعديلات غير محفوظة: احفظها أولاً ليُرسَل النموذج بحقوله الجديدة.', 'You have unsaved changes: save them first so the form is sent with its new inputs.')}</b>}
+              {initial.contextType === 'course' && <span className="block">{L('تسجيل الدورة يُرسَل من صفحة الدورة نفسها (يلزمه تحديد الدورة)، لذلك لن يُقبل الإرسال من هنا.', 'Course registration is sent from the course page itself (it needs the course), so a send from here will be refused.')}</span>}
+            </p>
+            <DynamicForm key={`${formKey}-${JSON.stringify(preview.fields).length}`} form={preview}
+              blockSend={dirty ? L('احفظ التعديلات أولاً', 'Save your changes first') : undefined}
+              doneExtra={<Button type="button" variant="outline" onClick={() => setFormKey((k) => k + 1)}>{L('تعبئة نموذج جديد', 'Fill in another')}</Button>} />
           </div>
         )}
         <div className="flex justify-end gap-2 border-t border-line pt-3">
           <Button type="button" variant="outline" onClick={onClose}>{L('إغلاق', 'Close')}</Button>
-          {canEdit && <Button disabled={busy} onClick={save}>{L('حفظ', 'Save')}</Button>}
+          {canEdit && <Button disabled={busy || !dirty} onClick={save}>{L('حفظ', 'Save')}</Button>}
         </div>
       </div>
     </Modal>
@@ -307,62 +204,36 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef | null; on
 // ============================================================================================ forms list
 export function FormsBuilderAdmin() {
   const L = useL();
-  const { lang, href } = useI18n();
+  const { lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const [rows, setRows] = useState<FormDef[] | null>(null);
-  const [edit, setEdit] = useState<FormDef | 'new' | null>(null);
-  const [del, setDel] = useState<FormDef | null>(null);
+  const [edit, setEdit] = useState<FormDef | null>(null);
   const load = useCallback(() => { api<FormDef[]>('/admin/forms').then(setRows).catch((e) => toast(e.message, 'err')); }, [toast]);
   useEffect(load, [load]);
 
   const open = async (r: FormDef) => { try { setEdit(await api<FormDef>(`/admin/forms/${r.id}`)); } catch (e: any) { toast(e.message, 'err'); } };
-  const dup = async (r: FormDef) => {
-    const slug = window.prompt(L('الرابط المختصر للنسخة الجديدة', 'Slug of the copy'), `${r.slug}-copy`);
-    if (!slug) return;
-    try { await api(`/admin/forms/${r.id}/duplicate`, { method: 'POST', body: { slug } }); toast(L('تم النسخ', 'Copied')); load(); } catch (e: any) { toast(e.message, 'err'); }
-  };
-  const remove = async () => {
-    if (!del) return;
-    try { await api(`/admin/forms/${del.id}`, { method: 'DELETE', params: { deleteSubmissions: !!del.submissionsTotal } }); toast(L('تم الحذف', 'Deleted')); setDel(null); load(); } catch (e: any) { toast(e.message, 'err'); }
-  };
   if (!rows) return <Center><Spinner /></Center>;
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-gray-600">{L('كل نموذج قابل للتعديل بالكامل: الحقول (أي نوع)، الإضافة والحذف، المرفقات، الحالات والتصنيفات.', 'Every form is fully editable: fields (any type), add / delete, attachments, statuses and categories.')}</p>
-        {can('forms.create') && <Button onClick={() => setEdit('new')}>+ {L('نموذج جديد', 'New form')}</Button>}
-      </div>
+      <p className="text-sm text-gray-600">{L('اختر نموذجاً لإضافة حقول جديدة أو حذف حقول أو تعديلها، مع اختيار نوع كل حقل.', 'Pick a form to add, delete or edit its inputs and choose the type of each.')}</p>
       <div className="overflow-x-auto rounded-2xl ring-1 ring-line">
         <table className="w-full text-sm">
-          <thead className="bg-canvas text-start text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النموذج', 'Form')}</th><th className="p-3 text-start">{L('الحقول', 'Fields')}</th><th className="p-3 text-start">{L('الطلبات', 'Requests')}</th><th className="p-3 text-start">{L('الحالة', 'State')}</th><th className="p-3" /></tr></thead>
+          <thead className="bg-canvas text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النموذج', 'Form')}</th><th className="p-3 text-start">{L('الحقول', 'Inputs')}</th><th className="p-3 text-start">{L('الطلبات', 'Requests')}</th><th className="p-3" /></tr></thead>
           <tbody className="divide-y divide-line bg-white">
-            {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-gray-500">{L('لا توجد نماذج', 'No forms')}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-gray-500">{L('لا توجد نماذج', 'No forms')}</td></tr>}
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="p-3"><b>{(lang === 'en' && r.titleEn) || r.titleAr}</b><br /><a className="text-xs text-primary underline" dir="ltr" target="_blank" rel="noreferrer" href={href(`/forms/${r.slug}`)}>/forms/{r.slug}</a></td>
-                <td className="p-3">{r.fields.length}</td>
+                <td className="p-3 font-bold">{(lang === 'en' && r.titleEn) || r.titleAr}</td>
+                <td className="p-3">{r.fields.filter((f) => !LAYOUT_TYPES.includes(f.type)).length}</td>
                 <td className="p-3">{r.submissionsTotal ?? 0}{!!r.submissionsUnread && <span className="ms-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{r.submissionsUnread}</span>}</td>
-                <td className="p-3"><span className={`rounded px-1.5 py-0.5 text-[10px] ${r.isOpen ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>{r.isOpen ? L('مفتوح', 'Open') : L('مغلق', 'Closed')}</span></td>
-                <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
-                  <Button size="sm" variant="outline" onClick={() => open(r)}>{can('forms.update') ? L('تعديل', 'Edit') : L('عرض', 'View')}</Button>
-                  {can('forms.create') && <Button size="sm" variant="ghost" onClick={() => dup(r)}>{L('نسخ', 'Duplicate')}</Button>}
-                  {can('forms.delete') && !SYSTEM_SLUGS.includes(r.slug) && <Button size="sm" variant="danger" onClick={() => setDel(r)}>{L('حذف', 'Delete')}</Button>}
-                </span></td>
+                <td className="p-3 text-end"><Button size="sm" variant="outline" onClick={() => open(r)}>{can('forms.update') ? L('تعديل', 'Edit') : L('عرض', 'View')}</Button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {edit && <FormDialog initial={edit === 'new' ? null : edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
-      <Modal open={!!del} onClose={() => setDel(null)} title={L('حذف النموذج', 'Delete form')}>
-        {del && (
-          <div className="space-y-3 text-sm">
-            <p>{del.submissionsTotal ? L(`سيُحذف النموذج مع ${del.submissionsTotal} طلباً ومرفقاتها نهائياً. الأفضل إغلاق النموذج بدل حذفه.`, `The form, its ${del.submissionsTotal} requests and their files will be deleted permanently. Closing the form is usually better.`) : L('حذف هذا النموذج نهائياً؟', 'Delete this form permanently?')}</p>
-            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setDel(null)}>{L('إلغاء', 'Cancel')}</Button><Button variant="danger" onClick={remove}>{L('حذف نهائي', 'Delete')}</Button></div>
-          </div>
-        )}
-      </Modal>
+      {edit && <FormDialog initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load(); }} />}
     </div>
   );
 }
@@ -420,11 +291,26 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
         <div className="space-y-5">
           {s.anonymizedAt && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{L('مُسحت البيانات الشخصية لهذا الطلب بناءً على طلب.', 'This request’s personal data was erased.')}</p>}
           {ctxText(s.context) && <p className="rounded-xl bg-primary/5 p-3 text-sm"><b>{L('مرتبط بـ', 'Linked to')}:</b> {ctxText(s.context)}</p>}
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            {s.fields.filter((f) => f.type !== 'heading' && f.type !== 'note' && f.type !== 'file').map((f) => (
-              <div key={f.key} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}><dt className="text-xs text-gray-500">{(lang === 'en' && f.labelEn) || f.labelAr}{f.sensitive && <span className="ms-1 text-[10px] text-red-600">🔒</span>}</dt><dd className="whitespace-pre-wrap font-semibold">{show(f, s.answers[f.key])}</dd></div>
-            ))}
-          </dl>
+          {/* the request is shown inside the form's own inputs, filled with what the applicant wrote (read only) */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {s.fields.filter((f) => f.type !== 'file' && isShown(f, s.answers)).map((f) => {
+              const label = (lang === 'en' && f.labelEn) || f.labelAr;
+              if (f.type === 'heading') return <h3 key={f.key} className="border-s-4 border-accent ps-3 pt-2 text-sm font-bold text-secondary sm:col-span-2">{label}</h3>;
+              if (f.type === 'note') return <p key={f.key} className="rounded-xl bg-canvas p-3 text-xs text-gray-600 sm:col-span-2">{label}</p>;
+              const v = s.answers[f.key];
+              if (f.type === 'checkbox') return <label key={f.key} className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" disabled checked={v === true} />{label}</label>;
+              const text = v === undefined || v === null || v === '' ? '' : show(f, v);
+              return (
+                <div key={f.key} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}>
+                  <Field label={`${label}${f.sensitive ? ' 🔒' : ''}`}>
+                    {f.type === 'textarea'
+                      ? <textarea readOnly rows={Math.min(8, Math.max(2, text.split('\n').length + 1))} className={`${inputCls} bg-gray-50`} value={text} />
+                      : <input readOnly className={`${inputCls} bg-gray-50`} dir={['email', 'url', 'phone', 'number', 'date'].includes(f.type) ? 'ltr' : undefined} value={text} />}
+                  </Field>
+                </div>
+              );
+            })}
+          </div>
           <div>
             <h3 className="mb-2 text-sm font-bold">{L('المرفقات', 'Attachments')}</h3>
             {s.filesHidden && <p className="text-sm text-gray-500">{L('المرفقات مخفية: تلزم صلاحية «عرض الحقول الحساسة والمرفقات».', 'Attachments are hidden: the sensitive-data permission is needed.')}</p>}

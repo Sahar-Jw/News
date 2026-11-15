@@ -23,7 +23,7 @@ export const isShown = (f: FieldDef, v: Record<string, any>) => {
 };
 
 /** Draws any form built in the dashboard. Everything it shows comes from the field list: no field is hard-coded here. */
-export function DynamicForm({ form, context, initial, onDone, doneExtra }: { form: PublicForm; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode }) {
+export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix, blockSend }: { form: PublicForm; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode; prefix?: Record<string, string>; blockSend?: string }) {
   const { lang, href } = useI18n();
   const L = (ar: string, en?: string | null) => (lang === 'en' && en ? en : ar);
   const [v, setV] = useState<Record<string, any>>(initial ?? {});
@@ -76,10 +76,11 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra }: { for
     ev.preventDefault();
     setError('');
     if (!validate()) return;
+    if (blockSend) { setError(blockSend); return; }
     setBusy(true);
     try {
       const data: Record<string, any> = {};
-      for (const f of form.fields) if (f.type !== 'file' && isShown(f, v) && v[f.key] !== undefined) data[f.key] = v[f.key];
+      for (const f of form.fields) if (f.type !== 'file' && isShown(f, v) && v[f.key] !== undefined) data[f.key] = prefix?.[f.key] && typeof v[f.key] === 'string' && v[f.key] ? `${prefix[f.key]}${v[f.key]}` : v[f.key];
       const fd = new FormData();
       fd.set('data', JSON.stringify(data));
       fd.set('consent', String(consent));
@@ -157,7 +158,7 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra }: { for
             {f.type === 'textarea' ? <textarea rows={4} maxLength={f.maxLength ?? 5000} {...common} />
               : f.type === 'select' ? <select {...common}><option value="">{L('اختر…', 'Select…')}</option>{(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{optLabel(o)}</option>)}</select>
               : <input type={f.type === 'email' ? 'email' : f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : f.type === 'phone' ? 'tel' : 'text'}
-                  dir={['email', 'url', 'phone', 'number'].includes(f.type) ? 'ltr' : undefined} min={f.min} max={f.max} maxLength={f.type === 'text' ? f.maxLength ?? 300 : undefined} {...common} />}
+                  dir={['email', 'url', 'phone', 'number'].includes(f.type) ? 'ltr' : undefined} min={f.min} max={f.max} maxLength={f.type === 'text' ? (f.maxLength ?? 300) - (prefix?.[f.key]?.length ?? 0) : undefined} {...common} />}
           </Field>
         );
       })}
@@ -179,7 +180,7 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra }: { for
 }
 
 /** Loads a form of the dashboard by its slug and draws it. The page around it (title, conditions, tabs) stays as it was. */
-export function FormBySlug({ slug, context, initial, onDone, doneExtra }: { slug: string; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode }) {
+export function FormBySlug({ slug, context, initial, onDone, doneExtra, prefix }: { slug: string; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode; prefix?: Record<string, string> }) {
   const { lang } = useI18n();
   const [form, setForm] = useState<PublicForm | null>(null);
   const [failed, setFailed] = useState(false);
@@ -189,5 +190,5 @@ export function FormBySlug({ slug, context, initial, onDone, doneExtra }: { slug
   }, [slug]);
   if (failed) return <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{lang === 'en' ? 'The form could not be loaded. Please try again later.' : 'تعذّر تحميل النموذج، حاول لاحقاً.'}</p>;
   if (!form) return <Center><Spinner /></Center>;
-  return <DynamicForm form={form} context={context} initial={initial} onDone={onDone} doneExtra={doneExtra} />;
+  return <DynamicForm form={form} context={context} initial={initial} onDone={onDone} doneExtra={doneExtra} prefix={prefix} />;
 }
