@@ -20,8 +20,6 @@ export class FilesController {
     @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
 
-  /** Public files are served by a controlled route; private/ (e.g. CVs) needs permission or ownership. */
-  @Public()
   /**
    * `?download=1` (and optionally `&name=My file`) makes ANY file arrive as a download instead of opening in the browser. The HTML
    * `download` attribute cannot do this when the site and the API are on different domains: browsers ignore it for another origin.
@@ -37,6 +35,12 @@ export class FilesController {
     return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
   }
 
+  /**
+   * Public files are served by a controlled route; private/ (e.g. CVs) needs permission or ownership.
+   * @Public() MUST stay directly on this handler: a decorator only applies to the method right below it, and without it the
+   * auth guard answers 401 to every visitor who is not signed in (images then only show on a device where the admin is logged in).
+   */
+  @Public()
   @Get('*path')
   async serve(@Param('path') p: string | string[], @Req() req: AuthRequest, @Res() res: Response) {
     const rel = Array.isArray(p) ? p.join('/') : p;
