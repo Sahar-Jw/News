@@ -107,8 +107,8 @@ function Content() {
   if (!s) return <Center><Spinner /></Center>;
   const rich = (k: 'conditions' | 'documents' | 'fees', label: string) => (
     <div className="grid gap-3 lg:grid-cols-2">
-      <Field label={`${label} — ${t('mb.adm.ar')}`}><RichEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
-      <Field label={`${label} — ${t('mb.adm.en')}`}><RichEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
+      <Field plain label={`${label} — ${t('mb.adm.ar')}`}><RichEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
+      <Field plain label={`${label} — ${t('mb.adm.en')}`}><RichEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
     </div>
   );
   return (

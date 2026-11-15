@@ -11,7 +11,9 @@ import { CourseRegister } from '@/components/site/course-register';
 import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
 import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/training-shared';
-import { CategoryNews } from '@/components/site/category-news';
+import { NewsFormDialog } from '@/components/admin/news-form';
+import { newsCategoryLabel } from '@/lib/news-categories';
+import { useNewsSaved } from '@/lib/news-events';
 import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
 
 type Tab = 'current' | 'archive' | 'news';
@@ -37,6 +39,9 @@ export default function TrainingPage() {
   const [kind, setKind] = useState('');
   const [reg, setReg] = useState<PublicCourse | null>(null);
   const [reload, setReload] = useState(0);
+  const [adding, setAdding] = useState(false);
+  const [newsTick, setNewsTick] = useState(0);
+  useNewsSaved(() => setNewsTick((n) => n + 1));
 
   const newsTopic = loc('training', 'news_topic');
 
@@ -56,9 +61,16 @@ export default function TrainingPage() {
   useEffect(() => {
     if (tab !== 'news') return;
     setNews(null);
-    // the center's own news (the topic of the page), no filters
-    api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, limit: 9 } }).then(setNews).catch(() => setNews({ data: [], meta: { totalPages: 1, total: 0 } }));
-  }, [tab, lang, newsTopic]);
+    // the center's own news: everything filed under the Training Center News category, plus anything tagged with the page's topic
+    const calls = [api<Paged<Card>>('/public/news', { params: { lang, category: newsCategoryLabel('training', lang), limit: 9 }, cache: 'no-store' })];
+    if (newsTopic) calls.push(api<Paged<Card>>('/public/news', { params: { lang, topics: newsTopic, limit: 9 }, cache: 'no-store' }));
+    Promise.all(calls.map((c) => c.catch(() => null))).then((res) => {
+      const seen = new Set<number>();
+      const rows = res.flatMap((r) => r?.data ?? []).filter((n) => !seen.has(n.id) && !!seen.add(n.id));
+      rows.sort((a, b) => String(b.publishAt ?? '').localeCompare(String(a.publishAt ?? '')) || b.id - a.id);
+      setNews({ data: rows.slice(0, 9), meta: { totalPages: 1, total: rows.length } });
+    });
+  }, [tab, lang, newsTopic, newsTick]);
 
   const switchTab = useCallback((x: Tab) => { setTab(x); setPage(1); setFilters(null); setQ(''); setYear(''); setField(''); setTrainerId(''); setKind(''); }, []);
   const filtered = !!(q.trim() || year || field || trainerId || kind);
@@ -105,6 +117,11 @@ export default function TrainingPage() {
         </div>
       )}
 
+      {tab === 'news' && can('news.create') && (
+        <div><button type="button" onClick={() => setAdding(true)} className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-white hover:brightness-110">＋ {t('md.addNews')}</button></div>
+      )}
+      {adding && <NewsFormDialog category="training" onClose={() => setAdding(false)} />}
+
       {tab === 'news' ? (
         !news ? <Center><Spinner /></Center> : news.data.length === 0 ? <Center>{t('tr.noNews')}</Center> : (
           <>
@@ -140,8 +157,6 @@ export default function TrainingPage() {
       )}
 
       <p className="rounded-2xl border border-line bg-primary/5 px-4 py-3 text-sm text-gray-700"><b>{t('tr.autoArchiveLabel')}</b> {t('tr.autoArchive')}</p>
-
-      <CategoryNews category="training" className="!px-0 !pb-0" />
 
       {reg && <CourseRegister courseId={reg.id} courseName={reg.name} open onClose={() => setReg(null)} onDone={() => setReload((n) => n + 1)} />}
     </div>

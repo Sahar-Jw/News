@@ -94,10 +94,10 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
             )}
             {dropPhoto && <span className="text-gray-500">{t('board.photoRemoved')}</span>}
           </div>
-          <Field label={t('board.bioAr')}><RichEditor key={`ba-${draft.id ?? 'new'}`} value={draft.bioAr} onChange={(h) => setDraft((d) => (d ? { ...d, bioAr: h } : d))} dir="rtl" /></Field>
-          <Field label={t('board.bioEn')} hint={t('faq.hint')}><RichEditor key={`be-${draft.id ?? 'new'}`} value={draft.bioEn} onChange={(h) => setDraft((d) => (d ? { ...d, bioEn: h } : d))} dir="ltr" /></Field>
-          <Field label={t('board.dutiesAr')}><RichEditor key={`da-${draft.id ?? 'new'}`} value={draft.dutiesAr} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesAr: h } : d))} dir="rtl" /></Field>
-          <Field label={t('board.dutiesEn')} hint={t('faq.hint')}><RichEditor key={`de-${draft.id ?? 'new'}`} value={draft.dutiesEn} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesEn: h } : d))} dir="ltr" /></Field>
+          <Field plain label={t('board.bioAr')}><RichEditor key={`ba-${draft.id ?? 'new'}`} value={draft.bioAr} onChange={(h) => setDraft((d) => (d ? { ...d, bioAr: h } : d))} dir="rtl" /></Field>
+          <Field plain label={t('board.bioEn')} hint={t('faq.hint')}><RichEditor key={`be-${draft.id ?? 'new'}`} value={draft.bioEn} onChange={(h) => setDraft((d) => (d ? { ...d, bioEn: h } : d))} dir="ltr" /></Field>
+          <Field plain label={t('board.dutiesAr')}><RichEditor key={`da-${draft.id ?? 'new'}`} value={draft.dutiesAr} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesAr: h } : d))} dir="rtl" /></Field>
+          <Field plain label={t('board.dutiesEn')} hint={t('faq.hint')}><RichEditor key={`de-${draft.id ?? 'new'}`} value={draft.dutiesEn} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesEn: h } : d))} dir="ltr" /></Field>
           <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
         </form>
       )}

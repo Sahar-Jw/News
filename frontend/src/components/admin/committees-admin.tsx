@@ -190,8 +190,8 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
               {!logo && draft.logoUrl && !dropLogo && (<><img src={fileUrl(draft.logoUrl)} alt="" className="h-16 w-16 rounded object-contain" /><button type="button" className="text-red-600 underline" onClick={() => setDropLogo(true)}>{t('board.removePhoto')}</button></>)}
               {dropLogo && <span className="text-gray-500">{t('board.photoRemoved')}</span>}
             </div>
-            <Field label={t('cm.dutiesAr')}><RichEditor key={`da-${draft.id ?? 'new'}`} value={draft.dutiesAr} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesAr: h } : d))} dir="rtl" /></Field>
-            <Field label={t('cm.dutiesEn')} hint={t('faq.hint')}><RichEditor key={`de-${draft.id ?? 'new'}`} value={draft.dutiesEn} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesEn: h } : d))} dir="ltr" /></Field>
+            <Field plain label={t('cm.dutiesAr')}><RichEditor key={`da-${draft.id ?? 'new'}`} value={draft.dutiesAr} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesAr: h } : d))} dir="rtl" /></Field>
+            <Field plain label={t('cm.dutiesEn')} hint={t('faq.hint')}><RichEditor key={`de-${draft.id ?? 'new'}`} value={draft.dutiesEn} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesEn: h } : d))} dir="ltr" /></Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={close}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
@@ -241,13 +241,13 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
                   <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={aDraft.titleAr} onChange={(e) => setADraft({ ...aDraft, titleAr: e.target.value })} /></Field>
                   <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={aDraft.titleEn} onChange={(e) => setADraft({ ...aDraft, titleEn: e.target.value })} /></Field>
                 </div>
-                <Field label={t('cm.bodyAr')}><RichEditor key={`aa-${aDraft.id ?? 'new'}`} value={aDraft.bodyAr} onChange={(h) => setADraft((d) => (d ? { ...d, bodyAr: h } : d))} dir="rtl" /></Field>
-                <Field label={t('cm.bodyEn')} hint={t('faq.hint')}><RichEditor key={`ae-${aDraft.id ?? 'new'}`} value={aDraft.bodyEn} onChange={(h) => setADraft((d) => (d ? { ...d, bodyEn: h } : d))} dir="ltr" /></Field>
+                <Field plain label={t('cm.bodyAr')}><RichEditor key={`aa-${aDraft.id ?? 'new'}`} value={aDraft.bodyAr} onChange={(h) => setADraft((d) => (d ? { ...d, bodyAr: h } : d))} dir="rtl" /></Field>
+                <Field plain label={t('cm.bodyEn')} hint={t('faq.hint')}><RichEditor key={`ae-${aDraft.id ?? 'new'}`} value={aDraft.bodyEn} onChange={(h) => setADraft((d) => (d ? { ...d, bodyEn: h } : d))} dir="ltr" /></Field>
                 {(aDraft.kind === 'initiative' || aDraft.kind === 'success') && <>
-                  <Field label={t('women.goals')}><RichEditor key={`ag-${aDraft.id ?? 'new'}`} value={aDraft.goalsAr} onChange={(h) => setADraft((d) => (d ? { ...d, goalsAr: h } : d))} dir="rtl" /></Field>
-                  <Field label={t('women.goalsEn')}><RichEditor key={`age-${aDraft.id ?? 'new'}`} value={aDraft.goalsEn} onChange={(h) => setADraft((d) => (d ? { ...d, goalsEn: h } : d))} dir="ltr" /></Field>
-                  <Field label={t('women.results')}><RichEditor key={`ar-${aDraft.id ?? 'new'}`} value={aDraft.resultsAr} onChange={(h) => setADraft((d) => (d ? { ...d, resultsAr: h } : d))} dir="rtl" /></Field>
-                  <Field label={t('women.resultsEn')}><RichEditor key={`are-${aDraft.id ?? 'new'}`} value={aDraft.resultsEn} onChange={(h) => setADraft((d) => (d ? { ...d, resultsEn: h } : d))} dir="ltr" /></Field>
+                  <Field plain label={t('women.goals')}><RichEditor key={`ag-${aDraft.id ?? 'new'}`} value={aDraft.goalsAr} onChange={(h) => setADraft((d) => (d ? { ...d, goalsAr: h } : d))} dir="rtl" /></Field>
+                  <Field plain label={t('women.goalsEn')}><RichEditor key={`age-${aDraft.id ?? 'new'}`} value={aDraft.goalsEn} onChange={(h) => setADraft((d) => (d ? { ...d, goalsEn: h } : d))} dir="ltr" /></Field>
+                  <Field plain label={t('women.results')}><RichEditor key={`ar-${aDraft.id ?? 'new'}`} value={aDraft.resultsAr} onChange={(h) => setADraft((d) => (d ? { ...d, resultsAr: h } : d))} dir="rtl" /></Field>
+                  <Field plain label={t('women.resultsEn')}><RichEditor key={`are-${aDraft.id ?? 'new'}`} value={aDraft.resultsEn} onChange={(h) => setADraft((d) => (d ? { ...d, resultsEn: h } : d))} dir="ltr" /></Field>
                 </>}
                 <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setADraft(null)}>{t('app.cancel')}</Button><Button>{t('app.save')}</Button></div>
               </form>

@@ -41,14 +41,16 @@ export function Button({ variant = 'primary', size = 'md', className, onClick, d
 
 export const inputCls = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-gray-400 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-gray-100';
 
-export function Field({ label, children, hint, error }: { label?: string; children: React.ReactNode; hint?: string; error?: string }) {
+/** `plain`: a <div> instead of a <label>. Needed around a rich-text editor: a label forwards every click inside it to its first button (Undo). */
+export function Field({ label, children, hint, error, plain }: { label?: string; children: React.ReactNode; hint?: string; error?: string; plain?: boolean }) {
+  const Wrap = plain ? 'div' : 'label';
   return (
-    <label className="block space-y-1.5">
+    <Wrap className="block space-y-1.5">
       {label && <span className="text-sm font-semibold text-ink/85">{label}</span>}
       {children}
       {hint && <span className="block text-xs text-gray-500">{hint}</span>}
       {error && <span className="block text-xs text-red-600">{error}</span>}
-    </label>
+    </Wrap>
   );
 }
 

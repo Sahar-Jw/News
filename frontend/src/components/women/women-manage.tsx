@@ -173,11 +173,11 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
           </div>
           <Field label={`${tr('العنوان', 'Title')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('title')] as string} onChange={(e) => set(L('title'), e.target.value)} /></Field>
           {(isInit || isStory) && <Field label={`${isStory ? tr('صاحبة التجربة / المشروع', 'Woman / project') : tr('الجهة أو الشريك (اختياري)', 'Partner (optional)')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('subtitle')] as string} onChange={(e) => set(L('subtitle'), e.target.value)} /></Field>}
-          <Field label={isStory ? tr('القصة', 'The story') : tr('التفاصيل', 'Details')}><RichEditor key={`b-${lang}`} dir={dir} value={f[L('body')] as string} onChange={(v) => set(L('body'), v)} /></Field>
+          <Field plain label={isStory ? tr('القصة', 'The story') : tr('التفاصيل', 'Details')}><RichEditor key={`b-${lang}`} dir={dir} value={f[L('body')] as string} onChange={(v) => set(L('body'), v)} /></Field>
           {isInit && (
             <>
-              <Field label={tr('الأهداف', 'Goals')}><RichEditor key={`g-${lang}`} dir={dir} value={f[L('goals')] as string} onChange={(v) => set(L('goals'), v)} /></Field>
-              <Field label={tr('النتائج', 'Results')}><RichEditor key={`r-${lang}`} dir={dir} value={f[L('results')] as string} onChange={(v) => set(L('results'), v)} /></Field>
+              <Field plain label={tr('الأهداف', 'Goals')}><RichEditor key={`g-${lang}`} dir={dir} value={f[L('goals')] as string} onChange={(v) => set(L('goals'), v)} /></Field>
+              <Field plain label={tr('النتائج', 'Results')}><RichEditor key={`r-${lang}`} dir={dir} value={f[L('results')] as string} onChange={(v) => set(L('results'), v)} /></Field>
             </>
           )}
           <ImagePick current={current} file={image} setFile={setImage} remove={dropImage} setRemove={setDropImage} label={tr('صورة (اختياري)', 'Picture (optional)')} />
@@ -323,7 +323,7 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
         <div className="space-y-4">
           <Tabs lang={lang} setLang={setLang} />
           {fields.map((fl) => (
-            <Field key={fl.key} label={lang === 'ar' ? fl.ar : fl.en}>
+            <Field key={fl.key} plain={fl.kind === 'rich'} label={lang === 'ar' ? fl.ar : fl.en}>
               {fl.kind === 'rich'
                 ? <RichEditor key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
                 : fl.kind === 'text'
@@ -462,7 +462,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
           {mayFeature && <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={f.isFeatured} onChange={(e) => set('isFeatured', e.target.checked)} />{tr('خبر مميز', 'Featured')}</label>}
         </div>
 
-        <Field label={tr('نص الخبر', 'News text')} error={errors.body}><RichEditor key={f.language} dir={dir} value={f.body} onChange={(h) => set('body', h)} /></Field>
+        <Field plain label={tr('نص الخبر', 'News text')} error={errors.body}><RichEditor key={f.language} dir={dir} value={f.body} onChange={(h) => set('body', h)} /></Field>
 
         <Field label={tr('رابط فيديو يوتيوب (اختياري)', 'YouTube video link (optional)')} error={errors.youtubeUrl}>
           <input type="url" dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={f.youtubeUrl} onChange={(e) => set('youtubeUrl', e.target.value)} />

@@ -314,8 +314,8 @@ function Content() {
   if (!s) return <Center><Spinner /></Center>;
   const rich = (k: 'about' | 'services', label: string) => (
     <div className="grid gap-3 lg:grid-cols-2">
-      <Field label={`${label} — ${t('gt.a.ar')}`}><RichEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
-      <Field label={`${label} — ${t('gt.a.en')}`}><RichEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
+      <Field plain label={`${label} — ${t('gt.a.ar')}`}><RichEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
+      <Field plain label={`${label} — ${t('gt.a.en')}`}><RichEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
     </div>
   );
   return (

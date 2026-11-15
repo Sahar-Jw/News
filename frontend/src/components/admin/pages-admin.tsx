@@ -108,10 +108,10 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
             <Field label={t('pg.titleAr')}><input maxLength={255} required dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} disabled={busy} /></Field>
             <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} disabled={busy} /></Field>
           </div>
-          <Field label={t('pg.bodyAr')}>{slug === 'about'
+          <Field plain={slug === 'about'} label={t('pg.bodyAr')}>{slug === 'about'
             ? <RichEditor value={draft.bodyAr} onChange={(bodyAr) => setDraft((current) => ({ ...current, bodyAr }))} dir="rtl" />
             : <textarea rows={12} maxLength={20000} dir="rtl" className={inputCls} value={draft.bodyAr} onChange={(e) => setDraft({ ...draft, bodyAr: e.target.value })} disabled={busy} />}</Field>
-          <Field label={t('pg.bodyEn')}>{slug === 'about'
+          <Field plain={slug === 'about'} label={t('pg.bodyEn')}>{slug === 'about'
             ? <RichEditor value={draft.bodyEn} onChange={(bodyEn) => setDraft((current) => ({ ...current, bodyEn }))} dir="ltr" />
             : <textarea rows={12} maxLength={20000} dir="ltr" className={inputCls} value={draft.bodyEn} onChange={(e) => setDraft({ ...draft, bodyEn: e.target.value })} disabled={busy} />}</Field>
           {can('pages.update') && <div className="flex justify-end"><Button disabled={busy}>{t('app.save')}</Button></div>}
