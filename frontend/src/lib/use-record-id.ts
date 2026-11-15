@@ -3,8 +3,8 @@ import { useParams, useSearchParams } from 'next/navigation';
 
 /**
  * The id / slug of the record a detail page shows. Detail pages live at clean addresses (/news/123/, /pages/about/): the value is a path
- * parameter. Old addresses (/news/view/?id=123) are redirected to them by next.config.mjs; the query string is still read here so an
- * old link that slips through (a page open in a browser during the update) keeps working.
+ * parameter (the folder is [id] or [slug]). Old addresses (/news/view/?id=123) are redirected to them by src/middleware.ts; the query string is
+ * still read here so an old link that slips through (a page open in a browser during the update) keeps working.
  */
 export function useRecordId(key: 'id' | 'slug' = 'id'): string | null {
   const params = useParams<Record<string, string | string[]>>();

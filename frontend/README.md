@@ -25,7 +25,7 @@ Production: `npm run build` -> upload the contents of `out/` to `public_html` (t
 | `/` | redirects to `/ar/` (or the last chosen language) |
 | `/{ar,en}/` | home: ticker, hero, featured (latest 5 news marked as featured, or mentioning "رئيس الغرفة"), latest, team, services, testimonials, partners, experts, statistics, company, contact. Order/visibility/titles come from `sections_home` settings |
 | `/{lang}/news/?category=&subcategory=&page=` | list with filters |
-| `/{lang}/news/view/?id=` | article: gallery, rich body, topics, share, related, view count |
+| `/{lang}/news/{id}/` | article: gallery, rich body, topics, share, related, view count (the same pattern for `documents`, `gallery`, `services`, `training`, `occasions`, `committees`, `board`; static pages are `/{lang}/pages/{slug}/`) |
 | `/{lang}/search/?q=` | search (min 2 chars) |
 | `/{lang}/login`, `/register` | not linked from the navigation (open by URL) |
 | `/{lang}/privacy`, `/terms`, `/sitemap` | text from settings category `pages` (`privacy_ar` ... JSON `{"title","body"}`) |
@@ -35,7 +35,7 @@ Production: `npm run build` -> upload the contents of `out/` to `public_html` (t
 | `/{lang}/admin/news/edit?id=` / `?section=CODE` / `?new=1` | create/edit form |
 | `/{lang}/admin/{users,roles,settings,cities,messages,audit,profile}` | management pages |
 
-The news detail uses `?id=` (not `/news/123`) because a static export cannot create pages for ids that don't exist yet.
+Detail pages use a path per record (`/news/123/`, `/pages/about/`). The app runs as a Node server (`output: 'standalone'`), not a static export, so a page can exist for any id. The old `/view/?id=` and `/pages/view/?slug=` addresses no longer exist as pages: `src/middleware.ts` redirects them (308) to the clean address so old bookmarks, sent e-mails and saved menu items keep working.
 
 The shared top bar, navigation, and footer wrap every public page (including login and registration); the admin area uses its own dashboard navigation. News publishes immediately by default, while scheduled news becomes published when its scheduled time arrives.
 
