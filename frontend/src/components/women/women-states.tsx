@@ -5,10 +5,12 @@ const T = {
   ar: {
     loading: 'جارٍ تحميل الصفحة', nf: 'عذراً، الصفحة غير موجودة', nfBody: 'قد يكون الرابط قديماً أو أن الصفحة نُقلت أو لم تعد متاحة. يمكنكِ العودة إلى الصفحة الرئيسية للّجنة.',
     err: 'حدث خطأ غير متوقع', errBody: 'تعذّر تحميل هذه الصفحة. تحقّقي من الاتصال ثم حاولي مرة أخرى.', retry: 'إعادة المحاولة', home: 'الرئيسية', chamber: 'موقع الغرفة', news: 'الأخبار',
+    soon: 'صفحة لجنة سيدات الأعمال قيد الإعداد', soonBody: 'لم يتم نشر محتوى اللجنة بعد. تابعونا قريباً.',
   },
   en: {
     loading: 'Loading page', nf: 'Sorry, this page could not be found', nfBody: 'The link may be outdated, or the page may have moved or is no longer available. You can head back to the committee home page.',
     err: 'Something went wrong', errBody: 'This page could not be loaded. Check the connection and try again.', retry: 'Try again', home: 'Home', chamber: 'Chamber website', news: 'News',
+    soon: 'The Businesswomen Committee page is coming soon', soonBody: 'The committee content has not been published yet. Please check back shortly.',
   },
 };
 const text = (lang: 'ar' | 'en') => T[lang];
@@ -46,7 +48,7 @@ function Shell({ icon, big, title, body, children }: { icon: React.ReactNode; bi
       <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white text-center shadow-card ring-1 ring-line">
         <div className="bg-secondary px-6 py-8 text-white">
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white/15 text-3xl ring-1 ring-white/25" aria-hidden="true">{icon}</span>
-          <p className="mt-3 text-6xl font-extrabold tracking-tight text-white/90 sm:text-7xl">{big}</p>
+          {big && <p className="mt-3 text-6xl font-extrabold tracking-tight text-white/90 sm:text-7xl">{big}</p>}
         </div>
         <div className="h-1 bg-gradient-to-r from-transparent via-accent to-transparent" aria-hidden="true" />
         <div className="p-8 sm:p-12">
@@ -79,6 +81,16 @@ export function WomenError({ lang, onRetry }: { lang: 'ar' | 'en'; onRetry?: () 
       {onRetry && <button type="button" onClick={onRetry} className={primaryBtn}>{x.retry}</button>}
       <Link href={`/${lang}/committees/women/`} className={ghostBtn}>{x.home}</Link>
       <Link href={`/${lang}/`} className={ghostBtn}>{x.chamber}</Link>
+    </Shell>
+  );
+}
+
+/** The committee page when no active businesswomen committee exists yet: a friendly "coming soon" screen, not a 404. */
+export function WomenSoon({ lang }: { lang: 'ar' | 'en' }) {
+  const x = text(lang);
+  return (
+    <Shell icon="🌸" big="" title={x.soon} body={x.soonBody}>
+      <Link href={`/${lang}/`} className={primaryBtn}>{x.chamber}</Link>
     </Shell>
   );
 }

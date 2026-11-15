@@ -18,7 +18,7 @@ import { WomenManageBar } from '@/components/women/women-manage';
 import { useAuth } from '@/lib/auth';
 import { CommitteeDialog } from '@/components/admin/committees-admin';
 import { ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
-import { WomenError, WomenLoader, WomenNotFound } from '@/components/women/women-states';
+import { WomenError, WomenLoader, WomenNotFound, WomenSoon } from '@/components/women/women-states';
 
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
 export interface Activity { id: number; kind: string; title: string; body: string; goals?: string; results?: string; eventDate: string | null; endDate?: string | null; status?: 'upcoming' | 'ongoing' | 'finished' | null; upcoming: boolean; subtitle?: string; eventType?: string | null; archived?: boolean; image?: string | null }
@@ -190,7 +190,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
   const isWomenPath = path.includes('/women');
   if (state === 'load') return isWomenPath ? <WomenLoader lang={lang} /> : <Center><Spinner /></Center>;
   if (state === 'error') return isWomenPath ? <WomenError lang={lang} onRetry={() => load()} /> : <Center>{t('app.error')}</Center>;
-  if (state === '404' || !c) return isWomenPath ? <WomenNotFound lang={lang} /> : <NotFoundContent lang={lang} />;
+  if (state === '404' || !c) return isWomenPath ? <WomenSoon lang={lang} /> : <NotFoundContent lang={lang} />;
   const allActivities = [...c.meetings, ...(c.visits ?? []), ...(c.events ?? []), ...c.recommendations, ...(c.outputs ?? []), ...c.initiatives, ...(c.successStories ?? [])];
   const upcoming = [...c.meetings, ...(c.events ?? [])].filter((m) => m.upcoming).sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
   const vision = loc('women', 'vision');

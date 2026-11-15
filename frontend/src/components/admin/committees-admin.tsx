@@ -341,7 +341,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/committees/bulk-delete', can: can('committees.delete') }}
-        toolbar={(kind === 'women' ? womenCount === 0 : true) && can('committees.create') && <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
+        toolbar={can('committees.create') && (kind === 'women' && womenCount !== null && womenCount > 0 ? <span className="text-xs text-gray-500">{t('cm.womenOne')}</span> : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>)}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
