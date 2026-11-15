@@ -3,7 +3,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { HUBS, hubUrl } from '@/lib/hubs-meta';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import { HUBS, hubUrl, normalizeNavUrl, resolveHub } from '@/lib/hubs-meta';
 import { Center, Spinner } from '@/components/ui/ui';
 import { RequirePerm } from '@/components/admin/guard';
 import { SettingsEditor } from '@/components/admin/settings-editor';
@@ -46,14 +48,14 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <FormSubmissionsAdmin slugs={['incubator-application']} />,
   'get2trade.bookings': () => <FormSubmissionsAdmin slugs={['get2trade-booking', 'get2trade-inquiry']} />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,
   'services.services': () => <ServicesAdmin />, 'services.hours': () => <ScheduleAdmin />, 'services.dates': () => <AppointmentsAdmin />, 'services.dashboard': () => <DatesDashboard />, 'services.customers': () => <CustomersAdmin />,
-  'documents.documents': () => <DocumentsAdmin />, 'documents.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin kind="sector" />,
-  'media.news': () => <MediaNewsAdmin />, 'media.gallery': () => <GalleryAdmin />,
-  'occasions.events': () => <OccasionsAdmin />,
+  'documents.documents': () => <DocumentsAdmin />, 'library.library': () => <DocumentsAdmin kind="library" />, 'board.board': () => <BoardAdmin />, 'committees.committees': () => <CommitteesAdmin kind="sector" />,
+  'media.news': () => <MediaNewsAdmin />, 'gallery.gallery': () => <GalleryAdmin />,
+  'occasions.events': () => <OccasionsAdmin view="events" />, 'agenda.events': () => <OccasionsAdmin view="agenda" />,
   'women.content': () => <CommitteesAdmin kind="women" />,
   'women.links': () => <WomenMenuAdmin />,
-  'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
-  'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
-  'forms.builder': () => <FormsBuilderAdmin />, 'forms.backups': () => <BackupsAdmin />,
+  'about.about': () => <PagesAdmin slug="about" />, 'privacy.privacy': () => <PagesAdmin slug="privacy" />, 'terms.terms': () => <PagesAdmin slug="terms" />, 'faq.faqs': () => <FaqsAdmin />,
+  'subscribers.subscribers': () => <SubscribersAdmin />, 'ads.ads': () => <AdsAdmin />,
+  'forms.builder': () => <FormsBuilderAdmin />, 'backups.backups': () => <BackupsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,
 };
 
@@ -68,7 +70,30 @@ function Hub() {
   const sp = useSearchParams();
   const ar = lang === 'ar';
 
-  const hubs = HUBS.map((h) => ({ ...h, tabs: h.tabs.filter((x) => can(...x.perms)) })).filter((h) => h.tabs.length > 0);
+  // an old link (?page=pages&tab=faqs ...) opens the entry that holds that tab now
+  const rawPage = sp.get('page');
+  useEffect(() => {
+    const r = rawPage ? resolveHub(rawPage, sp.get('tab') ?? undefined) : null;
+    if (r) { const q = new URLSearchParams(sp.toString()); q.set('page', r.hub); if (r.tab) q.set('tab', r.tab); router.replace(href(`/admin/settings?${q.toString()}`)); }
+  }, [rawPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // every entry is named like its page in the main menu (Arabic and English): rename the menu item and the entry follows
+  const [menuNames, setMenuNames] = useState<Record<string, { ar?: string; en?: string }>>({});
+  useEffect(() => {
+    const load = (l: 'ar' | 'en') => api<{ items: { title: string; url: string }[] }[]>('/public/nav', { params: { lang: l }, cache: 'no-store' }).catch(() => []);
+    Promise.all([load('ar'), load('en')]).then(([a, e]) => {
+      const m: Record<string, { ar?: string; en?: string }> = {};
+      a.forEach((g) => g.items.forEach((i) => { (m[normalizeNavUrl(i.url)] ??= {}).ar = i.title; }));
+      e.forEach((g) => g.items.forEach((i) => { (m[normalizeNavUrl(i.url)] ??= {}).en = i.title; }));
+      setMenuNames(m);
+    });
+  }, []);
+  const named = (h: (typeof HUBS)[number]) => {
+    const hit = h.nav?.map((u) => menuNames[normalizeNavUrl(u)]).find(Boolean);
+    return { ...h, ar: hit?.ar || h.ar, en: hit?.en || h.en };
+  };
+
+  const hubs = HUBS.map((h) => named({ ...h, tabs: h.tabs.filter((x) => can(...x.perms)) })).filter((h) => h.tabs.length > 0);
   if (hubs.length === 0) return <Center>{t('adm.noAccess')}</Center>;
 
   const hub = hubs.find((h) => h.key === sp.get('page'));
@@ -84,7 +109,7 @@ function Hub() {
   return (
     <>
       <h1 className="mb-1 text-2xl font-bold">{t('adm.settings')}</h1>
-      <p className="mb-5 text-sm text-gray-500">{ar ? 'اختر صفحة من صفحات الموقع لإدارة كل ما يخصها في تبويبات.' : 'Pick a page of the site to manage everything about it in tabs.'}</p>
+      <p className="mb-5 text-sm text-gray-500">{ar ? 'لكل صفحة من صفحات الموقع إعداداتها الخاصة، باسمها نفسه في القائمة الرئيسية.' : 'Every page of the site has its own settings, named exactly like the page in the main menu.'}</p>
 
       {!hub ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">

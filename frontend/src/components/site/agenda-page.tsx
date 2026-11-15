@@ -103,7 +103,7 @@ function Agenda() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <EventsManageBar />
+      <EventsManageBar agenda />
       <header className="mb-6">
         <h1 className="text-2xl font-extrabold text-secondary">{ar ? 'أجندة الغرفة' : 'Chamber agenda'}</h1>
         <p className="mt-1 text-sm text-gray-600">{ar ? 'الفعاليات القادمة للغرفة: الموعد والمكان والجهة المنظمة والفئة المستهدفة وطريقة التسجيل.' : 'The Chamber’s upcoming events: date, place, organizer, target audience and how to register.'}</p>

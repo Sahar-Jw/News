@@ -87,7 +87,7 @@ export class UpdateOccasionDto {
 
 export class OccasionsAdminQueryDto extends AdminListQueryDto {
   /** optional filter of the occasions table: only upcoming (date today or later) or only previous */
-  @IsOptional() @IsIn(['upcoming', 'current', 'previous', 'exhibitions']) status?: string;
+  @IsOptional() @IsIn(['upcoming', 'current', 'previous', 'exhibitions', 'agenda']) status?: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
   @IsOptional() @IsIn(['organized', 'participating']) participation?: string;
 }

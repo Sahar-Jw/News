@@ -143,6 +143,7 @@ export class OccasionsService {
     if (q.to) rows = rows.filter((r) => this.eventDate(r) <= q.to!.slice(0, 10));
     const effective = scope === 'all' && q.status ? q.status : scope;
     if (effective === 'upcoming' || effective === 'current' || effective === 'previous') rows = rows.filter((r) => this.statusOf(r, today) === effective);
+    if (effective === 'agenda') rows = rows.filter((r) => this.statusOf(r, today) !== 'previous'); // still to come or happening now
     if (effective === 'exhibitions') rows = rows.filter((r) => this.eventType(r) === 'exhibition');
     if (q.type) rows = rows.filter((r) => this.eventType(r) === q.type);
     if (q.participation) rows = rows.filter((r) => this.text(r, 'participation') === q.participation);

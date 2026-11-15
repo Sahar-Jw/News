@@ -271,17 +271,17 @@ export function EventsCalendar({ card }: { card?: (e: PublicEvent) => React.Reac
 }
 
 /** buttons at the top for the people who manage the page (visitors see nothing): add news to the events category, the events list and its settings */
-export function EventsManageBar() {
+export function EventsManageBar({ agenda = false }: { agenda?: boolean } = {}) {
   const { lang } = useI18n();
   const { can } = useAuth();
   const [adding, setAdding] = useState(false);
   const ar = lang === 'ar';
   const mayRead = can('occasions.read'), mayCreate = can('occasions.create'), mayNews = can('news.create');
   return (
-    <PageManageBar show={mayRead || mayCreate || mayNews} settingsUrl={mayRead ? '/admin/settings?page=occasions&tab=events' : undefined}>
-      {mayCreate && <ManageLink tone="solid" to="/admin/settings?page=occasions&tab=events">＋ {ar ? 'إضافة معرض / مناسبة' : 'Add exhibition / occasion'}</ManageLink>}
+    <PageManageBar show={mayRead || mayCreate || mayNews} settingsUrl={mayRead ? (agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events') : undefined}>
+      {mayCreate && <ManageLink tone="solid" to={agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events'}>＋ {ar ? 'إضافة معرض / مناسبة' : 'Add exhibition / occasion'}</ManageLink>}
       {mayNews && <ManageBtn onClick={() => setAdding(true)}>＋ {ar ? 'إضافة خبر' : 'Add news'}</ManageBtn>}
-      {mayRead && <ManageLink to="/admin/settings?page=occasions&tab=events">▤ {ar ? 'إدارة المعارض والمناسبات' : 'Manage exhibitions & occasions'}</ManageLink>}
+      {mayRead && <ManageLink to={agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events'}>▤ {ar ? 'إدارة المعارض والمناسبات' : 'Manage exhibitions & occasions'}</ManageLink>}
       {adding && <NewsFormDialog category="events" onClose={() => setAdding(false)} />}
     </PageManageBar>
   );

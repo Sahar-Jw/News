@@ -25,7 +25,7 @@ const NEWS_KINDS_AR: [string, string][] = [['news', 'خبر'], ['visit', 'زيا
 const NEWS_KINDS_EN: [string, string][] = [['news', 'News'], ['visit', 'Visit'], ['meeting', 'Meeting'], ['participation', 'Participation'], ['activity', 'Activity'], ['coverage', 'Media coverage']];
 
 /** All occasions; the status filter shows only the upcoming ones (date today or later) or only the previous ones. */
-export function OccasionsAdmin() {
+export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
   const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -113,11 +113,12 @@ export function OccasionsAdmin() {
         endpoint="/admin/occasions"
         columns={cols}
         dateFilter
+        baseParams={view ? { status: view === 'agenda' ? 'agenda' : 'previous' } : undefined}
         refreshKey={key}
         exportable={can('occasions.export')}
         exportName="occasions"
         filters={[
-          { key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'current', label: t('oc.current') }, { value: 'previous', label: t('oc.previous') }, { value: 'exhibitions', label: t('oc.exhibitions') }] },
+          ...(view ? [] : [{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'current', label: t('oc.current') }, { value: 'previous', label: t('oc.previous') }, { value: 'exhibitions', label: t('oc.exhibitions') }] }]),
           { key: 'type', label: t('oc.type'), options: [{ value: 'occasion', label: t('oc.occasion') }, { value: 'exhibition', label: t('oc.exhibition') }] },
           { key: 'participation', label: tr('نوع المشاركة', 'Participation'), options: [{ value: 'organized', label: tr('تنظمها الغرفة', 'Organized by the Chamber') }, { value: 'participating', label: tr('تشارك فيها الغرفة', 'Chamber participates') }] },
         ]}
