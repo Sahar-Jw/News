@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
-import { fixedNewsCategoryKey, fixedNewsCategories, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
+import { NEWS_MAIN_CATEGORIES, fixedNewsCategories, newsCategoryAllLabels, newsCategoryKeyOf, newsCategoryLabels } from '../../common/news-categories';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -79,15 +79,14 @@ export class NewsPublicService {
   async list(q: PublicNewsQueryDto, v: Viewer) {
     const p = publicPage(q);
     const qb = this.slim(onlyRegular(this.base(q.lang ?? Language.AR, v), 'n'));
-    // a fixed category in the link may be spelled in the other language (/media?category=… after switching language)
+    // a fixed category in the link may be spelled in the other language (/media?category=… after switching language).
+    // The stored value is compared trimmed, with inner spaces collapsed and in lower case, exactly like the menu lists it,
+    // so every category the menu offers finds its news (a stray double space / trailing space in the stored value no longer hides it).
     if (q.category) {
       const label = normalizeLabel(q.category);
-      const key = fixedNewsCategoryKey(label);
-      if (key) {
-        // a fixed category matches every spelling it is stored with: both languages, any letter case, and the older women's labels
-        const labels = [...newsCategoryLabels(key), ...(key === 'women' ? ['سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال', 'Businesswomen'] : [])].map((x) => x.toLowerCase());
-        qb.andWhere('LOWER(TRIM(n.mainCategory)) IN (:...cats)', { cats: labels });
-      } else qb.andWhere('n.mainCategory = :cat', { cat: label });
+      const key = newsCategoryKeyOf(label);
+      const labels = (key ? newsCategoryAllLabels(key) : [label]).map((x) => normalizeLabel(x).toLowerCase());
+      qb.andWhere(`LOWER(TRIM(REGEXP_REPLACE(n.mainCategory, '\\s+', ' ', 'g'))) IN (:...cats)`, { cats: labels });
     }
     if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
     if (q.topics) {
@@ -172,19 +171,26 @@ export class NewsPublicService {
   async categories(lang: Language | undefined, v: Viewer) {
     const L = lang ?? Language.AR;
     const [mainRows, subRows] = await Promise.all([
-      this.repo.createQueryBuilder('n')
-        .select('n.mainCategory', 'v')
-        .distinct(true)
-        .where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
-        .andWhere('n.language = :lang', { lang: L })
-        .getRawMany(),
+      // only categories that have news THIS visitor can see (published / scheduled-and-due, right visibility and language, ordinary news)
+      onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).getRawMany(),
       this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
     ]);
     const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
-    // `fixed` = the media-center categories in display order; `main` = those first, then any other category in use
-    const main = withFixedFirst(L, sort(mainRows)).filter((category) =>
-      !fixedNewsCategoryKey(category) || mainRows.some((row) => fixedNewsCategoryKey(row.v) === fixedNewsCategoryKey(category)),
-    );
+    // one entry per category: spelling variants (spaces, letter case, the other language, older women's labels) are merged
+    const usedKeys = new Set<string>();
+    const others = new Map<string, string>();
+    for (const row of mainRows) {
+      const label = normalizeLabel(row.v);
+      if (!label) continue;
+      const key = newsCategoryKeyOf(label);
+      if (key) usedKeys.add(key);
+      else if (!others.has(label.toLowerCase())) others.set(label.toLowerCase(), label);
+    }
+    // `fixed` = the media-center categories in display order; `main` = the fixed ones that have news (in that order), then any other category in use
+    const main = [
+      ...NEWS_MAIN_CATEGORIES.filter((c) => usedKeys.has(c.key)).map((c) => (L === Language.EN ? c.en : c.ar)),
+      ...[...others.values()].sort((a, b) => a.localeCompare(b)),
+    ];
     return { main, sub: sort(subRows), fixed: fixedNewsCategories(L) };
   }
 

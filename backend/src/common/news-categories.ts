@@ -63,3 +63,17 @@ export const localizeFixedNewsCategory = (value: string, lang?: string): string 
 };
 
 export const NEWS_CATEGORY_KEYS: string[] = NEWS_MAIN_CATEGORIES.map((c) => c.key);
+
+/** Older spellings of the Businesswomen category that are still stored on some news (matched together with the fixed labels). */
+const WOMEN_LEGACY_LABELS = ['سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال', 'Businesswomen'];
+
+/** Like fixedNewsCategoryKey, but also recognises the older Businesswomen spellings (so the menu and the filter agree). */
+export const newsCategoryKeyOf = (value: string | null | undefined): NewsMainCategoryKey | undefined => {
+  const hit = fixedNewsCategoryKey(value);
+  if (hit) return hit;
+  const v = (value ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+  return WOMEN_LEGACY_LABELS.some((l) => l.toLowerCase() === v) ? 'women' : undefined;
+};
+
+/** Every spelling a news item of this fixed category may be stored with (both languages + older spellings). */
+export const newsCategoryAllLabels = (key: NewsMainCategoryKey): string[] => [...newsCategoryLabels(key), ...(key === 'women' ? WOMEN_LEGACY_LABELS : [])];
