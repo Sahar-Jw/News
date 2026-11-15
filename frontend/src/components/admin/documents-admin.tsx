@@ -12,7 +12,7 @@ import { RequirePerm } from '@/components/admin/guard';
 
 type Row = DocRow;
 
-/** Decisions, circulars and library files. Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. */
+/** Decisions, circulars and library files. Each record needs a PDF, pictures, or both (at least one). */
 export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
   const { t, href } = useI18n();
   const { can } = useAuth();
@@ -31,6 +31,7 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
     { key: 'kind', searchable: false, label: t('doc.kind'), render: (r) => t(`doc.kind.${r.kind}`), text: (r) => t(`doc.kind.${r.kind}`) },
     { key: 'issuerAr', searchable: false, label: t('doc.issuer'), render: (r) => r.issuerAr, text: (r) => r.issuerAr },
     { key: 'docDate', searchable: false, label: t('doc.date'), render: (r) => r.docDate ?? '', text: (r) => r.docDate ?? '' },
+    { key: 'fileUrl', searchable: false, label: t('doc.attachments'), render: (r) => <span className="whitespace-nowrap text-xs">{r.fileUrl ? 'PDF ' : ''}{(r.images?.length ?? 0) > 0 ? `🖼 ${r.images!.length}` : ''}</span>, text: (r) => `${r.fileUrl ? 'PDF ' : ''}${r.images?.length ?? 0}` },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
   ];
 

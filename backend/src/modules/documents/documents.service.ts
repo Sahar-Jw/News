@@ -8,6 +8,8 @@ import { ContentStore, Rec, isActive, pick, s } from '../content/content.store';
 import { filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { DOCUMENT_KINDS, DocumentKind, OFFICIAL_DOCUMENT_KINDS, SUBTYPES_OF_KIND } from './document.entity';
+import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
+import type { DocUploads } from './documents.controller';
 import { CreateDocumentDto, DocumentsAdminQueryDto, PublicDocumentsQueryDto, UpdateDocumentDto } from './documents.dto';
 
 /**
@@ -40,7 +42,7 @@ export class DocumentsService {
   private view(r: Rec) {
     return {
       id: r.id, kind: kindOfDocCode(r.code) as DocumentKind, subtype: this.subtypeOf(r), docNumber: s(r.x.docNumber), titleAr: r.title, titleEn: s(r.x.titleEn), summaryAr: r.body ?? '', summaryEn: s(r.x.summaryEn),
-      issuerAr: s(r.x.issuerAr), issuerEn: s(r.x.issuerEn), docDate: (r.x.docDate ?? null) as string | null, file: r.pdf as string, fileUrl: this.storage.url(r.pdf), isActive: isActive(r),
+      issuerAr: s(r.x.issuerAr), issuerEn: s(r.x.issuerEn), docDate: (r.x.docDate ?? null) as string | null, file: (r.pdf ?? null) as string | null, fileUrl: r.pdf ? this.storage.url(r.pdf) : null, images: r.images ?? [], imageUrls: (r.images ?? []).map((p) => this.storage.url(p)), isActive: isActive(r),
       createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
   }
@@ -70,12 +72,19 @@ export class DocumentsService {
     return this.view(r);
   }
 
-  async create(dto: CreateDocumentDto, file: Express.Multer.File | undefined, actor: AuthUser) {
-    if (!file) throw new BadRequestException('ملف PDF مطلوب');
-    const path = await this.storage.savePdf(file, 'documents');
+  async create(dto: CreateDocumentDto, files: DocUploads, actor: AuthUser) {
+    const pdfFile = files?.file?.[0];
+    const imageFiles = files?.images ?? [];
+    if (!pdfFile && imageFiles.length === 0) throw new BadRequestException('يجب إرفاق ملف PDF أو صورة واحدة على الأقل');
+    if (imageFiles.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    const saved: string[] = [];
     try {
+      const pdf = pdfFile ? await this.storage.savePdf(pdfFile, 'documents') : null;
+      if (pdf) saved.push(pdf);
+      const images = await this.storage.saveImages(imageFiles, 'documents');
+      saved.push(...images);
       const r = await this.store.create(docCode(dto.kind), {
-        title: dto.titleAr.trim(), body: dto.summaryAr?.trim() || null, pdf: path,
+        title: dto.titleAr.trim(), body: dto.summaryAr?.trim() || null, pdf, images,
         x: {
           subtype: this.subtypeInput(dto.kind, dto.subtype) ?? null, docNumber: dto.docNumber?.trim() || null, titleEn: dto.titleEn?.trim() || null, summaryEn: dto.summaryEn?.trim() || null,
           issuerAr: dto.issuerAr?.trim() || null, issuerEn: dto.issuerEn?.trim() || null, docDate: dto.docDate ? dto.docDate.slice(0, 10) : null, isActive: dto.isActive ?? true,
@@ -84,19 +93,32 @@ export class DocumentsService {
       await this.audit.log({ category: 'documents', action: 'create', description: `إضافة وثيقة: ${r.title}`, actorId: actor.id, entityType: 'documents', entityId: r.id });
       return this.view(r);
     } catch (e) {
-      await this.storage.remove(path); // nothing saved: do not leave an orphan file
+      await this.storage.removeMany(saved); // nothing saved: do not leave orphan files
       throw e;
     }
   }
 
-  async update(id: number, dto: UpdateDocumentDto, file: Express.Multer.File | undefined, actor: AuthUser) {
+  async update(id: number, dto: UpdateDocumentDto, files: DocUploads, actor: AuthUser) {
     const cur = await this.store.get(id, DOC_CODES);
     if (!cur) throw new NotFoundException('الوثيقة غير موجودة');
-    const newPath = file ? await this.storage.savePdf(file, 'documents') : null;
+    const pdfFile = files?.file?.[0];
+    const imageFiles = files?.images ?? [];
+    const existing = cur.images ?? [];
+    const keep = dto.keepImages ?? existing;
+    if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
+    if (keep.length + imageFiles.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    const dropPdf = !pdfFile && dto.removePdf === true;
+    const hasPdf = !!pdfFile || (!!cur.pdf && !dropPdf);
+    if (!hasPdf && keep.length + imageFiles.length === 0) throw new BadRequestException('يجب أن تحتوي الوثيقة على ملف PDF أو صورة واحدة على الأقل');
+    const removed = existing.filter((p) => !keep.includes(p));
+    const added: string[] = [];
+    let newPdf: string | null = null;
     try {
+      if (pdfFile) newPdf = await this.storage.savePdf(pdfFile, 'documents');
+      added.push(...(await this.storage.saveImages(imageFiles, 'documents')));
       const r = await this.store.update(id, {
         code: dto.kind !== undefined ? docCode(dto.kind) : undefined, title: dto.titleAr?.trim(), body: dto.summaryAr === undefined ? undefined : dto.summaryAr?.trim() || null,
-        pdf: newPath ?? undefined,
+        pdf: newPdf ?? (dropPdf ? null : undefined), images: [...keep, ...added],
         x: {
           subtype: dto.kind !== undefined || dto.subtype !== undefined ? this.subtypeInput(dto.kind ?? kindOfDocCode(cur.code), dto.subtype === undefined ? s(cur.x.subtype) : dto.subtype) : undefined,
           docNumber: dto.docNumber === undefined ? undefined : dto.docNumber?.trim() || null, titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null,
@@ -105,10 +127,10 @@ export class DocumentsService {
         },
       });
       await this.audit.log({ category: 'documents', action: 'update', description: `تعديل وثيقة: ${r!.title}`, actorId: actor.id, entityType: 'documents', entityId: id });
-      if (newPath) await this.storage.remove(cur.pdf);
+      await this.storage.removeMany([...removed, ...(newPdf || dropPdf ? [cur.pdf] : [])]);
       return this.view(r!);
     } catch (e) {
-      if (newPath) await this.storage.remove(newPath);
+      await this.storage.removeMany([...added, ...(newPdf ? [newPdf] : [])]);
       throw e;
     }
   }
@@ -123,7 +145,7 @@ export class DocumentsService {
     const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض الوثائق غير موجودة'); // nothing is deleted
     await this.store.remove(unique);
-    await this.storage.removeMany(rows.map((r) => r.pdf));
+    await this.storage.removeMany(rows.flatMap((r) => [r.pdf, ...(r.images ?? [])]));
     await this.audit.log({ category: 'documents', action: 'delete', description: `حذف ${rows.length} وثيقة`, actorId: actor.id, entityType: 'documents', details: { ids: unique }, changes: removedChanges('documents', rows.map((r) => this.view(r))) });
     return { deleted: rows.length };
   }
@@ -133,7 +155,7 @@ export class DocumentsService {
     const d = this.view(r);
     return {
       id: d.id, kind: d.kind, subtype: d.subtype, docNumber: d.docNumber, docDate: d.docDate, issuer: pick(d.issuerAr, d.issuerEn, en), title: pick(d.titleAr, d.titleEn, en),
-      summary: pick(d.summaryAr, d.summaryEn, en), fileUrl: d.fileUrl,
+      summary: pick(d.summaryAr, d.summaryEn, en), fileUrl: d.fileUrl, cover: d.imageUrls[0] ?? null,
     };
   }
 
@@ -184,6 +206,6 @@ export class DocumentsService {
   async publicOne(id: number, lang: string) {
     const r = await this.store.get(id, DOC_CODES);
     if (!r || !isActive(r)) throw new NotFoundException('الوثيقة غير موجودة');
-    return { ...this.card(r, lang === 'en'), file: r.pdf };
+    return { ...this.card(r, lang === 'en'), file: r.pdf ?? null, imageUrls: this.view(r).imageUrls };
   }
 }

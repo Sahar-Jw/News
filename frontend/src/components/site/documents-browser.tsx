@@ -9,11 +9,11 @@ import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { Pager } from '@/components/site/pager';
 
-export interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null }
+export interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; cover?: string | null }
 export interface Result { data: Doc[]; meta: { page: number; totalPages: number; total: number } }
 const dateOk = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 
-/** The results of a documents search: a table on wide screens, cards on phones, and the pager. Shared by the Library and the Decisions & circulars section. */
+/** The results of a documents search: a grid of cards and the pager. Shared by the Library and the Decisions & circulars section. */
 export function DocResults({ res, onPage, actions: rowTools }: { res: Result | null; onPage: (page: number) => void; /** extra buttons under a row (edit / delete for the people who manage documents) */ actions?: (d: Doc) => React.ReactNode }) {
   const { lang, t, href } = useI18n();
   const actions = (d: Doc) => (
@@ -30,48 +30,25 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
   return (
         <>
           <Pager page={res.meta.page} totalPages={res.meta.totalPages} onPage={change} className="mb-4" />
-          {/* wide screens: table (number, title, date, issuer, actions) */}
-          <div className="hidden overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line md:block">
-            <table className="w-full text-start text-sm">
-              <thead className="bg-secondary text-white">
-                <tr>
-                  <th className="px-4 py-2.5 text-start font-semibold">{t('doc.number')}</th>
-                  <th className="px-4 py-2.5 text-start font-semibold">{t('doc.colTitle')}</th>
-                  <th className="px-4 py-2.5 text-start font-semibold">{t('doc.date')}</th>
-                  <th className="px-4 py-2.5 text-start font-semibold">{t('doc.issuer')}</th>
-                  <th className="px-4 py-2.5 text-start font-semibold">PDF</th>
-                </tr>
-              </thead>
-              <tbody>
-                {res.data.map((d) => (
-                  <tr key={d.id} className="border-t border-line align-top">
-                    <td className="px-4 py-3 whitespace-nowrap">{d.docNumber ? <bdi dir="ltr">{d.docNumber}</bdi> : '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className="mb-1 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">{t(`doc.kind.${d.kind}`)}</span>
-                      <Link href={href(`/documents/${d.id}`)} className="block font-bold text-secondary hover:text-primary">{d.title}</Link>
-                      {d.summary && <span className="mt-1 line-clamp-2 block text-xs leading-6 text-gray-600">{d.summary}</span>}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">{d.docDate ? fmtDate(lang, d.docDate) : '—'}</td>
-                    <td className="px-4 py-3">{d.issuer || '—'}</td>
-                    <td className="px-4 py-3">{actions(d)}{tools(d)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* phones: cards */}
-          <ul className="space-y-3 md:hidden">
+          {/* cards: cover picture (or a document tile), kind, title, summary, number / date / issuer */}
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {res.data.map((d) => (
-              <li key={d.id} className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span className="rounded-full bg-primary/10 px-3 py-1 font-semibold text-primary">{t(`doc.kind.${d.kind}`)}</span>
-                  {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
-                  {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
-                  {d.issuer && <span>{d.issuer}</span>}
+              <li key={d.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
+                <Link href={href(`/documents/${d.id}`)} className="relative block aspect-[4/3] overflow-hidden bg-primary/5" aria-label={d.title}>
+                  {d.cover ? <img src={fileUrl(d.cover)} alt="" loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                    : <span className="grid h-full w-full place-items-center text-5xl text-primary/40" aria-hidden="true">{d.fileUrl ? '📄' : '🖼'}</span>}
+                  <span className="absolute start-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-primary shadow">{t(`doc.kind.${d.kind}`)}</span>
+                </Link>
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                    {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
+                    {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
+                  </div>
+                  <h2 className="mt-2 text-base font-bold leading-snug text-secondary"><Link href={href(`/documents/${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
+                  {d.issuer && <p className="mt-1 text-xs text-gray-500">{d.issuer}</p>}
+                  {d.summary && <p className="mt-2 line-clamp-3 text-sm leading-7 text-gray-600">{d.summary}</p>}
+                  <div className="mt-auto pt-4">{actions(d)}{tools(d)}</div>
                 </div>
-                <h2 className="mt-2 text-lg font-bold text-secondary"><Link href={href(`/documents/${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
-                {d.summary && <p className="mt-1 line-clamp-3 text-sm leading-7 text-gray-600">{d.summary}</p>}
-                <div className="mt-3">{actions(d)}{tools(d)}</div>
               </li>
             ))}
           </ul>

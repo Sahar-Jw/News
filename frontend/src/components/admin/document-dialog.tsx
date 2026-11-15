@@ -4,21 +4,24 @@ import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { ImageSetField, appendImages, emptyImageSet, imageSetOf, imageTotal, type ImageSet } from '@/components/admin/image-set-field';
 
-export interface DocRow { id: number; kind: string; subtype: string | null; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; isActive: boolean }
-export interface Draft { id?: number; kind: string; subtype: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null }
+export interface DocRow { id: number; kind: string; subtype: string | null; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string | null; fileUrl: string | null; images?: string[]; imageUrls?: string[]; isActive: boolean }
+export interface Draft { id?: number; kind: string; subtype: string; docNumber: string; titleAr: string; titleEn: string; summaryAr: string; summaryEn: string; issuerAr: string; issuerEn: string; docDate: string; isActive: boolean; fileUrl: string | null; images: string[]; imageUrls: string[] }
 export const KINDS = ['circular', 'decision', 'law', 'guide', 'study', 'report', 'bulletin', 'form', 'historical', 'press', 'mediakit', 'library'];
 export const SUBTYPES: Record<string, string[]> = { decision: ['government', 'economic', 'members'], law: ['law', 'instruction', 'regulation'] };
-export const EMPTY_DRAFT: Draft = { kind: 'circular', subtype: '', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null };
+export const EMPTY_DRAFT: Draft = { kind: 'circular', subtype: '', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null, images: [], imageUrls: [] };
 
 
 /** Add / edit one document (decision, circular, library file ...). Used by the Settings table and by the public pages' manage bars.
- *  Each record needs one PDF (up to 25 MB); on edit the PDF is replaced only when a new one is chosen. `lockKind` hides the kind choice. */
+ *  A record needs a PDF (up to 25 MB), pictures, or both: at least one of them. On edit the PDF is replaced only when a new one is chosen. `lockKind` hides the kind choice. */
 export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: Draft; lockKind?: boolean; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n();
   const toast = useToast();
   const [d, setD] = useState<Draft>(draft);
   const [pdf, setPdf] = useState<File | null>(null);
+  const [imgs, setImgs] = useState<ImageSet>(() => imageSetOf(draft.images, draft.imageUrls));
+  const [dropPdf, setDropPdf] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const pick = (f: File | undefined) => {
@@ -31,11 +34,14 @@ export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: D
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!d) return;
-    if (!d.id && !pdf) return toast(t('doc.pdfRequired'), 'err');
+    const hasPdf = !!pdf || (!!d.fileUrl && !dropPdf);
+    if (!hasPdf && imageTotal(imgs) === 0) return toast(t('doc.needOne'), 'err');
     const fd = new FormData();
     fd.set('kind', d.kind); fd.set('subtype', SUBTYPES[d.kind] ? d.subtype : ''); fd.set('docNumber', d.docNumber.trim()); fd.set('titleAr', d.titleAr.trim()); fd.set('titleEn', d.titleEn.trim());
     fd.set('summaryAr', d.summaryAr.trim()); fd.set('summaryEn', d.summaryEn.trim()); fd.set('issuerAr', d.issuerAr.trim()); fd.set('issuerEn', d.issuerEn.trim()); fd.set('docDate', d.docDate); fd.set('isActive', String(d.isActive));
     if (pdf) fd.set('file', pdf);
+    if (d.id && dropPdf && !pdf) fd.set('removePdf', 'true');
+    appendImages(fd, imgs, !!d.id);
     setBusy(true);
     try {
       await api(d.id ? `/admin/documents/${d.id}` : '/admin/documents', { method: d.id ? 'PATCH' : 'POST', form: fd });
@@ -70,13 +76,18 @@ export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: D
               <Field label={t('doc.summaryAr')}><textarea rows={3} maxLength={5000} dir="rtl" className={inputCls} value={d.summaryAr} onChange={(e) => setD({ ...d, summaryAr: e.target.value })} /></Field>
               <Field label={t('doc.summaryEn')} hint={t('faq.hint')}><textarea rows={3} maxLength={5000} dir="ltr" className={inputCls} value={d.summaryEn} onChange={(e) => setD({ ...d, summaryEn: e.target.value })} /></Field>
             </div>
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">{t('doc.needOne')}</p>
             <Field label={t('doc.file')} hint={d.id ? t('doc.fileKeep') : t('doc.fileHint')}>
-              <input type="file" accept="application/pdf,.pdf" className={inputCls} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+              <input type="file" accept="application/pdf,.pdf" className={inputCls} onChange={(e) => { pick(e.target.files?.[0]); if (e.target.files?.[0]) setDropPdf(false); e.target.value = ''; }} />
             </Field>
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              {pdf && <span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">{pdf.name}</span>}
-              {!pdf && d.fileUrl && <a href={fileUrl(d.fileUrl)} target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('doc.current')}</a>}
+              {pdf && <span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">{pdf.name} <button type="button" className="ms-1 text-red-600" aria-label={t('doc.removePdf')} onClick={() => setPdf(null)}>✕</button></span>}
+              {!pdf && d.fileUrl && !dropPdf && <><a href={fileUrl(d.fileUrl)} target="_blank" rel="noopener noreferrer" className="text-primary underline">{t('doc.current')}</a><button type="button" className="text-xs text-red-600 underline" onClick={() => setDropPdf(true)}>{t('doc.removePdf')}</button></>}
+              {!pdf && d.fileUrl && dropPdf && <><span className="text-xs text-red-600">{t('doc.pdfWillRemove')}</span><button type="button" className="text-xs text-primary underline" onClick={() => setDropPdf(false)}>{t('doc.undo')}</button></>}
             </div>
+            <Field label={t('doc.images')} hint={t('doc.imagesHint')}>
+              <ImageSetField value={imgs} onChange={setImgs} />
+            </Field>
             <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => onClose()}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
@@ -84,4 +95,4 @@ export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: D
   );
 }
 
-export const toDraft = (r: DocRow): Draft => ({ id: r.id, kind: r.kind, subtype: r.subtype ?? '', docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl });
+export const toDraft = (r: DocRow): Draft => ({ id: r.id, kind: r.kind, subtype: r.subtype ?? '', docNumber: r.docNumber, titleAr: r.titleAr, titleEn: r.titleEn, summaryAr: r.summaryAr, summaryEn: r.summaryEn, issuerAr: r.issuerAr, issuerEn: r.issuerEn, docDate: r.docDate ?? '', isActive: r.isActive, fileUrl: r.fileUrl, images: r.images ?? [], imageUrls: r.imageUrls ?? [] });

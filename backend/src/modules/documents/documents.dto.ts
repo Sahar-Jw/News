@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { parseStringList } from '../../common/dto/form-transforms';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { DOCUMENT_KINDS, DOCUMENT_SUBTYPES } from './document.entity';
 
@@ -33,6 +34,10 @@ export class UpdateDocumentDto {
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) issuerEn?: string | null;
   @blankToNull() @IsOptional() @IsDateString() docDate?: string | null;
   @toBool() @IsOptional() @IsBoolean() isActive?: boolean;
+  /** edit: the saved pictures to keep (the others are removed) */
+  @IsOptional() @Transform(parseStringList) @IsArray() @IsString({ each: true }) keepImages?: string[];
+  /** edit: remove the current PDF */
+  @toBool() @IsOptional() @IsBoolean() removePdf?: boolean;
 }
 
 export class DocumentsAdminQueryDto extends AdminListQueryDto {

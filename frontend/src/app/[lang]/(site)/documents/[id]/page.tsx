@@ -10,13 +10,14 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { PdfViewer } from '@/components/site/pdf-viewer';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string }
+interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; file: string | null; imageUrls?: string[] }
 
 /** One document: details and the PDF drawn in the page: /documents/5 */
 function View() {
   const { lang, t, href } = useI18n();
   const id = useRecordId('id');
   const [d, setD] = useState<Doc | null>(null);
+  const [shot, setShot] = useState<string | null>(null);
   const [state, setState] = useState<'load' | 'ok' | '404'>('load');
   useCrumbTitle(d?.title);
 
@@ -41,6 +42,22 @@ function View() {
         <h1 className="mt-4 text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{d.title}</h1>
         {d.summary && <p className="mt-3 leading-8 text-gray-700">{d.summary}</p>}
         {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110">{t('doc.download')}</a>}
+        {(d.imageUrls?.length ?? 0) > 0 && (
+          <section className="mt-6" aria-label={t('doc.gallery')}>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {d.imageUrls!.map((u, i) => (
+                <button key={u} type="button" onClick={() => setShot(u)} className="aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 ring-1 ring-line">
+                  <img src={fileUrl(u)} alt={`${d.title} ${i + 1}`} loading="lazy" className="h-full w-full object-cover transition hover:scale-105" />
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {shot && (
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4" onClick={() => setShot(null)}>
+            <img src={fileUrl(shot)} alt={d.title} className="max-h-full max-w-full rounded-lg object-contain" />
+          </div>
+        )}
         {d.fileUrl && <div className="mt-6"><PdfViewer src={d.fileUrl} title={d.title} /></div>}
       </article>
     </div>
