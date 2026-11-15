@@ -65,8 +65,8 @@ export const HUBS: HubMeta[] = [
     ],
   },
   {
-    key: 'forms', ar: 'النماذج والطلبات', en: 'Forms & requests', hintAr: 'بناء النماذج وتعديل حقولها، مراجعة الطلبات وفرزها والتواصل مع المتقدمين، التصدير والنسخ الاحتياطي', hintEn: 'Build and edit forms, review, sort and contact applicants, export, and backups', icon: '✎', color: '#0f766e',
-    tabs: [{ key: 'submissions', ar: 'الطلبات', en: 'Requests', perms: ['forms.submissions.read'] }, { key: 'builder', ar: 'النماذج', en: 'Forms', perms: ['forms.read'] }, { key: 'backups', ar: 'النسخ الاحتياطي', en: 'Backups', perms: ['backups.read'] }],
+    key: 'forms', ar: 'النماذج', en: 'Forms', hintAr: 'بناء النماذج وتعديل حقولها والنسخ الاحتياطي (طلبات كل نموذج تظهر في إعدادات صفحته)', hintEn: 'Build forms and edit their inputs, and backups (the requests of each form are in the settings of its own page)', icon: '✎', color: '#0f766e',
+    tabs: [{ key: 'builder', ar: 'النماذج', en: 'Forms', perms: ['forms.read'] }, { key: 'backups', ar: 'النسخ الاحتياطي', en: 'Backups', perms: ['backups.read'] }],
   },
   { key: 'documents', ar: 'القرارات والتعاميم والمكتبة', en: 'Documents & digital archive', hintAr: 'الوثائق والمكتبة والأرشيف الرقمي', hintEn: 'Documents, library and digital archive', icon: '▤', color: '#7c3aed', tabs: [{ key: 'documents', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }, { key: 'library', ar: 'المكتبة والأرشيف الرقمي', en: 'Library & digital archive', perms: ['documents.read'] }] },
   { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },

@@ -52,7 +52,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'women.links': () => <WomenMenuAdmin />,
   'pages.about': () => <PagesAdmin slug="about" />, 'pages.privacy': () => <PagesAdmin slug="privacy" />, 'pages.terms': () => <PagesAdmin slug="terms" />, 'pages.faqs': () => <FaqsAdmin />,
   'audience.subscribers': () => <SubscribersAdmin />, 'audience.ads': () => <AdsAdmin />,
-  'forms.submissions': () => <FormSubmissionsAdmin />, 'forms.builder': () => <FormsBuilderAdmin />, 'forms.backups': () => <BackupsAdmin />,
+  'forms.builder': () => <FormsBuilderAdmin />, 'forms.backups': () => <BackupsAdmin />,
   'identity.footer': () => <FooterAdmin />, 'identity.menu': () => <NavAdmin />,
 };
 

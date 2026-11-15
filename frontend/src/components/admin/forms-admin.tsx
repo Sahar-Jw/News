@@ -145,18 +145,8 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef; onClose: 
   const [fields, setFields] = useState<FieldDef[]>(initial.fields);
   const [tab, setTab] = useState<'fields' | 'try'>('fields');
   const [busy, setBusy] = useState(false);
-  const [sourced, setSourced] = useState<Record<string, FieldOption[]>>({});
-  const [formKey, setFormKey] = useState(0); // a new key = an empty form again after a send
   const canEdit = can('forms.update');
   const dirty = JSON.stringify(fields) !== JSON.stringify(initial.fields);
-
-  // lists filled from the system records (Get2Trade spaces / packages) need their real options in the preview
-  useEffect(() => {
-    if (tab !== 'try' || !fields.some((f) => f.optionsSource)) return;
-    api<{ fields: FieldDef[] }>(`/public/forms/${initial.slug}`, { cache: 'no-store' })
-      .then((d) => setSourced(Object.fromEntries(d.fields.filter((f) => f.optionsSource).map((f) => [f.key, f.options ?? []]))))
-      .catch(() => undefined);
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const save = async () => {
     setBusy(true);
@@ -169,7 +159,8 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef; onClose: 
 
   const preview: PublicForm = {
     slug: initial.slug, titleAr: initial.titleAr, titleEn: initial.titleEn, isOpen: true, requireConsent: initial.requireConsent, contextType: initial.contextType,
-    fields: fields.map((f) => (f.optionsSource ? { ...f, options: sourced[f.key] ?? [] } : f)),
+    // no real records in the editor: a list that is filled from the system (spaces, packages ...) shows one placeholder instead of the data
+    fields: fields.map((f) => (f.optionsSource ? { ...f, options: [{ value: '', ar: '(تُعبَّأ تلقائياً من سجلات النظام)', en: '(filled automatically from the system records)' }] } : f)),
   };
 
   return (
@@ -183,13 +174,10 @@ function FormDialog({ initial, onClose, onSaved }: { initial: FormDef; onClose: 
         {tab === 'try' && (
           <div className="space-y-3">
             <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">
-              {L('هذا هو النموذج بحقوله الحالية. يمكنك تعبئته وإرساله للتجربة: الإرسال حقيقي ويظهر كطلب في «الطلبات».', 'This is the form with its current inputs. You can fill it in and send it to try it: the send is real and appears as a request under "Requests".')}
-              {dirty && <b className="block text-red-700">{L('لديك تعديلات غير محفوظة: احفظها أولاً ليُرسَل النموذج بحقوله الجديدة.', 'You have unsaved changes: save them first so the form is sent with its new inputs.')}</b>}
-              {initial.contextType === 'course' && <span className="block">{L('تسجيل الدورة يُرسَل من صفحة الدورة نفسها (يلزمه تحديد الدورة)، لذلك لن يُقبل الإرسال من هنا.', 'Course registration is sent from the course page itself (it needs the course), so a send from here will be refused.')}</span>}
+              {L('هذه معاينة لشكل النموذج بحقوله الحالية فقط: الحقول معطّلة ولا تحتوي أي بيانات، ولا يمكن تعبئتها أو إرسال النموذج من هنا.', 'This is a preview of the form with its current inputs only: the inputs are disabled and empty, and the form cannot be filled in or sent from here.')}
+              {dirty && <b className="block text-red-700">{L('لديك تعديلات غير محفوظة: احفظها لتصبح في النموذج الذي يراه الزوّار.', 'You have unsaved changes: save them so they appear in the form visitors see.')}</b>}
             </p>
-            <DynamicForm key={`${formKey}-${JSON.stringify(preview.fields).length}`} form={preview}
-              blockSend={dirty ? L('احفظ التعديلات أولاً', 'Save your changes first') : undefined}
-              doneExtra={<Button type="button" variant="outline" onClick={() => setFormKey((k) => k + 1)}>{L('تعبئة نموذج جديد', 'Fill in another')}</Button>} />
+            <DynamicForm key={JSON.stringify(preview.fields).length} form={preview} preview />
           </div>
         )}
         <div className="flex justify-end gap-2 border-t border-line pt-3">

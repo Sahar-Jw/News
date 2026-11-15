@@ -23,7 +23,7 @@ export const isShown = (f: FieldDef, v: Record<string, any>) => {
 };
 
 /** Draws any form built in the dashboard. Everything it shows comes from the field list: no field is hard-coded here. */
-export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix, blockSend }: { form: PublicForm; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode; prefix?: Record<string, string>; blockSend?: string }) {
+export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix, blockSend, preview = false }: { form: PublicForm; /** show the form only (the form builder): every input is disabled, empty, and nothing can be sent */ preview?: boolean; context?: Record<string, any>; initial?: Record<string, any>; onDone?: (r: { reference: string; message: string }) => void; doneExtra?: React.ReactNode; prefix?: Record<string, string>; blockSend?: string }) {
   const { lang, href } = useI18n();
   const L = (ar: string, en?: string | null) => (lang === 'en' && en ? en : ar);
   const [v, setV] = useState<Record<string, any>>(initial ?? {});
@@ -94,7 +94,8 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix,
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   };
 
-  const visible = useMemo(() => form.fields.filter((f) => isShown(f, v)), [form.fields, v]);
+  // the preview shows every input, including the ones that only appear after another answer
+  const visible = useMemo(() => (preview ? form.fields : form.fields.filter((f) => isShown(f, v))), [form.fields, v, preview]);
 
   if (done) {
     return (
@@ -108,7 +109,9 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix,
   if (!form.isOpen) return <p className="rounded-2xl bg-amber-50 p-5 text-center text-sm text-amber-800 ring-1 ring-amber-200">{L('باب التقديم على هذا النموذج مغلق حالياً', 'This form is currently closed')}</p>;
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4 rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
+    <form onSubmit={preview ? (e) => e.preventDefault() : submit} noValidate className="space-y-4 rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
+      {/* in the preview a disabled fieldset turns every input, list and button off */}
+      <fieldset disabled={preview} className="m-0 min-w-0 space-y-4 border-0 p-0">
       {visible.map((f) => {
         const label = L(f.labelAr, f.labelEn) + (f.required && f.type !== 'heading' && f.type !== 'note' ? ' *' : '');
         const help = L(f.helpAr ?? '', f.helpEn) || undefined;
@@ -174,7 +177,8 @@ export function DynamicForm({ form, context, initial, onDone, doneExtra, prefix,
         </div>
       )}
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <div className="flex justify-end"><Button type="submit" disabled={busy}>{busy ? L('جارٍ الإرسال…', 'Sending…') : L('إرسال الطلب', 'Submit')}</Button></div>
+      <div className="flex justify-end"><Button type="submit" disabled={busy || preview}>{busy ? L('جارٍ الإرسال…', 'Sending…') : L('إرسال الطلب', 'Submit')}</Button></div>
+      </fieldset>
     </form>
   );
 }
