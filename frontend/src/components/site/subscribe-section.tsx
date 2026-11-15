@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Reveal } from './motion';
@@ -12,7 +13,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
  * On the home page visitors do not choose topics: a new subscriber receives everything. The topic picker (`showTopics`) is only for the /subscribe page.
  */
 export function SubscribeSection({ showTopics = false }: { showTopics?: boolean } = {}) {
-  const { t, lang } = useI18n();
+  const { t, lang, href } = useI18n();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [msg, setMsg] = useState('');
@@ -51,6 +52,7 @@ export function SubscribeSection({ showTopics = false }: { showTopics?: boolean 
         <NewsletterTopics value={topics} onChange={(v) => { setTopics(v); if (state !== 'busy') setState('idle'); }} />
       </details>}
       <p role="status" aria-live="polite" className={`text-center text-sm ${msg && (state === 'done' || state === 'error') ? 'mt-3' : ''} ${state === 'error' ? 'text-red-600' : 'text-emerald-700'}`}>{state === 'done' || state === 'error' ? msg : ''}</p>
+      {!showTopics && <p className="mt-2 text-center text-xs"><Link href={href('/subscribe')} className="font-semibold text-primary underline-offset-2 hover:underline">{t('sub.already')}</Link></p>}
     </Reveal>
   );
 }
