@@ -172,12 +172,20 @@ export class NewsPublicService {
   async categories(lang: Language | undefined, v: Viewer) {
     const L = lang ?? Language.AR;
     const [mainRows, subRows] = await Promise.all([
-      onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).getRawMany(),
+      this.repo.createQueryBuilder('n')
+        .select('n.mainCategory', 'v')
+        .distinct(true)
+        .where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES })
+        .andWhere('n.language = :lang', { lang: L })
+        .getRawMany(),
       this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
     ]);
     const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
     // `fixed` = the media-center categories in display order; `main` = those first, then any other category in use
-    return { main: withFixedFirst(L, sort(mainRows)), sub: sort(subRows), fixed: fixedNewsCategories(L) };
+    const main = withFixedFirst(L, sort(mainRows)).filter((category) =>
+      !fixedNewsCategoryKey(category) || mainRows.some((row) => fixedNewsCategoryKey(row.v) === fixedNewsCategoryKey(category)),
+    );
+    return { main, sub: sort(subRows), fixed: fixedNewsCategories(L) };
   }
 
   async section(code: string, lang: Language | undefined, v: Viewer) {
