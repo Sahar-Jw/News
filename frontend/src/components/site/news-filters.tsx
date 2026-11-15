@@ -82,9 +82,6 @@ export function NewsFilters({ value, onApply }: { value: NewsFilterValues; onApp
               </select>
             </Field>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button type="submit" size="sm">{t('site.applyFilters')}</Button>
-          </div>
         </div>
       )}
     </form>

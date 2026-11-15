@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language, SPECIAL_CATEGORY_CODES, SpecialCategory } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
-import { fixedNewsCategories, localizeFixedNewsCategory, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
+import { fixedNewsCategoryKey, fixedNewsCategories, newsCategoryLabels, withFixedFirst } from '../../common/news-categories';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { codeKey, escapeLike, excerpt, normalizeLabel, shuffle } from '../../common/utils/text';
 import { News } from './news.entity';
@@ -80,7 +80,15 @@ export class NewsPublicService {
     const p = publicPage(q);
     const qb = this.slim(onlyRegular(this.base(q.lang ?? Language.AR, v), 'n'));
     // a fixed category in the link may be spelled in the other language (/media?category=… after switching language)
-    if (q.category) qb.andWhere('n.mainCategory = :cat', { cat: localizeFixedNewsCategory(normalizeLabel(q.category), q.lang ?? Language.AR) });
+    if (q.category) {
+      const label = normalizeLabel(q.category);
+      const key = fixedNewsCategoryKey(label);
+      if (key) {
+        // a fixed category matches every spelling it is stored with: both languages, any letter case, and the older women's labels
+        const labels = [...newsCategoryLabels(key), ...(key === 'women' ? ['سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال', 'Businesswomen'] : [])].map((x) => x.toLowerCase());
+        qb.andWhere('LOWER(TRIM(n.mainCategory)) IN (:...cats)', { cats: labels });
+      } else qb.andWhere('n.mainCategory = :cat', { cat: label });
+    }
     if (q.subcategory) qb.andWhere('n.subcategory = :sub', { sub: normalizeLabel(q.subcategory) });
     if (q.topics) {
       const list = [...new Set(q.topics.split(',').map(normalizeLabel).filter(Boolean))].slice(0, 10);
