@@ -15,8 +15,10 @@ const SHOW_DELAY = 250;
 const MIN_VISIBLE = 400;
 /** A server request that starts within this time (ms) after a click / submit / change counts as caused by it. */
 const ARM_WINDOW = 1500;
+/** A page that has just opened (first load, refresh, or arriving from a link) loads its own data a moment later: requests in this window count too. */
+const PAGE_WINDOW = 6000;
 /** Wait this long (ms) after the last request ended before treating the action as finished (covers chained requests). */
-const SETTLE = 150;
+const SETTLE = 500;
 
 function normalizePath(path: string) {
   return path.length > 1 ? path.replace(/\/+$/, '') : path;
@@ -51,6 +53,11 @@ export function NavigationLoader() {
   const actionBusyRef = useRef(false);
   const settleTimer = useRef<number | undefined>(undefined);
   const shownAt = useRef(0);
+
+  // a page that just opened (first load / refresh) is loading its data: that is shown too, not only what follows a click
+  useEffect(() => { armedUntil.current = Math.max(armedUntil.current, Date.now() + PAGE_WINDOW); }, []);
+  // a page or a tab (?tab=...) that just arrived: the screen it shows fetches its data only after it has rendered, which is often later than the click
+  useEffect(() => { armedUntil.current = Math.max(armedUntil.current, Date.now() + PAGE_WINDOW); }, [currentLocation]);
 
   // ---- server requests started right after a user action
   useEffect(() => {
@@ -104,10 +111,18 @@ export function NavigationLoader() {
       if (el instanceof HTMLSelectElement || (el instanceof HTMLInputElement && ['checkbox', 'radio', 'file', 'date', 'datetime-local'].includes(el.type))) arm();
     };
 
+    // typing in a search box (the list reloads a moment after the last key)
+    const onInput = (event: Event) => {
+      const el = event.target;
+      if (el instanceof HTMLInputElement && ['text', 'search', 'number', 'email', 'tel', 'url'].includes(el.type)) armedUntil.current = Math.max(armedUntil.current, Date.now() + ARM_WINDOW);
+    };
+
+    document.addEventListener('input', onInput, true);
     document.addEventListener('click', onClick, true);
     document.addEventListener('submit', arm, true);
     document.addEventListener('change', onChange, true);
     return () => {
+      document.removeEventListener('input', onInput, true);
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('submit', arm, true);
       document.removeEventListener('change', onChange, true);
@@ -122,7 +137,7 @@ export function NavigationLoader() {
 
   useEffect(() => {
     if (!pending?.arrived || activeRequests > 0) return;
-    const timeout = window.setTimeout(() => setPending(null), 180);
+    const timeout = window.setTimeout(() => setPending(null), 400); // the screen of the new page starts its own requests just after it renders
     return () => window.clearTimeout(timeout);
   }, [activeRequests, pending]);
 

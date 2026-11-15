@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { categoryLabel, keyLabel } from '@/lib/setting-labels';
 import { SETTING_GROUPS, groupOf, type GroupId } from '@/lib/setting-groups';
-import { Button, Field, FilePicker, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Center, Field, FilePicker, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { ShortcutsEditor } from '@/components/admin/shortcuts-editor';
 import { HeroButtonsEditor } from '@/components/admin/hero-buttons-editor';
@@ -214,7 +214,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   return (
     <>
       {loadErr && <p role="alert" className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{loadErr}</p>}
-      {!rows && !loadErr && <p className="py-10 text-center text-gray-500">{t('app.loading')}</p>}
+      {!rows && !loadErr && <Center><Spinner /></Center>}
 
       {rows && only && (
         <>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { Button, Field, inputCls } from '@/components/ui/ui';
+import { Button, Center, Field, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RequirePerm } from '@/components/admin/guard';
 import { dayName, defaultSchedule, readSchedule, type Schedule } from '@/lib/one-stop-schedule';
@@ -33,7 +33,7 @@ export function ScheduleAdmin() {
   }, []);
 
   if (err) return <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>;
-  if (!sc) return null;
+  if (!sc) return <Center><Spinner /></Center>;
   const set = (patch: Partial<Schedule>) => setSc({ ...sc, ...patch });
   const setDay = (i: number, patch: Partial<Schedule['week'][number]>) => set({ week: sc.week.map((d, j) => (j === i ? { ...d, ...patch } : d)) });
   const dis = !editable;
