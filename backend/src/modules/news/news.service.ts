@@ -1,11 +1,10 @@
 import { pdfList, toStringArray } from '../../common/utils/lists';
+import { uploadLimits } from '../../common/upload-limits';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, LessThanOrEqual, Repository } from 'typeorm';
 import {
   Language,
-  MAX_IMAGES_PER_RECORD,
-  MAX_PDFS_PER_RECORD,
   NewsStatus,
   PERM,
   SPECIAL_CATEGORY_CODES,
@@ -349,8 +348,8 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   async create(dto: CreateNewsDto, files: Express.Multer.File[], actor: AuthUser, pdfFiles: Express.Multer.File[] = []) {
     const perms = actor.permissions;
     if (dto.finishAt && !isYmd(dto.finishAt)) throw new BadRequestException('تاريخ النهاية غير صالح');
-    if (pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
-    if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (pdfFiles.length > uploadLimits.pdfsPerRecord) throw new BadRequestException('عدد ملفات PDF كبير جداً');
+    if ((files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const { main, sub } = await this.resolveCategories(dto, perms, dto.language ?? Language.AR);
     this.assertMayCreate(main, perms);
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
@@ -421,14 +420,14 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const keep = dto.keepImages ?? existingImgs;
     if (keep.some((p) => !existingImgs.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     const removed = existingImgs.filter((p) => !keep.includes(p));
-    if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (keep.length + (files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     if (SINGLE_IMAGE_SECTIONS.includes(main as SpecialCategory) && keep.length + (files?.length ?? 0) > 1) throw new BadRequestException('هذا القسم يقبل صورة واحدة فقط');
     if (pdfFiles.length && SPECIAL_CATEGORY_CODES.includes(main)) throw new BadRequestException('ملف PDF متاح للأخبار العادية فقط');
     // PDF reconciliation (same idea as the images): keepPdfs ⊆ existing, new files are appended, the dropped ones are deleted AFTER the save
     const existingPdfs = pdfList(n);
     const keepPdfs = SPECIAL_CATEGORY_CODES.includes(main) || dto.removePdf ? [] : dto.keepPdfs ?? existingPdfs;
     if (keepPdfs.some((p) => !existingPdfs.includes(p))) throw new BadRequestException('مسار ملف PDF غير موجود في السجل');
-    if (keepPdfs.length + pdfFiles.length > MAX_PDFS_PER_RECORD) throw new BadRequestException('عدد ملفات PDF كبير جداً');
+    if (keepPdfs.length + pdfFiles.length > uploadLimits.pdfsPerRecord) throw new BadRequestException('عدد ملفات PDF كبير جداً');
     const removedPdfs = existingPdfs.filter((p) => !keepPdfs.includes(p));
     const added = await this.storage.saveImages(files ?? [], 'news');
     const newPdfs: string[] = [];

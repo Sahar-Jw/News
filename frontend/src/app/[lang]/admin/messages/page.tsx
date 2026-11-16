@@ -7,7 +7,7 @@ import { RequirePerm } from '@/components/admin/guard';
 export default function MessagesPage() {
   const { t } = useI18n();
   return (
-    <RequirePerm any={['forms.submissions.read']}>
+    <RequirePerm any={['forms.submissions.read', 'messages.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.messages')}</h1>
       <FormSubmissionsAdmin slugs={['contact']} />
     </RequirePerm>

@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { AuthUser } from '../../common/types';
 import { applyColumnFilters } from '../../common/utils/column-filters';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike } from '../../common/utils/text';
+import { UPLOAD_LIMITS_CATEGORY, UPLOAD_LIMIT_DEFS, UploadLimitKey, applyUploadLimits } from '../../common/upload-limits';
 import { SiteSetting } from './site-setting.entity';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
@@ -27,13 +28,31 @@ const EXTRA_PAGES: PageOption[] = [
 export interface PageOption { url: string; titleAr: string; titleEn: string; group: { ar: string; en: string } | null }
 
 @Injectable()
-export class SettingsService {
+export class SettingsService implements OnModuleInit, OnModuleDestroy {
+  private timer?: NodeJS.Timeout;
   constructor(
     @InjectRepository(SiteSetting) private readonly repo: Repository<SiteSetting>,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
     @InjectRepository(NavItem) private readonly navItems: Repository<NavItem>,
   ) {}
+
+  /** The upload limits (Settings -> Upload limits) are read at start-up and every minute, so every server copy follows a change within a minute. */
+  async onModuleInit() {
+    await this.loadUploadLimits();
+    this.timer = setInterval(() => void this.loadUploadLimits(), 60_000);
+    this.timer.unref?.();
+  }
+  onModuleDestroy() { if (this.timer) clearInterval(this.timer); }
+
+  async loadUploadLimits() {
+    try {
+      const rows = await this.repo.find({ where: { category: UPLOAD_LIMITS_CATEGORY } });
+      applyUploadLimits(Object.fromEntries(rows.map((r) => [r.key, r.value])));
+    } catch (e) {
+      new Logger('SettingsService').warn(`upload limits not loaded: ${(e as Error).message}`); // keeps the limits it already has
+    }
+  }
 
   /** Typed value for API consumers. */
   typed(s: SiteSetting): any {
@@ -143,7 +162,13 @@ export class SettingsService {
     const s = await this.getOrFail(id);
     const old = s.value;
     s.value = this.encode(s, value);
+    if (s.category === UPLOAD_LIMITS_CATEGORY) {
+      const d = UPLOAD_LIMIT_DEFS[s.key as UploadLimitKey];
+      const n = Number(s.value);
+      if (!d || s.value === null || !Number.isInteger(n) || n < d.min || n > d.max) throw new BadRequestException(`القيمة يجب أن تكون عدداً صحيحاً بين ${d?.min ?? 1} و ${d?.max ?? 100}`);
+    }
     await this.repo.save(s);
+    if (s.category === UPLOAD_LIMITS_CATEGORY) await this.loadUploadLimits();
     if (s.valueType === 'file' && old && old !== s.value) await this.storage.remove(old);
     await this.audit.log({ category: 'settings', action: 'update', description: `تعديل الإعداد ${s.category}.${s.key}`, actorId: actor.id, entityType: 'site_settings', entityId: id, details: { key: `${s.category}.${s.key}` } });
     return this.present(s);

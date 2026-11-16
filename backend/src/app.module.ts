@@ -39,6 +39,7 @@ import { TrainingModule } from './modules/training/training.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { ContentModule } from './modules/content/content.module';
 import { FaqsModule } from './modules/faqs/faqs.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
 import { SiteSearchModule } from './modules/site-search/site-search.module';
@@ -85,6 +86,7 @@ import { BackupModule } from './modules/backup/backup.module';
     OccasionsModule,
     ContentModule,
     FaqsModule,
+    StatisticsModule,
     PagesModule,
     DocumentsModule,
     ServicesModule,

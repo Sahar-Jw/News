@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_PDF_BYTES, PERM } from '../../common/constants';
@@ -9,7 +10,7 @@ import { CreateServiceDto, PublicServicesQueryDto, ServicesAdminQueryDto, Update
 import { ServicesService } from './services.service';
 
 /** a picture in the multipart field "image" and a downloadable form in "form" */
-const upload = () => FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'form', maxCount: 1 }], { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: 2, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileFieldsInterceptor([{ name: 'image', maxCount: 1 }, { name: 'form', maxCount: 1 }], { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.maxBytes; }, files: 2, fieldSize: 2 * 1024 * 1024 } });
 export type ServiceFiles = { image?: Express.Multer.File[]; form?: Express.Multer.File[] };
 
 @Controller('admin/services')

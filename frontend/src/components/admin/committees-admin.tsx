@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { UL } from '@/lib/upload-limits';
 import { useEffect, useRef, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -67,7 +68,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
   const pickImage = (f: File | undefined, set: (f: File) => void) => {
     if (!f) return;
     if (!f.type.startsWith('image/')) return toast(t('board.imageOnly'), 'err');
-    if (f.size > 5 * 1024 * 1024) return toast('≤ 5MB', 'err');
+    if (f.size > UL.imageBytes) return toast(`≤ ${UL.imageMb}MB`, 'err');
     set(f);
   };
 

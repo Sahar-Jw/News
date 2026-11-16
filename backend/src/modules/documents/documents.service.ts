@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { DOC_CODES, docCode, kindOfDocCode } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
 import { publicPage, paged } from '../../common/utils/pagination';
@@ -8,7 +9,7 @@ import { ContentStore, Rec, isActive, pick, s } from '../content/content.store';
 import { filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { DOCUMENT_KINDS, DocumentKind, OFFICIAL_DOCUMENT_KINDS, SUBTYPES_OF_KIND } from './document.entity';
-import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
+import { } from '../../common/constants';
 import type { DocUploads } from './documents.controller';
 import { CreateDocumentDto, DocumentsAdminQueryDto, PublicDocumentsQueryDto, UpdateDocumentDto } from './documents.dto';
 
@@ -76,7 +77,7 @@ export class DocumentsService {
     const pdfFile = files?.file?.[0];
     const imageFiles = files?.images ?? [];
     if (!pdfFile && imageFiles.length === 0) throw new BadRequestException('يجب إرفاق ملف PDF أو صورة واحدة على الأقل');
-    if (imageFiles.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (imageFiles.length > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const saved: string[] = [];
     try {
       const pdf = pdfFile ? await this.storage.savePdf(pdfFile, 'documents') : null;
@@ -106,7 +107,7 @@ export class DocumentsService {
     const existing = cur.images ?? [];
     const keep = dto.keepImages ?? existing;
     if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
-    if (keep.length + imageFiles.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (keep.length + imageFiles.length > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const dropPdf = !pdfFile && dto.removePdf === true;
     const hasPdf = !!pdfFile || (!!cur.pdf && !dropPdf);
     if (!hasPdf && keep.length + imageFiles.length === 0) throw new BadRequestException('يجب أن تحتوي الوثيقة على ملف PDF أو صورة واحدة على الأقل');

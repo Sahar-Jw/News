@@ -20,6 +20,7 @@ import { DocumentsAdmin } from '@/components/admin/documents-admin';
 import { ExpoAdmin } from '@/components/admin/expo-admin';
 import { ExpoSettingsAdmin } from '@/components/admin/expo-settings-admin';
 import { FaqsAdmin } from '@/components/admin/faqs-admin';
+import { StatisticsAdmin } from '@/components/admin/statistics-admin';
 import { FooterAdmin } from '@/components/admin/footer-admin';
 import { GalleryAdmin } from '@/components/admin/gallery-admin';
 import { G2tContent, G2tPackages, G2tSpaces } from '@/components/admin/get2trade-admin';
@@ -40,6 +41,7 @@ import { WomenMenuAdmin } from '@/components/admin/women-menu-admin';
 const SCREENS: Record<string, () => React.ReactNode> = {
   'training.courses': () => <CoursesAdmin />, 'training.trainers': () => <TrainersAdmin />, 'training.trainees': () => <FormSubmissionsAdmin slugs={['course-registration']} />, 'training.trainerApps': () => <FormSubmissionsAdmin slugs={['trainer-application']} />,
   'expo.exhibitors': () => <ExpoAdmin kind="exhibitor" />, 'expo.sponsors': () => <ExpoAdmin kind="sponsor" />, 'expo.sessions': () => <ExpoAdmin kind="session" />, 'expo.applications': () => <FormSubmissionsAdmin slugs={['expo-exhibitor', 'expo-visitor', 'expo-info']} />,
+  'home.statistics': () => <StatisticsAdmin />,
   'expo.faqs': () => <FaqsAdmin scope="expo" />,
   'expo.links': () => <WomenMenuAdmin site="expo" />,
   'expo.about': () => <ExpoSettingsAdmin section="about" />, 'expo.sectors': () => <ExpoSettingsAdmin section="sectors" />, 'expo.info': () => <ExpoSettingsAdmin section="info" />,

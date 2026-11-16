@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
@@ -12,7 +13,7 @@ import { BulkDeleteDto } from '../news/news.dto';
 import { CreateOccasionDto, LinkEventNewsDto, OccasionsAdminQueryDto, OccasionsFeedQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { OccasionsService } from './occasions.service';
 
-const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
+const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'id', label: '#', value: (r) => r.id },
@@ -86,6 +87,12 @@ export class OccasionsAdminController {
   @Permissions(PERM.OCCASIONS_UPDATE)
   unlinkNews(@Param('id', ParseIntPipe) id: number, @Body() dto: LinkEventNewsDto, @CurrentUser() u: AuthUser) {
     return this.service.unlinkNews(id, dto.newsIds, u);
+  }
+
+  @Get(':id')
+  @Permissions(PERM.OCCASIONS_UPDATE)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.one(id);
   }
 
   @Patch(':id')

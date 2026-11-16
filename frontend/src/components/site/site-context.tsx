@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { applyUploadLimits } from '@/lib/upload-limits';
 import { api, fileUrl, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { applyTheme, themeReady } from '@/lib/theme';
@@ -68,6 +69,7 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
       if (!alive.current) return;
       if (st) {
         setSettings(st);
+        applyUploadLimits(st.uploads);
         applyTheme(st.appearance); // sets the colours and remembers them for the next visit's first paint
         applyFavicon(fileUrl(st.branding?.favicon_url));
         applyMeta(st, lang);

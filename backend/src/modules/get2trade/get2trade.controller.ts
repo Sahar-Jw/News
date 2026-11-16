@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
@@ -14,7 +15,7 @@ import { BookingDto, BookingsAdminQueryDto, CreatePackageDto, CreateSpaceDto, Pa
 import { Get2TradeService } from './get2trade.service';
 
 /** one picture in the multipart field "image" */
-const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'reference', label: ar ? 'رقم الطلب' : 'Reference', value: (r) => r.reference },

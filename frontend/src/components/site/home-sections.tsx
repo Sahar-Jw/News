@@ -561,9 +561,8 @@ export function Experts({ items }: { items: Card[] }) {
   );
 }
 
-/** Statistics are manual: title = label, content = value. Nothing is computed. */
 /** Up to five figures on one band: the value large on top (counts up when first seen), its title small underneath. */
-export function StatsRow({ items }: { items: Card[] }) {
+export function StatsRow({ items }: { items: { id: number; title: string; excerpt?: string | null; subject?: string | null }[] }) {
   if (!items.length) return null;
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-4 shadow-card md:p-4">

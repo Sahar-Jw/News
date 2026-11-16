@@ -1,5 +1,6 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
+import { UL } from '@/lib/upload-limits';
 import { useEffect, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -63,7 +64,7 @@ export function CoursesAdmin() {
   const pickImage = (f: File | undefined) => {
     if (!f) return;
     if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return setErrors((e) => ({ ...e, image: t('tr.imageType') }));
-    if (f.size > 5 * 1024 * 1024) return setErrors((e) => ({ ...e, image: 'Image ≤ 5MB' }));
+    if (f.size > UL.imageBytes) return setErrors((e) => ({ ...e, image: `Image ≤ ${UL.imageMb}MB` }));
     setErrors((e) => ({ ...e, image: undefined }));
     setImage(f);
   };

@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
@@ -10,7 +11,7 @@ import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from '
 import { BoardService } from './board.service';
 
 /** one picture in the multipart field "photo" */
-const upload = () => FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('photo', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/board')
 export class BoardAdminController {

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { UL } from '@/lib/upload-limits';
 import { api, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
@@ -27,7 +28,7 @@ export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: D
   const pick = (f: File | undefined) => {
     if (!f) return;
     if (!(f.type === 'application/pdf' || /\.pdf$/i.test(f.name))) return toast(t('doc.pdfOnly'), 'err');
-    if (f.size > 25 * 1024 * 1024) return toast('PDF ≤ 25MB', 'err');
+    if (f.size > UL.pdfBytes) return toast(`PDF ≤ ${UL.pdfMb}MB`, 'err');
     setPdf(f);
   };
 

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { UL } from '@/lib/upload-limits';
 import { useEffect, useRef, useState } from 'react';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -342,9 +343,6 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
 }
 
 // ---------------------------------------------------------------- add a news item, in a window over the women page
-const MAX_NEWS_IMAGE = 5 * 1024 * 1024;
-const MAX_NEWS_PDF = 25 * 1024 * 1024;
-const MAX_NEWS_PDFS = 10;
 
 /**
  * "Add a news item" without leaving the women site. The news always gets the fixed main category "Businesswomen Committee News" (it cannot be changed here)
@@ -374,7 +372,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
   const addImages = (list: FileList | null) => {
     if (!list) return;
     const picked = [...list];
-    const ok = picked.filter((x) => /^image\/(jpeg|png|webp|gif)$/.test(x.type) && x.size <= MAX_NEWS_IMAGE);
+    const ok = picked.filter((x) => /^image\/(jpeg|png|webp|gif)$/.test(x.type) && x.size <= UL.imageBytes);
     const next = ok.map((file) => { const url = URL.createObjectURL(file); urls.current.push(url); return { file, url }; });
     setImages((x) => [...x, ...next]);
     setErrors((e) => ({ ...e, images: ok.length !== picked.length ? tr('بعض الصور مرفوضة: الأنواع المسموحة JPG/PNG/WEBP/GIF وحتى 5 ميغابايت للصورة', 'Some pictures were rejected: JPG/PNG/WEBP/GIF up to 5 MB each') : '' }));
@@ -382,8 +380,8 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
   const addPdfs = (list: FileList | null) => {
     if (!list) return;
     const picked = [...list];
-    const ok = picked.filter((x) => (x.type === 'application/pdf' || /\.pdf$/i.test(x.name)) && x.size <= MAX_NEWS_PDF && !pdfs.some((y) => y.name === x.name && y.size === x.size));
-    const room = MAX_NEWS_PDFS - pdfs.length;
+    const ok = picked.filter((x) => (x.type === 'application/pdf' || /\.pdf$/i.test(x.name)) && x.size <= UL.pdfBytes && !pdfs.some((y) => y.name === x.name && y.size === x.size));
+    const room = UL.maxPdfs - pdfs.length;
     setPdfs((x) => [...x, ...ok.slice(0, Math.max(room, 0))]);
     setErrors((e) => ({ ...e, pdfs: ok.length !== picked.length || ok.length > room ? tr('بعض الملفات مرفوضة: PDF فقط، حتى 25 ميغابايت للملف و10 ملفات', 'Some files were rejected: PDF only, up to 25 MB each and 10 files') : '' }));
   };

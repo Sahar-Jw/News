@@ -1,5 +1,6 @@
 'use client';
 import { asList } from '@/lib/list';
+import { UL } from '@/lib/upload-limits';
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -100,7 +101,6 @@ function Form({ dialog }: { dialog?: NewsDialogProps }) {
   }, [id]);
 
   const urlOf = (p: string) => fileUrl(`/api/files/${p}`);
-  const MAX_PDFS = 10; // same limit as the API
   const isPdf = (x: File) => x.type === 'application/pdf' || /\.pdf$/i.test(x.name);
   // one picker for pictures and the PDF: the PDF goes to its own slot, pictures to the gallery
   const addFiles = (all: FileList | null) => {
@@ -112,8 +112,8 @@ function Form({ dialog }: { dialog?: NewsDialogProps }) {
       else addPdfs(pdfs);
     }
     if (!list.length) return;
-    const next = list.filter((x) => /^image\//.test(x.type) && x.size <= 5 * 1024 * 1024);
-    if (next.length !== list.length) toast('JPG/PNG/WEBP/GIF ≤ 5MB', 'err');
+    const next = list.filter((x) => /^image\//.test(x.type) && x.size <= UL.imageBytes);
+    if (next.length !== list.length) toast(`JPG/PNG/WEBP/GIF ≤ ${UL.imageMb}MB`, 'err');
     if (single) {
       // the new picture replaces the old one
       if (!next.length) return;
@@ -126,12 +126,12 @@ function Form({ dialog }: { dialog?: NewsDialogProps }) {
   };
 
   const addPdfs = (files: File[]) => {
-    const ok = files.filter((x) => x.size <= 25 * 1024 * 1024);
-    if (ok.length !== files.length) toast('PDF ≤ 25MB', 'err');
+    const ok = files.filter((x) => x.size <= UL.pdfBytes);
+    if (ok.length !== files.length) toast(`PDF ≤ ${UL.pdfMb}MB`, 'err');
     // the same file chosen twice is added once
     const fresh = ok.filter((x) => !pdfFiles.some((y) => y.name === x.name && y.size === x.size));
-    const room = MAX_PDFS - (pdfOld.length - pdfGone.size) - pdfFiles.length;
-    if (fresh.length > room) toast(`PDF ≤ ${MAX_PDFS}`, 'err');
+    const room = UL.maxPdfs - (pdfOld.length - pdfGone.size) - pdfFiles.length;
+    if (fresh.length > room) toast(`PDF ≤ ${UL.maxPdfs}`, 'err');
     if (room > 0 && fresh.length) setPdfFiles((s) => [...s, ...fresh.slice(0, room)]);
   };
 

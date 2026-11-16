@@ -1,11 +1,11 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { UL } from '@/lib/upload-limits';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { FilePicker } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 
-export const MAX_IMAGES = 20;
 export interface SavedImage { path: string; url: string }
 export interface NewImage { file: File; url: string }
 /** The pictures of one record while it is edited: saved ones (can be removed) + newly chosen files. */
@@ -48,7 +48,7 @@ export function ImageSetField({ value, onChange, cover, onCover }: { value: Imag
   const add = (list: FileList | null) => {
     if (!list) return;
     const files = [...list].filter((f) => f.type.startsWith('image/'));
-    const room = MAX_IMAGES - imageTotal(value);
+    const room = UL.maxImages - imageTotal(value);
     if (files.length > room) toast(t('oc.tooMany'), 'err');
     const take = files.slice(0, Math.max(0, room));
     if (take.length) onChange({ ...value, fresh: [...value.fresh, ...take.map((file) => ({ file, url: URL.createObjectURL(file) }))] });

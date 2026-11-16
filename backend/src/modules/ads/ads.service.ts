@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
+import { } from '../../common/constants';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { applyColumnFilters } from '../../common/utils/column-filters';
@@ -64,7 +65,7 @@ export class AdsService {
   async create(dto: CreateAdDto, files: Express.Multer.File[], actor: AuthUser) {
     this.assertDates(dto.startDate, dto.endDate);
     if (!files?.length) throw new BadRequestException('أضف صورة واحدة على الأقل');
-    if (files.length > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (files.length > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const paths = await this.storage.saveImages(files, 'ads');
     try {
       const saved = await this.repo.save(
@@ -89,7 +90,7 @@ export class AdsService {
     const keep = dto.keepImages ?? existing;
     if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     if (keep.length + (files?.length ?? 0) < 1) throw new BadRequestException('يجب أن يحتوي الإعلان على صورة واحدة على الأقل');
-    if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (keep.length + (files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const removed = existing.filter((p) => !keep.includes(p));
     const added = await this.storage.saveImages(files ?? [], 'ads');
     try {

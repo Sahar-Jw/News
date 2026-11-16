@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
-import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
+import { } from '../../common/constants';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
@@ -72,7 +73,7 @@ export class GalleryService {
     const youtubeUrl = this.youtubeOf(dto.youtubeUrl);
     // both parts are optional, but an item needs at least one of them
     if (!files?.length && !youtubeUrl) throw new BadRequestException('أضف صورة أو فيديو واحداً على الأقل');
-    if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if ((files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const paths = await this.storage.saveImages(files ?? [], 'gallery');
     try {
       const saved = await this.repo.save(this.repo.create({
@@ -95,7 +96,7 @@ export class GalleryService {
     if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     const youtubeUrl = this.youtubeOf(dto.youtubeUrl !== undefined ? dto.youtubeUrl : g.youtubeUrl);
     if (keep.length + (files?.length ?? 0) < 1 && !youtubeUrl) throw new BadRequestException('يجب أن يحتوي العنصر على صورة أو فيديو واحد على الأقل');
-    if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (keep.length + (files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const removed = existing.filter((p) => !keep.includes(p));
     const added = await this.storage.saveImages(files ?? [], 'gallery');
     try {

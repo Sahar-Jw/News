@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { Thumb } from './cards';
-import { EventCard, PublicEvent, participationLabel, timeRange } from './events-hub';
+import { ManagedEventCard, PublicEvent, participationLabel, timeRange } from './events-hub';
 import { ImageSlider } from './image-slider';
 import { NotFoundContent } from './not-found-content';
 import { YoutubeEmbed } from './youtube-embed';
@@ -123,7 +123,7 @@ function View() {
               {d.related.length > 0 && (
                 <div>
                   <h2 className="mb-3 text-lg font-bold text-secondary">{ar ? 'الفعاليات المرتبطة' : 'Related events'}</h2>
-                  <ul className="grid gap-4 sm:grid-cols-2">{d.related.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>
+                  <ul className="grid gap-4 sm:grid-cols-2">{d.related.map((e) => <li key={e.id} className="flex"><ManagedEventCard event={e} /></li>)}</ul>
                 </div>
               )}
               {groups.activities.length > 0 && <NewsList items={groups.activities} />}

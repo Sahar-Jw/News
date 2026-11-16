@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
@@ -14,7 +15,7 @@ import { ApplicationsAdminQueryDto, ApplyDto, CreateExpoItemDto, ExpoItemsAdminQ
 import { ExpoService } from './expo.service';
 
 /** one logo in the multipart field "logo" */
-const upload = () => FileInterceptor('logo', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('logo', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/expo-items')
 export class ExpoItemsAdminController {

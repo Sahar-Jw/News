@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
@@ -16,7 +17,7 @@ import { TrainersService } from './trainers.service';
 import { TrainingService } from './training.service';
 
 /** one picture in the multipart field "image" */
-const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/courses')
 export class CoursesAdminController {

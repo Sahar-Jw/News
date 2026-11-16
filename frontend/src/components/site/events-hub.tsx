@@ -8,7 +8,10 @@ import { fmtDay } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { Center, Spinner, inputCls } from '@/components/ui/ui';
 import { WomenCalendar, type CalItem } from '@/components/women/women-calendar';
-import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { ConfirmDelete, ItemActions, ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { OccasionDialog } from '@/components/admin/occasions-admin';
+import { useToast } from '@/components/ui/toast';
+import { announceOccasionsChanged, useOccasionsChanged } from '@/lib/occasion-events';
 import { NewsFormDialog } from '@/components/admin/news-form';
 import { Thumb } from './cards';
 import { Pager } from './pager';
@@ -81,6 +84,40 @@ export function EventCard({ event }: { event: PublicEvent }) {
   );
 }
 
+/**
+ * An event card with its edit / delete buttons under it, for the people who may (`occasions.update` / `occasions.delete`);
+ * everybody else gets the plain card. Editing opens the same window as Settings; after a change the lists reload.
+ */
+export function ManagedEventCard({ event }: { event: PublicEvent }) {
+  const { can } = useAuth();
+  const { t } = useI18n();
+  const toast = useToast();
+  const mayEdit = can('occasions.update'), mayDelete = can('occasions.delete');
+  const [editing, setEditing] = useState(false);
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
+  if (gone) return null;
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await api(`/admin/occasions/${event.id}`, { method: 'DELETE' });
+      toast(t('app.deleted'));
+      setAsk(false);
+      setGone(true);
+      announceOccasionsChanged();
+    } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="flex w-full flex-col gap-2 [&>a]:flex-1">
+      <EventCard event={event} />
+      <ItemActions onEdit={mayEdit ? () => setEditing(true) : undefined} onDelete={mayDelete ? () => setAsk(true) : undefined} />
+      {editing && <OccasionDialog id={event.id} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} />}
+      {ask && <ConfirmDelete busy={busy} onConfirm={remove} onClose={() => setAsk(false)} />}
+    </div>
+  );
+}
+
 /** Exhibitions or occasions: status tabs (upcoming / current / previous = archive), filters by name, date, sector, organizer, participation. */
 function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; initialStatus: EventStatus }) {
   const { lang } = useI18n();
@@ -100,6 +137,8 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState('');
   const [debounced, setDebounced] = useState('');
+  const [tick, setTick] = useState(0);
+  useOccasionsChanged(() => setTick((n) => n + 1)); // an exhibition / occasion was edited or deleted from a card or a window
 
   useEffect(() => { const h = setTimeout(() => setDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
   useEffect(() => { setPage(1); }, [status, debounced, sector, organizer, participation, year, from, to, day, lang]);
@@ -117,10 +156,10 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
       if (live) setCal(all.map((e) => ({ id: e.id, start: e.date, end: e.finishDate || e.date, live: e.status !== 'previous' })));
     })();
     return () => { live = false; };
-  }, [type, lang]);
+  }, [type, lang, tick]);
   useEffect(() => {
     api<Facets>('/public/occasions/facets', { params: { type, lang }, cache: 'no-store' }).then(setFacets).catch(() => setFacets({ sectors: [], organizers: [], years: [] }));
-  }, [type, lang]);
+  }, [type, lang, tick]);
   useEffect(() => {
     let live = true;
     setData(null); setError('');
@@ -128,7 +167,7 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
       .then((r) => { if (live) setData(r); })
       .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [lang, type, status, debounced, sector, organizer, participation, year, from, to, day, page]);
+  }, [lang, type, status, debounced, sector, organizer, participation, year, from, to, day, page, tick]);
 
   const filtered = !!(debounced || sector || organizer || participation || year || from || to);
   const reset = () => { setQ(''); setSector(''); setOrganizer(''); setParticipation(''); setYear(''); setFrom(''); setTo(''); };
@@ -172,7 +211,7 @@ function EventList({ type, initialStatus }: { type: 'exhibition' | 'occasion'; i
         data.data.length === 0
           ? <Center>{type === 'exhibition' ? (ar ? 'لا توجد معارض' : 'No exhibitions found') : (ar ? 'لا توجد مناسبات' : 'No occasions found')}</Center>
           : <>
-            <ul className="grid gap-5 sm:grid-cols-2">{data.data.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>
+            <ul className="grid gap-5 sm:grid-cols-2">{data.data.map((e) => <li key={e.id} className="flex"><ManagedEventCard event={e} /></li>)}</ul>
             <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage} />
           </>
       )}
@@ -264,7 +303,7 @@ export function EventsCalendar({ card }: { card?: (e: PublicEvent) => React.Reac
           ? <p className="rounded-xl bg-white px-4 py-6 text-center text-sm text-gray-500 ring-1 ring-line">{ar ? 'لا توجد معارض أو مناسبات في هذا اليوم' : 'No exhibitions or occasions on this day'}</p>
           : card
             ? <ul className="space-y-4">{chosen.map((e) => <li key={e.id}>{card(e)}</li>)}</ul>
-            : <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{chosen.map((e) => <li key={e.id} className="flex"><div className="flex w-full flex-col [&>a]:flex-1"><EventCard event={e} /></div></li>)}</ul>}
+            : <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{chosen.map((e) => <li key={e.id} className="flex"><ManagedEventCard event={e} /></li>)}</ul>}
       </section>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_IMAGE_BYTES, PERM } from '../../common/constants';
@@ -63,7 +64,7 @@ export class SettingsController {
 
   @Post(':id/file')
   @Permissions(PERM.SETTINGS_UPDATE)
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
   upload(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: Express.Multer.File, @CurrentUser() u: AuthUser) {
     return this.service.uploadFile(id, file, u);
   }

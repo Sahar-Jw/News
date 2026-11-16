@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, download } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { mayOnForms, type SubAction } from '@/lib/form-pages';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
@@ -207,14 +208,13 @@ export function FormsBuilderAdmin() {
       <p className="text-sm text-gray-600">{L('اختر نموذجاً لإضافة حقول جديدة أو حذف حقول أو تعديلها، مع اختيار نوع كل حقل.', 'Pick a form to add, delete or edit its inputs and choose the type of each.')}</p>
       <div className="overflow-x-auto rounded-2xl ring-1 ring-line">
         <table className="w-full text-sm">
-          <thead className="bg-canvas text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النموذج', 'Form')}</th><th className="p-3 text-start">{L('الحقول', 'Inputs')}</th><th className="p-3 text-start">{L('الطلبات', 'Requests')}</th><th className="p-3" /></tr></thead>
+          <thead className="bg-canvas text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النموذج', 'Form')}</th><th className="p-3 text-start">{L('الحقول', 'Inputs')}</th><th className="p-3" /></tr></thead>
           <tbody className="divide-y divide-line bg-white">
-            {rows.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-gray-500">{L('لا توجد نماذج', 'No forms')}</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={3} className="p-6 text-center text-gray-500">{L('لا توجد نماذج', 'No forms')}</td></tr>}
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className="p-3 font-bold">{(lang === 'en' && r.titleEn) || r.titleAr}</td>
                 <td className="p-3">{r.fields.filter((f) => !LAYOUT_TYPES.includes(f.type)).length}</td>
-                <td className="p-3">{r.submissionsTotal ?? 0}{!!r.submissionsUnread && <span className="ms-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{r.submissionsUnread}</span>}</td>
                 <td className="p-3 text-end"><Button size="sm" variant="outline" onClick={() => open(r)}>{can('forms.update') ? L('تعديل', 'Edit') : L('عرض', 'View')}</Button></td>
               </tr>
             ))}
@@ -240,6 +240,8 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
   const { can } = useAuth();
   const toast = useToast();
   const [s, setS] = useState<SubFull | null>(null);
+  // the page's own permission is enough to handle its requests (see lib/form-pages.ts)
+  const may = (a: SubAction) => mayOnForms(can, (s as any)?.form?.slug ? [(s as any).form.slug] : undefined, a);
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
   const [notes, setNotes] = useState('');
@@ -305,7 +307,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
             {!s.filesHidden && s.files.length === 0 && <p className="text-sm text-gray-500">—</p>}
             {s.files.length > 0 && <ul className="divide-y divide-line rounded-xl border border-line">{s.files.map((f) => <li key={f.id} className="flex items-center gap-3 p-2.5 text-sm"><span className="min-w-0 flex-1 truncate">{f.name} <span className="text-xs text-gray-500">({s.fields.find((x) => x.key === f.fieldKey)?.labelAr ?? f.fieldKey})</span></span><span className="text-xs text-gray-500">{kb(f.size)}</span><Button size="sm" variant="outline" onClick={() => getFile(f)}>{L('تنزيل', 'Download')}</Button></li>)}</ul>}
           </div>
-          {can('forms.submissions.update') && (
+          {may('update') && (
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={L('الحالة', 'Status')}><select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value)}>{s.statuses.map((x) => <option key={x.key} value={x.key}>{(lang === 'en' && x.en) || x.ar}</option>)}</select></Field>
               <Field label={L('التصنيف', 'Category')}><select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)}><option value="">—</option>{s.categories.map((x) => <option key={x.key} value={x.key}>{(lang === 'en' && x.en) || x.ar}</option>)}</select></Field>
@@ -313,7 +315,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
               <div className="flex justify-end sm:col-span-2"><Button disabled={busy} onClick={save}>{L('حفظ', 'Save')}</Button></div>
             </div>
           )}
-          {can('forms.submissions.contact') && (
+          {may('contact') && (
             <div className="space-y-2 rounded-2xl bg-canvas p-3">
               <h3 className="text-sm font-bold">{L('مراسلة صاحب الطلب', 'Contact the applicant')} {s.applicantEmail ? <span dir="ltr" className="text-xs font-normal text-gray-500">({s.applicantEmail})</span> : <span className="text-xs font-normal text-red-600">{L('لا يوجد بريد', 'no e-mail')}</span>}</h3>
               {s.applicantPhone && <p className="text-xs">{L('الهاتف', 'Phone')}: <a dir="ltr" className="font-bold text-primary" href={`tel:${s.applicantPhone}`}>{s.applicantPhone}</a></p>}
@@ -327,7 +329,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
               {s.messages.length > 0 && <ul className="space-y-1 text-xs">{s.messages.map((m) => <li key={m.id} className="rounded-lg bg-white p-2 ring-1 ring-line"><b>{m.subject}</b> <span className="text-gray-500">· {fmtDate(lang, m.createdAt, true)} · {m.sentByName ?? ''} · {m.delivered ? '✓' : L('لم تُسلَّم', 'not delivered')}</span><p className="mt-1 whitespace-pre-wrap">{m.body}</p></li>)}</ul>}
             </div>
           )}
-          {can('forms.submissions.delete') && !s.anonymizedAt && <div className="flex justify-start"><Button variant="danger" size="sm" onClick={erase}>{L('مسح البيانات الشخصية (طلب صاحب البيانات)', 'Erase personal data (data-subject request)')}</Button></div>}
+          {may('delete') && !s.anonymizedAt && <div className="flex justify-start"><Button variant="danger" size="sm" onClick={erase}>{L('مسح البيانات الشخصية (طلب صاحب البيانات)', 'Erase personal data (data-subject request)')}</Button></div>}
         </div>
       )}
     </Modal>
@@ -344,7 +346,8 @@ export function FormSubmissionsAdmin({ slugs }: { slugs?: string[] } = {}) {
   const [openId, setOpenId] = useState<number | null>(null);
   const [key, setKey] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => { api<FormDef[]>('/admin/forms').then((all) => { setForms(slugs ? all.filter((f) => slugs.includes(f.slug)) : all); setLoaded(true); }).catch((e) => toast(e.message, 'err')); }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps
+  // the forms of this page only (the server sends no more than the person may handle), without the form builder's data
+  useEffect(() => { api<FormDef[]>('/admin/forms/for-requests', { params: { slugs: slugs?.join(',') } }).then((all) => { setForms(all); setLoaded(true); }).catch((e) => toast(e.message, 'err')); }, [toast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scope = formId ? forms.filter((f) => String(f.id) === formId) : forms;
   const idsParam = !formId && slugs ? forms.map((f) => f.id).join(',') : '';
@@ -371,14 +374,14 @@ export function FormSubmissionsAdmin({ slugs }: { slugs?: string[] } = {}) {
   return (
     <>
       <DataTable<SubRow>
-        key={`${formId}|${idsParam}`} endpoint="/admin/forms/submissions" columns={cols} dateFilter refreshKey={key} exportable={can('forms.submissions.export')} exportName="form-submissions"
+        key={`${formId}|${idsParam}`} endpoint="/admin/forms/submissions" columns={cols} dateFilter refreshKey={key} exportable={mayOnForms(can, slugs, 'export')} exportName="form-submissions"
         baseParams={formId ? { formId } : idsParam ? { formIds: idsParam } : undefined}
         filters={[
           { key: 'status', label: L('الحالة', 'Status'), options: [...statuses.values()].map((s) => ({ value: s.key, label: (lang === 'en' && s.en) || s.ar })) },
           { key: 'category', label: L('التصنيف', 'Category'), options: [...cats.values()].map((c) => ({ value: c.key, label: (lang === 'en' && c.en) || c.ar })) },
           { key: 'unread', label: L('القراءة', 'Read'), options: [{ value: 'true', label: L('غير مقروء فقط', 'Unread only') }] },
         ]}
-        bulkDelete={{ path: '/admin/forms/submissions/bulk-delete', can: can('forms.submissions.delete') }}
+        bulkDelete={{ path: '/admin/forms/submissions/bulk-delete', can: mayOnForms(can, slugs, 'delete') }}
         toolbar={(slugs && forms.length < 2) ? undefined : (
           <select className="rounded-lg border border-line bg-white px-2 py-1.5 text-sm" aria-label={L('النموذج', 'Form')} value={formId} onChange={(e) => setFormId(e.target.value)}>
             <option value="">{L('كل النماذج', 'All forms')}</option>{forms.map((f) => <option key={f.id} value={f.id}>{(lang === 'en' && f.titleEn) || f.titleAr}</option>)}

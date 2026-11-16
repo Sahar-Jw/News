@@ -2,10 +2,12 @@
 import { useI18n } from '@/lib/i18n';
 import { NewsTable } from '@/components/admin/news-table';
 import { RequirePerm } from '@/components/admin/guard';
+import { StatisticsAdmin } from '@/components/admin/statistics-admin';
 import { newsPerm } from '@/lib/utils';
 
 export default function SectionClient({ code }: { code: string }) {
   const { t } = useI18n();
+  if (code === 'STATISTICS') return <StatisticsAdmin />; // typed or database-backed figures, not a news list
   return (
     <RequirePerm any={[newsPerm('read', code)]}>
       <h1 className="mb-4 text-2xl font-bold">{t(`section.${code}`)}</h1>

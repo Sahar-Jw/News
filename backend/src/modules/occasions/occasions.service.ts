@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
-import { MAX_IMAGES_PER_RECORD } from '../../common/constants';
+import { } from '../../common/constants';
 import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
@@ -125,6 +126,13 @@ export class OccasionsService {
     return start > today ? 'upcoming' : end >= today ? 'current' : 'previous';
   }
 
+  /** One record in the admin shape (the edit window of a public card loads it by id). */
+  async one(id: number) {
+    const rec = (await this.all()).find((r) => r.id === id);
+    if (!rec) throw new NotFoundException('السجل غير موجود');
+    return this.present(rec);
+  }
+
   // ---------------------------------------------------------------- admin lists
   async list(q: OccasionsAdminQueryDto, scope: OccasionScope) {
     const today = todayYmd();
@@ -168,7 +176,7 @@ export class OccasionsService {
   async create(dto: CreateOccasionDto, files: Express.Multer.File[], actor: AuthUser) {
     this.assertDates(dto.eventDate, dto.finishDate);
     this.assertTimes(dto.eventDate, dto.finishDate, dto.startTime, dto.endTime);
-    if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if ((files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const detail = this.detailX(dto);
     await this.assertParent(detail.parentId as number | null | undefined);
     const paths = await this.storage.saveImages(files ?? [], 'occasions');
@@ -194,11 +202,11 @@ export class OccasionsService {
     const finish = dto.finishDate ?? current.finishAt ?? start;
     this.assertDates(start, finish);
     this.assertTimes(start, finish, dto.startTime ?? this.text(current, 'startTime'), dto.endTime ?? this.text(current, 'endTime'));
-    if ((files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if ((files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const existing = current.images ?? [];
     const keep = dto.keepImages ?? existing;
     if (keep.some((p) => !existing.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
-    if (keep.length + (files?.length ?? 0) > MAX_IMAGES_PER_RECORD) throw new BadRequestException('عدد الصور كبير جداً');
+    if (keep.length + (files?.length ?? 0) > uploadLimits.imagesPerRecord) throw new BadRequestException('عدد الصور كبير جداً');
     const removed = existing.filter((p) => !keep.includes(p));
     const detail = this.detailX(dto, id);
     await this.assertParent(detail.parentId as number | null | undefined);

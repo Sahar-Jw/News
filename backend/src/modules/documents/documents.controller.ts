@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_FILES_PER_UPLOAD, MAX_PDF_BYTES, PERM } from '../../common/constants';
@@ -10,7 +11,7 @@ import { DocumentsService } from './documents.service';
 
 /** an optional PDF in the field "file" and optional pictures in the field "images" (a record needs at least one of them) */
 const upload = () => FileFieldsInterceptor([{ name: 'file', maxCount: 1 }, { name: 'images', maxCount: MAX_FILES_PER_UPLOAD }], {
-  storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 },
+  storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 },
 });
 export type DocUploads = { file?: Express.Multer.File[]; images?: Express.Multer.File[] };
 

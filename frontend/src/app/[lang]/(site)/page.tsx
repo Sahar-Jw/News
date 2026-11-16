@@ -13,7 +13,7 @@ import { useSite } from '@/components/site/site-context';
 
 interface Home {
   breaking: Card[]; featured: Card[]; news: Card[]; team: Card[]; services: Card[]; testimonials: Card[];
-  partners: { id: number; title: string; logo: string }[]; experts: Card[]; statistics: Card[]; company: Card[];
+  partners: { id: number; title: string; logo: string }[]; experts: Card[]; statistics: { id: number; title: string; excerpt?: string | null; subject?: string | null }[]; company: Card[];
 }
 
 export default function HomePage() {

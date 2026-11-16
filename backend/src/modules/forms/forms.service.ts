@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
@@ -15,6 +15,7 @@ import { FormsWebhookService } from './forms-webhook.service';
 import { Get2TradeService } from '../get2trade/get2trade.service';
 import { TrainingService } from '../training/training.service';
 import { decryptValue, encryptValue, encryptionEnabled } from './forms-crypto';
+import { SubAction, allowedSlugs, pagesOf } from './form-pages';
 import { DEFAULT_STATUSES, DISPLAY_TYPES, FieldDef, cleanAnswers, cleanCategories, cleanFields, cleanIntegrations, cleanStatuses, displayValue, isValidSlug } from './field-schema';
 
 export const FORMS_FOLDER = 'private/forms';
@@ -60,6 +61,22 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     const counts = await this.subs.createQueryBuilder('s').select('s.formId', 'formId').addSelect('COUNT(*)', 'total').addSelect('SUM(CASE WHEN s.isRead THEN 0 ELSE 1 END)', 'unread').groupBy('s.formId').getRawMany();
     const by = new Map(counts.map((c) => [Number(c.formId), c]));
     return rows.map((f) => ({ ...f, integrations: f.integrations.map(({ secret, ...h }) => ({ ...h, hasSecret: !!secret })), submissionsTotal: Number(by.get(f.id)?.total ?? 0), submissionsUnread: Number(by.get(f.id)?.unread ?? 0) }));
+  }
+
+  /** The definitions a page's Requests table needs (statuses, categories, titles) - only the forms of the pages this person manages, nothing about integrations. */
+  async forRequests(user: AuthUser, slugs?: string) {
+    const allowed = allowedSlugs(user, 'read');
+    const want = slugs ? slugs.split(',').map((x) => x.trim()).filter(Boolean) : null;
+    const rows = await this.forms.find({ order: { createdAt: 'DESC' } });
+    return rows
+      .filter((f) => (allowed === null || allowed.includes(f.slug)) && (!want || want.includes(f.slug)))
+      .map((f) => ({ id: f.id, slug: f.slug, titleAr: f.titleAr, titleEn: f.titleEn, statuses: f.statuses, categories: f.categories, fields: [], integrations: [], isActive: (f as any).isActive }));
+  }
+
+  /** throws unless the person may do `action` on the requests of the form with this slug (global permission, or the permission of the page that owns the form) */
+  private allow(user: AuthUser, action: SubAction, slug: string | null | undefined) {
+    const slugs = allowedSlugs(user, action);
+    if (slugs !== null && !(slug && slugs.includes(slug))) throw new ForbiddenException('ليست لديك صلاحية على طلبات هذا النموذج');
   }
 
   async one(id: number) {
@@ -358,8 +375,14 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ================================================================================== submissions (admin)
-  private build(q: SubmissionsQueryDto) {
+  private build(q: SubmissionsQueryDto, user: AuthUser, action: SubAction = 'read') {
     const qb = this.subs.createQueryBuilder('s').leftJoin('s.form', 'f').addSelect(['f.id', 'f.slug', 'f.titleAr', 'f.titleEn', 'f.statuses', 'f.categories']);
+    // a person who manages a page (not the whole system) only ever sees the requests of that page's forms
+    const scope = allowedSlugs(user, action);
+    if (scope !== null) {
+      if (scope.length === 0) throw new ForbiddenException('ليست لديك صلاحية على طلبات النماذج');
+      qb.andWhere('f.slug IN (:...scopeSlugs)', { scopeSlugs: scope });
+    }
     if (q.formId) qb.andWhere('s.formId = :fid', { fid: q.formId });
     else if (q.formIds) qb.andWhere('s.formId IN (:...fids)', { fids: q.formIds.split(',').map(Number).slice(0, 20) });
     if (q.status) qb.andWhere('s.status = :st', { st: q.status });
@@ -381,9 +404,9 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     return { ...rest, reference: reference(s), form: s.form ? { id: s.form.id, slug: s.form.slug, titleAr: s.form.titleAr, titleEn: s.form.titleEn } : null };
   }
 
-  async listSubmissions(q: SubmissionsQueryDto) {
+  async listSubmissions(q: SubmissionsQueryDto, user: AuthUser) {
     const p = adminPage(q);
-    const [rows, total] = await this.build(q).skip(p.skip).take(p.limit).getManyAndCount();
+    const [rows, total] = await this.build(q, user).skip(p.skip).take(p.limit).getManyAndCount();
     return paged(rows.map((r) => this.row(r)), total, p);
   }
 
@@ -401,6 +424,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   async oneSubmission(id: number, actor: AuthUser) {
     const s = await this.subs.findOne({ where: { id }, relations: { form: true } });
     if (!s) throw new NotFoundException('الطلب غير موجود');
+    this.allow(actor, 'read', s.form?.slug);
     const may = actor.permissions.has(SENSITIVE_PERM);
     if (!s.isRead) {
       s.isRead = true;
@@ -420,6 +444,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   async updateSubmission(id: number, dto: UpdateSubmissionDto, actor: AuthUser) {
     const s = await this.subs.findOne({ where: { id }, relations: { form: true } });
     if (!s) throw new NotFoundException('الطلب غير موجود');
+    this.allow(actor, 'update', s.form?.slug);
     const form = s.form!;
     const before = s.status;
     if (dto.status !== undefined) {
@@ -441,6 +466,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     const unique = [...new Set(ids)];
     const rows = await this.subs.find({ where: { id: In(unique) }, relations: { form: true } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض الطلبات غير موجودة');
+    for (const s of rows) this.allow(actor, 'update', s.form?.slug);
     for (const s of rows) {
       if (dto.status !== undefined && !s.form!.statuses.some((x) => x.key === dto.status)) throw new BadRequestException('حالة غير معرّفة في أحد النماذج المختارة');
       if (dto.category && !s.form!.categories.some((x) => x.key === dto.category)) throw new BadRequestException('تصنيف غير معرّف في أحد النماذج المختارة');
@@ -457,8 +483,9 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async contact(id: number, dto: ContactApplicantDto, actor: AuthUser) {
-    const s = await this.subs.findOne({ where: { id } });
+    const s = await this.subs.findOne({ where: { id }, relations: { form: true } });
     if (!s) throw new NotFoundException('الطلب غير موجود');
+    this.allow(actor, 'contact', s.form?.slug);
     if (!s.applicantEmail) throw new BadRequestException('لا يوجد بريد إلكتروني لهذا المتقدم (أضف حقلاً بدور البريد في النموذج)');
     const ref = reference(s);
     const html = `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><div style="white-space:pre-wrap">${esc(dto.body)}</div><hr><p style="color:#666;font-size:12px">بخصوص طلبك رقم ${ref}</p></div>`;
@@ -471,8 +498,9 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
 
   /** Erasure on request (right to be forgotten): answers, files, contact details and notes are wiped; the row stays only so statistics by status / date remain true. */
   async anonymize(id: number, actor: AuthUser) {
-    const s = await this.subs.findOne({ where: { id } });
+    const s = await this.subs.findOne({ where: { id }, relations: { form: true } });
     if (!s) throw new NotFoundException('الطلب غير موجود');
+    this.allow(actor, 'delete', s.form?.slug);
     const files = await this.files.find({ where: { submissionId: id } });
     await this.files.delete({ submissionId: id });
     await this.messages.delete({ submissionId: id });
@@ -486,8 +514,9 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
 
   async bulkRemove(ids: number[], actor: AuthUser) {
     const unique = [...new Set(ids)];
-    const rows = await this.subs.find({ where: { id: In(unique) } });
+    const rows = await this.subs.find({ where: { id: In(unique) }, relations: { form: true } });
     if (rows.length !== unique.length) throw new NotFoundException('بعض الطلبات غير موجودة');
+    for (const s of rows) this.allow(actor, 'delete', s.form?.slug);
     const files = await this.files.find({ where: { submissionId: In(unique) } });
     await this.subs.delete({ id: In(unique) });
     await this.storage.removeMany(files.map((f) => f.path));
@@ -495,13 +524,24 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     return { deleted: rows.length };
   }
 
-  /** dashboard badge + latest unread (no answers) */
-  async unread() {
-    const [count, latest] = await Promise.all([
-      this.subs.count({ where: { isRead: false } }),
-      this.subs.createQueryBuilder('s').leftJoin('s.form', 'f').addSelect(['f.id', 'f.titleAr', 'f.titleEn']).where('s.isRead = false').orderBy('s.createdAt', 'DESC').take(5).getMany(),
-    ]);
-    return { count, latest: latest.map((s) => ({ id: s.id, reference: reference(s), form: s.form?.titleAr ?? '', applicantName: s.applicantName, createdAt: s.createdAt })) };
+  /**
+   * The new-request notification: the unread requests, grouped by the page that owns their form (see form-pages.ts), and ONLY for the pages the
+   * person manages. Each group has the number of unread requests and the newest one (no answers), so the banner can say what arrived and
+   * where. A person who manages no page gets an empty list.
+   */
+  async unread(user: AuthUser) {
+    const pages = pagesOf(user);
+    const groups: { key: string; count: number; latest: { id: number; reference: string; form: string; applicantName: string | null; createdAt: Date } | null }[] = [];
+    for (const p of pages) {
+      const base = () => this.subs.createQueryBuilder('s').innerJoin('s.form', 'f').where('s.isRead = false').andWhere('f.slug IN (:...slugs)', { slugs: p.slugs });
+      const [count, newest] = await Promise.all([
+        base().getCount(),
+        base().addSelect(['f.id', 'f.titleAr', 'f.titleEn']).orderBy('s.createdAt', 'DESC').take(1).getOne(),
+      ]);
+      if (count === 0 || !newest) continue;
+      groups.push({ key: p.key, count, latest: { id: newest.id, reference: reference(newest), form: newest.form?.titleAr ?? '', applicantName: newest.applicantName, createdAt: newest.createdAt } });
+    }
+    return { count: groups.reduce((n, g) => n + g.count, 0), groups };
   }
 
   async purgeExpired() {
@@ -525,7 +565,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   // ================================================================================== export
   async exportRows(q: SubmissionsQueryDto, actor: AuthUser, ar: boolean) {
     const may = actor.permissions.has(SENSITIVE_PERM);
-    const rows = await this.build(q).take(10000).getMany();
+    const rows = await this.build(q, actor, 'export').take(10000).getMany();
     // one column per field of the chosen form (its current fields plus any key only old submissions have); without a form only the common columns
     let fields: FieldDef[] = [];
     if (q.formId) {

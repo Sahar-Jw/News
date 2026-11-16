@@ -4,8 +4,9 @@ import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
-import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
+import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { announceOccasionsChanged } from '@/lib/occasion-events';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
@@ -29,24 +30,12 @@ export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
   const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [dialog, setDialog] = useState<{ row?: Row } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
-  const [exhibitions, setExhibitions] = useState<{ id: number; titleAr: string }[]>([]);
   const ar = lang === 'ar';
   const tr = (a: string, e: string) => (ar ? a : e);
-  useEffect(() => {
-    if (!draft) return;
-    api<{ data: { id: number; titleAr: string }[] }>('/admin/occasions', { params: { type: 'exhibition', limit: 'all' } }).then((r) => setExhibitions(r.data)).catch(() => setExhibitions([]));
-  }, [!!draft]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const close = () => { if (draft) releaseImages(draft.imgs); setDraft(null); };
-  const open = (r?: Row) => setDraft(r
-    ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, eventDate: r.eventDate.slice(0, 10), finishDate: r.finishDate.slice(0, 10), type: r.type, imgs: imageSetOf(r.images, r.imageUrls),
-      descriptionAr: r.descriptionAr, descriptionEn: r.descriptionEn, locationAr: r.locationAr, locationEn: r.locationEn, sectorAr: r.sectorAr, sectorEn: r.sectorEn, organizerAr: r.organizerAr, organizerEn: r.organizerEn,
-      participation: r.participation, parentId: r.parentId, coverage: r.coverage ?? [], startTime: r.startTime ?? '', endTime: r.endTime ?? '', audienceAr: r.audienceAr ?? '', audienceEn: r.audienceEn ?? '', registrationUrl: r.registrationUrl ?? '', registrationNoteAr: r.registrationNoteAr ?? '', registrationNoteEn: r.registrationNoteEn ?? '', videosText: (r.videos ?? []).join('\n') }
-    : { titleAr: '', titleEn: '', eventDate: '', finishDate: '', type: 'occasion', imgs: emptyImageSet(), ...NO_DETAILS, videosText: '' });
+  const open = (r?: Row) => setDialog({ row: r });
 
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
@@ -72,35 +61,12 @@ export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
     },
   ];
 
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draft) return;
-    const fd = new FormData();
-    fd.append('titleAr', draft.titleAr.trim());
-    fd.append('titleEn', draft.titleEn.trim());
-    fd.append('eventDate', draft.eventDate);
-    fd.append('finishDate', draft.finishDate);
-    fd.append('type', draft.type);
-    for (const k of ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn', 'participation', 'startTime', 'endTime', 'audienceAr', 'audienceEn', 'registrationUrl', 'registrationNoteAr', 'registrationNoteEn'] as const) fd.append(k, draft[k].trim());
-    fd.append('parentId', String(draft.type === 'occasion' && draft.parentId ? draft.parentId : 0));
-    fd.append('videos', JSON.stringify(draft.videosText.split('\n').map((v) => v.trim()).filter(Boolean)));
-    fd.append('coverage', JSON.stringify(draft.coverage.filter((c) => c.url.trim())));
-    appendImages(fd, draft.imgs, !!draft.id);
-    setBusy(true);
-    try {
-      await api(draft.id ? `/admin/occasions/${draft.id}` : '/admin/occasions', { method: draft.id ? 'PATCH' : 'POST', form: fd });
-      toast(t('app.saved'));
-      close();
-      setKey((k) => k + 1);
-    } catch (err: any) { toast(err.message, 'err'); }
-    finally { setBusy(false); }
-  };
-
   const remove = async () => {
     if (!deleteTarget) return;
     try {
       await api(`/admin/occasions/${deleteTarget.row.id}`, { method: 'DELETE' });
       toast(t('app.deleted'));
+      announceOccasionsChanged();
       deleteTarget.reload();
       setDeleteTarget(null);
     } catch (err: any) { toast(err.message, 'err'); }
@@ -131,8 +97,80 @@ export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
           </div>
         )}
       />
-      <Modal open={!!draft} onClose={close} title={draft?.id ? t('oc.editOccasion') : t('oc.addOccasion')} wide>
-        {draft && (
+      {dialog && <OccasionDialog key={dialog.row?.id ?? 'new'} row={dialog.row} onClose={() => setDialog(null)} onSaved={() => setKey((k) => k + 1)} />}
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
+        <p className="mb-5">{t('tbl.confirmDelete')}</p>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={remove}>{t('app.delete')}</Button></div>
+      </Modal>
+    </RequirePerm>
+  );
+}
+
+const toDraft = (r?: Row): Draft => (r
+  ? { id: r.id, titleAr: r.titleAr, titleEn: r.titleEn, eventDate: r.eventDate.slice(0, 10), finishDate: r.finishDate.slice(0, 10), type: r.type, imgs: imageSetOf(r.images, r.imageUrls),
+      descriptionAr: r.descriptionAr, descriptionEn: r.descriptionEn, locationAr: r.locationAr, locationEn: r.locationEn, sectorAr: r.sectorAr, sectorEn: r.sectorEn, organizerAr: r.organizerAr, organizerEn: r.organizerEn,
+      participation: r.participation, parentId: r.parentId, coverage: r.coverage ?? [], startTime: r.startTime ?? '', endTime: r.endTime ?? '', audienceAr: r.audienceAr ?? '', audienceEn: r.audienceEn ?? '', registrationUrl: r.registrationUrl ?? '', registrationNoteAr: r.registrationNoteAr ?? '', registrationNoteEn: r.registrationNoteEn ?? '', videosText: (r.videos ?? []).join('\n') }
+    : { titleAr: '', titleEn: '', eventDate: '', finishDate: '', type: 'occasion', imgs: emptyImageSet(), ...NO_DETAILS, videosText: '' });
+
+/**
+ * The add / edit window of an exhibition or occasion. `row` = the record when the caller already has it (the Settings table),
+ * `id` = load it first (the edit button on a public card); neither = a new record.
+ */
+export function OccasionDialog({ id, row, onClose, onSaved }: { id?: number; row?: Row; onClose: () => void; onSaved: () => void }) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const [src, setSrc] = useState<Row | undefined>(row);
+  useEffect(() => {
+    if (row || !id) return;
+    let live = true;
+    api<Row>(`/admin/occasions/${id}`, { cache: 'no-store' }).then((r) => { if (live) setSrc(r); }).catch((e: any) => { if (live) { toast(e.message, 'err'); onClose(); } });
+    return () => { live = false; };
+  }, [id, row]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (id && !src) return <Modal open onClose={onClose} title={t('oc.editOccasion')} wide><Center><Spinner /></Center></Modal>;
+  return <OccasionForm row={src} onClose={onClose} onSaved={onSaved} />;
+}
+
+function OccasionForm({ row, onClose, onSaved }: { row?: Row; onClose: () => void; onSaved: () => void }) {
+  const { t, lang } = useI18n();
+  const { can } = useAuth();
+  const toast = useToast();
+  const [draft, setDraft] = useState<Draft>(() => toDraft(row));
+  const [busy, setBusy] = useState(false);
+  const [exhibitions, setExhibitions] = useState<{ id: number; titleAr: string }[]>([]);
+  const ar = lang === 'ar';
+  const tr = (a: string, e: string) => (ar ? a : e);
+  useEffect(() => {
+    api<{ data: { id: number; titleAr: string }[] }>('/admin/occasions', { params: { type: 'exhibition', limit: 'all' } }).then((r) => setExhibitions(r.data)).catch(() => setExhibitions([]));
+  }, []);
+  const close = () => { releaseImages(draft.imgs); onClose(); };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('titleAr', draft.titleAr.trim());
+    fd.append('titleEn', draft.titleEn.trim());
+    fd.append('eventDate', draft.eventDate);
+    fd.append('finishDate', draft.finishDate);
+    fd.append('type', draft.type);
+    for (const k of ['descriptionAr', 'descriptionEn', 'locationAr', 'locationEn', 'sectorAr', 'sectorEn', 'organizerAr', 'organizerEn', 'participation', 'startTime', 'endTime', 'audienceAr', 'audienceEn', 'registrationUrl', 'registrationNoteAr', 'registrationNoteEn'] as const) fd.append(k, draft[k].trim());
+    fd.append('parentId', String(draft.type === 'occasion' && draft.parentId ? draft.parentId : 0));
+    fd.append('videos', JSON.stringify(draft.videosText.split('\n').map((v) => v.trim()).filter(Boolean)));
+    fd.append('coverage', JSON.stringify(draft.coverage.filter((c) => c.url.trim())));
+    appendImages(fd, draft.imgs, !!draft.id);
+    setBusy(true);
+    try {
+      await api(draft.id ? `/admin/occasions/${draft.id}` : '/admin/occasions', { method: draft.id ? 'PATCH' : 'POST', form: fd });
+      toast(t('app.saved'));
+      announceOccasionsChanged();
+      close();
+      onSaved();
+    } catch (err: any) { toast(err.message, 'err'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+      <Modal open onClose={close} title={draft.id ? t('oc.editOccasion') : t('oc.addOccasion')} wide>
+        {(
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
@@ -195,10 +233,5 @@ export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
         )}
         {draft?.id && can('occasions.update') && <LinkedNewsPanel base={`/admin/occasions/${draft.id}`} kinds={ar ? NEWS_KINDS_AR : NEWS_KINDS_EN} />}
       </Modal>
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t('app.confirm')}>
-        <p className="mb-5">{t('tbl.confirmDelete')}</p>
-        <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>{t('app.cancel')}</Button><Button type="button" variant="danger" onClick={remove}>{t('app.delete')}</Button></div>
-      </Modal>
-    </RequirePerm>
   );
 }

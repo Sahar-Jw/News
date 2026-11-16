@@ -12,6 +12,7 @@ import { FileStorageService } from '../files/file-storage.service';
 import { SettingsService } from '../settings/settings.service';
 import { PublicNewsQueryDto } from './news.dto';
 import { applyEligibility, onlyRegular } from './news.eligibility';
+import { StatisticsService } from '../statistics/statistics.service';
 import { ViewCounterService } from './view-counter.service';
 import { ttlCache } from '../../common/utils/ttl-cache';
 import { parseYoutubeId } from '../../common/utils/youtube';
@@ -30,6 +31,7 @@ export class NewsPublicService {
     private readonly storage: FileStorageService,
     private readonly settings: SettingsService,
     private readonly views: ViewCounterService,
+    private readonly stats: StatisticsService,
   ) {}
 
   /** Card = what lists/sections need. Never exposes created_by, status, or storage paths of other kinds. */
@@ -230,7 +232,8 @@ export class NewsPublicService {
       testimonials: shuffle(by(SpecialCategory.TESTIMONIALS)).slice(0, 4).map(card), // 4 random, new pick on every load
       partners: shuffle(by(SpecialCategory.PARTNERS).filter((p) => (p.images ?? []).length)).slice(0, 5).map((p) => ({ id: p.id, title: p.title, logo: this.storage.url(p.images[0]) })),
       experts: by(SpecialCategory.EXPERTS).slice(0, 4).map(card), // latest 4
-      statistics: by(SpecialCategory.STATISTICS).slice(0, 5).map(card), // latest 5
+      // the statistics managed in Settings (real numbers from the database or typed values); the older statistics news only while none are defined
+      statistics: (await this.stats.forHome(L)) ?? by(SpecialCategory.STATISTICS).slice(0, 5).map(card),
       company: shuffle(by(SpecialCategory.COMPANY_OVERVIEW)).slice(0, 5).map(card), // 5 random, picture only
     };
   }

@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Req, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { MAX_FILES_PER_UPLOAD, MAX_PDFS_PER_RECORD, MAX_PDF_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
+import { HARD_PDFS_PER_UPLOAD, MAX_FILES_PER_UPLOAD, MAX_PDFS_PER_RECORD, MAX_PDF_BYTES, PERM, NEWS_ANY_PERMISSIONS, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
 import { ExportQueryDto } from '../../common/dto/list-query.dto';
 import { AuthRequest, AuthUser } from '../../common/types';
@@ -22,9 +23,9 @@ const upload = () =>
   FileFieldsInterceptor(
     [
       { name: 'images', maxCount: MAX_FILES_PER_UPLOAD },
-      { name: 'pdf', maxCount: MAX_PDFS_PER_RECORD },
+      { name: 'pdf', maxCount: HARD_PDFS_PER_UPLOAD },
     ],
-    { storage: memoryStorage(), limits: { fileSize: MAX_PDF_BYTES, files: MAX_FILES_PER_UPLOAD + MAX_PDFS_PER_RECORD, fieldSize: 2 * 1024 * 1024 } },
+    { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + HARD_PDFS_PER_UPLOAD, fieldSize: 2 * 1024 * 1024 } },
   );
 
 const cols = (ar: boolean): ExportColumn[] => [

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { UL } from '@/lib/upload-limits';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -19,7 +20,6 @@ const show = (r: Row) => {
   return String(r.value).slice(0, 80);
 };
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // same limit as the API
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const ICON_TYPES = ['image/x-icon', 'image/vnd.microsoft.icon'];
 
@@ -74,7 +74,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     if (!file || !edit) return;
     const isIcon = edit.key === 'favicon';
     const okType = IMAGE_TYPES.includes(file.type) || (isIcon && (ICON_TYPES.includes(file.type) || /\.ico$/i.test(file.name)));
-    const problem = !okType ? t(isIcon ? 's.fileTypeIco' : 's.fileType') : file.size === 0 ? t('s.fileEmpty') : file.size > MAX_FILE_BYTES ? t('s.fileTooBig') : '';
+    const problem = !okType ? t(isIcon ? 's.fileTypeIco' : 's.fileType') : file.size === 0 ? t('s.fileEmpty') : file.size > UL.imageBytes ? t('s.fileTooBig') : '';
     if (problem) { setFileErr(`${file.name}: ${problem}`); setPickerKey((k) => k + 1); return; }
     if (newFileRef.current) URL.revokeObjectURL(newFileRef.current.url);
     setNewFile({ file, url: URL.createObjectURL(file) });

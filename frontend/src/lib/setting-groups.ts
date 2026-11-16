@@ -1,5 +1,5 @@
 /** Dashboard grouping of the Settings page: each group is one part (page) of the site; a category not listed falls into "other". */
-export type GroupId = 'home' | 'identity' | 'expo' | 'women' | 'training' | 'incubator' | 'services' | 'media' | 'pages' | 'other';
+export type GroupId = 'home' | 'identity' | 'expo' | 'women' | 'training' | 'incubator' | 'services' | 'media' | 'pages' | 'uploads' | 'other';
 
 export interface SettingGroup { id: GroupId; ar: string; en: string; hintAr: string; hintEn: string; icon: string; color: string; categories: string[] }
 
@@ -13,6 +13,7 @@ export const SETTING_GROUPS: SettingGroup[] = [
   { id: 'services', ar: 'الخدمات والمواعيد', en: 'Services & appointments', hintAr: 'النافذة الواحدة وحالات المواعيد', hintEn: 'One-stop shop and appointment statuses', icon: '☰', color: '#0e7490', categories: ['one_stop', 'appointments'] },
   { id: 'media', ar: 'المركز الإعلامي', en: 'Media centre', hintAr: 'تبويبات المركز الإعلامي وفئات الأخبار', hintEn: 'Media centre tabs and news categories', icon: '✉', color: '#be123c', categories: ['media'] },
   { id: 'pages', ar: 'الصفحات الثابتة', en: 'Static pages', hintAr: 'نصوص الصفحات الثابتة', hintEn: 'Static page texts', icon: '▤', color: '#475569', categories: ['pages'] },
+  { id: 'uploads', ar: 'حدود رفع الملفات', en: 'Upload limits', hintAr: 'حجم الصور وملفات PDF وعددها', hintEn: 'Size and number of pictures and PDF files', icon: '⇪', color: '#0f766e', categories: ['uploads'] },
   { id: 'other', ar: 'إعدادات أخرى', en: 'Other settings', hintAr: 'إعدادات غير مصنّفة', hintEn: 'Uncategorised settings', icon: '⋯', color: '#64748b', categories: [] },
 ];
 

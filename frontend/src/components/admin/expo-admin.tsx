@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { UL } from '@/lib/upload-limits';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -74,7 +75,7 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
   const pickLogo = (f: File | undefined) => {
     if (!f) return;
     if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return setErrors((e) => ({ ...e, logo: t('tr.imageType') }));
-    if (f.size > 5 * 1024 * 1024) return setErrors((e) => ({ ...e, logo: 'Image ≤ 5MB' }));
+    if (f.size > UL.imageBytes) return setErrors((e) => ({ ...e, logo: `Image ≤ ${UL.imageMb}MB` }));
     setErrors((e) => ({ ...e, logo: undefined }));
     setLogo(f);
   };

@@ -1,4 +1,5 @@
 import { BadGatewayException, BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { ConfigService } from '@nestjs/config';
 import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
@@ -289,7 +290,7 @@ export class FileStorageService implements OnModuleInit {
   // ---------- processing ----------
   private async processImage(file: Express.Multer.File, maxWidth: number, allowIco = false): Promise<{ buffer: Buffer; ext: string }> {
     if (!file?.buffer?.length) throw new BadRequestException('ملف فارغ');
-    if (file.size > MAX_IMAGE_BYTES) throw new BadRequestException(`الصورة ${file.originalname} تتجاوز 5 ميغابايت`);
+    if (file.size > uploadLimits.imageBytes) throw new BadRequestException(`الصورة ${file.originalname} تتجاوز ${uploadLimits.imageMb} ميغابايت`);
     if (allowIco) {
       const ico = this.detectIco(file.buffer);
       if (ico) return { buffer: file.buffer, ext: ico.ext }; // stored as uploaded (sharp cannot read .ico)
@@ -388,7 +389,7 @@ export class FileStorageService implements OnModuleInit {
   /** News PDF: content must start with %PDF- (extension / client mime are never trusted). */
   async savePdf(file: Express.Multer.File, folder: string): Promise<string> {
     if (!file?.buffer?.length) throw new BadRequestException('ملف PDF فارغ');
-    if (file.size > MAX_PDF_BYTES) throw new BadRequestException('ملف PDF يتجاوز 25 ميغابايت');
+    if (file.size > uploadLimits.pdfBytes) throw new BadRequestException(`ملف PDF يتجاوز ${uploadLimits.pdfMb} ميغابايت`);
     if (file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new BadRequestException('الملف ليس PDF صالحاً');
     return this.writeNew(folder, 'pdf', file.buffer);
   }

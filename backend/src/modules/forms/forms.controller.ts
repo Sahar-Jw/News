@@ -9,6 +9,7 @@ import { AuthUser } from '../../common/types';
 import { sendExport } from '../../common/utils/export';
 import { AuditService } from '../audit/audit.service';
 import { BulkIdsDto, BulkStatusDto, ContactApplicantDto, DuplicateFormDto, SaveFormDto, SubmissionsQueryDto, SubmitFormDto, UpdateSubmissionDto } from './forms.dto';
+import { permsFor } from './form-pages';
 import { FormsService } from './forms.service';
 
 @Controller('admin/forms')
@@ -29,20 +30,27 @@ export class FormsAdminController {
   }
 
   // ---- submissions (declared before :id so "submissions" is never read as an id)
+  /** the forms (statuses, categories, titles) behind a page's Requests table: only those of the pages the person manages */
+  @Get('for-requests')
+  @Permissions(...permsFor('read'))
+  forRequests(@Query('slugs') slugs: string | undefined, @CurrentUser() u: AuthUser) {
+    return this.service.forRequests(u, slugs);
+  }
+
   @Get('unread')
-  @Permissions('forms.submissions.read')
-  unread() {
-    return this.service.unread();
+  @Permissions(...permsFor('read'))
+  unread(@CurrentUser() u: AuthUser) {
+    return this.service.unread(u);
   }
 
   @Get('submissions')
-  @Permissions('forms.submissions.read')
-  submissions(@Query() q: SubmissionsQueryDto) {
-    return this.service.listSubmissions(q);
+  @Permissions(...permsFor('read'))
+  submissions(@Query() q: SubmissionsQueryDto, @CurrentUser() u: AuthUser) {
+    return this.service.listSubmissions(q, u);
   }
 
   @Get('submissions/export')
-  @Permissions('forms.submissions.export')
+  @Permissions(...permsFor('export'))
   async export(@Query() q: SubmissionsQueryDto, @Query() ex: ExportQueryDto, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const ar = ex.lang !== 'en';
     const { rows, columns } = await this.service.exportRows(q, u, ar);
@@ -52,46 +60,46 @@ export class FormsAdminController {
 
   @Post('submissions/bulk-update')
   @HttpCode(200)
-  @Permissions('forms.submissions.update')
+  @Permissions(...permsFor('update'))
   bulkUpdate(@Body() dto: BulkStatusDto, @CurrentUser() u: AuthUser) {
     return this.service.bulkUpdate(dto.ids, { status: dto.status, category: dto.category }, u);
   }
 
   @Post('submissions/bulk-delete')
   @HttpCode(200)
-  @Permissions('forms.submissions.delete')
+  @Permissions(...permsFor('delete'))
   bulkDelete(@Body() dto: BulkIdsDto, @CurrentUser() u: AuthUser) {
     return this.service.bulkRemove(dto.ids, u);
   }
 
   @Get('submissions/:id')
-  @Permissions('forms.submissions.read')
+  @Permissions(...permsFor('read'))
   one(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.oneSubmission(id, u);
   }
 
   @Patch('submissions/:id')
-  @Permissions('forms.submissions.update')
+  @Permissions(...permsFor('update'))
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSubmissionDto, @CurrentUser() u: AuthUser) {
     return this.service.updateSubmission(id, dto, u);
   }
 
   @Post('submissions/:id/contact')
   @HttpCode(200)
-  @Permissions('forms.submissions.contact')
+  @Permissions(...permsFor('contact'))
   contact(@Param('id', ParseIntPipe) id: number, @Body() dto: ContactApplicantDto, @CurrentUser() u: AuthUser) {
     return this.service.contact(id, dto, u);
   }
 
   @Post('submissions/:id/anonymize')
   @HttpCode(200)
-  @Permissions('forms.submissions.delete')
+  @Permissions(...permsFor('delete'))
   anonymize(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.anonymize(id, u);
   }
 
   @Delete('submissions/:id')
-  @Permissions('forms.submissions.delete')
+  @Permissions(...permsFor('delete'))
   removeSubmission(@Param('id', ParseIntPipe) id: number, @CurrentUser() u: AuthUser) {
     return this.service.bulkRemove([id], u);
   }

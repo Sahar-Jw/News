@@ -42,10 +42,13 @@ export enum Language {
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_DOC_BYTES = 10 * 1024 * 1024;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
-export const MAX_FILES_PER_UPLOAD = 20;
+/** The most files one request may carry (the real limit per record is a setting, see common/upload-limits.ts). */
+export const MAX_FILES_PER_UPLOAD = 100;
 /** PDFs one news record can carry. */
 export const MAX_PDFS_PER_RECORD = 10;
 export const MAX_IMAGES_PER_RECORD = 100;
+/** The most PDFs one request may carry. */
+export const HARD_PDFS_PER_UPLOAD = 50;
 
 export interface PermissionDef {
   code: string;

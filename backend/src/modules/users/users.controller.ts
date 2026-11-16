@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { uploadLimits } from '../../common/upload-limits';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
@@ -99,7 +100,7 @@ export class ProfileController {
   }
 
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
   avatar(@UploadedFile() file: Express.Multer.File, @CurrentUser() u: AuthUser) {
     return this.service.setAvatar(u.id, file);
   }

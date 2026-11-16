@@ -15,6 +15,7 @@ const CATEGORY_AR: Record<string, string> = {
   training: 'مركز التدريب',
   promo: 'البانر الترويجي (DCC EXPO)',
   media: 'المركز الإعلامي',
+  uploads: 'حدود رفع الملفات',
   expo: 'DCC EXPO (المعرض)',
   women: 'لجنة سيدات الأعمال',
   incubator: 'حاضنة الأعمال',
@@ -76,6 +77,11 @@ const BASE_AR: Record<string, string> = {
   // labels
   read_more: 'نص «اقرأ المزيد»',
   breaking: 'نص «عاجل»',
+  // upload limits
+  image_max_mb: 'أكبر حجم للصورة الواحدة (ميغابايت)',
+  pdf_max_mb: 'أكبر حجم لملف PDF الواحد (ميغابايت)',
+  max_images: 'أقصى عدد صور في السجل الواحد',
+  max_pdfs: 'أقصى عدد ملفات PDF في السجل الواحد',
   // media center
   kit_enabled: 'اعتماد Media Kit (يظهر للزوار عند التفعيل)',
   kit_logo: 'Media Kit: شعار الغرفة (يُستعمل شعار الموقع إن تُرك فارغاً)',
