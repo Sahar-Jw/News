@@ -1,9 +1,9 @@
 import { DOCUMENT_KIND_LIST, CC, CONTENT_CATEGORY_LABELS, docCode } from '../../common/content-categories';
-import { ContentStore, isActive } from '../content/content.store';
 
 /** What a metric can read: the content records (FAQ, documents, committees ...) and the database for everything else. */
 export interface MetricCtx {
-  store: ContentStore;
+  /** how many ACTIVE content records of one or several types (one COUNT query; `where` narrows it further, written on the news alias `n`) */
+  cc: (codes: string | string[], where?: { sql: string; params?: Record<string, unknown> }) => Promise<number>;
   sql: (query: string) => Promise<number>;
   /** published ordinary news, optionally of one language */
   news: (lang?: 'ar' | 'en') => Promise<number>;
@@ -18,9 +18,9 @@ export interface MetricDef {
   value: (c: MetricCtx) => Promise<number>;
 }
 
-const count = (code: string, test?: (x: Record<string, any>, finishAt: string | null) => boolean) => async (c: MetricCtx) =>
-  (await c.store.list(code)).filter((r) => isActive(r) && (!test || test(r.x, r.finishAt))).length;
-const isExhibition = (x: Record<string, any>) => x.eventType === 'exhibition';
+const count = (code: string | string[], where?: { sql: string; params?: Record<string, unknown> }) => (c: MetricCtx) => c.cc(code, where);
+const EXHIBITION = { sql: `n.extra ->> 'eventType' = 'exhibition'` };
+const OCCASION_ONLY = { sql: `n.extra ->> 'eventType' IS DISTINCT FROM 'exhibition'` };
 const today = () => new Date().toISOString().slice(0, 10);
 
 const GROUPS = {
@@ -41,11 +41,11 @@ export const METRICS: MetricDef[] = [
   m('media', 'gallery_albums', 'ألبومات المعرض', 'Gallery albums', (c) => c.sql('SELECT COUNT(*) FROM galleries')),
   m('media', 'gallery_photos', 'الصور في المعرض', 'Gallery photos', (c) => c.sql(`SELECT COALESCE(SUM(jsonb_array_length(images)), 0) FROM galleries WHERE images IS NOT NULL AND jsonb_typeof(images) = 'array'`)),
   m('media', 'gallery_videos', 'الفيديوهات في المعرض', 'Gallery videos', (c) => c.sql('SELECT COUNT(*) FROM galleries WHERE youtube_url IS NOT NULL')),
-  m('docs', 'documents_total', 'كل الوثائق', 'All documents', async (c) => (await Promise.all(DOCUMENT_KIND_LIST.map((k) => count(docCode(k))(c)))).reduce((a, b) => a + b, 0)),
+  m('docs', 'documents_total', 'كل الوثائق', 'All documents', count(DOCUMENT_KIND_LIST.map((k) => docCode(k)))),
   ...DOCUMENT_KIND_LIST.map((k) => m('docs', `doc_${k}`, lbl(docCode(k)).ar, lbl(docCode(k)).en, count(docCode(k)))),
-  m('events', 'exhibitions', 'المعارض', 'Exhibitions', count(CC.OCCASION, (x) => isExhibition(x))),
-  m('events', 'occasions', 'المناسبات', 'Occasions', count(CC.OCCASION, (x) => !isExhibition(x))),
-  m('events', 'events_upcoming', 'المعارض والمناسبات القادمة والجارية', 'Upcoming and current exhibitions & occasions', count(CC.OCCASION, (x, fin) => String(fin ?? x.eventDate ?? '') >= today())),
+  m('events', 'exhibitions', 'المعارض', 'Exhibitions', count(CC.OCCASION, EXHIBITION)),
+  m('events', 'occasions', 'المناسبات', 'Occasions', count(CC.OCCASION, OCCASION_ONLY)),
+  m('events', 'events_upcoming', 'المعارض والمناسبات القادمة والجارية', 'Upcoming and current exhibitions & occasions', (c) => c.cc(CC.OCCASION, { sql: `COALESCE(CAST(n.finishAt AS TEXT), n.extra ->> 'eventDate', '') >= :today`, params: { today: today() } })),
   m('committees', 'board_members', 'أعضاء مجلس الإدارة', 'Board members', count(CC.BOARD_MEMBER)),
   m('committees', 'committees', 'اللجان والقطاعات', 'Committees', count(CC.COMMITTEE)),
   m('committees', 'committee_members', 'أعضاء اللجان', 'Committee members', count(CC.COMMITTEE_MEMBER)),

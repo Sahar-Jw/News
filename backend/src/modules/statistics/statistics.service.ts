@@ -14,7 +14,10 @@ import { CreateStatisticDto, PublicStatisticsQueryDto, StatisticsAdminQueryDto, 
 import { METRICS, METRIC_KEYS, MetricCtx } from './statistics.metrics';
 
 const METRICS_TTL = Number(process.env.STATISTICS_CACHE_TTL_MS ?? 60_000);
+/** how many counting queries may run at the same time (the database pool is shared with the whole site) */
+const METRIC_PARALLEL = 3;
 const MAX_ON_HOME = 5;
+const BY_KEY = new Map(METRICS.map((d) => [d.key, d]));
 
 /**
  * The statistics band of the home page. Each statistic is a content record (main category STATISTIC): the Arabic and English titles,
@@ -23,7 +26,10 @@ const MAX_ON_HOME = 5;
  */
 @Injectable()
 export class StatisticsService {
-  private cache: { at: number; values: Record<string, number | null> } | null = null;
+  /** one counted number per key, remembered for a minute; the promise itself is kept, so requests arriving together share one query */
+  private cache = new Map<string, { at: number; v: Promise<number | null> }>();
+  private running = 0;
+  private waiting: (() => void)[] = [];
 
   constructor(
     private readonly store: ContentStore,
@@ -35,7 +41,12 @@ export class StatisticsService {
   // ------------------------------------------------------------------ real numbers
   private ctx(): MetricCtx {
     return {
-      store: this.store,
+      cc: (codes, where) => {
+        const list = Array.isArray(codes) ? codes : [codes];
+        const qb = this.news.createQueryBuilder('n').where('n.mainCategory IN (:...codes)', { codes: list }).andWhere(`n.extra ->> 'isActive' IS DISTINCT FROM 'false'`);
+        if (where) qb.andWhere(where.sql, where.params);
+        return qb.getCount();
+      },
       sql: async (q) => Number(Object.values((await this.ds.query(q))[0] ?? {})[0] ?? 0),
       news: async (lang) => {
         const qb = this.news.createQueryBuilder('n');
@@ -46,19 +57,36 @@ export class StatisticsService {
     };
   }
 
-  /** every real number now (a failing one is null, never an error for the page) */
-  async metricValues(): Promise<Record<string, number | null>> {
-    if (this.cache && Date.now() - this.cache.at < METRICS_TTL) return this.cache.values;
-    const ctx = this.ctx();
-    const entries = await Promise.all(METRICS.map(async (d) => [d.key, await d.value(ctx).then((n) => (Number.isFinite(n) ? n : null)).catch(() => null)] as const));
-    const values = Object.fromEntries(entries);
-    this.cache = { at: Date.now(), values };
-    return values;
+  private async limited<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.running >= METRIC_PARALLEL) await new Promise<void>((resolve) => this.waiting.push(resolve));
+    this.running++;
+    try { return await fn(); } finally { this.running--; this.waiting.shift()?.(); }
+  }
+
+  private one(key: string): Promise<number | null> {
+    const hit = this.cache.get(key);
+    if (hit && Date.now() - hit.at < METRICS_TTL) return hit.v;
+    const v = this.limited(() => BY_KEY.get(key)!.value(this.ctx()))
+      .then((n) => (Number.isFinite(n) ? n : null))
+      .catch(() => { this.cache.delete(key); return null; }); // a failing one is null (never an error for the page) and is tried again next time
+    this.cache.set(key, { at: Date.now(), v });
+    return v;
+  }
+
+  /** only the numbers asked for (a failing one is null); the page never counts anything it does not show */
+  async metricValues(keys: Iterable<string>): Promise<Record<string, number | null>> {
+    const list = [...new Set([...keys].filter((k) => BY_KEY.has(k)))];
+    const values = await Promise.all(list.map((k) => this.one(k)));
+    return Object.fromEntries(list.map((k, i) => [k, values[i]]));
+  }
+
+  private keysOf(rows: Rec[]) {
+    return rows.filter((r) => !s(r.x.value).trim()).map((r) => s(r.x.metric)).filter(Boolean);
   }
 
   /** the catalog for the "choose a real number" list, with the current value of each */
   async catalog() {
-    const values = await this.metricValues();
+    const values = await this.metricValues(METRICS.map((d) => d.key));
     return METRICS.map((d) => ({ key: d.key, groupAr: d.groupAr, groupEn: d.groupEn, ar: d.ar, en: d.en, value: values[d.key] ?? null }));
   }
 
@@ -91,8 +119,9 @@ export class StatisticsService {
   }
 
   async list(q: StatisticsAdminQueryDto) {
-    const values = await this.metricValues();
-    let rows = (await this.store.list(CC.STATISTIC)).map((r) => this.view(r, values));
+    const recs = await this.store.list(CC.STATISTIC);
+    const values = await this.metricValues(this.keysOf(recs));
+    let rows = recs.map((r) => this.view(r, values));
     if (q.q) rows = rows.filter((x) => matches([x.titleAr, x.titleEn, x.value, x.metric], q.q!));
     rows = filterByCf(rows, q.cf, { titleAr: (x) => [x.titleAr], titleEn: (x) => [x.titleEn] });
     rows.sort(by((x) => x.sortOrder, (x) => x.id));
@@ -102,7 +131,7 @@ export class StatisticsService {
   async adminOne(id: number) {
     const r = await this.store.get(id, CC.STATISTIC);
     if (!r) throw new NotFoundException('الإحصائية غير موجودة');
-    return this.view(r, await this.metricValues());
+    return this.view(r, await this.metricValues(this.keysOf([r])));
   }
 
   async create(dto: CreateStatisticDto, actor: AuthUser) {
@@ -115,7 +144,7 @@ export class StatisticsService {
       },
     });
     await this.audit.log({ category: 'statistics', action: 'create', description: `إضافة إحصائية: ${r.title}`, actorId: actor.id, entityType: 'statistics', entityId: r.id });
-    return this.view(r, await this.metricValues());
+    return this.view(r, await this.metricValues(this.keysOf([r])));
   }
 
   async update(id: number, dto: UpdateStatisticDto, actor: AuthUser) {
@@ -131,7 +160,7 @@ export class StatisticsService {
       },
     });
     await this.audit.log({ category: 'statistics', action: 'update', description: `تعديل إحصائية: ${r!.title}`, actorId: actor.id, entityType: 'statistics', entityId: id });
-    return this.view(r!, await this.metricValues());
+    return this.view(r!, await this.metricValues(this.keysOf([r!])));
   }
 
   remove(id: number, actor: AuthUser) {
@@ -144,7 +173,7 @@ export class StatisticsService {
     const rows = unique.map((id) => all.find((r) => r.id === id)).filter((r): r is Rec => !!r);
     if (rows.length !== unique.length) throw new NotFoundException('بعض الإحصائيات غير موجودة'); // nothing is deleted
     await this.store.remove(unique);
-    const values = await this.metricValues();
+    const values = await this.metricValues(this.keysOf(rows));
     await this.audit.log({ category: 'statistics', action: 'delete', description: `حذف ${rows.length} إحصائية`, actorId: actor.id, entityType: 'statistics', details: { ids: unique }, changes: removedChanges('statistics', rows.map((r) => this.view(r, values))) });
     return { deleted: rows.length };
   }
@@ -158,7 +187,7 @@ export class StatisticsService {
     const rows = (await this.store.list(CC.STATISTIC)).filter(isActive);
     if (!rows.length) return null;
     const en = lang === Language.EN;
-    const values = await this.metricValues();
+    const values = await this.metricValues(this.keysOf(rows));
     return rows
       .sort(by((r) => sortOf(r), (r) => r.id))
       .map((r) => ({ id: r.id, title: (en && s(r.x.titleEn)) || r.title, excerpt: this.shown(r, en, values) }))
