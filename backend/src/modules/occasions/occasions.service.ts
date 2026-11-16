@@ -185,7 +185,7 @@ export class OccasionsService {
         title: dto.titleAr.trim(),
         images: paths,
         finishAt: dto.finishDate,
-        x: { titleEn: dto.titleEn.trim(), eventDate: dto.eventDate, eventType: dto.type ?? 'occasion', isActive: true, ...detail },
+        x: { titleEn: dto.titleEn?.trim() ?? '', eventDate: dto.eventDate, eventType: dto.type ?? 'occasion', isActive: true, ...detail },
       });
       await this.audit.log({ category: 'occasions', action: 'create', description: `إضافة مناسبة: ${saved.title}`, actorId: actor.id, entityType: 'news', entityId: saved.id });
       return this.present(saved);

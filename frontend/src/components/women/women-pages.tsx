@@ -540,7 +540,7 @@ function ContactPage() {
         </Box>
         <Box>
           <Heading>{tr('أرسلي رسالة', 'Send a message')}</Heading>
-          <ContactForm subjectPrefix={tr('[لجنة سيدات الأعمال] ', '[Women Business Committee] ')} />
+          <ContactForm slug="contact-women" subjectPrefix={tr('[لجنة سيدات الأعمال] ', '[Women Business Committee] ')} />
         </Box>
       </div>
     </div>

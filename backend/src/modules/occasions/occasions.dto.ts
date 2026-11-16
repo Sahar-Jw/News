@@ -15,7 +15,7 @@ function parseCoverage({ value }: { value: unknown }) {
 
 export class CreateOccasionDto {
   @IsString() @MinLength(1) @MaxLength(255) titleAr: string;
-  @IsString() @MinLength(1) @MaxLength(255) titleEn: string;
+  @IsOptional() @IsString() @MaxLength(255) titleEn?: string;
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD' }) eventDate: string;
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'تاريخ النهاية يجب أن يكون بصيغة YYYY-MM-DD' }) finishDate: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;
@@ -50,7 +50,7 @@ export class CreateOccasionDto {
 
 export class UpdateOccasionDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleAr?: string;
-  @IsOptional() @IsString() @MinLength(1) @MaxLength(255) titleEn?: string;
+  @IsOptional() @IsString() @MaxLength(255) titleEn?: string;
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD' }) eventDate?: string;
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'تاريخ النهاية يجب أن يكون بصيغة YYYY-MM-DD' }) finishDate?: string;
   @IsOptional() @IsIn(['occasion', 'exhibition']) type?: string;

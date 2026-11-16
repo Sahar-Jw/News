@@ -47,7 +47,7 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'محتوى اللجنة وهوية صفحتها المستقلة', hintEn: 'Committee content and its separate page identity', icon: '✿', color: '#8b3d63', nav: ['/committees/women'],
-    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
+    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, { key: 'messages', ar: 'رسائل التواصل', en: 'Contact messages', perms: ['committees.read', 'forms.submissions.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
   },
   {
     key: 'membership', ar: 'الانتساب والخدمات', en: 'Membership & services', hintAr: 'خدمات الغرفة وطلبات الانتساب ومحتوى الصفحة', hintEn: 'Chamber services, membership requests and page content', icon: '☑', color: '#0f766e', nav: ['/membership'],
@@ -65,7 +65,7 @@ export const HUBS: HubMeta[] = [
     key: 'services', ar: 'الخدمات والمواعيد', en: 'Services & appointments', hintAr: 'النافذة الواحدة والخدمات والمواعيد والعملاء', hintEn: 'One-stop window, services, appointments and customers', icon: '☰', color: '#0e7490', nav: ['/one-stop'],
     tabs: [
       { key: 'services', ar: 'الخدمات', en: 'Services', perms: ['services.read'] }, { key: 'hours', ar: 'أوقات الدوام', en: 'Opening hours', perms: ['settings.read'] }, { key: 'dates', ar: 'المواعيد', en: 'Appointments', perms: ['appointments.read'] },
-      { key: 'dashboard', ar: 'لوحة المواعيد', en: 'Appointments dashboard', perms: ['appointments.dashboard'] }, { key: 'customers', ar: 'العملاء', en: 'Customers', perms: ['customers.read'] }, settings(['services']),
+      { key: 'dashboard', ar: 'لوحة المواعيد', en: 'Appointments dashboard', perms: ['appointments.dashboard'] }, { key: 'customers', ar: 'العملاء', en: 'Customers', perms: ['customers.read'] }, { key: 'messages', ar: 'رسائل التواصل', en: 'Contact messages', perms: ['services.read', 'forms.submissions.read'] }, settings(['services']),
     ],
   },
   { key: 'forms', ar: 'النماذج', en: 'Forms', hintAr: 'بناء النماذج وتعديل حقولها (طلبات كل نموذج تظهر في إعدادات صفحته)', hintEn: 'Build forms and edit their inputs (the requests of each form are in the settings of its own page)', icon: '✎', color: '#0f766e', tabs: [{ key: 'builder', ar: 'النماذج', en: 'Forms', perms: ['forms.read'] }] },

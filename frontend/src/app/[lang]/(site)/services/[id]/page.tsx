@@ -63,7 +63,7 @@ function View() {
         </div>
       </article>
       <Modal open={inquiry} onClose={() => setInquiry(false)} title={t('os.inquiryTitle')}>
-        <ContactForm subjectPrefix={`${t('os.inquiryPrefix')}${d.name} - `} />
+        <ContactForm slug="contact-one-stop" subjectPrefix={`${t('os.inquiryPrefix')}${d.name} - `} />
       </Modal>
     </div>
   );

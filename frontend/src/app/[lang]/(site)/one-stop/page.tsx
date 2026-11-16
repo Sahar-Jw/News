@@ -286,7 +286,7 @@ function ContactTab() {
         </div>
         <div>
           <p className="mb-3 text-sm font-bold text-secondary">{t('os.inquiryTitle')}</p>
-          <ContactForm subjectPrefix={t('os.inquiryPrefix')} />
+          <ContactForm slug="contact-one-stop" subjectPrefix={t('os.inquiryPrefix')} />
         </div>
       </div>
     </Panel>

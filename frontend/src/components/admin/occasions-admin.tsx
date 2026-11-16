@@ -79,12 +79,12 @@ export function OccasionsAdmin({ view }: { view?: 'agenda' | 'events' } = {}) {
         endpoint="/admin/occasions"
         columns={cols}
         dateFilter
-        baseParams={view ? { status: view === 'agenda' ? 'agenda' : 'previous' } : undefined}
+        baseParams={view === 'agenda' ? { status: 'agenda' } : undefined}
         refreshKey={key}
         exportable={can('occasions.export')}
         exportName="occasions"
         filters={[
-          ...(view ? [] : [{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'current', label: t('oc.current') }, { value: 'previous', label: t('oc.previous') }, { value: 'exhibitions', label: t('oc.exhibitions') }] }]),
+          ...(view === 'agenda' ? [] : [{ key: 'status', label: t('oc.status'), options: [{ value: 'upcoming', label: t('oc.upcoming') }, { value: 'current', label: t('oc.current') }, { value: 'previous', label: t('oc.previous') }, { value: 'exhibitions', label: t('oc.exhibitions') }] }]),
           { key: 'type', label: t('oc.type'), options: [{ value: 'occasion', label: t('oc.occasion') }, { value: 'exhibition', label: t('oc.exhibition') }] },
           { key: 'participation', label: tr('نوع المشاركة', 'Participation'), options: [{ value: 'organized', label: tr('تنظمها الغرفة', 'Organized by the Chamber') }, { value: 'participating', label: tr('تشارك فيها الغرفة', 'Chamber participates') }] },
         ]}
@@ -174,7 +174,7 @@ function OccasionForm({ row, onClose, onSaved }: { row?: Row; onClose: () => voi
           <form onSubmit={save} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('oc.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} /></Field>
-              <Field label={t('oc.titleEn')}><input required maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
+              <Field label={t('oc.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.titleEn} onChange={(e) => setDraft({ ...draft, titleEn: e.target.value })} /></Field>
               <Field label={t('oc.type')}><select className={inputCls} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as Draft['type'] })}><option value="occasion">{t('oc.occasion')}</option><option value="exhibition">{t('oc.exhibition')}</option></select></Field>
               <Field label={t('oc.date')}><input required type="date" className={inputCls} value={draft.eventDate} onChange={(e) => setDraft({ ...draft, eventDate: e.target.value })} /></Field>
               <Field label={t('oc.finishDate')}><input required type="date" min={draft.eventDate || undefined} className={inputCls} value={draft.finishDate} onChange={(e) => setDraft({ ...draft, finishDate: e.target.value })} /></Field>

@@ -145,8 +145,14 @@ export class AuthService {
     const now = new Date();
     const revokeFamily = () => this.refreshTokens.update({ familyId: row.familyId, revokedAt: IsNull() }, { revokedAt: now });
     if (row.revokedAt) {
-      if (now.getTime() - row.revokedAt.getTime() > REFRESH_GRACE_MS) await revokeFamily();
-      throw fail();
+      if (now.getTime() - row.revokedAt.getTime() > REFRESH_GRACE_MS) { await revokeFamily(); throw fail(); }
+      // Just rotated (a second tab, or a retry, renewing at the same moment as the first one): the sign-in is fine and the browser already holds
+      // (or is about to receive) the new refresh token from the request that won. Give this one a fresh access token only and leave the
+      // refresh cookie alone; failing here would sign the person out and delete the good cookie the winning request just set.
+      const user = await this.users.findOne({ where: { id: row.userId }, relations: { role: true, city: true } });
+      if (!user || !user.isActive || (user.passwordChangedAt && user.passwordChangedAt.getTime() > row.createdAt.getTime())) throw fail();
+      const accessToken = await this.jwt.signAsync({ sub: user.id });
+      return { accessToken, expiresIn: this.config.get<string>('JWT_EXPIRES_IN', '30m'), refresh: null, user: await this.toMe(user) };
     }
     if (row.expiresAt.getTime() <= now.getTime()) throw fail();
     const user = await this.users.findOne({ where: { id: row.userId }, relations: { role: true, city: true } });

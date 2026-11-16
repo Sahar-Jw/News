@@ -46,6 +46,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'expo.links': () => <WomenMenuAdmin site="expo" />,
   'expo.about': () => <ExpoSettingsAdmin section="about" />, 'expo.sectors': () => <ExpoSettingsAdmin section="sectors" />, 'expo.info': () => <ExpoSettingsAdmin section="info" />,
   'expo.contact': () => <ExpoSettingsAdmin section="contact" />, 'expo.identity': () => <ExpoSettingsAdmin section="identity" />,
+  'services.messages': () => <FormSubmissionsAdmin slugs={['contact-one-stop']} />, 'women.messages': () => <FormSubmissionsAdmin slugs={['contact-women']} />,
   'membership.services': () => <ServicesAdmin />, 'membership.applications': () => <FormSubmissionsAdmin slugs={['membership']} />, 'membership.content': () => <MembershipContent />,
   'incubator.projects': () => <IncubatorProjectsAdmin />, 'incubator.applications': () => <FormSubmissionsAdmin slugs={['incubator-application']} />,
   'get2trade.bookings': () => <FormSubmissionsAdmin slugs={['get2trade-booking', 'get2trade-inquiry']} />, 'get2trade.spaces': () => <G2tSpaces />, 'get2trade.packages': () => <G2tPackages />, 'get2trade.content': () => <G2tContent />,

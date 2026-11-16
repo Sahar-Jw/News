@@ -45,7 +45,8 @@ export class AuthController {
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     try {
       const { refresh, ...result } = await this.auth.refresh(req.cookies?.[REFRESH_COOKIE]);
-      this.setCookies(res, result.accessToken, result.expiresIn, refresh);
+      if (refresh) this.setCookies(res, result.accessToken, result.expiresIn, refresh);
+      else res.cookie(AUTH_COOKIE, result.accessToken, { ...this.cookieBase(), maxAge: ttlToMs(result.expiresIn), path: '/' }); // a renewal that lost the race: new access cookie only
       return { user: result.user };
     } catch (e) {
       this.clearCookies(res); // an unusable refresh cookie is removed, so the browser stops sending it

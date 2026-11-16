@@ -19,6 +19,8 @@ const PAGES: Record<string, { ar: string; en: string; url: string }> = {
   incubator: { ar: 'حاضنة الأعمال — الطلبات', en: 'Business incubator — Requests', url: hubUrl('incubator', 'applications') },
   get2trade: { ar: 'Get2Trade — طلبات الحجز والاستفسار', en: 'Get2Trade — Booking requests', url: hubUrl('get2trade', 'bookings') },
   expo: { ar: 'DCC EXPO — الطلبات', en: 'DCC EXPO — Requests', url: hubUrl('expo', 'applications') },
+  contactOneStop: { ar: 'الخدمات والمواعيد — رسائل التواصل', en: 'Services & appointments — Contact messages', url: hubUrl('services', 'messages') },
+  contactWomen: { ar: 'لجنة سيدات الأعمال — رسائل التواصل', en: 'Women Business Committee — Contact messages', url: hubUrl('women', 'messages') },
   contact: { ar: 'تواصل معنا — الرسائل', en: 'Contact — Messages', url: '/admin/messages' },
 };
 

@@ -69,13 +69,18 @@ export const sessionHint = {
   has() { try { return localStorage.getItem(SESSION_HINT) === '1'; } catch { return false; } },
 };
 
-let renewing: Promise<boolean> | null = null;
+/** 'ok' = renewed; 'ended' = the server says the sign-in is over; 'unavailable' = no answer (offline, server restarting, 5xx): the sign-in may be fine */
+type Renewal = 'ok' | 'ended' | 'unavailable';
+let renewing: Promise<Renewal> | null = null;
 /** Asks the server for a fresh short sign-in cookie using the refresh cookie. Calls made at the same moment share one request. */
-function renewSession(): Promise<boolean> {
+function renewSession(): Promise<Renewal> {
   if (!renewing) {
-    renewing = fetch(API_URL + '/auth/refresh', { method: 'POST', credentials: 'include', headers: { 'X-Lang': currentLang() } })
-      .then((r) => r.ok)
-      .catch(() => false)
+    const once = (): Promise<Renewal> => fetch(API_URL + '/auth/refresh', { method: 'POST', credentials: 'include', headers: { 'X-Lang': currentLang() } })
+      .then((r): Renewal => (r.ok ? 'ok' : r.status === 401 || r.status === 403 ? 'ended' : 'unavailable'))
+      .catch((): Renewal => 'unavailable');
+    // a server that is restarting (a deploy) or a dropped connection must not end the sign-in: try once more a moment later
+    renewing = once()
+      .then((r) => (r === 'unavailable' ? new Promise<Renewal>((res) => setTimeout(() => once().then(res), 1500)) : r))
       .finally(() => { renewing = null; });
   }
   return renewing;
@@ -253,7 +258,10 @@ async function request<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
       // the short sign-in cookie ran out: renew it silently from the refresh cookie and repeat this call once
       const own = /^\/auth\/(login|refresh|logout)/.test(path);
       if (!own && !opts._retried && sessionHint.has()) {
-        if (await renewSession()) return api<T>(path, { ...opts, _retried: true });
+        const renewed = await renewSession();
+        if (renewed === 'ok') return api<T>(path, { ...opts, _retried: true });
+        // the server could not be reached: keep the sign-in (the flag, and what the page shows) and let this one call fail
+        if (renewed === 'unavailable') throw new ApiError(0, currentLang() === 'ar' ? 'تعذّر الاتصال بالخادم، حاول مرة أخرى بعد قليل' : 'Could not reach the server, please try again in a moment');
         sessionHint.clear(); // the sign-in is really over
       }
       // /auth/* answers 401 by itself (wrong password, nobody signed in): only the other calls mean "your session ended"

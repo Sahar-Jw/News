@@ -31,6 +31,8 @@ export const FORM_PAGES: FormPage[] = [
   { key: 'incubator', slugs: ['incubator-application'], perms: { read: ['incubator.applications.read'], update: ['incubator.applications.update'], contact: ['incubator.applications.update'], delete: ['incubator.applications.delete'], export: ['incubator.applications.export'] } },
   { key: 'get2trade', slugs: ['get2trade-booking', 'get2trade-inquiry'], perms: { read: ['get2trade.read'], update: ['get2trade.update'], contact: ['get2trade.update'], delete: ['get2trade.delete'], export: ['get2trade.export'] } },
   { key: 'expo', slugs: ['expo-exhibitor', 'expo-visitor', 'expo-info'], perms: { read: ['expo.applications.read'], update: ['expo.applications.update'], contact: ['expo.applications.update'], delete: ['expo.applications.delete'], export: ['expo.applications.export'] } },
+  { key: 'contactOneStop', slugs: ['contact-one-stop'], perms: { read: ['services.read'], update: ['services.update'], contact: ['services.update'], delete: ['services.delete'], export: ['services.read'] } },
+  { key: 'contactWomen', slugs: ['contact-women'], perms: { read: ['committees.read'], update: ['committees.update'], contact: ['committees.update'], delete: ['committees.delete'], export: ['committees.read'] } },
   { key: 'contact', slugs: ['contact'], perms: { read: ['messages.read'], update: [], contact: [], delete: [], export: ['messages.export'] } },
 ];
 

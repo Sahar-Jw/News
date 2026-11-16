@@ -186,7 +186,7 @@ const ar: Record<string, string> = {
   'faq.scope.general': 'عام', 'faq.scope.one_stop': 'النافذة الواحدة', 'faq.scope.membership': 'الانتساب', 'faq.scope.training': 'التدريب', 'faq.scope.expo': 'المعرض',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'الأدوات', 'adm.occasions': 'المناسبات', 'adm.gallery': 'معرض الصور',
-  'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية', 'oc.date': 'تاريخ البداية', 'oc.finishDate': 'تاريخ النهاية', 'oc.type': 'النوع', 'oc.occasion': 'مناسبة', 'oc.exhibition': 'معرض', 'oc.exhibitions': 'المعارض', 'oc.current': 'حالية', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
+  'oc.titleAr': 'العنوان بالعربية', 'oc.titleEn': 'العنوان بالإنجليزية (اختياري)', 'oc.date': 'تاريخ البداية', 'oc.finishDate': 'تاريخ النهاية', 'oc.type': 'النوع', 'oc.occasion': 'مناسبة', 'oc.exhibition': 'معرض', 'oc.exhibitions': 'المعارض', 'oc.current': 'حالية', 'oc.status': 'الحالة', 'oc.upcoming': 'قادمة', 'oc.previous': 'سابقة',
   'oc.imageCount': 'عدد الصور', 'oc.addOccasion': 'إضافة مناسبة', 'oc.editOccasion': 'تعديل مناسبة', 'oc.addGallery': 'إضافة معرض صور', 'oc.editGallery': 'تعديل معرض صور',
   'oc.images': 'الصور', 'oc.addImages': 'إضافة صور', 'oc.imagesHint': 'JPG أو PNG أو WEBP أو GIF، بحد أقصى 5MB للصورة و20 صورة', 'oc.imagesRequired': 'أضف صورة واحدة على الأقل', 'oc.tooMany': 'الحد الأقصى 20 صورة',
   'oc.removeImage': 'إزالة الصورة', 'oc.created': 'تاريخ الإضافة', 'oc.noImages': 'بلا صور',
@@ -412,7 +412,7 @@ const en: Record<string, string> = {
   'faq.scope.general': 'General', 'faq.scope.one_stop': 'One-stop window', 'faq.scope.membership': 'Membership', 'faq.scope.training': 'Training', 'faq.scope.expo': 'Expo',
   // tools: occasions + image gallery (admin)
   'adm.tools': 'Tools', 'adm.occasions': 'Occasions', 'adm.gallery': 'Image gallery',
-  'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title', 'oc.date': 'Start date', 'oc.finishDate': 'Finish date', 'oc.type': 'Type', 'oc.occasion': 'Occasion', 'oc.exhibition': 'Exhibition', 'oc.exhibitions': 'Exhibitions', 'oc.current': 'Current', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
+  'oc.titleAr': 'Arabic title', 'oc.titleEn': 'English title (optional)', 'oc.date': 'Start date', 'oc.finishDate': 'Finish date', 'oc.type': 'Type', 'oc.occasion': 'Occasion', 'oc.exhibition': 'Exhibition', 'oc.exhibitions': 'Exhibitions', 'oc.current': 'Current', 'oc.status': 'Status', 'oc.upcoming': 'Upcoming', 'oc.previous': 'Previous',
   'oc.imageCount': 'Images', 'oc.addOccasion': 'Add occasion', 'oc.editOccasion': 'Edit occasion', 'oc.addGallery': 'Add gallery', 'oc.editGallery': 'Edit gallery',
   'oc.images': 'Images', 'oc.addImages': 'Add images', 'oc.imagesHint': 'JPG, PNG, WEBP or GIF, up to 5MB each and 20 images', 'oc.imagesRequired': 'Add at least one image', 'oc.tooMany': 'Up to 20 images',
   'oc.removeImage': 'Remove image', 'oc.created': 'Added on', 'oc.noImages': 'No images',
