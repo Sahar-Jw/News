@@ -386,11 +386,12 @@ export class FileStorageService implements OnModuleInit {
     return this.writeNew(folder, det.ext, file.buffer);
   }
 
-  /** News PDF: content must start with %PDF- (extension / client mime are never trusted). */
+  /** News PDF: content must carry %PDF- near the start (extension / client mime are never trusted). */
   async savePdf(file: Express.Multer.File, folder: string): Promise<string> {
     if (!file?.buffer?.length) throw new BadRequestException('ملف PDF فارغ');
     if (file.size > uploadLimits.pdfBytes) throw new BadRequestException(`ملف PDF يتجاوز ${uploadLimits.pdfMb} ميغابايت`);
-    if (file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') throw new BadRequestException('الملف ليس PDF صالحاً');
+    // the PDF spec allows junk (a BOM, blank lines) before the header: it only has to appear in the first 1024 bytes
+    if (!file.buffer.subarray(0, 1024).toString('latin1').includes('%PDF-')) throw new BadRequestException('الملف ليس PDF صالحاً');
     return this.writeNew(folder, 'pdf', file.buffer);
   }
 

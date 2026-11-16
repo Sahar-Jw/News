@@ -15,7 +15,7 @@ import {
 } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
-import { fixedNewsCategories, fixedNewsCategoryKey, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, newsCategoryLabels, NewsMainCategoryKey } from '../../common/news-categories';
+import { fixedNewsCategories, fixedNewsCategoryKey, newsCategoryKeyOf, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, newsCategoryLabels, NewsMainCategoryKey } from '../../common/news-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { isYmd } from '../../common/utils/dates';
@@ -187,9 +187,15 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     ).orderBy('v', 'ASC').getRawMany();
     // the fixed media-center categories always come first, in the requested language (both languages when none is asked), then whatever else editors already used
     const fixed = lang ? fixedNewsCategories(lang) : [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')];
-    const all = [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')].map((x) => x.toLowerCase());
-    const others = main.map((r) => r.v as string).filter((v) => !all.includes(String(v).toLowerCase()));
-    return { main: [...fixed, ...others], sub: sub.map((r) => r.v), special: SPECIAL_CATEGORY_CODES };
+    // the same rule as the public list: one entry per category - spelling variants (spaces, letter case, the other language, older women's labels) are merged into the fixed one
+    const seen = new Map<string, string>();
+    for (const r of main) {
+      const label = normalizeLabel(String(r.v ?? ''));
+      if (!label || newsCategoryKeyOf(label)) continue;
+      if (!seen.has(label.toLowerCase())) seen.set(label.toLowerCase(), label);
+    }
+    const others = [...seen.values()].sort((a, b) => a.localeCompare(b));
+    return { main: [...fixed, ...others], sub: [...new Set(sub.map((r) => normalizeLabel(String(r.v ?? ''))).filter(Boolean))], special: SPECIAL_CATEGORY_CODES };
   }
 
   // ---------------------------------------------------------------- validation helpers
@@ -416,7 +422,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const youtube = this.resolveYoutube(dto.youtubeUrl, main);
 
     // image reconciliation: keep ∖ existing is rejected, existing ∖ keep is removed AFTER the save succeeds
-    const existingImgs = n.images ?? [];
+    const existingImgs = toStringArray(n.images);
     const keep = dto.keepImages ?? existingImgs;
     if (keep.some((p) => !existingImgs.includes(p))) throw new BadRequestException('مسار صورة غير موجود في السجل');
     const removed = existingImgs.filter((p) => !keep.includes(p));
@@ -489,7 +495,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     // every record must be of a kind the user may delete; otherwise nothing is deleted
     for (const r of rows) this.assertMay('delete', r.mainCategory, actor.permissions);
     await this.repo.delete(unique);
-    await this.removeFilesIfUnreferenced(rows.flatMap((r) => r.images ?? []));
+    await this.removeFilesIfUnreferenced(rows.flatMap((r) => toStringArray(r.images)));
     await this.storage.removeMany(rows.flatMap((r) => pdfList(r))); // a PDF belongs to exactly one record
     for (const r of rows) {
       await this.audit.log({ category: 'news', action: 'delete', description: `حذف سجل: ${r.title}`, actorId: actor.id, entityType: 'news', entityId: r.id, changes: removedChanges('news', [r]) });

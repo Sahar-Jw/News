@@ -88,21 +88,26 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
     return { ...baseParams, ...fv, q: dq, from, to, ...(Object.keys(active).length && { cf: JSON.stringify(active) }) };
   }, [baseParams, fv, dq, from, to, dcf]);
 
+  // every request gets a number: an answer that is no longer the latest one (a slow first page arriving after page 2 was asked for) is dropped
+  const reqId = useRef(0);
   const load = useCallback(async () => {
+    const mine = ++reqId.current;
     setLoading(true);
     try {
       // filtering, paging and permissions are all enforced by the server
       const r = await api<{ data: T[]; meta: Meta }>(endpoint, { params: { ...params(), page, limit } });
+      if (mine !== reqId.current) return;
       setRows(r.data ?? []);
       setMeta(r.meta);
       setError('');
       setSel(new Set());
     } catch (e: any) {
+      if (mine !== reqId.current) return;
       setRows([]);
       setError(e?.message || 'Error'); // stays on screen (a toast vanishes and left a silent empty table)
       toast(e.message, 'err');
     } finally {
-      setLoading(false);
+      if (mine === reqId.current) setLoading(false);
     }
   }, [endpoint, params, page, limit, toast]);
 
