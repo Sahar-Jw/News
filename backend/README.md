@@ -136,3 +136,11 @@ Membership, trainer application, course registration, incubator, EXPO (exhibitor
 - **Not forms of the dashboard (on purpose):** newsletter subscription (it has e-mail verification and topic preferences) and the account forms (register, login, forgot / reset password).
 - **Form editor (Settings → Forms & requests → Forms → Edit):** only the inputs: add one (pick its type), edit its label / required / options / allowed files, move it, delete it. A second tab shows the form exactly as a visitor sees it, to fill in and send for real. Everything else about a form (title, address, statuses, categories, notification e-mails, retention, webhooks) is unchanged and is still available through the API (`PATCH /admin/forms/:id`); the screen simply does not offer it.
 - **Request details** show the applicant's answers inside the form's own inputs (read only), with attachments below.
+
+## Audit log screen
+
+Settings → Audit log (`audit.read`) follows the layout of the task-management system's audit log: one row per action with date, user, action, type and details; a search box, a type filter, an action filter and a date range; the "N changes" link opens the fields that changed as before → after (a created or deleted record shows its main fields). The screen does not show IP, browser, route, result columns or raw JSON; those are still stored and are in the Excel export.
+
+- **Action kinds:** the ~35 raw action codes the services write are grouped into create / update / delete / login / logout / failed attempt / password / export / download / data access / other (`modules/audit/audit-kinds.ts`). Filter with `?kind=`.
+- **Hidden by default:** the system's `unlogged_request` safety-net rows are never listed, and `read` (someone opened personal data) is listed only when the "Data access" kind is chosen.
+- **Filter lists** (`GET /admin/audit-logs/facets`) contain only the types and kinds that exist in the log.

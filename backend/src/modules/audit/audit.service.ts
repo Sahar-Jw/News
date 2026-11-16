@@ -11,6 +11,7 @@ import { AuthUser } from '../../common/types';
 import { AuditChange, AuditRequestState, auditRequestContext } from './audit-context';
 import { localize } from '../../common/i18n/messages';
 import { ApiLang } from '../../common/i18n/request-lang';
+import { HIDDEN_ACTIONS, KIND_ORDER, QUIET_ACTIONS, kindCondition, kindOf } from './audit-kinds';
 
 export interface AuditEntry {
   category: string;
@@ -105,6 +106,14 @@ export class AuditService {
       .addSelect(['u.id', 'u.fullName', 'u.email']);
     if (q.category) qb.andWhere('a.category = :cat', { cat: q.category });
     if (q.action) qb.andWhere('a.action = :act', { act: q.action });
+    if (q.kind) {
+      const c = kindCondition(q.kind);
+      if (c) qb.andWhere(c[0], c[1]);
+    }
+    // the default list is about changes and sign-ins: the system's safety-net rows are never listed, and data-access rows only when that kind is chosen
+    if (!q.action) {
+      qb.andWhere('a.action NOT IN (:...hidden)', { hidden: q.kind === 'access' ? HIDDEN_ACTIONS : [...HIDDEN_ACTIONS, ...QUIET_ACTIONS] });
+    }
     if (q.actorId) qb.andWhere('a.actorId = :actor', { actor: q.actorId });
     if (q.entityType) qb.andWhere('a.entityType = :et', { et: q.entityType });
     if (q.outcome === 'failure') qb.andWhere('a.action IN (:...fails)', { fails: FAILURE_ACTIONS });
@@ -135,34 +144,25 @@ export class AuditService {
   }
 
   /** Descriptions are stored in Arabic; English readers get the English text (the stored row is untouched). */
-  private localized<T extends { description: string; action: string }>(rows: T[], lang: ApiLang): (T & { outcome: 'success' | 'failure' | 'warning' })[] {
-    return rows.map((r) => Object.assign(r, { outcome: outcomeOf(r.action), ...(lang === 'en' ? { description: localize(r.description, lang) } : {}) }));
+  private localized<T extends { description: string; action: string }>(rows: T[], lang: ApiLang): (T & { outcome: 'success' | 'failure' | 'warning'; kind: string })[] {
+    return rows.map((r) => Object.assign(r, { outcome: outcomeOf(r.action), kind: kindOf(r.action), ...(lang === 'en' ? { description: localize(r.description, lang) } : {}) }));
   }
 
-  /** The choices of the filter bar: every module, action, record type and user that appears in the log (with how many entries each has). */
+  /**
+   * The two lists behind the filter bar, built from what really is in the log (like the task-management "meta"):
+   * `types` = the parts of the site that have entries, `actions` = the kinds of action that occurred. Hidden entries are not counted.
+   */
   async facets() {
-    const count = (col: string) =>
-      this.repo.createQueryBuilder('a').select(col, 'value').addSelect('COUNT(*)', 'n').where(`${col} IS NOT NULL`).groupBy(col).orderBy('n', 'DESC').getRawMany<{ value: string; n: string }>();
-    const [categories, actions, entityTypes, actors] = await Promise.all([
-      count('a.category'),
-      count('a.action'),
-      count('a.entityType'),
-      this.repo
-        .createQueryBuilder('a')
-        .innerJoin('a.actor', 'u')
-        .select('u.id', 'id')
-        .addSelect('u.fullName', 'name')
-        .addSelect('u.email', 'email')
-        .addSelect('COUNT(*)', 'n')
-        .groupBy('u.id')
-        .addGroupBy('u.fullName')
-        .addGroupBy('u.email')
-        .orderBy('n', 'DESC')
-        .limit(300)
-        .getRawMany<{ id: string; name: string; email: string; n: string }>(),
+    const [byAction, byType] = await Promise.all([
+      this.repo.createQueryBuilder('a').select('a.action', 'value').addSelect('COUNT(*)', 'n').where('a.action NOT IN (:...hidden)', { hidden: HIDDEN_ACTIONS }).groupBy('a.action').getRawMany<{ value: string; n: string }>(),
+      this.repo.createQueryBuilder('a').select('a.category', 'value').addSelect('COUNT(*)', 'n').where('a.action NOT IN (:...hidden)', { hidden: [...HIDDEN_ACTIONS, ...QUIET_ACTIONS] }).groupBy('a.category').orderBy('n', 'DESC').getRawMany<{ value: string; n: string }>(),
     ]);
-    const map = (rows: { value: string; n: string }[]) => rows.map((r) => ({ value: r.value, count: Number(r.n) }));
-    return { categories: map(categories), actions: map(actions), entityTypes: map(entityTypes), actors: actors.map((a) => ({ id: Number(a.id), name: a.name, email: a.email, count: Number(a.n) })) };
+    const kinds = new Map<string, number>();
+    for (const r of byAction) kinds.set(kindOf(r.value), (kinds.get(kindOf(r.value)) ?? 0) + Number(r.n));
+    return {
+      types: byType.filter((r) => r.value).map((r) => ({ value: r.value, count: Number(r.n) })),
+      actions: KIND_ORDER.filter((k) => kinds.has(k)).map((k) => ({ value: k, count: kinds.get(k)! })),
+    };
   }
 
   async list(q: AuditListQueryDto, lang: ApiLang = 'ar') {

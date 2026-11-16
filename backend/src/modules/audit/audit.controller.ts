@@ -8,6 +8,7 @@ import { ExportColumn, pickColumns, sendExport } from '../../common/utils/export
 import { AuditListQueryDto } from './audit.dto';
 import { AuditLog } from './audit-log.entity';
 import { AuditService, outcomeOf } from './audit.service';
+import { kindOf } from './audit-kinds';
 import { requestLang } from '../../common/i18n/request-lang';
 
 const cols = (ar: boolean): ExportColumn[] => [
@@ -17,6 +18,7 @@ const cols = (ar: boolean): ExportColumn[] => [
   { key: 'email', label: ar ? 'البريد الإلكتروني' : 'Email', value: (r) => r.actor?.email ?? '' },
   { key: 'category', label: ar ? 'القسم' : 'Module', value: (r) => r.category },
   { key: 'action', label: ar ? 'الإجراء' : 'Action', value: (r) => r.action },
+  { key: 'kind', label: ar ? 'نوع الإجراء' : 'Kind', value: (r) => kindOf(r.action) },
   { key: 'outcome', label: ar ? 'النتيجة' : 'Result', value: (r) => outcomeOf(r.action) },
   { key: 'description', label: ar ? 'الوصف' : 'Description', value: (r) => r.description },
   { key: 'entity', label: ar ? 'السجل المتأثر' : 'Record', value: (r) => (r.entityType ? `${r.entityType}${r.entityId ? ` #${r.entityId}` : ''}` : '') },
@@ -49,7 +51,7 @@ export class AuditController {
     return this.service.list(q, requestLang(req));
   }
 
-  /** the lists behind the filter bar (modules, actions, record types, users) */
+  /** the lists behind the filter bar: the parts of the site and the kinds of action that appear in the log */
   @Get('facets')
   facets() {
     return this.service.facets();
