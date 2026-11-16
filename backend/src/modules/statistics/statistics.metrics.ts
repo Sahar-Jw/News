@@ -1,3 +1,4 @@
+// DB-BACKED NUMBERS: not used for now. The statistics service no longer imports this file; it is kept so the real database counts can be switched on again later.
 import { DOCUMENT_KIND_LIST, CC, CONTENT_CATEGORY_LABELS, docCode } from '../../common/content-categories';
 
 /** What a metric can read: the content records (FAQ, documents, committees ...) and the database for everything else. */

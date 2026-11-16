@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 
 const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
@@ -7,10 +7,10 @@ const blankToNull = () => Transform(({ value }) => (typeof value === 'string' &&
 export class CreateStatisticDto {
   @IsString() @MinLength(1) @MaxLength(150) titleAr: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) titleEn?: string | null;
-  /** typed by hand; when it is empty the chosen real number (metric) is shown */
-  @blankToNull() @IsOptional() @IsString() @MaxLength(60) value?: string | null;
-  /** key of a real number counted from the database (see statistics.metrics.ts) */
-  @blankToNull() @IsOptional() @IsString() @MaxLength(60) metric?: string | null;
+  /** the value, typed by hand (required) */
+  @blankToNull() @IsNotEmpty({ message: 'اكتب قيمة الإحصائية' }) @IsString() @MinLength(1) @MaxLength(60) value: string;
+  // DB-BACKED NUMBERS (disabled for now): key of a real number counted from the database (see statistics.metrics.ts)
+  // @blankToNull() @IsOptional() @IsString() @MaxLength(60) metric?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(20) prefix?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(40) suffixAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(40) suffixEn?: string | null;
@@ -22,7 +22,7 @@ export class UpdateStatisticDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(150) titleAr?: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) titleEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(60) value?: string | null;
-  @blankToNull() @IsOptional() @IsString() @MaxLength(60) metric?: string | null;
+  // DB-BACKED NUMBERS (disabled for now): @blankToNull() @IsOptional() @IsString() @MaxLength(60) metric?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(20) prefix?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(40) suffixAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(40) suffixEn?: string | null;

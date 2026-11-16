@@ -22,12 +22,12 @@ export class StatisticsAdminController {
     return this.service.list(q);
   }
 
-  /** the real numbers that can be chosen, each with its current value */
-  @Get('metrics')
-  @Permissions(READ)
-  metrics() {
-    return this.service.catalog();
-  }
+  // DB-BACKED NUMBERS (disabled for now): the real numbers that can be chosen, each with its current value
+  // @Get('metrics')
+  // @Permissions(READ)
+  // metrics() {
+  //   return this.service.catalog();
+  // }
 
   @Get(':id')
   @Permissions(READ)
