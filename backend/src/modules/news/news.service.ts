@@ -15,7 +15,7 @@ import {
 } from '../../common/constants';
 import { CONTENT_CATEGORY_CODES, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { dayEnd, dayStart } from '../../common/dto/list-query.dto';
-import { fixedNewsCategories, fixedNewsCategoryKey, newsCategoryKeyOf, localizeFixedNewsCategory, matchFixedNewsCategory, newsCategoryLabel, newsCategoryLabels, NewsMainCategoryKey } from '../../common/news-categories';
+import { fixedNewsCategories, fixedNewsCategoryKey, newsCategoryKeyOf, localizeFixedNewsCategory, matchFixedNewsCategory, NEWS_MAIN_CATEGORIES, newsCategoryLabel, newsCategoryLabels, NewsMainCategoryKey } from '../../common/news-categories';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged } from '../../common/utils/pagination';
 import { isYmd } from '../../common/utils/dates';
@@ -173,29 +173,33 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Dropdown values come from the real DISTINCT values in `news` (SRS 13.2) – there is no categories table.
-   * Main category and subcategory are two independent lists: neither is filtered by the other.
+   * The main / sub categories the add-news form offers = the categories that REALLY EXIST: the distinct values of the news already saved
+   * (any language, any status or visibility - an editor may add to a category whose news are still scheduled or members-only).
+   * One entry per category: spelling variants (extra spaces, letter case, the other language, the older women's-committee labels) are merged,
+   * and a fixed media-center category shows only when some news uses it (written in the language asked for).
+   * A brand new site (no news yet) is offered the fixed categories so the form can still be used.
    */
   async categories(lang?: Language) {
-    // with `lang` (the language of the record being edited) only that language's fixed categories and the categories used by news of that language are listed
-    const inLang = (qb: ReturnType<Repository<News>['createQueryBuilder']>) => (lang ? qb.andWhere('n.language = :lang', { lang }) : qb);
-    const main = await inLang(
-      this.repo.createQueryBuilder('n').select('DISTINCT n.mainCategory', 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }),
-    ).orderBy('v', 'ASC').getRawMany();
-    const sub = await inLang(
-      this.repo.createQueryBuilder('n').select('DISTINCT n.subcategory', 'v').where('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }),
-    ).orderBy('v', 'ASC').getRawMany();
-    // the fixed media-center categories always come first, in the requested language (both languages when none is asked), then whatever else editors already used
-    const fixed = lang ? fixedNewsCategories(lang) : [...fixedNewsCategories('ar'), ...fixedNewsCategories('en')];
-    // the same rule as the public list: one entry per category - spelling variants (spaces, letter case, the other language, older women's labels) are merged into the fixed one
-    const seen = new Map<string, string>();
+    const main = await this.repo.createQueryBuilder('n').select('DISTINCT n.mainCategory', 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).getRawMany();
+    const sub = await this.repo.createQueryBuilder('n').select('DISTINCT n.subcategory', 'v').where('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).getRawMany();
+    const usedKeys = new Set<string>();
+    const others = new Map<string, string>();
     for (const r of main) {
       const label = normalizeLabel(String(r.v ?? ''));
-      if (!label || newsCategoryKeyOf(label)) continue;
-      if (!seen.has(label.toLowerCase())) seen.set(label.toLowerCase(), label);
+      if (!label) continue;
+      const key = newsCategoryKeyOf(label);
+      if (key) usedKeys.add(key);
+      else if (!others.has(label.toLowerCase())) others.set(label.toLowerCase(), label);
     }
-    const others = [...seen.values()].sort((a, b) => a.localeCompare(b));
-    return { main: [...fixed, ...others], sub: [...new Set(sub.map((r) => normalizeLabel(String(r.v ?? ''))).filter(Boolean))], special: SPECIAL_CATEGORY_CODES };
+    const fixedOf = (keys: Iterable<string>) => {
+      const set = new Set(keys);
+      return NEWS_MAIN_CATEGORIES.filter((c) => set.has(c.key)).flatMap((c) => (lang ? [lang === 'en' ? c.en : c.ar] : [c.ar, c.en]));
+    };
+    const fixed = fixedOf(usedKeys.size || others.size ? usedKeys : NEWS_MAIN_CATEGORIES.map((c) => c.key));
+    const subs = new Map<string, string>();
+    for (const r of sub) { const label = normalizeLabel(String(r.v ?? '')); if (label && !subs.has(label.toLowerCase())) subs.set(label.toLowerCase(), label); }
+    const byName = (x: string, y: string) => x.localeCompare(y);
+    return { main: [...fixed, ...[...others.values()].sort(byName)], sub: [...subs.values()].sort(byName), special: SPECIAL_CATEGORY_CODES };
   }
 
   // ---------------------------------------------------------------- validation helpers

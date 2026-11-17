@@ -36,6 +36,7 @@ export const newsCategoryLabels = (key: NewsMainCategoryKey): string[] => {
 /** Case-insensitive match of a value against the fixed labels (both languages); returns the canonical spelling or null. */
 export const matchFixedNewsCategory = (value: string): string | null => {
   const v = (value ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+  if (WOMEN_LEGACY_LABELS.some((l) => l.toLowerCase() === v)) return NEWS_MAIN_CATEGORIES.find((c) => c.key === 'women')!.ar; // the older spellings save as the fixed category
   for (const c of NEWS_MAIN_CATEGORIES) {
     if (c.ar.toLowerCase() === v) return c.ar;
     if (c.en.toLowerCase() === v) return c.en;

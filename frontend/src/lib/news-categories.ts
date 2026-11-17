@@ -22,5 +22,16 @@ export const newsCategoryLabel = (key: NewsMainCategoryKey, lang: string) => {
 
 export const isNewsCategoryKey = (k: string | null | undefined): k is NewsMainCategoryKey => NEWS_MAIN_CATEGORIES.some((c) => c.key === k);
 
-/** The key of a fixed category from its stored label in either language (undefined for any other category). */
-export const newsCategoryKeyOf = (label: string | null | undefined): NewsMainCategoryKey | undefined => NEWS_MAIN_CATEGORIES.find((c) => c.ar === label || c.en === label)?.key;
+/** Older spellings of the Businesswomen category still stored on some news (same list as the backend). */
+const WOMEN_LEGACY_LABELS = ['سيدات الأعمال', 'سيدات أعمال', 'سيدات الاعمال', 'سيدات اعمال', 'Businesswomen'];
+
+/** A label the way the server compares it: Unicode-normalised, single spaces, trimmed. */
+export const normalizeCategoryLabel = (v: string | null | undefined) => (v ?? '').normalize('NFC').replace(/\s+/g, ' ').trim();
+
+/** The key of a fixed category from its stored label in either language, ignoring extra spaces and letter case; the older women's labels count too (undefined for any other category). */
+export const newsCategoryKeyOf = (label: string | null | undefined): NewsMainCategoryKey | undefined => {
+  const v = normalizeCategoryLabel(label).toLowerCase();
+  if (!v) return undefined;
+  if (WOMEN_LEGACY_LABELS.some((l) => l.toLowerCase() === v)) return 'women';
+  return NEWS_MAIN_CATEGORIES.find((c) => c.ar.toLowerCase() === v || c.en.toLowerCase() === v)?.key;
+};

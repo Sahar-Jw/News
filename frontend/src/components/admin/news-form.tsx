@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/toast';
 import { parseYoutubeId } from '@/lib/youtube';
 import { YoutubeEmbed } from '@/components/site/youtube-embed';
 import { RichEditor } from './rich-editor';
-import { NewsMainCategoryKey, isNewsCategoryKey, newsCategoryKeyOf, newsCategoryLabel } from '@/lib/news-categories';
+import { NewsMainCategoryKey, isNewsCategoryKey, newsCategoryKeyOf, newsCategoryLabel, normalizeCategoryLabel } from '@/lib/news-categories';
 import { announceNewsSaved } from '@/lib/news-events';
 
 /**
@@ -90,7 +90,8 @@ function Form({ dialog }: { dialog?: NewsDialogProps }) {
     if (!id) return;
     api<Existing>(`/admin/news/${id}`).then((n) => {
       setF({
-        title: n.title, subject: n.subject ?? '', mainCategory: n.mainCategory, newMain: '', subcategory: n.subcategory ?? '', newSub: '', topics: asList(n.topics).join(', '),
+        // the category as the list spells it: one spelling per category (no stray spaces, the older women's label shown as the fixed one, in the record's language)
+        title: n.title, subject: n.subject ?? '', mainCategory: ((k) => (k ? newsCategoryLabel(k, n.language) : normalizeCategoryLabel(n.mainCategory)))(newsCategoryKeyOf(n.mainCategory)), newMain: '', subcategory: normalizeCategoryLabel(n.subcategory), newSub: '', topics: asList(n.topics).join(', '),
         body: n.body ?? '', youtubeUrl: n.youtubeUrl ?? '', rating: n.rating ? String(n.rating) : '', isFeatured: n.isFeatured, publishAt: toLocalInput(n.publishAt), status: n.status, language: n.language, visibility: n.visibility,
       });
       setExisting(asList(n.images));

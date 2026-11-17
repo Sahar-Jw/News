@@ -1,3 +1,4 @@
+import { toStringArray } from '../../common/utils/lists';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -46,7 +47,7 @@ export class ContentStore {
 
   private toRec(n: News): Rec {
     return {
-      id: Number(n.id), code: n.mainCategory, title: n.title, body: n.body ?? null, images: n.images ?? [], pdf: n.pdf ?? null,
+      id: Number(n.id), code: n.mainCategory, title: n.title, body: n.body ?? null, images: toStringArray(n.images), pdf: n.pdf ?? null,
       finishAt: n.finishAt ?? null, x: (n.extra ?? {}) as Record<string, any>, createdAt: n.createdAt, updatedAt: n.updatedAt,
     };
   }
