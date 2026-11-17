@@ -11,13 +11,31 @@ export class FixStringListColumnsInNews1767500000000 implements MigrationInterfa
 
   public async up(r: QueryRunner): Promise<void> {
     for (const col of ['images', 'topics', 'pdfs']) {
-      await r.query(
-        `UPDATE "news" SET "${col}" = CASE
-            WHEN ("${col}" #>> '{}') ~ '^\\s*\\[' THEN ("${col}" #>> '{}')::jsonb
-            ELSE to_jsonb(ARRAY(SELECT btrim(x) FROM unnest(string_to_array("${col}" #>> '{}', ',')) AS x WHERE btrim(x) <> ''))
-          END
-          WHERE jsonb_typeof("${col}") = 'string'`,
+      // the entity says jsonb, but a database created by hand / an older version can hold these columns as text: handle both
+      const info: { data_type: string }[] = await r.query(
+        `SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'news' AND column_name = $1`,
+        [col],
       );
+      if (!info.length) continue;
+      const type = info[0].data_type;
+      if (type === 'jsonb') {
+        await r.query(
+          `UPDATE "news" SET "${col}" = CASE
+              WHEN ("${col}" #>> '{}') ~ '^\\s*\\[' THEN ("${col}" #>> '{}')::jsonb
+              ELSE to_jsonb(ARRAY(SELECT btrim(x) FROM unnest(string_to_array("${col}" #>> '{}', ',')) AS x WHERE btrim(x) <> ''))
+            END
+            WHERE jsonb_typeof("${col}") = 'string'`,
+        );
+      } else if (type === 'text' || type === 'character varying') {
+        // text holding a list: keep what already is a JSON array ("[...]"); turn "a,b" or a quoted string into a JSON array
+        await r.query(
+          `UPDATE "news" SET "${col}" = CASE
+              WHEN btrim("${col}") ~ '^"\\s*\\[.*\\]\\s*"$' THEN replace(substr(btrim("${col}"), 2, length(btrim("${col}")) - 2), '\\"', '"')
+              ELSE to_jsonb(ARRAY(SELECT btrim(btrim(x), '"') FROM unnest(string_to_array("${col}", ',')) AS x WHERE btrim(btrim(x), '"') <> ''))::text
+            END
+            WHERE "${col}" IS NOT NULL AND btrim("${col}") <> '' AND btrim("${col}") !~ '^\\['`,
+        );
+      }
     }
   }
 
