@@ -34,8 +34,8 @@ function Chrome({ children }: { children: React.ReactNode }) {
   const { s } = useSite();
   const ar = lang === 'ar';
   const color = (key: string, fallback: string) => { const v = String(s('expo', key) ?? ''); return HEX.test(v) ? v : fallback; };
-  const primary = color('primary_color', '#4b1d7a');
-  const accent = color('accent_color', '#c9a227');
+  const primary = color('primary_color', '#42B1C2');
+  const accent = color('accent_color', '#c6e8ec');
   const header = color('header_color', `color-mix(in srgb, ${primary} 70%, black)`);
   const footer = color('footer_color', header);
   const theme = { '--primary': primary, '--secondary': header, '--accent': accent, '--canvas': color('background_color', '#faf8fc'), '--ink': color('text_color', '#1f2937'), '--expo-footer': footer } as React.CSSProperties;
