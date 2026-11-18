@@ -3,6 +3,7 @@ import { CC } from '../../common/content-categories';
 import { AuthUser } from '../../common/types';
 import { sanitizeRichText } from '../../common/utils/text';
 import { AuditService } from '../audit/audit.service';
+import { FileStorageService } from '../files/file-storage.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
 import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { PagesAdminQueryDto, UpdatePageDto } from './pages.dto';
@@ -13,11 +14,13 @@ export class PagesService {
   constructor(
     private readonly store: ContentStore,
     private readonly audit: AuditService,
+    private readonly storage: FileStorageService,
   ) {}
 
   private view(r: Rec) {
     return {
       id: r.id, slug: s(r.x.slug), titleAr: r.title, titleEn: s(r.x.titleEn), bodyAr: r.body ?? '', bodyEn: s(r.x.bodyEn),
+      sideTextAr: s(r.x.sideTextAr), sideTextEn: s(r.x.sideTextEn), photoUrl: this.storage.url(r.images[0] ?? null),
       sortOrder: sortOf(r), isActive: isActive(r), showInFooter: r.x.showInFooter === true, createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
   }
@@ -34,19 +37,30 @@ export class PagesService {
     return pageRows(rows, q, (p) => p);
   }
 
-  async update(id: number, dto: UpdatePageDto, actor: AuthUser) {
+  async update(id: number, dto: UpdatePageDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
     const cur = await this.store.get(id, CC.PAGE);
     if (!cur || cur.x.slug !== 'about') throw new NotFoundException('الصفحة غير موجودة');
     if (dto.slug !== undefined && dto.slug !== 'about') throw new NotFoundException('لا يمكن تغيير رابط الصفحة الثابتة');
-    const r = await this.store.update(id, {
-      title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
-      x: {
-        slug: dto.slug, titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
-        sortOrder: dto.sortOrder, isActive: dto.isActive, showInFooter: dto.showInFooter,
-      },
-    });
-    await this.audit.log({ category: 'pages', action: 'update', description: `تعديل صفحة: ${r!.title}`, actorId: actor.id, entityType: 'site_pages', entityId: id });
-    return this.view(r!);
+    const newPath = photo ? await this.storage.saveImage(photo, 'pages', 1600) : null;
+    const oldPath = cur.images[0] ?? null;
+    try {
+      const nz = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() || null);
+      const r = await this.store.update(id, {
+        title: dto.titleAr?.trim(), body: dto.bodyAr === undefined ? undefined : sanitizeRichText(dto.bodyAr),
+        images: newPath ? [newPath] : dto.removePhoto ? [] : undefined,
+        x: {
+          slug: dto.slug, titleEn: dto.titleEn === undefined ? undefined : dto.titleEn?.trim() || null, bodyEn: dto.bodyEn === undefined ? undefined : sanitizeRichText(dto.bodyEn),
+          sideTextAr: nz(dto.sideTextAr), sideTextEn: nz(dto.sideTextEn),
+          sortOrder: dto.sortOrder, isActive: dto.isActive, showInFooter: dto.showInFooter,
+        },
+      });
+      await this.audit.log({ category: 'pages', action: 'update', description: `تعديل صفحة: ${r!.title}`, actorId: actor.id, entityType: 'site_pages', entityId: id });
+      if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
+      return this.view(r!);
+    } catch (e) {
+      await this.storage.remove(newPath);
+      throw e;
+    }
   }
 
   // ---------------------------------------------------------------- public (active pages only)
@@ -63,6 +77,6 @@ export class PagesService {
     const r = (await this.store.list(CC.PAGE)).find((x) => x.x.slug === slug && isActive(x) && (this.hasBody(x.body) || this.hasBody(x.x.bodyEn)));
     if (!r) throw new NotFoundException('الصفحة غير موجودة');
     const en = lang === 'en';
-    return { id: r.id, slug: s(r.x.slug), title: pick(r.title, r.x.titleEn, en), body: pick(r.body, r.x.bodyEn, en) };
+    return { id: r.id, slug: s(r.x.slug), title: pick(r.title, r.x.titleEn, en), body: pick(r.body, r.x.bodyEn, en), sideText: pick(r.x.sideTextAr, r.x.sideTextEn, en), sideImage: this.storage.url(r.images[0] ?? null) };
   }
 }

@@ -3,14 +3,14 @@ import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { hubUrl } from '@/lib/hubs-meta';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface PageData { id: number; slug: string; title: string; body: string }
+interface PageData { id: number; slug: string; title: string; body: string; sideText?: string; sideImage?: string | null }
 
 /** The static pages the admin can edit (tabs of the "Static pages" hub in Settings). */
 const EDITABLE = ['about', 'privacy', 'terms'];
@@ -59,6 +59,13 @@ function View() {
           <span className="h-1 w-10 rounded-full bg-primary" /><span className="h-1 w-2 rounded-full bg-primary/50" /><span className="h-1 w-1 rounded-full bg-primary/25" />
         </div>
         {p.body ? <div className="prose-news mt-6" dangerouslySetInnerHTML={{ __html: p.body }} /> : <p className="mt-6 text-gray-500">{t('site.pageEmpty')}</p>}
+        {/* the picture and the text written next to it, at the bottom of the page */}
+        {(p.sideImage || p.sideText) && (
+          <div className={`mt-10 grid items-center gap-6 border-t border-line pt-8 ${p.sideImage && p.sideText ? 'md:grid-cols-2' : ''}`}>
+            {p.sideImage && <img src={fileUrl(p.sideImage)} alt="" loading="lazy" className="w-full rounded-2xl object-cover shadow-card" />}
+            {p.sideText && <p className="whitespace-pre-line text-base leading-8 text-gray-700">{p.sideText}</p>}
+          </div>
+        )}
       </article>
     </div>
   );

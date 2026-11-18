@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, inputCls } from '@/components/ui/ui';
@@ -9,11 +9,11 @@ import { RequirePerm } from '@/components/admin/guard';
 import { RichEditor } from '@/components/admin/rich-editor';
 
 type StaticSlug = 'about' | 'privacy' | 'terms';
-interface PageRow { id: number; slug: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string }
+interface PageRow { id: number; slug: string; titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; sideTextAr?: string; sideTextEn?: string; photoUrl?: string | null }
 interface SettingRow { id: number; key: string; value: { title?: string; body?: string } | null }
-interface Draft { titleAr: string; titleEn: string; bodyAr: string; bodyEn: string }
+interface Draft { titleAr: string; titleEn: string; bodyAr: string; bodyEn: string; sideTextAr: string; sideTextEn: string }
 
-const EMPTY: Draft = { titleAr: '', titleEn: '', bodyAr: '', bodyEn: '' };
+const EMPTY: Draft = { titleAr: '', titleEn: '', bodyAr: '', bodyEn: '', sideTextAr: '', sideTextEn: '' };
 const TITLES: Record<StaticSlug, [string, string]> = {
   about: ['عن الغرفة', 'About the chamber'],
   privacy: ['سياسة الخصوصية', 'Privacy policy'],
@@ -31,19 +31,23 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
   const [loadErr, setLoadErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [dropPhoto, setDropPhoto] = useState(false);
 
   useEffect(() => {
     let active = true;
     setLoadErr('');
     setLoading(true);
     setDraft(EMPTY);
+    setPhoto(null);
+    setDropPhoto(false);
     if (slug === 'about') {
       api<{ data: PageRow[] }>('/admin/pages', { params: { limit: 'all' }, cache: 'no-store' }).then((result) => {
         if (!active) return;
         const found = result.data.find((row) => row.slug === slug);
         if (!found) throw new Error('The About page has not been initialized.');
         setPage(found);
-        setDraft({ titleAr: found.titleAr, titleEn: found.titleEn, bodyAr: found.bodyAr, bodyEn: found.bodyEn });
+        setDraft({ titleAr: found.titleAr, titleEn: found.titleEn, bodyAr: found.bodyAr, bodyEn: found.bodyEn, sideTextAr: found.sideTextAr ?? '', sideTextEn: found.sideTextEn ?? '' });
       }).catch((error: unknown) => { if (active) setLoadErr(error instanceof Error ? error.message : String(error)); })
         .finally(() => { if (active) setLoading(false); });
     } else {
@@ -55,7 +59,7 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
         setSettings([ar, en]);
         const a = ar.value ?? {};
         const e = en.value ?? {};
-        setDraft({ titleAr: a.title ?? TITLES[slug][0], titleEn: e.title ?? TITLES[slug][1], bodyAr: a.body ?? '', bodyEn: e.body ?? '' });
+        setDraft({ titleAr: a.title ?? TITLES[slug][0], titleEn: e.title ?? TITLES[slug][1], bodyAr: a.body ?? '', bodyEn: e.body ?? '', sideTextAr: '', sideTextEn: '' });
       }).catch((error: unknown) => { if (active) setLoadErr(error instanceof Error ? error.message : String(error)); })
         .finally(() => { if (active) setLoading(false); });
     }
@@ -69,16 +73,21 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
     try {
       if (slug === 'about') {
         if (!page) throw new Error('The About page is not loaded.');
-        await api(`/admin/pages/${page.id}`, {
-          method: 'PATCH',
-          body: {
-            titleAr: draft.titleAr.trim(),
-            titleEn: draft.titleEn.trim(),
-            bodyAr: draft.bodyAr,
-            bodyEn: draft.bodyEn,
-            isActive: !!(draft.bodyAr.trim() || draft.bodyEn.trim()),
-          },
-        });
+        // multipart: the picture travels with the texts
+        const fd = new FormData();
+        fd.set('titleAr', draft.titleAr.trim());
+        fd.set('titleEn', draft.titleEn.trim());
+        fd.set('bodyAr', draft.bodyAr);
+        fd.set('bodyEn', draft.bodyEn);
+        fd.set('sideTextAr', draft.sideTextAr);
+        fd.set('sideTextEn', draft.sideTextEn);
+        fd.set('isActive', String(!!(draft.bodyAr.trim() || draft.bodyEn.trim())));
+        if (photo) fd.set('photo', photo);
+        else if (dropPhoto) fd.set('removePhoto', 'true');
+        const saved = await api<PageRow>(`/admin/pages/${page.id}`, { method: 'PATCH', form: fd });
+        setPage(saved);
+        setPhoto(null);
+        setDropPhoto(false);
       } else {
         if (settings.length !== 2) throw new Error(`The ${slug} page settings are not loaded.`);
         const byKey = new Map(settings.map((row) => [row.key, row]));
@@ -114,6 +123,28 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
           <Field plain={slug === 'about'} label={t('pg.bodyEn')}>{slug === 'about'
             ? <RichEditor value={draft.bodyEn} onChange={(bodyEn) => setDraft((current) => ({ ...current, bodyEn }))} dir="ltr" />
             : <textarea rows={12} maxLength={20000} dir="ltr" className={inputCls} value={draft.bodyEn} onChange={(e) => setDraft({ ...draft, bodyEn: e.target.value })} disabled={busy} />}</Field>
+          {slug === 'about' && (
+            <fieldset className="space-y-3 rounded-2xl border border-line p-4">
+              <legend className="px-2 text-sm font-bold text-secondary">{t('pg.sideTitle')}</legend>
+              <Field label={t('pg.sidePhoto')} hint={t('pg.sidePhotoHint')}>
+                <input type="file" accept="image/jpeg,image/png,image/webp" className={inputCls} disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPhoto(f); setDropPhoto(false); } e.target.value = ''; }} />
+              </Field>
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                {photo && <><span className="rounded bg-emerald-50 px-2 py-1 text-emerald-700">{photo.name}</span><button type="button" className="text-red-600 underline" onClick={() => setPhoto(null)}>{t('pg.sideRemove')}</button></>}
+                {!photo && page?.photoUrl && !dropPhoto && (
+                  <>
+                    <img src={fileUrl(page.photoUrl)} alt="" className="h-20 w-32 rounded-lg object-cover" />
+                    <button type="button" className="text-red-600 underline" onClick={() => setDropPhoto(true)}>{t('pg.sideRemove')}</button>
+                  </>
+                )}
+                {dropPhoto && <span className="text-gray-500">{t('pg.sideRemoved')}</span>}
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label={t('pg.sideTextAr')}><textarea rows={5} maxLength={5000} dir="rtl" className={inputCls} value={draft.sideTextAr} onChange={(e) => setDraft({ ...draft, sideTextAr: e.target.value })} disabled={busy} /></Field>
+                <Field label={t('pg.sideTextEn')}><textarea rows={5} maxLength={5000} dir="ltr" className={inputCls} value={draft.sideTextEn} onChange={(e) => setDraft({ ...draft, sideTextEn: e.target.value })} disabled={busy} /></Field>
+              </div>
+            </fieldset>
+          )}
           {can('pages.update') && <div className="flex justify-end"><Button disabled={busy}>{t('app.save')}</Button></div>}
         </form>
       )}

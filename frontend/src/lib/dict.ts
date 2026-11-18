@@ -110,7 +110,7 @@ const ar: Record<string, string> = {
   'doc.search': 'ابحث في العنوان أو الرقم', 'doc.searchBtn': 'بحث', 'doc.empty': 'لا توجد وثائق', 'doc.open': 'عرض', 'doc.download': 'تنزيل', 'doc.prev': 'السابق', 'doc.next': 'التالي',
   // static pages
   'adm.pages': 'الصفحات الثابتة', 'mod.pages': 'الصفحات الثابتة', 'pg.add': 'إضافة صفحة', 'pg.edit': 'تعديل الصفحة', 'pg.view': 'عرض', 'pg.titleAr': 'العنوان بالعربية', 'pg.titleEn': 'العنوان بالإنجليزية (اختياري)',
-  'pg.slug': 'الرابط المختصر', 'pg.slugHint': 'أحرف إنجليزية صغيرة وأرقام وشرطات فقط، مثل about', 'pg.footer': 'يظهر في الفوتر', 'pg.bodyAr': 'المحتوى بالعربية', 'pg.bodyEn': 'المحتوى بالإنجليزية (اختياري)',
+  'pg.sideTitle': 'قسم أسفل الصفحة: صورة بجانب نص', 'pg.sidePhoto': 'الصورة', 'pg.sidePhotoHint': 'تظهر أسفل الصفحة بجانب النص. اتركها فارغة إن لم تُرد صورة.', 'pg.sideRemove': 'حذف الصورة', 'pg.sideRemoved': 'ستُحذف الصورة عند الحفظ', 'pg.sideTextAr': 'النص بجانب الصورة (عربي)', 'pg.sideTextEn': 'النص بجانب الصورة (إنجليزي)', 'pg.slug': 'الرابط المختصر', 'pg.slugHint': 'أحرف إنجليزية صغيرة وأرقام وشرطات فقط، مثل about', 'pg.footer': 'يظهر في الفوتر', 'pg.bodyAr': 'المحتوى بالعربية', 'pg.bodyEn': 'المحتوى بالإنجليزية (اختياري)',
   // main navigation groups
   'nav.about': 'عن الغرفة', 'nav.aboutChamber': 'عن الغرفة', 'nav.committees': 'اللجان والقطاعات', 'nav.women': 'لجنة سيدات الأعمال',
   'nav.media': 'الأخبار والإعلام', 'nav.mediaCenter': 'المركز الإعلامي', 'nav.newsletter': 'النشرة البريدية',
@@ -336,7 +336,7 @@ const en: Record<string, string> = {
   'doc.search': 'Search by title or number', 'doc.searchBtn': 'Search', 'doc.empty': 'No documents', 'doc.open': 'View', 'doc.download': 'Download', 'doc.prev': 'Previous', 'doc.next': 'Next',
   // static pages
   'adm.pages': 'Pages', 'mod.pages': 'Static pages', 'pg.add': 'Add page', 'pg.edit': 'Edit page', 'pg.view': 'View', 'pg.titleAr': 'Title (Arabic)', 'pg.titleEn': 'Title (English, optional)',
-  'pg.slug': 'Short link', 'pg.slugHint': 'Lowercase English letters, digits and dashes only, e.g. about', 'pg.footer': 'Show in footer', 'pg.bodyAr': 'Content (Arabic)', 'pg.bodyEn': 'Content (English, optional)',
+  'pg.sideTitle': 'Bottom of the page: picture next to a text', 'pg.sidePhoto': 'Picture', 'pg.sidePhotoHint': 'Shown at the bottom of the page next to the text. Leave empty for no picture.', 'pg.sideRemove': 'Remove picture', 'pg.sideRemoved': 'The picture will be removed when you save', 'pg.sideTextAr': 'Text next to the picture (Arabic)', 'pg.sideTextEn': 'Text next to the picture (English)', 'pg.slug': 'Short link', 'pg.slugHint': 'Lowercase English letters, digits and dashes only, e.g. about', 'pg.footer': 'Show in footer', 'pg.bodyAr': 'Content (Arabic)', 'pg.bodyEn': 'Content (English, optional)',
   // main navigation groups
   'nav.about': 'About', 'nav.aboutChamber': 'About the chamber', 'nav.committees': 'Committees & sectors', 'nav.women': 'Businesswomen committee',
   'nav.media': 'News & media', 'nav.mediaCenter': 'Media center', 'nav.newsletter': 'Newsletter',

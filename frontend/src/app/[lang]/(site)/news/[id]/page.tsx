@@ -3,11 +3,11 @@ import { useRecordId } from '@/lib/use-record-id';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { SECTIONS, fmtDate, fmtNum, newsPerm } from '@/lib/utils';
-import { Center, Spinner, Stars } from '@/components/ui/ui';
+import { Button, Center, Spinner, Stars } from '@/components/ui/ui';
 import { Card, NewsCard, ShareRow } from '@/components/site/cards';
 import { ImageSlider } from '@/components/site/image-slider';
 import { ReadingProgress } from '@/components/site/motion';
@@ -22,16 +22,30 @@ function View() {
   const { can } = useAuth();
   const id = useRecordId('id');
   const [n, setN] = useState<Detail | null>(null);
-  const [state, setState] = useState<'load' | 'ok' | '404'>('load');
+  const [state, setState] = useState<'load' | 'ok' | '404' | 'error'>('load');
+  const [attempt, setAttempt] = useState(0);
   useCrumbTitle(n?.title);
 
   useEffect(() => {
-    if (!id) { setState('404'); return; }
+    // no id yet (the router is still filling the address in): wait a moment before deciding there is none
+    if (!id) { const w = setTimeout(() => setState('404'), 1500); return () => clearTimeout(w); }
+    let alive = true;
     setState('load');
-    api<Detail>(`/public/news/${encodeURIComponent(id)}`).then((d) => { setN(d); setState('ok'); }).catch(() => setState('404'));
-  }, [id]);
+    // only the server's own "not found" is a 404 page. A failed call (a restart, a slow answer, a dropped connection) is asked once more, then shown as an error with a retry button - it is not a missing page
+    const load = (left: number) => api<Detail>(`/public/news/${encodeURIComponent(id)}`).then((d) => { if (alive) { setN(d); setState('ok'); } }).catch((e) => {
+      if (!alive) return;
+      if (e instanceof ApiError && e.status === 404) setState('404');
+      else if (left > 0) setTimeout(() => { if (alive) load(left - 1); }, 700);
+      else setState('error');
+    });
+    load(1);
+    return () => { alive = false; };
+  }, [id, attempt]);
 
   if (state === 'load') return <Center><Spinner /></Center>;
+  if (state === 'error') return (
+    <Center><div className="space-y-3 text-center"><p className="text-gray-600">{lang === 'ar' ? 'تعذّر تحميل الخبر الآن.' : 'The news could not be loaded right now.'}</p><Button type="button" onClick={() => setAttempt((a) => a + 1)}>{lang === 'ar' ? 'إعادة المحاولة' : 'Try again'}</Button></div></Center>
+  );
   if (state === '404' || !n) return <NotFoundContent lang={lang} />;
 
   const inSection = (SECTIONS as readonly string[]).includes(n.mainCategory);
