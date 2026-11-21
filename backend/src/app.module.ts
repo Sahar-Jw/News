@@ -72,6 +72,7 @@ import { BackupModule } from './modules/backup/backup.module';
         // the database may still be starting when the API starts (both restarted together): wait for it - up to ~2.5 minutes - instead of giving up
         retryAttempts: 30,
         retryDelay: 5000,
+        synchronize:c.get('DB_SYNCHRONIZE') // only for development, never in production
       }),
     }),
     TypeOrmModule.forFeature([User]), // the global guard needs the User repository
