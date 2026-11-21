@@ -256,9 +256,9 @@ function Form({ dialog }: { dialog?: NewsDialogProps }) {
         <Field label={t('f.language')}>
           <select className={inputCls} value={f.language} onChange={(e) => set('language', e.target.value)}><option value="ar">{t('l.ar')}</option><option value="en">{t('l.en')}</option></select>
         </Field>
-        <Field label={t('f.visibility')}>
+        {section !== 'BREAKING' && <Field label={t('f.visibility')}>
           <select className={inputCls} value={f.visibility} onChange={(e) => set('visibility', e.target.value)}><option value="public">{t('v.public')}</option><option value="members">{t('v.members')}</option></select>
-        </Field>
+        </Field>}
         <Field label={t('f.status')}>
           <select className={inputCls} value={f.status} disabled={!mayPublish} onChange={(e) => set('status', e.target.value)}>
             <option value="scheduled">{t('s.scheduled')}</option><option value="published">{t('s.published')}</option>

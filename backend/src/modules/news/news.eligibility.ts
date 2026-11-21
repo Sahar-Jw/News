@@ -1,5 +1,5 @@
 import { Brackets, SelectQueryBuilder } from 'typeorm';
-import { NewsStatus, Visibility } from '../../common/constants';
+import { NewsStatus, SpecialCategory, Visibility } from '../../common/constants';
 import { RESERVED_CATEGORY_CODES } from '../../common/content-categories';
 import { News } from './news.entity';
 
@@ -22,7 +22,8 @@ export function applyEligibility(
     ),
     { stPub: NewsStatus.PUBLISHED, stSch: NewsStatus.SCHEDULED, now },
   );
-  if (!opts.authenticated) qb.andWhere(`${alias}.visibility = :visPub`, { visPub: Visibility.PUBLIC });
+  // The breaking-news bar is public by nature: it is shown to every visitor whatever its visibility value says.
+  if (!opts.authenticated) qb.andWhere(`(${alias}.visibility = :visPub OR ${alias}.mainCategory = :visBreaking)`, { visPub: Visibility.PUBLIC, visBreaking: SpecialCategory.BREAKING });
   if (opts.lang) qb.andWhere(`${alias}.language = :lang`, { lang: opts.lang });
   return qb;
 }

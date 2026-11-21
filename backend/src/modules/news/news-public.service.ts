@@ -1,3 +1,4 @@
+import { withoutIndexes } from '../../common/db/no-index';
 import { pdfList, toStringArray } from '../../common/utils/lists';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -172,10 +173,11 @@ export class NewsPublicService {
    */
   async categories(lang: Language | undefined, v: Viewer) {
     const L = lang ?? Language.AR;
-    const [mainRows, subRows] = await Promise.all([
+    // read from the table itself (not an index): a damaged index would list categories no news uses and hide ones that are used
+    const [mainRows, subRows] = await withoutIndexes(this.repo.manager.connection, async (qr) => [
       // only categories that have news THIS visitor can see (published / scheduled-and-due, right visibility and language, ordinary news)
-      onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).getRawMany(),
-      this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).getRawMany(),
+      await onlyRegular(this.base(L, v), 'n').select('n.mainCategory', 'v').distinct(true).setQueryRunner(qr).getRawMany(),
+      await this.base(L, v).andWhere('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).select('n.subcategory', 'v').distinct(true).setQueryRunner(qr).getRawMany(),
     ]);
     const sort = (rows: { v: string }[]) => rows.map((r) => r.v).sort((a, b) => a.localeCompare(b));
     // one entry per category: spelling variants (spaces, letter case, the other language, older women's labels) are merged

@@ -2,7 +2,8 @@ import { pdfList, toStringArray } from '../../common/utils/lists';
 import { uploadLimits } from '../../common/upload-limits';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, In, LessThanOrEqual, Repository } from 'typeorm';
+import { Brackets, In, LessThanOrEqual, QueryRunner, Repository } from 'typeorm';
+import { withoutIndexes } from '../../common/db/no-index';
 import {
   Language,
   NewsStatus,
@@ -10,6 +11,7 @@ import {
   SPECIAL_CATEGORY_CODES,
   SPECIAL_CATEGORY_CONFIG,
   SpecialCategory,
+  Visibility,
   createPermissionFor,
   newsPerm,
 } from '../../common/constants';
@@ -181,13 +183,14 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   async categories(lang?: Language) {
     // only what the news really use. With a language (the add / edit form) that means the news written in THAT language, like the public filter:
     // a category used only by news in the other language is not offered. Without one (the list filter) it is every language.
-    const used = (col: 'n.mainCategory' | 'n.subcategory') => {
-      const qb = this.repo.createQueryBuilder('n').select(`DISTINCT ${col}`, 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES });
+    const used = (qr: QueryRunner, col: 'n.mainCategory' | 'n.subcategory') => {
+      const qb = this.repo.createQueryBuilder('n', qr).select(`DISTINCT ${col}`, 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES });
       if (col === 'n.subcategory') qb.andWhere('n.subcategory IS NOT NULL');
       if (lang) qb.andWhere('n.language = :lang', { lang });
       return qb.getRawMany();
     };
-    const [main, sub] = await Promise.all([used('n.mainCategory'), used('n.subcategory')]);
+    // read from the table itself (not an index): a damaged index would list categories no news uses and hide ones that are used
+    const [main, sub] = await withoutIndexes(this.repo.manager.connection, async (qr) => [await used(qr, 'n.mainCategory'), await used(qr, 'n.subcategory')]);
     const usedKeys = new Set<string>();
     const others = new Map<string, string>();
     for (const r of main) {
@@ -402,7 +405,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
           finishAt: dto.finishAt ?? null,
           status: pub.status,
           language: dto.language ?? Language.AR,
-          visibility: dto.visibility,
+          visibility: main === SpecialCategory.BREAKING ? Visibility.PUBLIC : dto.visibility,
           createdById: actor.id,
         }),
       );
@@ -464,6 +467,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
         ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
         ...(dto.language !== undefined && { language: dto.language }),
         ...(dto.visibility !== undefined && { visibility: dto.visibility }),
+        ...(main === SpecialCategory.BREAKING && { visibility: Visibility.PUBLIC }),
         mainCategory: main,
         subcategory: sub,
         rating,
