@@ -8,7 +8,14 @@ export class ReindexNewsTable1767700000000 implements MigrationInterface {
   name = 'ReindexNewsTable1767700000000';
 
   public async up(r: QueryRunner): Promise<void> {
-    await r.query('REINDEX TABLE "news"');
+    // Maintenance only: if the rebuild cannot be done right now (table busy, damaged file ...) the application still starts - the failure
+    // is a warning in the database log, and the index can be rebuilt later by hand: REINDEX TABLE news;
+    await r.query(`DO $$
+      BEGIN
+        REINDEX TABLE "news";
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING 'REINDEX TABLE news skipped: %', SQLERRM;
+      END $$;`);
   }
 
   public async down(): Promise<void> {

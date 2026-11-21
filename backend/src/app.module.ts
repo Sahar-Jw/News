@@ -43,6 +43,7 @@ import { StatisticsModule } from './modules/statistics/statistics.module';
 import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
 import { SiteSearchModule } from './modules/site-search/site-search.module';
+import { HealthModule } from './modules/health/health.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { FormsModule } from './modules/forms/forms.module';
@@ -68,6 +69,9 @@ import { BackupModule } from './modules/backup/backup.module';
           DB_STATEMENT_TIMEOUT_MS: c.get('DB_STATEMENT_TIMEOUT_MS'),
         }),
         migrationsRun: c.get('RUN_MIGRATIONS_ON_START') === 'true',
+        // the database may still be starting when the API starts (both restarted together): wait for it - up to ~2.5 minutes - instead of giving up
+        retryAttempts: 30,
+        retryDelay: 5000,
       }),
     }),
     TypeOrmModule.forFeature([User]), // the global guard needs the User repository
@@ -83,6 +87,7 @@ import { BackupModule } from './modules/backup/backup.module';
     ContactModule,
     NewsModule,
     SiteSearchModule,
+    HealthModule,
     OccasionsModule,
     ContentModule,
     FaqsModule,

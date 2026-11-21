@@ -144,3 +144,16 @@ Settings → Audit log (`audit.read`) follows the layout of the task-management 
 - **Action kinds:** the ~35 raw action codes the services write are grouped into create / update / delete / login / logout / failed attempt / password / export / download / data access / other (`modules/audit/audit-kinds.ts`). Filter with `?kind=`.
 - **Hidden by default:** the system's `unlogged_request` safety-net rows are never listed, and `read` (someone opened personal data) is listed only when the "Data access" kind is chosen.
 - **Filter lists** (`GET /admin/audit-logs/facets`) contain only the types and kinds that exist in the log.
+
+## When the database is down
+
+Symptoms in the API log: `ECONNREFUSED <db-host>:5432`, then `the database system is not yet accepting connections` / `starting up`. That is the **PostgreSQL server**,
+not the API: it is stopped, restarting or in crash recovery, and every request that needs data fails until it is back.
+
+- The API answers such requests with **503 Service Unavailable** (message "temporarily unavailable", `Retry-After: 15`) and writes **one** line every 30 s to the log
+  instead of a stack trace per request. It reconnects by itself when the database returns; no API restart is needed. At start-up it waits for the database for ~2.5 minutes.
+- `GET /api/health` = the API is up; `GET /api/health/ready` = the API can reach the database (503 otherwise). Use them as the hosting panel's health check / uptime monitor.
+- Look at the **database** container's own log first: `PANIC`, `invalid page`, `could not write`, `No space left on device`, `Out of memory` / OOM kill, `database system was interrupted`.
+  Check the data volume: it must be a persistent volume and have free space. A database that comes back empty or old means a new / restored volume.
+- Data is restored from the Backups screen in Settings (or `npm run backup:restore:prod`).
+- Start the database and wait until `GET /api/health/ready` answers 200 before starting the API after a full restart.

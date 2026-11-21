@@ -12,7 +12,11 @@ export class ReindexNewsTitle1767600000000 implements MigrationInterface {
     await r.query(`DO $$
       BEGIN
         IF to_regclass('idx_news_title') IS NOT NULL THEN
-          REINDEX INDEX idx_news_title;
+          BEGIN
+            REINDEX INDEX idx_news_title;
+          EXCEPTION WHEN OTHERS THEN
+            RAISE WARNING 'REINDEX idx_news_title skipped: %', SQLERRM; -- maintenance only: never stop the API from starting
+          END;
         END IF;
       END $$;`);
   }

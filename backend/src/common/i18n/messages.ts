@@ -7,6 +7,8 @@ import { ApiLang } from './request-lang';
  */
 const EXACT: Record<string, string> = {
   // generic / filter / guards
+  'الخدمة غير متاحة مؤقتاً (تعذّر الاتصال بقاعدة البيانات). يرجى المحاولة بعد قليل.': 'The service is temporarily unavailable (the database cannot be reached). Please try again in a moment.',
+  'قاعدة البيانات غير متاحة حالياً': 'The database is currently unavailable',
   'حدث خطأ غير متوقع': 'An unexpected error occurred',
   'حجم الملف يتجاوز الحد المسموح': 'The file size exceeds the allowed limit',
   'ملف مرفوع غير صالح أو عدد الملفات يتجاوز الحد': 'The uploaded file is invalid or the number of files exceeds the limit',
