@@ -17,7 +17,7 @@ const Pulse = ({ className = '' }: { className?: string }) => <div className={`a
 /** Skeleton of an EXPO page inside its own header and footer: title banner, a row of tabs and a grid of cards, in the exhibition's colours. */
 export function ExpoLoader({ lang }: { lang: 'ar' | 'en' }) {
   return (
-    <div role="status" aria-live="polite" aria-busy="true" aria-label={T[lang].loading} className="mx-auto max-w-7xl space-y-6 px-4 py-6">
+    <div role="status" aria-live="polite" aria-busy="true" aria-label={T[lang].loading} className="late-in mx-auto max-w-7xl space-y-6 px-4 py-6">
       <div className="overflow-hidden rounded-3xl bg-secondary/90 shadow-card">
         <div className="flex items-center gap-4 px-6 py-7 md:px-9">
           <div className="h-14 w-14 shrink-0 animate-pulse rounded-2xl bg-white/20" />

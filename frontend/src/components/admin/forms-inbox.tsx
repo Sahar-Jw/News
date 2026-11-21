@@ -44,7 +44,7 @@ export function FormsInbox() {
     let stop = false;
     const tick = () => {
       if (document.hidden) return;
-      api<Unread>('/admin/forms/unread').then((d) => {
+      api<Unread>('/admin/forms/unread', { quiet: true }).then((d) => {
         if (stop) return;
         const before = last.current;
         if (before) for (const g of d.groups) if (g.count > (before.get(g.key) ?? 0)) toast(ar ? `طلب جديد في «${PAGES[g.key]?.ar ?? g.key}»` : `New request in “${PAGES[g.key]?.en ?? g.key}”`);

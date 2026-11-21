@@ -173,15 +173,21 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * The main / sub categories the add-news form offers = the categories that REALLY EXIST: the distinct values of the news already saved
-   * (any language, any status or visibility - an editor may add to a category whose news are still scheduled or members-only).
-   * One entry per category: spelling variants (extra spaces, letter case, the other language, the older women's-committee labels) are merged,
-   * and a fixed media-center category shows only when some news uses it (written in the language asked for).
-   * A brand new site (no news yet) is offered the fixed categories so the form can still be used.
+   * The main / sub categories the add-news form and the settings list filter offer = only the ones the saved news really use (any status or
+   * visibility - an editor may add to a category whose news are still scheduled or members-only). With `lang` only news written in that language
+   * count, like the public news filter. One entry per category: spelling variants (extra spaces, letter case, the other language, the older
+   * women's-committee labels) are merged. `keys` = the fixed media-center categories in use (the list filter shows only those).
    */
   async categories(lang?: Language) {
-    const main = await this.repo.createQueryBuilder('n').select('DISTINCT n.mainCategory', 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).getRawMany();
-    const sub = await this.repo.createQueryBuilder('n').select('DISTINCT n.subcategory', 'v').where('n.subcategory IS NOT NULL').andWhere('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES }).getRawMany();
+    // only what the news really use. With a language (the add / edit form) that means the news written in THAT language, like the public filter:
+    // a category used only by news in the other language is not offered. Without one (the list filter) it is every language.
+    const used = (col: 'n.mainCategory' | 'n.subcategory') => {
+      const qb = this.repo.createQueryBuilder('n').select(`DISTINCT ${col}`, 'v').where('n.mainCategory NOT IN (:...sp)', { sp: RESERVED_CATEGORY_CODES });
+      if (col === 'n.subcategory') qb.andWhere('n.subcategory IS NOT NULL');
+      if (lang) qb.andWhere('n.language = :lang', { lang });
+      return qb.getRawMany();
+    };
+    const [main, sub] = await Promise.all([used('n.mainCategory'), used('n.subcategory')]);
     const usedKeys = new Set<string>();
     const others = new Map<string, string>();
     for (const r of main) {
@@ -191,15 +197,14 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
       if (key) usedKeys.add(key);
       else if (!others.has(label.toLowerCase())) others.set(label.toLowerCase(), label);
     }
-    const fixedOf = (keys: Iterable<string>) => {
-      const set = new Set(keys);
-      return NEWS_MAIN_CATEGORIES.filter((c) => set.has(c.key)).flatMap((c) => (lang ? [lang === 'en' ? c.en : c.ar] : [c.ar, c.en]));
-    };
-    const fixed = fixedOf(usedKeys.size || others.size ? usedKeys : NEWS_MAIN_CATEGORIES.map((c) => c.key));
+    // a brand new site (or a language with no news yet) is offered the fixed categories so the form can still be used
+    const none = !usedKeys.size && !others.size;
+    const keys = none ? NEWS_MAIN_CATEGORIES.map((c) => c.key) : NEWS_MAIN_CATEGORIES.filter((c) => usedKeys.has(c.key)).map((c) => c.key);
+    const fixed = NEWS_MAIN_CATEGORIES.filter((c) => keys.includes(c.key)).flatMap((c) => (lang ? [lang === 'en' ? c.en : c.ar] : [c.ar, c.en]));
     const subs = new Map<string, string>();
     for (const r of sub) { const label = normalizeLabel(String(r.v ?? '')); if (label && !subs.has(label.toLowerCase())) subs.set(label.toLowerCase(), label); }
     const byName = (x: string, y: string) => x.localeCompare(y);
-    return { main: [...fixed, ...[...others.values()].sort(byName)], sub: [...subs.values()].sort(byName), special: SPECIAL_CATEGORY_CODES };
+    return { main: [...fixed, ...[...others.values()].sort(byName)], sub: [...subs.values()].sort(byName), keys: none ? [] : keys, special: SPECIAL_CATEGORY_CODES };
   }
 
   // ---------------------------------------------------------------- validation helpers

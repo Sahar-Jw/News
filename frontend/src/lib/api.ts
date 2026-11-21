@@ -96,16 +96,42 @@ export class ApiError extends Error {
 
 type Q = Record<string, string | number | boolean | null | undefined>;
 
-let activeApiRequests = 0;
+// The loader asks "is something taking long?", so every counted request is remembered with the time it started.
+// A request the visitor waits for (started within a moment of a click / submit / change) counts as slow sooner than one the page started by itself.
+interface Tracked { at: number; waiting: boolean }
+const tracked = new Set<Tracked>();
 const apiRequestListeners = new Set<(active: number) => void>();
+let userActionUntil = 0;
+const WAITING_WINDOW = 1500;
 
-function updateActiveApiRequests(change: number) {
-  activeApiRequests = Math.max(0, activeApiRequests + change);
-  apiRequestListeners.forEach((listener) => listener(activeApiRequests));
+/** Called by the loader on every click / submit / change: the requests that start right after it are ones somebody is waiting for. */
+export function markUserAction() {
+  userActionUntil = Date.now() + WAITING_WINDOW;
+}
+
+function trackRequest(): () => void {
+  const t: Tracked = { at: Date.now(), waiting: Date.now() < userActionUntil };
+  tracked.add(t);
+  apiRequestListeners.forEach((l) => l(tracked.size));
+  return () => {
+    tracked.delete(t);
+    apiRequestListeners.forEach((l) => l(tracked.size));
+  };
 }
 
 export function getActiveApiRequests() {
-  return activeApiRequests;
+  return tracked.size;
+}
+
+/** How many ms until the first running request counts as slow (0 = one already does, null = nothing is running). `waitingAfter` / `idleAfter` = the limits (ms). */
+export function msUntilSlowRequest(waitingAfter: number, idleAfter: number): number | null {
+  let best: number | null = null;
+  const now = Date.now();
+  tracked.forEach((t) => {
+    const left = Math.max(0, t.at + (t.waiting ? waitingAfter : idleAfter) - now);
+    if (best === null || left < best) best = left;
+  });
+  return best;
 }
 
 export function subscribeToApiRequests(listener: (active: number) => void) {
@@ -168,7 +194,7 @@ function sendWithProgress(url: string, init: { method: string; headers: Record<s
   });
 }
 
-type ApiOpts = { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean; _key?: string };
+type ApiOpts = { method?: string; params?: Q; body?: any; form?: FormData; cache?: RequestCache; _retried?: boolean; _key?: string; /** a background call (a refresh nobody asked for): never makes the loader appear */ quiet?: boolean };
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // Safe "add": one press of a button must never create two records, even on a slow or dropped connection.
@@ -240,7 +266,7 @@ async function request<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
     body = JSON.stringify(opts.body);
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
-  updateActiveApiRequests(1);
+  const done = opts.quiet ? () => {} : trackRequest();
   try {
     const url = API_URL + path + qs(opts.params);
     const bytes = opts.form ? filesSize(opts.form) : 0;
@@ -277,7 +303,7 @@ async function request<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
     throw e;
   } finally {
     clearTimeout(timer);
-    updateActiveApiRequests(-1);
+    done();
   }
 }
 

@@ -55,6 +55,9 @@ img { image-rendering: auto; }
 @keyframes sheen { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(260%) skewX(-18deg); } }
 @keyframes seg-fill { from { width: 0; } to { width: 100%; } }
 @keyframes loader-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+/* a loader that only appears when it is late: hidden (and not clickable) for --late, then visible */
+@keyframes late-in { from { opacity: 0; visibility: hidden; } to { opacity: 1; visibility: visible; } }
+.late-in { animation: late-in 0.01s linear var(--late, 700ms) both; }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes bar-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 

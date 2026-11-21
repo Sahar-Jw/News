@@ -23,17 +23,19 @@ export function MediaNewsAdmin() {
   const cat = sp.get('cat') ?? '';
   const sub = sp.get('sub') ?? '';
   const [others, setOthers] = useState<string[]>([]);
+  const [usedKeys, setUsedKeys] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
 
   // the categories really used by news (besides the fixed ones) and the subcategories in use
   useEffect(() => {
-    api<{ main: string[]; sub: string[] }>('/admin/news/categories', { cache: 'no-store' })
+    api<{ main: string[]; sub: string[]; keys?: string[] }>('/admin/news/categories', { cache: 'no-store' })
       .then((r) => {
         const fixed = NEWS_MAIN_CATEGORIES.flatMap((c) => [c.ar.toLowerCase(), c.en.toLowerCase()]);
         setOthers([...new Set((r.main ?? []).filter((v) => v && !fixed.includes(String(v).toLowerCase())))]);
+        setUsedKeys(r.keys ?? []);
         setSubs([...new Set((r.sub ?? []).filter(Boolean))].sort((a, b) => a.localeCompare(b)));
       })
-      .catch(() => { setOthers([]); setSubs([]); });
+      .catch(() => { setOthers([]); setSubs([]); setUsedKeys([]); });
   }, []);
 
   const urlFor = (c: string, s: string) => `${hubUrl('media', 'news')}${c ? `&cat=${encodeURIComponent(c)}` : ''}${s ? `&sub=${encodeURIComponent(s)}` : ''}`;
@@ -48,7 +50,8 @@ export function MediaNewsAdmin() {
         <Field label={t('site.category')}>
           <select className={`${inputCls} !py-1.5`} value={fixedKey || (otherLabel !== undefined ? cat : '')} onChange={(e) => go(e.target.value, sub)}>
             <option value="">{t('site.allCategories')}</option>
-            {NEWS_MAIN_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{newsCategoryLabel(c.key, lang)}</option>)}
+            {/* only the fixed categories some news use (and the one currently selected, so the select never loses its value) */}
+            {NEWS_MAIN_CATEGORIES.filter((c) => usedKeys.includes(c.key) || c.key === fixedKey).map((c) => <option key={c.key} value={c.key}>{newsCategoryLabel(c.key, lang)}</option>)}
             {others.map((o) => <option key={o} value={`${OTHER}${o}`}>{o}</option>)}
           </select>
         </Field>

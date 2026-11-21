@@ -20,7 +20,7 @@ const subscribers = new Set<() => void>();
 
 function refreshAds(): Promise<void> {
   if (running) { again = true; return running; } // a change arrived while loading: load once more afterwards
-  running = api<PublicAd[]>('/public/ads', { cache: 'no-store' })
+  running = api<PublicAd[]>('/public/ads', { cache: 'no-store', quiet: true })
     .then((all) => { current = all; })
     .catch(() => { if (current === null) current = []; })
     .finally(() => {
