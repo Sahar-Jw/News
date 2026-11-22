@@ -10,7 +10,6 @@ import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
-import { RichEditor } from '@/components/admin/rich-editor';
 import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
 
 export interface BoardRow { id: number; position: string; nameAr: string; nameEn: string; jobTitleAr: string; jobTitleEn: string; bioAr: string; bioEn: string; dutiesAr: string; dutiesEn: string; termLabel: string; photoUrl: string | null; sortOrder: number; isActive: boolean }
@@ -19,7 +18,16 @@ type Row = BoardRow;
 const POSITIONS = ['president', 'vice_president', 'secretary', 'treasurer', 'member'];
 const EMPTY: Draft = { position: 'member', nameAr: '', nameEn: '', jobTitleAr: '', jobTitleEn: '', bioAr: '', bioEn: '', dutiesAr: '', dutiesEn: '', termLabel: '', sortOrder: '0', isActive: true, photoUrl: null };
 
-const toDraft = (r: Row): Draft => ({ ...r, sortOrder: String(r.sortOrder) });
+
+/** The bio and duties are plain text in the form; they are stored (and shown on the public page) as simple HTML paragraphs. */
+const htmlToText = (h: string) => (h ?? '')
+  .replace(/<\s*br\s*\/?>/gi, '\n').replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote)>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<[^>]+>/g, '')
+  .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+  .replace(/\n{3,}/g, '\n\n').trim();
+const textToHtml = (t: string) => t.trim() === '' ? '' : t.trim().split(/\n{2,}/).map((para) => `<p>${para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`).join('');
+const BODY_KEYS = ['bioAr', 'bioEn', 'dutiesAr', 'dutiesEn'] as const;
+
+const toDraft = (r: Row): Draft => ({ ...r, sortOrder: String(r.sortOrder), bioAr: htmlToText(r.bioAr), bioEn: htmlToText(r.bioEn), dutiesAr: htmlToText(r.dutiesAr), dutiesEn: htmlToText(r.dutiesEn) });
 
 /**
  * The add / edit window of one board member. Used by the Settings table and by the public Board page (so a manager does not
@@ -64,7 +72,7 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
     const fd = new FormData();
     const f = draft;
     fd.set('position', f.position); fd.set('nameAr', f.nameAr.trim()); fd.set('nameEn', f.nameEn.trim());
-    fd.set('bioAr', f.bioAr); fd.set('bioEn', f.bioEn); fd.set('dutiesAr', f.dutiesAr); fd.set('dutiesEn', f.dutiesEn);
+    for (const k of BODY_KEYS) fd.set(k, textToHtml(f[k]));
     fd.set('termLabel', f.termLabel.trim()); fd.set('sortOrder', String(Number(f.sortOrder) || 0)); fd.set('isActive', String(f.isActive));
     if (photo) fd.set('photo', photo);
     else if (f.id && dropPhoto) fd.set('removePhoto', 'true');
@@ -112,10 +120,10 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
             )}
             {dropPhoto && <span className="text-gray-500">{t('board.photoRemoved')}</span>}
           </div>
-          <Field plain label={t('board.bioAr')}><RichEditor key={`ba-${draft.id ?? 'new'}`} value={draft.bioAr} onChange={(h) => setDraft((d) => (d ? { ...d, bioAr: h } : d))} dir="rtl" /></Field>
-          <Field plain label={t('board.bioEn')} hint={t('faq.hint')}><RichEditor key={`be-${draft.id ?? 'new'}`} value={draft.bioEn} onChange={(h) => setDraft((d) => (d ? { ...d, bioEn: h } : d))} dir="ltr" /></Field>
-          <Field plain label={t('board.dutiesAr')}><RichEditor key={`da-${draft.id ?? 'new'}`} value={draft.dutiesAr} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesAr: h } : d))} dir="rtl" /></Field>
-          <Field plain label={t('board.dutiesEn')} hint={t('faq.hint')}><RichEditor key={`de-${draft.id ?? 'new'}`} value={draft.dutiesEn} onChange={(h) => setDraft((d) => (d ? { ...d, dutiesEn: h } : d))} dir="ltr" /></Field>
+          <Field label={t('board.bioAr')}><textarea dir="rtl" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.bioAr} onChange={(e) => setDraft({ ...draft, bioAr: e.target.value })} /></Field>
+          <Field label={t('board.bioEn')} hint={t('faq.hint')}><textarea dir="ltr" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.bioEn} onChange={(e) => setDraft({ ...draft, bioEn: e.target.value })} /></Field>
+          <Field label={t('board.dutiesAr')}><textarea dir="rtl" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.dutiesAr} onChange={(e) => setDraft({ ...draft, dutiesAr: e.target.value })} /></Field>
+          <Field label={t('board.dutiesEn')} hint={t('faq.hint')}><textarea dir="ltr" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.dutiesEn} onChange={(e) => setDraft({ ...draft, dutiesEn: e.target.value })} /></Field>
           <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
         </form>
       )}
