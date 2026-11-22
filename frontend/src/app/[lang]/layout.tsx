@@ -9,6 +9,7 @@ import { AuthProvider } from '@/lib/auth';
 import { I18nProvider } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/utils';
 import { ToastProvider } from '@/components/ui/toast';
+import { ConfirmProvider } from '@/components/ui/confirm';
 import { UploadProgress } from '@/components/ui/upload-progress';
 import { NavigationLoader } from '@/components/site/navigation-loader';
 import { INTRO_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from '@/lib/theme';
@@ -42,11 +43,13 @@ export default async function LangLayout({ children, params }: { children: React
         <I18nProvider lang={l}>
           <AuthProvider>
             <ToastProvider>
+              <ConfirmProvider>
               {/* opening animation with the configured site logo */}
               <IntroSplash />
               <Suspense fallback={null}><NavigationLoader /></Suspense>
               {children}
               <UploadProgress />
+              </ConfirmProvider>
             </ToastProvider>
           </AuthProvider>
         </I18nProvider>

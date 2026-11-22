@@ -11,6 +11,7 @@ import { useExpoInfo } from '@/components/site/expo-shared';
 import { BackToTop } from '@/components/site/shell';
 import { BrandedDropdown } from '@/components/site/branded-dropdown';
 import { ExpoManageBar } from '@/components/site/expo-manage-bar';
+import { ExpoAdmin } from '@/components/admin/expo-admin';
 import { SocialIcon } from '@/components/site/icons';
 import { expoPageHref, readExpoMenu } from '@/lib/expo-menu';
 import type { WomenMenuEntry, WomenMenuPage } from '@/lib/women-menu';
@@ -30,6 +31,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const x = useExpoInfo();
   const [open, setOpen] = useState(false);
+  const [addKind, setAddKind] = useState<'exhibitor' | 'sponsor' | 'session' | null>(null);
   const { s } = useSite();
   const ar = lang === 'ar';
   const color = (key: string, fallback: string) => { const v = String(s('expo', key) ?? ''); return HEX.test(v) ? v : fallback; };
@@ -52,15 +54,16 @@ function Chrome({ children }: { children: React.ReactNode }) {
   const adminUrl = can('expo.read') ? '/admin/settings?page=expo&tab=exhibitors' : '/admin/settings?page=expo';
   const canManage = can('expo.read', 'settings.read');
   // quick links of the account menu, each shown only to people who hold its permission (the API still enforces every one)
-  const tab = (k: string, add = false) => `/admin/settings?page=expo&tab=${k}${add ? '&add=1' : ''}`;
-  const quick: { to: string; label: string }[] = [
-    can('expo.create') && { to: tab('exhibitors', true), label: ar ? '＋ إضافة عارض' : '＋ Add exhibitor' },
-    can('expo.create') && { to: tab('sponsors', true), label: ar ? '＋ إضافة راعٍ / شريك' : '＋ Add sponsor' },
-    can('expo.create') && { to: tab('sessions', true), label: ar ? '＋ إضافة جلسة' : '＋ Add session' },
+  const tab = (k: string) => `/admin/settings?page=expo&tab=${k}`;
+  // the "add" entries open the add form as a window right here; the others go to their screen
+  const quick: { to: string; label: string; add?: 'exhibitor' | 'sponsor' | 'session' }[] = [
+    can('expo.create') && { to: '', add: 'exhibitor', label: ar ? '＋ إضافة عارض' : '＋ Add exhibitor' },
+    can('expo.create') && { to: '', add: 'sponsor', label: ar ? '＋ إضافة راعٍ / شريك' : '＋ Add sponsor' },
+    can('expo.create') && { to: '', add: 'session', label: ar ? '＋ إضافة جلسة' : '＋ Add session' },
     can('news.create') && { to: '/expo/news', label: ar ? '＋ إضافة خبر' : '＋ Add news' },
     can('expo.applications.read') && { to: tab('applications'), label: ar ? '📥 طلبات المشاركة' : '📥 Participation requests' },
     can('settings.read') && { to: tab('identity'), label: ar ? '🎨 الهوية والمظهر' : '🎨 Identity & theme' },
-  ].filter(Boolean) as { to: string; label: string }[];
+  ].filter(Boolean) as { to: string; label: string; add?: 'exhibitor' | 'sponsor' | 'session' }[];
   const logoutUser = async () => { await logout(); router.push(href('/')); };
   const avatar = me ? (me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-full w-full object-cover" /> : me.fullName.slice(0, 1)) : null;
   const socials = SOCIAL.filter((k) => s('expo', `social_${k}`));
@@ -92,7 +95,9 @@ function Chrome({ children }: { children: React.ReactNode }) {
               <Link href={href('/profile')} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? 'الملف الشخصي' : 'Profile'}</Link>
               {canManage && <Link href={href(adminUrl)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? 'إدارة الصفحة' : 'Manage page'}</Link>}
               {quick.length > 0 && <div className="my-1 border-t border-line px-3 pt-2 text-xs font-bold text-gray-500">{ar ? 'إدارة سريعة' : 'Quick manage'}</div>}
-              {quick.map((q) => <Link key={q.to + q.label} href={href(q.to)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{q.label}</Link>)}
+              {quick.map((q) => q.add
+                ? <button key={q.label} type="button" onClick={() => setAddKind(q.add!)} className="block w-full rounded-xl px-3 py-2 text-start text-sm transition hover:bg-primary/10 hover:text-primary">{q.label}</button>
+                : <Link key={q.to + q.label} href={href(q.to)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{q.label}</Link>)}
               <button type="button" onClick={logoutUser} className="w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{ar ? 'تسجيل الخروج' : 'Log out'}</button>
             </BrandedDropdown>}
             {me && <Link href={href('/profile')} aria-label={ar ? 'الملف الشخصي' : 'Profile'} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/50 bg-white/15 text-sm font-bold text-white xl:hidden">{avatar}</Link>}
@@ -153,6 +158,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
         {rights && <div className="border-t border-white/15"><div className="mx-auto max-w-7xl px-4 py-4 text-xs text-white/70">{rights}</div></div>}
       </footer>
       <BackToTop />
+      {addKind && <ExpoAdmin kind={addKind} quick={{ onClose: () => setAddKind(null) }} />}
     </div>
   );
 }

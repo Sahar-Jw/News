@@ -8,6 +8,7 @@ import { Center, Spinner, inputCls } from '@/components/ui/ui';
 import { WomenCalendar, type CalItem } from '@/components/women/women-calendar';
 import { Thumb } from './cards';
 import { Pager } from './pager';
+import { useOccasionsChanged } from '@/lib/occasion-events';
 import { EVENTS_PER_PAGE, EventsManageBar, PublicEvent, participationLabel, timeRange } from './events-hub';
 
 interface Result { data: PublicEvent[]; meta: { totalPages: number; total?: number } }
@@ -74,6 +75,8 @@ function Agenda() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState('');
+  const [tick, setTick] = useState(0);
+  useOccasionsChanged(() => setTick((n) => n + 1)); // an event was added from the manage bar
 
   useEffect(() => { const h = setTimeout(() => setDebounced(q.trim()), 300); return () => clearTimeout(h); }, [q]);
   useEffect(() => { setPage(1); }, [debounced, day, lang, scope]);
@@ -91,15 +94,15 @@ function Agenda() {
       if (live) setCal(all.map((e) => ({ id: e.id, start: e.date, end: e.finishDate || e.date, live: true })));
     })();
     return () => { live = false; };
-  }, [lang]);
+  }, [lang, tick]);
   useEffect(() => {
     let live = true;
-    setData(null); setError('');
+    setError('');
     api<Result>('/public/occasions', { params: { lang, scope, day: day || undefined, q: debounced || undefined, page, limit: EVENTS_PER_PAGE }, cache: 'no-store' })
       .then((r) => { if (live) setData(r); })
       .catch((e: unknown) => { if (live) setError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [lang, debounced, day, page, scope]);
+  }, [lang, debounced, day, page, scope, tick]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

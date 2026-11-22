@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import type { QuickAdd } from '@/lib/quick-add';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { SESSION_TYPES, SPONSOR_TIERS, sessionTypeLabel } from '@/components/site/expo-shared';
@@ -28,7 +29,7 @@ const toIso = (v: string) => (v ? new Date(v).toISOString() : '');
 const TITLE: Record<ExpoKind, string> = { exhibitor: 'adm.expoExhibitors', sponsor: 'adm.expoSponsors', session: 'adm.expoSessions' };
 
 /** One screen for the three kinds of EXPO content: exhibitors, sponsors and programme sessions. */
-export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
+export function ExpoAdmin({ kind, quick }: { kind: ExpoKind; quick?: QuickAdd }) {
   const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -104,6 +105,8 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
       toast(t('app.saved'));
       setDraft(null);
       setKey((k) => k + 1);
+      quick?.onSaved?.();
+      quick?.onClose();
     } catch (e2: any) { toast(e2.message, 'err'); }
     finally { setBusy(false); }
   };
@@ -124,8 +127,13 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
     </Field>
   );
 
+  // quick-add mode (a button on a public page): only the add window, opened at once
+  useEffect(() => { if (quick && can('expo.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeDraft = () => { setDraft(null); quick?.onClose(); };
+
   return (
-    <RequirePerm any={['expo.read']}>
+    <RequirePerm any={quick ? ['expo.create'] : ['expo.read']}>
+      {!quick && (<>
       <h1 className="mb-4 text-2xl font-bold">{t(TITLE[kind])}</h1>
       <DataTable<Row>
         endpoint="/admin/expo-items"
@@ -142,7 +150,8 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
           </div>
         )}
       />
-      <Modal open={!!draft} onClose={() => setDraft(null)} title={t(draft?.id ? `ex.a.edit.${kind}` : `ex.a.add.${kind}`)}>
+      </>)}
+      <Modal open={!!draft} onClose={closeDraft} title={t(draft?.id ? `ex.a.edit.${kind}` : `ex.a.add.${kind}`)}>
         {draft && (
           <form onSubmit={save} noValidate className="space-y-3">
             <Field label={t(kind === 'session' ? 'ex.a.titleAr' : 'ex.a.nameAr')} error={errors.nameAr}><input maxLength={255} dir="rtl" aria-invalid={!!errors.nameAr} className={`${inputCls} ${errors.nameAr ? 'border-red-500' : ''}`} value={draft.nameAr} onChange={(e) => up({ nameAr: e.target.value })} /></Field>
@@ -189,7 +198,7 @@ export function ExpoAdmin({ kind }: { kind: ExpoKind }) {
             )}
             {kind !== 'session' && <Field label={t('ex.a.order')} error={errors.sortOrder}><input inputMode="numeric" dir="ltr" maxLength={6} className={inputCls} value={draft.sortOrder} onChange={(e) => up({ sortOrder: e.target.value })} /></Field>}
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => up({ isActive: e.target.checked })} />{t('faq.active')}</label>
-            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDraft(null)}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={closeDraft}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
       </Modal>

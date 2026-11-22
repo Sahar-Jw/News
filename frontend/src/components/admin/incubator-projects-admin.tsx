@@ -1,11 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UL } from '@/lib/upload-limits';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import type { QuickAdd } from '@/lib/quick-add';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
@@ -20,7 +21,7 @@ const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fiel
 const EMPTY: Draft = { ...blank(), status: 'incubated', nameAr: '', joinedYear: '', sortOrder: '0', isActive: true, imageUrl: null, removeImage: false };
 
 /** Projects of the Business Incubator: incubated or graduated (graduated ones show their success story). */
-export function IncubatorProjectsAdmin() {
+export function IncubatorProjectsAdmin({ quick }: { quick?: QuickAdd } = {}) {
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -76,6 +77,8 @@ export function IncubatorProjectsAdmin() {
       toast(t('app.saved'));
       setDraft(null);
       setKey((k) => k + 1);
+      quick?.onSaved?.();
+      quick?.onClose();
     } catch (e2: any) { toast(e2.message, 'err'); }
     finally { setBusy(false); }
   };
@@ -93,8 +96,13 @@ export function IncubatorProjectsAdmin() {
     <Field label={t(label)}>{o.area ? <textarea rows={3} maxLength={o.max} dir={dir} className={inputCls} value={draft[k]} onChange={(e) => up({ [k]: e.target.value })} /> : <input maxLength={o.max} dir={dir} className={inputCls} value={draft[k]} onChange={(e) => up({ [k]: e.target.value })} />}</Field>
   );
 
+  // quick-add mode (a button on a public page): only the add window, opened at once
+  useEffect(() => { if (quick && can('incubator.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeDraft = () => { setDraft(null); quick?.onClose(); };
+
   return (
-    <RequirePerm any={['incubator.read']}>
+    <RequirePerm any={quick ? ['incubator.create'] : ['incubator.read']}>
+      {!quick && (<>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.incubatorProjects')}</h1>
       <DataTable<Row>
         endpoint="/admin/incubator-projects"
@@ -111,7 +119,8 @@ export function IncubatorProjectsAdmin() {
           </div>
         )}
       />
-      <Modal open={!!draft} onClose={() => setDraft(null)} title={t(draft?.id ? 'inc.a.edit' : 'inc.a.add')}>
+      </>)}
+      <Modal open={!!draft} onClose={closeDraft} title={t(draft?.id ? 'inc.a.edit' : 'inc.a.add')}>
         {draft && (
           <form onSubmit={save} noValidate className="space-y-3">
             <Field label={t('tr.status')}><select className={inputCls} value={draft.status} onChange={(e) => up({ status: e.target.value })}>{['incubated', 'graduated'].map((k) => <option key={k} value={k}>{t(`inc.status.${k}`)}</option>)}</select></Field>
@@ -133,7 +142,7 @@ export function IncubatorProjectsAdmin() {
               {!image && draft.imageUrl && <label className="flex items-center gap-2"><input type="checkbox" checked={draft.removeImage} onChange={(e) => up({ removeImage: e.target.checked })} />{t('tr.removeImage')}</label>}
             </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => up({ isActive: e.target.checked })} />{t('faq.active')}</label>
-            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDraft(null)}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={closeDraft}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
       </Modal>

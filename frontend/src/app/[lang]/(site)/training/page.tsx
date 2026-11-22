@@ -14,7 +14,9 @@ import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/train
 import { NewsFormDialog } from '@/components/admin/news-form';
 import { newsCategoryLabel } from '@/lib/news-categories';
 import { useNewsSaved } from '@/lib/news-events';
-import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { CoursesAdmin } from '@/components/admin/courses-admin';
+import { TrainersAdmin } from '@/components/admin/trainers-admin';
 
 type Tab = 'current' | 'archive' | 'news';
 interface Paged<T> { data: T[]; meta: { totalPages: number; total: number } }
@@ -39,6 +41,7 @@ export default function TrainingPage() {
   const [kind, setKind] = useState('');
   const [reg, setReg] = useState<PublicCourse | null>(null);
   const [reload, setReload] = useState(0);
+  const [quickAdd, setQuickAdd] = useState<'course' | 'trainer' | null>(null);
   const [adding, setAdding] = useState(false);
   const [newsTick, setNewsTick] = useState(0);
   useNewsSaved(() => setNewsTick((n) => n + 1));
@@ -91,14 +94,17 @@ export default function TrainingPage() {
 
       {/* manager tools (hidden from visitors): every button opens the matching tab of the Training entry in Settings, and only for people holding its permission */}
       <PageManageBar show={mayCourses || mayRegistrations || maySettings}>
-        {can('courses.create') && <ManageLink tone="solid" to="/admin/settings?page=training&tab=courses&add=1">＋ {t('mg.addCourse')}</ManageLink>}
+        {can('courses.create') && <ManageBtn onClick={() => setQuickAdd('course')}>＋ {t('mg.addCourse')}</ManageBtn>}
         {mayCourses && <ManageLink to="/admin/settings?page=training&tab=courses">{t('mg.courses')}</ManageLink>}
-        {can('courses.create') && <ManageLink to="/admin/settings?page=training&tab=trainers&add=1">＋ {t('mg.addTrainer')}</ManageLink>}
+        {can('courses.create') && <ManageBtn tone="ghost" onClick={() => setQuickAdd('trainer')}>＋ {t('mg.addTrainer')}</ManageBtn>}
         {mayCourses && <ManageLink to="/admin/settings?page=training&tab=trainers">{t('mg.trainers')}</ManageLink>}
         {mayRegistrations && <ManageLink to="/admin/settings?page=training&tab=trainees">{t('mg.trainees')}</ManageLink>}
         {mayRegistrations && <ManageLink to="/admin/settings?page=training&tab=trainerApps">{t('mg.trainerApps')}</ManageLink>}
         {maySettings && <ManageLink to="/admin/settings?page=training&tab=settings">⚙ {t('mg.pageTexts')}</ManageLink>}
       </PageManageBar>
+      {/* the add forms open right here, as windows */}
+      {quickAdd === 'course' && <CoursesAdmin quick={{ onClose: () => setQuickAdd(null), onSaved: () => setReload((n) => n + 1) }} />}
+      {quickAdd === 'trainer' && <TrainersAdmin quick={{ onClose: () => setQuickAdd(null), onSaved: () => setReload((n) => n + 1) }} />}
 
       <div className="flex flex-wrap gap-2" role="tablist">
         {(['current', 'archive', 'news'] as Tab[]).map((x) => (

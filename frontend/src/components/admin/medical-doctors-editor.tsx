@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm';
 
 interface Entry {
   id: string; active: boolean;
@@ -25,6 +26,7 @@ export function MedicalDoctorsEditor() {
   const { lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const ar = lang === 'ar';
   const [rowId, setRowId] = useState<number | null>(null);
   const [list, setList] = useState<Entry[]>([]);
@@ -51,7 +53,7 @@ export function MedicalDoctorsEditor() {
   const patch = (id: string, p: Partial<Entry>) => setList((l) => l.map((d) => (d.id === id ? { ...d, ...p } : d)));
   const move = (n: number, to: number) => setList((l) => { if (to < 0 || to >= l.length) return l; const c = [...l]; [c[n], c[to]] = [c[to], c[n]]; return c; });
   const add = () => { const d = blank(); setList((l) => [...l, d]); setOpen(d.id); setQ(''); };
-  const remove = (id: string) => { if (window.confirm(ar ? 'حذف هذا الطبيب / القسم؟' : 'Delete this entry?')) setList((l) => l.filter((d) => d.id !== id)); };
+  const remove = async (id: string) => { if (await confirm({ message: ar ? 'حذف هذا الطبيب / القسم؟' : 'Delete this entry?', danger: true })) setList((l) => l.filter((d) => d.id !== id)); };
   const save = async () => {
     if (rowId === null) return;
     const bad = list.find((d) => !d.specialtyAr.trim() && !d.nameAr.trim() && !d.specialtyEn.trim() && !d.nameEn.trim());

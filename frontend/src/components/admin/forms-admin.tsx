@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { DynamicForm, FieldDef, FieldOption, PublicForm, isShown } from '@/components/site/dynamic-form';
 
@@ -53,6 +54,7 @@ function tidy(fields: FieldDef[]): FieldDef[] {
 /** Add, delete and edit the inputs of a form; each input has a type, a label (Arabic / English), required or not, and its options when it is a choice. */
 function FieldEditor({ fields, onChange }: { fields: FieldDef[]; onChange: (f: FieldDef[]) => void }) {
   const L = useL();
+  const confirm = useConfirm();
   const { lang } = useI18n();
   const set = (next: FieldDef[]) => onChange(tidy(next));
   const upd = (i: number, p: Partial<FieldDef>) => set(fields.map((f, j) => (j === i ? { ...f, ...p } : f)));
@@ -71,9 +73,9 @@ function FieldEditor({ fields, onChange }: { fields: FieldDef[]; onChange: (f: F
     if (type === 'file') { p.fileKinds = f.fileKinds ?? ['pdf', 'image']; p.maxFiles = f.maxFiles ?? 1; p.maxSizeMb = f.maxSizeMb ?? 5; }
     upd(i, p);
   };
-  const remove = (i: number) => {
+  const remove = async (i: number) => {
     const f = fields[i];
-    if (f.role && !window.confirm(L('هذا الحقل يحدد هوية المتقدم (الاسم أو البريد أو الهاتف)، وحذفه يعطّل المراسلة أو العرض في القوائم. متأكد من الحذف؟', 'This input identifies the applicant (name, e-mail or phone); deleting it disables contacting them or showing them in lists. Delete anyway?'))) return;
+    if (f.role && !(await confirm({ danger: true, message: L('هذا الحقل يحدد هوية المتقدم (الاسم أو البريد أو الهاتف)، وحذفه يعطّل المراسلة أو العرض في القوائم. متأكد من الحذف؟', 'This input identifies the applicant (name, e-mail or phone); deleting it disables contacting them or showing them in lists. Delete anyway?') }))) return;
     set(fields.filter((_, j) => j !== i));
   };
   const setOpt = (i: number, k: number, p: Partial<FieldOption>) => upd(i, { options: fields[i].options!.map((o, j) => (j === k ? { ...o, ...p } : o)) });
@@ -239,6 +241,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
   const { lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [s, setS] = useState<SubFull | null>(null);
   // the page's own permission is enough to handle its requests (see lib/form-pages.ts)
   const may = (a: SubAction) => mayOnForms(can, (s as any)?.form?.slug ? [(s as any).form.slug] : undefined, a);
@@ -262,7 +265,7 @@ function SubmissionDialog({ id, onClose, onChanged }: { id: number; onClose: () 
     try { await api(`/admin/forms/submissions/${id}/contact`, { method: 'POST', body: { subject, body } }); toast(L('أُرسلت الرسالة', 'Message sent')); setSubject(''); setBody(''); await load(); } catch (e: any) { toast(e.message, 'err'); await load(); } finally { setBusy(false); }
   };
   const erase = async () => {
-    if (!window.confirm(L('مسح البيانات الشخصية والمرفقات لهذا الطلب نهائياً؟', 'Erase this request’s personal data and files permanently?'))) return;
+    if (!(await confirm({ danger: true, confirmLabel: L('مسح', 'Erase'), message: L('مسح البيانات الشخصية والمرفقات لهذا الطلب نهائياً؟', 'Erase this request’s personal data and files permanently?') }))) return;
     try { await api(`/admin/forms/submissions/${id}/anonymize`, { method: 'POST' }); toast(L('تم المسح', 'Erased')); await load(); } catch (e: any) { toast(e.message, 'err'); }
   };
   const getFile = async (f: { path: string; name: string }) => { try { await download(`/files/${f.path}`, {}, f.name); } catch (e: any) { toast(e.message, 'err'); } };
@@ -403,13 +406,14 @@ export function BackupsAdmin() {
   const { lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [data, setData] = useState<{ status: BackupStatus; data: Backup[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => { api<{ status: BackupStatus; data: Backup[] }>('/admin/backups').then(setData).catch((e) => toast(e.message, 'err')); }, [toast]);
   useEffect(load, [load]);
   const create = async () => { setBusy(true); try { await api('/admin/backups', { method: 'POST' }); toast(L('تم إنشاء النسخة الاحتياطية', 'Backup created')); load(); } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); } };
   const get = async (b: Backup, kind: 'db' | 'files') => { try { await download(`/admin/backups/${b.id}/${kind}`, {}, `${b.id}.${kind === 'db' ? 'json.gz' : 'files.tar.gz'}`); } catch (e: any) { toast(e.message, 'err'); } };
-  const del = async (b: Backup) => { if (!window.confirm(L('حذف هذه النسخة؟', 'Delete this backup?'))) return; try { await api(`/admin/backups/${b.id}`, { method: 'DELETE' }); load(); } catch (e: any) { toast(e.message, 'err'); } };
+  const del = async (b: Backup) => { if (!(await confirm({ danger: true, message: L('حذف هذه النسخة؟', 'Delete this backup?') }))) return; try { await api(`/admin/backups/${b.id}`, { method: 'DELETE' }); load(); } catch (e: any) { toast(e.message, 'err'); } };
   if (!data) return <Center><Spinner /></Center>;
   const st = data.status;
   return (

@@ -314,14 +314,17 @@ export function EventsManageBar({ agenda = false }: { agenda?: boolean } = {}) {
   const { lang } = useI18n();
   const { can } = useAuth();
   const [adding, setAdding] = useState(false);
+  const [addingEvent, setAddingEvent] = useState(false);
   const ar = lang === 'ar';
   const mayRead = can('occasions.read'), mayCreate = can('occasions.create'), mayNews = can('news.create');
   return (
     <PageManageBar show={mayRead || mayCreate || mayNews} settingsUrl={mayRead ? (agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events') : undefined}>
-      {mayCreate && <ManageLink tone="solid" to={agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events'}>＋ {ar ? 'إضافة معرض / مناسبة' : 'Add exhibition / occasion'}</ManageLink>}
+      {mayCreate && <ManageBtn onClick={() => setAddingEvent(true)}>＋ {ar ? 'إضافة معرض / مناسبة' : 'Add exhibition / occasion'}</ManageBtn>}
       {mayNews && <ManageBtn onClick={() => setAdding(true)}>＋ {ar ? 'إضافة خبر' : 'Add news'}</ManageBtn>}
       {mayRead && <ManageLink to={agenda ? '/admin/settings?page=agenda&tab=events' : '/admin/settings?page=occasions&tab=events'}>▤ {ar ? 'إدارة المعارض والمناسبات' : 'Manage exhibitions & occasions'}</ManageLink>}
       {adding && <NewsFormDialog category="events" onClose={() => setAdding(false)} />}
+      {/* the add form opens right here (the lists on this page reload when it is saved) */}
+      {addingEvent && <OccasionDialog onClose={() => setAddingEvent(false)} onSaved={() => setAddingEvent(false)} />}
     </PageManageBar>
   );
 }

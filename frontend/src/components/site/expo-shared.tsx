@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, onSiteChange } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { FormBySlug } from '@/components/site/dynamic-form';
 import { useSite } from '@/components/site/site-context';
@@ -26,8 +26,10 @@ export function useExpoData() {
   const { lang } = useI18n();
   const [data, setData] = useState<ExpoData | null>(null);
   useEffect(() => {
+    const load = () => api<ExpoData>('/public/expo', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData((d) => d ?? { exhibitors: [], sponsors: [], sessions: [], sectors: [] }));
     setData(null);
-    api<ExpoData>('/public/expo', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData({ exhibitors: [], sponsors: [], sessions: [], sectors: [] }));
+    void load();
+    return onSiteChange(() => { void load(); }); // an item added or edited from a window on the page shows up at once
   }, [lang]);
   return data;
 }

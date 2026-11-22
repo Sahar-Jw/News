@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { RichEditor } from '@/components/admin/rich-editor';
@@ -35,6 +36,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [tab, setTab] = useState<'details' | 'members' | 'activities' | 'news'>(initialTab ?? 'details');
   const [full, setFull] = useState<Full | null>(null);
@@ -112,7 +114,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
     } catch (err: any) { toast(err.message, 'err'); }
   };
   const removeMember = async (m: Member) => {
-    if (!draft?.id || !confirm(t('tbl.confirmDelete'))) return;
+    if (!draft?.id || !(await confirm({ message: t('tbl.confirmDelete'), danger: true }))) return;
     try { await api(`/admin/committees/members/${m.id}`, { method: 'DELETE' }); dirty.current = true; await loadFull(draft.id); } catch (err: any) { toast(err.message, 'err'); }
   };
 
@@ -135,7 +137,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
     } catch (err: any) { toast(err.message, 'err'); }
   };
   const removeActivity = async (a: Activity) => {
-    if (!draft?.id || !confirm(t('tbl.confirmDelete'))) return;
+    if (!draft?.id || !(await confirm({ message: t('tbl.confirmDelete'), danger: true }))) return;
     try { await api(`/admin/committees/activities/${a.id}`, { method: 'DELETE' }); dirty.current = true; await loadFull(draft.id); } catch (err: any) { toast(err.message, 'err'); }
   };
 

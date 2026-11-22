@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { FormBySlug } from '@/components/site/dynamic-form';
 import { Pager } from '@/components/site/pager';
-import { ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { ManageBtn, ManageLink, PageManageBar } from '@/components/site/page-manage-bar';
+import { IncubatorProjectsAdmin } from '@/components/admin/incubator-projects-admin';
 import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { useSite } from '@/components/site/site-context';
 import { newsCategoryLabel } from '@/lib/news-categories';
@@ -38,7 +39,9 @@ export default function IncubatorPage() {
   const [section, setSection] = useState('');
   const [pp, setPp] = useState(1);
   const [news, setNews] = useState<Card[]>([]);
-  useEffect(() => { api<Data>('/public/incubator', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData({ incubated: [], graduated: [] })); }, [lang]);
+  const [addingProject, setAddingProject] = useState(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => { api<Data>('/public/incubator', { params: { lang }, cache: 'no-store' }).then(setData).catch(() => setData({ incubated: [], graduated: [] })); }, [lang, tick]);
   useEffect(() => {
     // the news of the fixed "Business Incubator News" category + the news tagged with the page topic (Settings), newest first, no duplicates
     const get = (params: Record<string, string | number>) => api<{ data: Card[] }>('/public/news', { params: { lang, limit: 3, ...params } }).then((r) => r.data).catch(() => [] as Card[]);
@@ -93,9 +96,11 @@ export default function IncubatorPage() {
       {/* buttons for the people who manage the page (visitors see nothing) */}
       <PageManageBar show={mayRequests || mayProjects || maySettings} settingsUrl={maySettings ? '/admin/settings?page=incubator&tab=settings' : undefined}>
         {mayRequests && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=applications">📥 {t('adm.incubatorApplications')}</ManageLink>}
-        {can('incubator.create') && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=projects">＋ {t('inc.a.add')}</ManageLink>}
+        {can('incubator.create') && <ManageBtn onClick={() => setAddingProject(true)}>＋ {t('inc.a.add')}</ManageBtn>}
         {mayProjects && <ManageLink to="/admin/settings?page=incubator&tab=projects">🚀 {t('adm.incubatorProjects')}</ManageLink>}
       </PageManageBar>
+      {/* the add form opens right here, as a window */}
+      {addingProject && <IncubatorProjectsAdmin quick={{ onClose: () => setAddingProject(false), onSaved: () => setTick((n) => n + 1) }} />}
 
       {/* the ONE "submit your project" button of the page lives here */}
       <header className="rounded-3xl bg-gradient-to-l from-secondary to-primary p-6 text-center text-white shadow-lift md:p-10">

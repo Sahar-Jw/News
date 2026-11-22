@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import type { QuickAdd } from '@/lib/quick-add';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
@@ -13,7 +14,7 @@ interface Row { id: number; nameAr: string; nameEn: string; bioAr: string; bioEn
 const EMPTY = { nameAr: '', nameEn: '', bioAr: '', bioEn: '', isActive: true };
 
 /** Trainers of the Training Center (picked in the course form). Errors show under each field. */
-export function TrainersAdmin() {
+export function TrainersAdmin({ quick }: { quick?: QuickAdd } = {}) {
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -47,6 +48,8 @@ export function TrainersAdmin() {
       toast(t('app.saved'));
       setDraft(null);
       setKey((k) => k + 1);
+      quick?.onSaved?.();
+      quick?.onClose();
     } catch (e2: any) { toast(e2.message, 'err'); }
     finally { setBusy(false); }
   };
@@ -61,8 +64,13 @@ export function TrainersAdmin() {
     } catch (e2: any) { toast(e2.message, 'err'); }
   };
 
+  // quick-add mode (a button on a public page): only the add window, opened at once
+  useEffect(() => { if (quick && can('courses.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const closeDraft = () => { setDraft(null); quick?.onClose(); };
+
   return (
-    <RequirePerm any={['courses.read']}>
+    <RequirePerm any={quick ? ['courses.create'] : ['courses.read']}>
+      {!quick && (<>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.trainers')}</h1>
       <DataTable<Row>
         endpoint="/admin/trainers"
@@ -78,7 +86,8 @@ export function TrainersAdmin() {
           </div>
         )}
       />
-      <Modal open={!!draft} onClose={() => setDraft(null)} title={draft?.id ? t('tr.editTrainer') : t('tr.addTrainer')}>
+      </>)}
+      <Modal open={!!draft} onClose={closeDraft} title={draft?.id ? t('tr.editTrainer') : t('tr.addTrainer')}>
         {draft && (
           <form onSubmit={save} noValidate className="space-y-3">
             <Field label={t('tr.trainerNameAr')} error={errors.nameAr}><input maxLength={150} dir="rtl" aria-invalid={!!errors.nameAr} className={`${inputCls} ${errors.nameAr ? 'border-red-500' : ''}`} value={draft.nameAr} onChange={(e) => up({ nameAr: e.target.value })} /></Field>
@@ -86,7 +95,7 @@ export function TrainersAdmin() {
             <Field label={t('tr.bioAr')}><textarea rows={4} maxLength={3000} dir="rtl" className={inputCls} value={draft.bioAr} onChange={(e) => up({ bioAr: e.target.value })} /></Field>
             <Field label={t('tr.bioEn')}><textarea rows={4} maxLength={3000} dir="ltr" className={inputCls} value={draft.bioEn} onChange={(e) => up({ bioEn: e.target.value })} /></Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => up({ isActive: e.target.checked })} />{t('faq.active')}</label>
-            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => setDraft(null)}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
+            <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={closeDraft}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
           </form>
         )}
       </Modal>
