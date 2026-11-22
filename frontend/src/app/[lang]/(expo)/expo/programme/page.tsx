@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { Heading, SESSION_TYPES, sessionTypeLabel, useExpoData } from '@/components/site/expo-shared';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 const dayKey = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Damascus' }) : '');
 
@@ -33,7 +34,7 @@ export default function ProgrammePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><h3 className="font-extrabold text-secondary">{s.name}</h3><span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-secondary">{sessionTypeLabel(s.type, lang === 'ar') ?? t(`ex.type.${(SESSION_TYPES as readonly string[]).includes(s.type) ? s.type : 'other'}`)}</span></div>
                   {s.description && <p className="mt-1 whitespace-pre-line text-sm leading-7 text-gray-600">{s.description}</p>}
-                  <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-500">{s.speaker && <span>🎤 {s.speaker}</span>}{s.hall && <span>📍 {s.hall}</span>}</div>
+                  <div className="mt-1 flex flex-wrap gap-x-4 text-xs text-gray-500">{s.speaker && <span><InlineIcon name="mic" />{s.speaker}</span>}{s.hall && <span><InlineIcon name="pin" />{s.hall}</span>}</div>
                 </div>
               </li>
             ))}

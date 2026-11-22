@@ -20,6 +20,7 @@ import { FaqDialog } from '@/components/admin/faqs-admin';
 import { ScheduleAdmin } from '@/components/admin/schedule-admin';
 import { ServiceDialog } from '@/components/admin/services-admin';
 import { dayInfo, dayName, fmtDay, fmtTime, readSchedule, ymd } from '@/lib/one-stop-schedule';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 interface Faq { id: number; question: string; answer: string }
 
@@ -159,7 +160,7 @@ function ServicesTab({ items, tools, onPageChange }: { items: PublicService[] | 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pg.rows.map((x) => (
               <div key={x.id} className="flex flex-col gap-2">
-                <Link href={href(`/services/${x.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent">
+                <Link href={href(`/services/${x.id}`)} className="group flex-1 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:ring-accent">
                   <Thumb src={x.imageUrl} alt="" className="h-36 w-full" />
                   <div className="p-4">
                     <h3 className="font-extrabold text-secondary group-hover:text-primary">{x.name}</h3>
@@ -369,8 +370,8 @@ function OneStop() {
       <PageManageBar show={mayAddService || mayAddFaq || mayHours || mayEditService || mayDeleteService || mayEditFaq || mayDeleteFaq} settingsUrl={can('services.read') ? '/admin/settings?page=services&tab=services' : undefined}>
         {mayAddService && <ManageBtn onClick={() => setDialog({ type: 'service' })}>＋ {t('svc.add')}</ManageBtn>}
         {mayAddFaq && <ManageBtn tone="ghost" onClick={() => setDialog({ type: 'faq' })}>＋ {t('faq.add')}</ManageBtn>}
-        {mayHours && <ManageBtn tone="ghost" onClick={() => setHoursOpen(true)}>🕘 {t('os.mg.hours')}</ManageBtn>}
-        {maySettings && <ManageBtn tone="ghost" onClick={() => router.push(href('/admin/settings?page=services&tab=settings'))}>⚙ {t('os.mg.texts')}</ManageBtn>}
+        {mayHours && <ManageBtn tone="ghost" onClick={() => setHoursOpen(true)}><InlineIcon name="clock" />{t('os.mg.hours')}</ManageBtn>}
+        {maySettings && <ManageBtn tone="ghost" onClick={() => router.push(href('/admin/settings?page=services&tab=settings'))}><InlineIcon name="settings" />{t('os.mg.texts')}</ManageBtn>}
       </PageManageBar>
 
       {dialog?.type === 'service' && <ServiceDialog key={dialog.id ?? 'new'} id={dialog.id} onClose={() => setDialog(null)} onSaved={() => load(true)} />}

@@ -312,7 +312,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
   const [womenCount, setWomenCount] = useState<number | null>(null);
   useEffect(() => {
     if (kind !== 'women') return;
-    api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 1 } }).then((r) => setWomenCount(r.meta.total)).catch(() => setWomenCount(null));
+    api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 10 } }).then((r) => setWomenCount(r.meta.total)).catch(() => setWomenCount(null));
   }, [kind, key]);
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
@@ -330,6 +330,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
       await api(`/admin/committees/${deleteTarget.row.id}`, { method: 'DELETE' });
       toast(t('app.deleted'));
       deleteTarget.reload();
+      setKey((k) => k + 1); // re-count so the add button comes back after the only women committee is deleted
       setDeleteTarget(null);
     } catch (err: any) { toast(err.message, 'err'); }
   };
@@ -344,7 +345,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/committees/bulk-delete', can: can('committees.delete') }}
-        toolbar={can('committees.create') && (kind === 'women' && womenCount !== null && womenCount > 0 ? <span className="text-xs text-gray-500">{t('cm.womenOne')}</span> : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>)}
+        toolbar={can('committees.create') && (kind === 'women' ? (womenCount === null ? null : womenCount > 0 ? <span className="text-xs text-gray-500">{t('cm.womenOne')}</span> : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>) : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>)}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>

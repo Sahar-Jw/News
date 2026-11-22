@@ -60,7 +60,7 @@ export default function ExpoNews() {
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {albums!.data.map((a) => (
-                  <button key={a.id} type="button" onClick={() => setOpen(open === a.id ? null : a.id)} aria-pressed={open === a.id} className={`group overflow-hidden rounded-2xl bg-white text-start shadow-card ring-1 transition hover:-translate-y-0.5 ${open === a.id ? 'ring-2 ring-accent' : 'ring-line'}`}>
+                  <button key={a.id} type="button" onClick={() => setOpen(open === a.id ? null : a.id)} aria-pressed={open === a.id} className={`group overflow-hidden rounded-2xl bg-white text-start shadow-card ring-1 transition ${open === a.id ? 'ring-2 ring-accent' : 'ring-line'}`}>
                     <div className="relative"><Thumb src={a.thumb} alt={a.title} className="h-44 w-full" />{a.kind === 'video' && <PlayBadge />}</div>
                     <div className="p-3 font-bold text-secondary">{a.title}</div>
                   </button>

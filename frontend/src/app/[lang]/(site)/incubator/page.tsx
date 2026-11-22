@@ -13,6 +13,7 @@ import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { useSite } from '@/components/site/site-context';
 import { newsCategoryLabel } from '@/lib/news-categories';
 import { EMAIL_RE, PHONE_RE, THREE_PART_NAME_RE } from '@/components/site/training-shared';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 interface Project { id: number; status: string; name: string; sector: string; founder: string; summary: string; story: string; joinedYear: number | null; website: string | null; imageUrl: string | null }
 interface Data { incubated: Project[]; graduated: Project[] }
@@ -95,9 +96,9 @@ export default function IncubatorPage() {
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       {/* buttons for the people who manage the page (visitors see nothing) */}
       <PageManageBar show={mayRequests || mayProjects || maySettings} settingsUrl={maySettings ? '/admin/settings?page=incubator&tab=settings' : undefined}>
-        {mayRequests && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=applications">📥 {t('adm.incubatorApplications')}</ManageLink>}
+        {mayRequests && <ManageLink tone="solid" to="/admin/settings?page=incubator&tab=applications"><InlineIcon name="inbox" />{t('adm.incubatorApplications')}</ManageLink>}
         {can('incubator.create') && <ManageBtn onClick={() => setAddingProject(true)}>＋ {t('inc.a.add')}</ManageBtn>}
-        {mayProjects && <ManageLink to="/admin/settings?page=incubator&tab=projects">🚀 {t('adm.incubatorProjects')}</ManageLink>}
+        {mayProjects && <ManageLink to="/admin/settings?page=incubator&tab=projects"><InlineIcon name="rocket" />{t('adm.incubatorProjects')}</ManageLink>}
       </PageManageBar>
       {/* the add form opens right here, as a window */}
       {addingProject && <IncubatorProjectsAdmin quick={{ onClose: () => setAddingProject(false), onSaved: () => setTick((n) => n + 1) }} />}
@@ -112,7 +113,7 @@ export default function IncubatorPage() {
           </dl>
         )}
         <div className="mt-5">
-          {open ? <button type="button" onClick={start} className="rounded-full bg-accent px-7 py-2.5 font-extrabold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('inc.submit')}</button> : <p role="status" className="inline-block rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold">{t('inc.closed')}</p>}
+          {open ? <button type="button" onClick={start} className="rounded-full bg-accent px-7 py-2.5 font-extrabold text-white shadow-card transition hover:shadow-lift">{t('inc.submit')}</button> : <p role="status" className="inline-block rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold">{t('inc.closed')}</p>}
         </div>
       </header>
 
@@ -121,7 +122,7 @@ export default function IncubatorPage() {
         <div role="tablist" aria-label={t('nav.incubator')} className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
           {tabs.map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={current === id} onClick={() => goTab(id)} className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${current === id ? 'bg-secondary text-white' : 'text-secondary hover:bg-primary/10 hover:text-primary'}`}>{label}</button>)}
         </div>
-        {open && <button type="button" onClick={start} className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px">{t('inc.submit')}</button>}
+        {open && <button type="button" onClick={start} className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition">{t('inc.submit')}</button>}
       </div>
 
       {current === 'about' && card(t('inc.about'), prose(about))}
@@ -169,7 +170,7 @@ export default function IncubatorPage() {
                     {p.sector && <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-primary">{p.sector}</span>}
                     {p.joinedYear && <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-gray-600">{p.joinedYear}</span>}
                   </div>
-                  {p.founder && <p className="mt-2 text-xs text-gray-500">👤 {p.founder}</p>}
+                  {p.founder && <p className="mt-2 text-xs text-gray-500"><InlineIcon name="user" />{p.founder}</p>}
                   {p.summary && <p className="mt-2 whitespace-pre-line text-sm leading-7 text-gray-600">{p.summary}</p>}
                   {isStory && p.story && <blockquote className="mt-3 whitespace-pre-line rounded-xl border-s-4 border-accent bg-accent/10 p-3 text-sm leading-7 text-gray-700"><b className="block text-secondary">{t('inc.story')}</b>{p.story}</blockquote>}
                   {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer" className="mt-auto pt-3 text-sm font-bold text-primary hover:underline">{t('ex.visit')} ↗</a>}

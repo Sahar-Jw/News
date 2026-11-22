@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { fmtNum } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { G2tProvider, useGet2Trade } from './context';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 /** the tabs of the Get2Trade page: every one is its own nested page (the first one is the page itself) */
 export const G2T_TABS = [
@@ -41,11 +42,11 @@ function ManageBar() {
   const to = (tab: string) => `/admin/settings?page=get2trade&tab=${tab}`;
   return (
     <PageManageBar show={mayRead || mayToggle} settingsUrl={mayRead ? '/admin/settings?page=get2trade' : undefined}>
-      {mayToggle && page && <ManageBtn onClick={() => { if (!busy) toggle(); }}>{page.isOpen ? `⏸ ${t('gt.m.close')}` : `▶ ${t('gt.m.open')}`}</ManageBtn>}
-      {mayRead && <ManageLink to={to('bookings')} tone="solid">📥 {t('gt.a.bookings')}</ManageLink>}
-      {mayRead && <ManageLink to={to('spaces')}>🏢 {t('gt.a.spaces')}</ManageLink>}
-      {mayRead && <ManageLink to={to('packages')}>📦 {t('gt.a.packages')}</ManageLink>}
-      {mayRead && <ManageLink to={to('content')}>✎ {t('gt.a.content')}</ManageLink>}
+      {mayToggle && page && <ManageBtn onClick={() => { if (!busy) toggle(); }}>{page.isOpen ? <><InlineIcon name="pause" />{t('gt.m.close')}</> : <><InlineIcon name="play" />{t('gt.m.open')}</>}</ManageBtn>}
+      {mayRead && <ManageLink to={to('bookings')} tone="solid"><InlineIcon name="inbox" />{t('gt.a.bookings')}</ManageLink>}
+      {mayRead && <ManageLink to={to('spaces')}><InlineIcon name="building" />{t('gt.a.spaces')}</ManageLink>}
+      {mayRead && <ManageLink to={to('packages')}><InlineIcon name="package" />{t('gt.a.packages')}</ManageLink>}
+      {mayRead && <ManageLink to={to('content')}><InlineIcon name="edit" />{t('gt.a.content')}</ManageLink>}
     </PageManageBar>
   );
 }
@@ -85,7 +86,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </nav>
         {page && (
           <div className="flex shrink-0 items-center gap-2 ps-1">
-            {page.isOpen && <button type="button" onClick={() => openForm('booking')} className="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('gt.bookNow')}</button>}
+            {page.isOpen && <button type="button" onClick={() => openForm('booking')} className="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white shadow-card transition hover:shadow-lift">{t('gt.bookNow')}</button>}
             <button type="button" onClick={() => openForm('inquiry')} className="rounded-full border border-primary/50 px-4 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/10">{t('gt.inquire')}</button>
           </div>
         )}

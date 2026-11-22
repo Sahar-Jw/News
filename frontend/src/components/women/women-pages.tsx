@@ -10,6 +10,7 @@ import { useSite } from '@/components/site/site-context';
 import { ContactForm } from '@/components/site/contact-form';
 import { ContactIcon, SocialIcon } from '@/components/site/icons';
 import type { CommitteeData, Activity, Member, NewsItem } from '@/components/site/committee-view';
+import { ProIcon, IconTile, NumberedList, iconFor } from '@/components/site/pro-icon';
 import { Paged } from './women-pager';
 import { WomenCalendar, type CalItem } from './women-calendar';
 import { ActGroup, DialogState, Dialogs, ItemTools, ManageButton, WomenAdminProvider, WomenManageBar, useCanManage, useTr } from './women-manage';
@@ -46,6 +47,7 @@ const Heading = ({ children, action }: { children: React.ReactNode; action?: Rea
     {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
   </div>
 );
+const HIcon = ({ n }: { n: string }) => <ProIcon name={n} size={18} className="me-2 inline-block align-[-3px] text-primary" />;
 const Rich = ({ html }: { html: string }) => <div className="prose-news" dangerouslySetInnerHTML={{ __html: html }} />;
 function Empty() {
   const tr = useTr();
@@ -57,7 +59,7 @@ function PageTitle({ icon, title, hint }: { icon: string; title: string; hint?: 
     <header className="relative mb-6 overflow-hidden rounded-3xl bg-secondary text-white shadow-card">
       <div className="pointer-events-none absolute -top-24 end-[-4rem] h-64 w-64 rounded-full bg-accent/25 blur-3xl" aria-hidden="true" />
       <div className="relative flex items-center gap-4 px-6 py-7 md:px-9">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15 text-3xl ring-1 ring-white/25" aria-hidden="true">{icon}</span>
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25" aria-hidden="true"><ProIcon name={iconFor(icon)} size={28} /></span>
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold leading-snug md:text-3xl">{title}</h1>
           {hint && <p className="mt-1 text-sm leading-6 text-white/80">{hint}</p>}
@@ -139,8 +141,8 @@ function ActCard({ a, tools, showType = true }: { a: Activity; tools?: React.Rea
             {open && (
               <div className="space-y-4 border-t border-line pt-3">
                 {a.body && <Rich html={a.body} />}
-                {a.goals && <div className="rounded-lg bg-primary/5 p-3"><h4 className="mb-1 text-sm font-extrabold text-secondary">🎯 {tr('الأهداف', 'Goals')}</h4><Rich html={a.goals} /></div>}
-                {a.results && <div className="rounded-lg bg-accent/10 p-3"><h4 className="mb-1 text-sm font-extrabold text-secondary">✅ {tr('النتائج', 'Results')}</h4><Rich html={a.results} /></div>}
+                {a.goals && <div className="rounded-lg bg-primary/5 p-3"><h4 className="mb-1 text-sm font-extrabold text-secondary"><HIcon n="target" />{tr('الأهداف', 'Goals')}</h4><Rich html={a.goals} /></div>}
+                {a.results && <div className="rounded-lg bg-accent/10 p-3"><h4 className="mb-1 text-sm font-extrabold text-secondary"><HIcon n="check" />{tr('النتائج', 'Results')}</h4><Rich html={a.results} /></div>}
               </div>
             )}
             <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="mt-auto self-start text-sm font-bold text-primary hover:underline">{open ? tr('إخفاء التفاصيل', 'Hide details') : tr('عرض التفاصيل', 'Show details')}</button>
@@ -158,8 +160,8 @@ function NewsGrid({ items, limit }: { items: NewsItem[]; limit?: number }) {
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {shown.map((n) => (
-        <Link key={n.id} href={href(`/news/${n.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent/60">
-          {n.image ? <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <span className="grid h-44 place-items-center bg-primary/10 text-4xl" aria-hidden="true">📰</span>}
+        <Link key={n.id} href={href(`/news/${n.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:ring-accent/60">
+          {n.image ? <img src={fileUrl(n.image)} alt="" loading="lazy" className="h-44 w-full object-cover" /> : <span className="grid h-44 place-items-center bg-primary/10 text-primary" aria-hidden="true"><ProIcon name="news" size={40} /></span>}
           <span className="flex flex-1 flex-col gap-1.5 p-4">
             {n.publishAt && <span className="text-xs text-gray-500">{fmtDate(lang, n.publishAt)}</span>}
             <span className="font-extrabold leading-snug text-secondary group-hover:text-primary">{n.title}</span>
@@ -178,7 +180,7 @@ function PersonCard({ m, big, tools }: { m: Member; big?: boolean; tools?: React
     <div className={`text-center ${big ? 'rounded-2xl bg-white p-5 shadow-card ring-1 ring-accent/50' : ''}`}>
       {m.photoUrl
         ? <img src={fileUrl(m.photoUrl)} alt="" loading="lazy" className={`mx-auto rounded-2xl object-cover ring-2 ring-accent/50 ${big ? 'h-32 w-32' : 'h-24 w-24'}`} />
-        : <span className={`mx-auto flex items-center justify-center rounded-2xl bg-primary/10 text-primary ${big ? 'h-32 w-32 text-5xl' : 'h-24 w-24 text-3xl'}`} aria-hidden="true">👤</span>}
+        : <span className={`mx-auto flex items-center justify-center rounded-2xl bg-primary/10 text-primary ${big ? 'h-32 w-32' : 'h-24 w-24'}`} aria-hidden="true"><ProIcon name="user" size={big ? 56 : 40} /></span>}
       <div className={`mt-2 font-bold text-secondary ${big ? 'text-lg' : 'text-sm'}`}>{m.name}</div>
       {role && <div className="text-xs font-semibold text-primary">{role}</div>}
       {m.title && <div className="mt-0.5 text-xs leading-5 text-gray-600">{m.title}</div>}
@@ -250,8 +252,8 @@ function Home({ c, open }: { c: CommitteeData; open: Open }) {
     <div className="space-y-8">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((x) => (
-          <Link key={x.slug} href={href(womenPageHref(x.slug))} className="rounded-2xl bg-white p-4 text-center shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent/60">
-            <div className="text-2xl" aria-hidden="true">{x.icon}</div>
+          <Link key={x.slug} href={href(womenPageHref(x.slug))} className="rounded-2xl bg-white p-4 text-center shadow-card ring-1 ring-line transition hover:ring-accent/60">
+            <div className="mx-auto mb-1 grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary" aria-hidden="true"><ProIcon name={iconFor(x.icon)} size={20} /></div>
             <div className="text-3xl font-extrabold text-secondary">{x.n}</div>
             <div className="text-xs font-semibold text-gray-600">{x.label}</div>
           </Link>
@@ -260,8 +262,8 @@ function Home({ c, open }: { c: CommitteeData; open: Open }) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((x) => (
-          <Link key={x.slug} href={href(womenPageHref(x.slug))} className="group flex items-start gap-3 rounded-2xl bg-white p-5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:ring-accent/60">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-2xl" aria-hidden="true">{x.icon}</span>
+          <Link key={x.slug} href={href(womenPageHref(x.slug))} className="group flex items-start gap-3 rounded-2xl bg-white p-5 shadow-card ring-1 ring-line transition hover:ring-accent/60">
+            <IconTile name={iconFor(x.icon)} className="h-12 w-12" />
             <span><span className="block font-extrabold text-secondary group-hover:text-primary">{x.title}</span><span className="mt-1 block text-sm leading-6 text-ink/70">{x.text}</span></span>
           </Link>
         ))}
@@ -271,7 +273,7 @@ function Home({ c, open }: { c: CommitteeData; open: Open }) {
         <div className="grid gap-4 md:grid-cols-3">
           {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
           {mission && <Box><Heading>{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{mission}</p></Box>}
-          {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-6 text-ink/80">{goals.map((g, i) => <li key={i}>{g}</li>)}</ul></Box>}
+          {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><NumberedList items={goals} /></Box>}
         </div>
       )}
 
@@ -337,12 +339,12 @@ function About({ c, open }: { c: CommitteeData; open: Open }) {
         </div>
       </Box>
       <div className="grid gap-4 md:grid-cols-2">
-        <Box><Heading>🔭 {t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/85">{vision || '—'}</p></Box>
-        <Box><Heading>🧭 {t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/85">{mission || '—'}</p></Box>
+        <Box><Heading><HIcon n="eye" />{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/85">{vision || '—'}</p></Box>
+        <Box><Heading><HIcon n="compass" />{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/85">{mission || '—'}</p></Box>
       </div>
       <Box>
-        <Heading>🎯 {t('women.goals')}</Heading>
-        {goals.length ? <ol className="grid gap-3 md:grid-cols-2">{goals.map((g, i) => <li key={i} className="flex gap-3 rounded-xl bg-primary/5 p-3 text-sm leading-7"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">{i + 1}</span>{g}</li>)}</ol> : <Empty />}
+        <Heading><HIcon n="target" />{t('women.goals')}</Heading>
+        {goals.length ? <NumberedList items={goals} cols /> : <Empty />}
       </Box>
     </div>
   );
@@ -374,8 +376,8 @@ function Structure({ c, open }: { c: CommitteeData; open: Open }) {
       </Box>
       {(c.duties || traits.length > 0) && (
         <div className="grid gap-4 md:grid-cols-2">
-          {c.duties && <Box><Heading>📋 {tr('المهام', 'Tasks')}</Heading><Rich html={c.duties} /></Box>}
-          {traits.length > 0 && <Box><Heading>⭐ {tr('الصفات التنظيمية', 'Organisational characteristics')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-7 text-ink/80">{traits.map((x, i) => <li key={i}>{x}</li>)}</ul></Box>}
+          {c.duties && <Box><Heading><HIcon n="clipboard" />{tr('المهام', 'Tasks')}</Heading><Rich html={c.duties} /></Box>}
+          {traits.length > 0 && <Box><Heading><HIcon n="star" />{tr('الصفات التنظيمية', 'Organisational characteristics')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-7 text-ink/80">{traits.map((x, i) => <li key={i}>{x}</li>)}</ul></Box>}
         </div>
       )}
     </div>

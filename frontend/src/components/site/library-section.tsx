@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Center, Spinner } from '@/components/ui/ui';
 import { DocResults, type Result } from '@/components/site/documents-browser';
 import { useDocsManage } from '@/components/site/docs-manage';
+import { ProIcon } from '@/components/site/pro-icon';
 
 /**
  * Library & digital archive: a long-term digital reference with every kind of document: studies, reports, bulletins, guides, laws,
@@ -14,17 +15,17 @@ import { useDocsManage } from '@/components/site/docs-manage';
  */
 interface Type { key: string; icon: string; label: string; kinds: string[] }
 const TYPES: Type[] = [
-  { key: 'study', icon: '🔬', label: 'doc.kind.study', kinds: ['study'] },
-  { key: 'report', icon: '📊', label: 'doc.kind.report', kinds: ['report'] },
-  { key: 'bulletin', icon: '📰', label: 'doc.kind.bulletin', kinds: ['bulletin'] },
-  { key: 'guide', icon: '🧭', label: 'doc.kind.guide', kinds: ['guide'] },
-  { key: 'law', icon: '📚', label: 'doc.kind.law', kinds: ['law'] },
-  { key: 'decision', icon: '⚖️', label: 'doc.kind.decision', kinds: ['decision'] },
-  { key: 'circular', icon: '📣', label: 'doc.kind.circular', kinds: ['circular'] },
-  { key: 'form', icon: '📝', label: 'doc.kind.form', kinds: ['form'] },
-  { key: 'library', icon: '🗂', label: 'lib.documents', kinds: ['library'] },
-  { key: 'media', icon: '🎞', label: 'doc.kind.media', kinds: ['press', 'mediakit'] },
-  { key: 'historical', icon: '🏛', label: 'doc.kind.historical', kinds: ['historical'] },
+  { key: 'study', icon: 'flask', label: 'doc.kind.study', kinds: ['study'] },
+  { key: 'report', icon: 'chart', label: 'doc.kind.report', kinds: ['report'] },
+  { key: 'bulletin', icon: 'news', label: 'doc.kind.bulletin', kinds: ['bulletin'] },
+  { key: 'guide', icon: 'compass', label: 'doc.kind.guide', kinds: ['guide'] },
+  { key: 'law', icon: 'book', label: 'doc.kind.law', kinds: ['law'] },
+  { key: 'decision', icon: 'scale', label: 'doc.kind.decision', kinds: ['decision'] },
+  { key: 'circular', icon: 'megaphone', label: 'doc.kind.circular', kinds: ['circular'] },
+  { key: 'form', icon: 'edit', label: 'doc.kind.form', kinds: ['form'] },
+  { key: 'library', icon: 'folder', label: 'lib.documents', kinds: ['library'] },
+  { key: 'media', icon: 'film', label: 'doc.kind.media', kinds: ['press', 'mediakit'] },
+  { key: 'historical', icon: 'landmark', label: 'doc.kind.historical', kinds: ['historical'] },
 ];
 const dateOk = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
 const chip = (on: boolean) => `rounded-full border px-3 py-1.5 text-sm font-semibold transition ${on ? 'border-primary bg-primary text-white' : 'bg-white text-gray-700 hover:border-primary'}`;
@@ -90,11 +91,11 @@ function Library() {
       {/* browse by type, with how many each holds */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" role="tablist" aria-label={t('doc.kind')}>
         <button type="button" role="tab" aria-selected={!type} onClick={() => go({ kind: '', page: 1 })} className={`rounded-2xl p-3 text-center ring-1 transition ${!type ? 'bg-secondary text-white ring-secondary' : 'bg-white ring-line hover:ring-primary'}`}>
-          <div className="text-xl" aria-hidden="true">📖</div><div className="text-sm font-bold">{t('faq.all')}</div><div className="text-xs opacity-70">{total}</div>
+          <div className="mb-1 flex justify-center" aria-hidden="true"><ProIcon name="book" size={22} /></div><div className="text-sm font-bold">{t('faq.all')}</div><div className="text-xs opacity-70">{total}</div>
         </button>
         {TYPES.map((x) => (
           <button key={x.key} type="button" role="tab" aria-selected={type === x.key} onClick={() => go({ kind: x.key, issuer: '', page: 1 })} className={`rounded-2xl p-3 text-center ring-1 transition ${type === x.key ? 'bg-secondary text-white ring-secondary' : 'bg-white ring-line hover:ring-primary'}`}>
-            <div className="text-xl" aria-hidden="true">{x.icon}</div><div className="text-sm font-bold">{t(x.label)}</div><div className="text-xs opacity-70">{countOf(x)}</div>
+            <div className="mb-1 flex justify-center" aria-hidden="true"><ProIcon name={x.icon} size={22} /></div><div className="text-sm font-bold">{t(x.label)}</div><div className="text-xs opacity-70">{countOf(x)}</div>
           </button>
         ))}
       </div>

@@ -12,6 +12,7 @@ import { Pager } from '@/components/site/pager';
 import { KIND_ICON, PublicService, SERVICE_KINDS } from '@/components/site/services-shared';
 import { FaqDialog } from '@/components/admin/faqs-admin';
 import { ServiceDialog } from '@/components/admin/services-admin';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 interface Page { isOpen: boolean; conditions: string; documents: string; fees: string; steps: string[] }
 interface Faq { id: number; question: string; answer: string }
@@ -34,7 +35,7 @@ function DeptLink({ s }: { s: PublicService }) {
   const cls = 'font-bold text-primary underline-offset-2 hover:underline';
   return (
     <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-primary/5 px-3 py-2 text-xs text-gray-700">
-      <span aria-hidden="true">🏛</span><span>{t('sv.dept')}:</span>
+      <ProIcon name="landmark" size={16} /><span>{t('sv.dept')}:</span>
       {!s.departmentUrl ? <b className="text-secondary">{s.department}</b>
         : /^https?:/i.test(s.departmentUrl) ? <a href={s.departmentUrl} target="_blank" rel="noopener noreferrer" className={cls}>{s.department} ↗</a>
         : <Link href={href(s.departmentUrl)} className={cls}>{s.department}</Link>}
@@ -51,7 +52,7 @@ function ServiceCard({ s, onApply, applyOpen, actions }: { s: PublicService; onA
   return (
     <article className="flex h-full flex-col rounded-2xl bg-white p-5 shadow-card ring-1 ring-line transition hover:ring-accent">
       <div className="flex items-start gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-2xl" aria-hidden="true">{KIND_ICON[s.kind] ?? '📌'}</span>
+        <IconTile name={KIND_ICON[s.kind] ?? 'pin2'} className="h-12 w-12" />
         <div className="min-w-0">
           <span className="rounded-full bg-accent/25 px-2.5 py-0.5 text-[10px] font-bold text-secondary">{t(`svc.kind.${s.kind}`)}</span>
           <h2 className="mt-1 text-lg font-extrabold leading-snug text-secondary">{s.name}</h2>
@@ -74,7 +75,7 @@ function ServiceCard({ s, onApply, applyOpen, actions }: { s: PublicService; onA
         </div>
       )}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
-        {apply && applyOpen && <button type="button" onClick={onApply} className="rounded-full bg-accent px-5 py-2 text-sm font-extrabold text-white shadow-card transition hover:-translate-y-px hover:shadow-lift">{t('sv.apply')}</button>}
+        {apply && applyOpen && <button type="button" onClick={onApply} className="rounded-full bg-accent px-5 py-2 text-sm font-extrabold text-white shadow-card transition hover:shadow-lift">{t('sv.apply')}</button>}
         {!apply && s.formUrl && (() => {
           const cls = 'rounded-full bg-primary px-5 py-2 text-sm font-bold text-white transition hover:brightness-110';
           const label = s.kind === 'eservices' && !s.formIsFile ? t('sv.open') : t('svc.form');
@@ -177,9 +178,9 @@ export default function ServicesPage() {
       <PageManageBar show={mayRequests || maySvc || mayAddSvc || mayAddFaq || mayEditFaq || mayDeleteFaq} settingsUrl={maySvc ? '/admin/settings?page=membership&tab=services' : undefined}>
         {mayAddSvc && <ManageBtn onClick={() => setSvcDialog({})}>＋ {t('sv.add')}</ManageBtn>}
         {maySvc && <ManageLink tone="solid" to="/admin/settings?page=membership&tab=services">▤ {t('sv.manage')}</ManageLink>}
-        {mayRequests && <ManageLink to="/admin/settings?page=membership&tab=applications">📥 {t('mg.requests')}</ManageLink>}
-        {mayRequests && <ManageLink to="/admin/settings?page=membership&tab=content">✎ {t('mg.pageContent')}</ManageLink>}
-        {mayToggle && page && <button type="button" disabled={mgBusy} onClick={toggleOpen} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-white px-3.5 py-1.5 text-xs font-bold text-primary shadow-sm transition hover:bg-primary/10 disabled:opacity-50">{page.isOpen ? '⏸' : '▶'} {t(page.isOpen ? 'mg.closeMembership' : 'mg.openMembership')}</button>}
+        {mayRequests && <ManageLink to="/admin/settings?page=membership&tab=applications"><InlineIcon name="inbox" />{t('mg.requests')}</ManageLink>}
+        {mayRequests && <ManageLink to="/admin/settings?page=membership&tab=content"><InlineIcon name="edit" />{t('mg.pageContent')}</ManageLink>}
+        {mayToggle && page && <button type="button" disabled={mgBusy} onClick={toggleOpen} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-white px-3.5 py-1.5 text-xs font-bold text-primary shadow-sm transition hover:bg-primary/10 disabled:opacity-50"><InlineIcon name={page.isOpen ? 'pause' : 'play'} />{t(page.isOpen ? 'mg.closeMembership' : 'mg.openMembership')}</button>}
         {mayAddFaq && <ManageBtn tone="ghost" onClick={() => setFaqDialog({})}>＋ {t('faq.add')}</ManageBtn>}
       </PageManageBar>
 
@@ -188,7 +189,7 @@ export default function ServicesPage() {
         <div className="relative flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl"><h1 className="text-2xl font-extrabold md:text-3xl">{t('sv.title')}</h1><p className="mt-2 text-sm leading-7 text-white/85">{t('sv.hero')}</p></div>
           {page?.isOpen === false ? <p className="rounded-xl bg-white/15 px-4 py-2 text-sm font-semibold">{t('mb.closed')}</p>
-            : <button type="button" onClick={() => setForm(true)} className="shrink-0 rounded-full bg-accent px-8 py-3 text-base font-extrabold text-secondary shadow-lift transition hover:-translate-y-px hover:brightness-110">{t('mb.apply')}</button>}
+            : <button type="button" onClick={() => setForm(true)} className="shrink-0 rounded-full bg-accent px-8 py-3 text-base font-extrabold text-secondary shadow-lift transition hover:brightness-110">{t('mb.apply')}</button>}
         </div>
       </header>
 
@@ -196,7 +197,7 @@ export default function ServicesPage() {
       <div className="flex flex-wrap items-center gap-2" role="search">
         <div role="tablist" aria-label={t('svc.kind')} className="flex flex-wrap gap-2">
           <button type="button" role="tab" aria-selected={kind === 'all'} onClick={() => setKind('all')} className={chip(kind === 'all')}>{t('sv.all')}</button>
-          {kinds.map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}>{KIND_ICON[k]} {t(`svc.kind.${k}`)}</button>)}
+          {kinds.map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={chip(kind === k)}><InlineIcon name={KIND_ICON[k] ?? 'pin2'} />{t(`svc.kind.${k}`)}</button>)}
         </div>
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('sv.search')} aria-label={t('sv.search')} className={`${inputCls} !w-auto min-w-48 flex-1`} />
       </div>

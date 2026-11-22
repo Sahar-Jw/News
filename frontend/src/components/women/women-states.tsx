@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ProIcon } from '@/components/site/pro-icon';
 
 /** Loading / 404 / error screens of the women site. Plain components (no providers) so loading.tsx, error.tsx, not-found.tsx and the 404.html can all use them. */
 const T = {
@@ -60,13 +61,13 @@ function Shell({ icon, big, title, body, children }: { icon: React.ReactNode; bi
     </section>
   );
 }
-const primaryBtn = 'rounded-full bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-card ring-1 ring-accent/50 transition hover:-translate-y-0.5 hover:brightness-110';
+const primaryBtn = 'rounded-full bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-card ring-1 ring-accent/50 transition hover:brightness-110';
 const ghostBtn = 'rounded-full border border-primary/30 bg-primary/5 px-6 py-3 text-sm font-semibold text-secondary transition hover:border-primary hover:bg-primary/10';
 
 export function WomenNotFound({ lang }: { lang: 'ar' | 'en' }) {
   const x = text(lang);
   return (
-    <Shell icon="🔍" big="404" title={x.nf} body={x.nfBody}>
+    <Shell icon={<ProIcon name="search" size={30} />} big="404" title={x.nf} body={x.nfBody}>
       <Link href={`/${lang}/committees/women/`} className={primaryBtn}>{x.home}</Link>
       <Link href={`/${lang}/committees/women/section/?slug=news`} className={ghostBtn}>{x.news}</Link>
       <Link href={`/${lang}/`} className={ghostBtn}>{x.chamber}</Link>
@@ -77,7 +78,7 @@ export function WomenNotFound({ lang }: { lang: 'ar' | 'en' }) {
 export function WomenError({ lang, onRetry }: { lang: 'ar' | 'en'; onRetry?: () => void }) {
   const x = text(lang);
   return (
-    <Shell icon="⚠️" big="500" title={x.err} body={x.errBody}>
+    <Shell icon={<ProIcon name="alert" size={30} />} big="500" title={x.err} body={x.errBody}>
       {onRetry && <button type="button" onClick={onRetry} className={primaryBtn}>{x.retry}</button>}
       <Link href={`/${lang}/committees/women/`} className={ghostBtn}>{x.home}</Link>
       <Link href={`/${lang}/`} className={ghostBtn}>{x.chamber}</Link>
@@ -89,7 +90,7 @@ export function WomenError({ lang, onRetry }: { lang: 'ar' | 'en'; onRetry?: () 
 export function WomenSoon({ lang }: { lang: 'ar' | 'en' }) {
   const x = text(lang);
   return (
-    <Shell icon="🌸" big="" title={x.soon} body={x.soonBody}>
+    <Shell icon={<ProIcon name="flower" size={30} />} big="" title={x.soon} body={x.soonBody}>
       <Link href={`/${lang}/`} className={primaryBtn}>{x.chamber}</Link>
     </Shell>
   );

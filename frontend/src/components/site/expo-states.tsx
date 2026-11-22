@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ProIcon } from '@/components/site/pro-icon';
 
 /** Loading / 404 / error screens of the DCC EXPO site. Plain components (no providers) so loading.tsx, error.tsx, not-found.tsx and the global 404 can all use them. */
 const T = {
@@ -57,13 +58,13 @@ function Shell({ icon, big, title, body, children }: { icon: React.ReactNode; bi
     </section>
   );
 }
-const primaryBtn = 'rounded-full bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-card ring-1 ring-accent/50 transition hover:-translate-y-0.5 hover:brightness-110';
+const primaryBtn = 'rounded-full bg-secondary px-6 py-3 text-sm font-semibold text-white shadow-card ring-1 ring-accent/50 transition hover:brightness-110';
 const ghostBtn = 'rounded-full border border-primary/30 bg-primary/5 px-6 py-3 text-sm font-semibold text-secondary transition hover:border-primary hover:bg-primary/10';
 
 export function ExpoNotFound({ lang }: { lang: 'ar' | 'en' }) {
   const x = T[lang];
   return (
-    <Shell icon="🔍" big="404" title={x.nf} body={x.nfBody}>
+    <Shell icon={<ProIcon name="search" size={30} />} big="404" title={x.nf} body={x.nfBody}>
       <Link href={`/${lang}/expo/`} className={primaryBtn}>{x.home}</Link>
       <Link href={`/${lang}/expo/programme/`} className={ghostBtn}>{x.programme}</Link>
       <Link href={`/${lang}/`} className={ghostBtn}>{x.chamber}</Link>
@@ -74,7 +75,7 @@ export function ExpoNotFound({ lang }: { lang: 'ar' | 'en' }) {
 export function ExpoError({ lang, onRetry }: { lang: 'ar' | 'en'; onRetry?: () => void }) {
   const x = T[lang];
   return (
-    <Shell icon="⚠️" big="500" title={x.err} body={x.errBody}>
+    <Shell icon={<ProIcon name="alert" size={30} />} big="500" title={x.err} body={x.errBody}>
       {onRetry && <button type="button" onClick={onRetry} className={primaryBtn}>{x.retry}</button>}
       <Link href={`/${lang}/expo/`} className={ghostBtn}>{x.home}</Link>
       <Link href={`/${lang}/`} className={ghostBtn}>{x.chamber}</Link>

@@ -1,4 +1,5 @@
 'use client';
+import { NumberedList } from '@/components/site/pro-icon';
 import { useCrumbTitle } from '@/components/site/breadcrumbs';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -301,7 +302,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
           {women && (vision || mission || goals.length > 0) && <div className="grid gap-4 md:grid-cols-3">
             {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
             {mission && <Box><Heading>{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{mission}</p></Box>}
-            {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-6 text-ink/80">{goals.map((goal, index) => <li key={`${goal}-${index}`}>{goal}</li>)}</ul></Box>}
+            {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><NumberedList items={goals} /></Box>}
           </div>}
           <div className="grid gap-5 md:grid-cols-2">
             <Box><Heading>{t('cm.latestNews')}</Heading><NewsList items={c.news} limit={3} /></Box>
@@ -315,7 +316,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
         {(vision || mission || goals.length > 0) && <div className="grid gap-4 md:grid-cols-3">
           {vision && <Box><Heading>{t('women.vision')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{vision}</p></Box>}
           {mission && <Box><Heading>{t('women.mission')}</Heading><p className="whitespace-pre-line text-sm leading-7 text-ink/80">{mission}</p></Box>}
-          {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><ul className="list-disc space-y-2 pe-5 text-sm leading-6 text-ink/80">{goals.map((goal, index) => <li key={`${goal}-${index}`}>{goal}</li>)}</ul></Box>}
+          {goals.length > 0 && <Box><Heading>{t('women.goals')}</Heading><NumberedList items={goals} /></Box>}
         </div>}
       </div>}
       {women && womenPage === 'organization' && <div id="organization" className="scroll-mt-24 space-y-5">

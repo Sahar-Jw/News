@@ -9,6 +9,7 @@ import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { DocResults, type Result } from '@/components/site/documents-browser';
 import { useDocsManage } from '@/components/site/docs-manage';
+import { IconTile } from '@/components/site/pro-icon';
 
 /**
  * Decisions & circulars: one section of its own with three parts.
@@ -21,9 +22,9 @@ type Part = 'circular' | 'decision' | 'law';
 interface Chip { key: string; label: string; kind: string; subtype?: string }
 
 const PARTS: { key: Part; icon: string; title: string; text: string; kinds: string[] }[] = [
-  { key: 'circular', icon: '📣', title: 'doc.part.circular', text: 'doc.part.circularText', kinds: ['circular'] },
-  { key: 'decision', icon: '⚖️', title: 'doc.part.decision', text: 'doc.part.decisionText', kinds: ['decision'] },
-  { key: 'law', icon: '📚', title: 'doc.part.law', text: 'doc.part.lawText', kinds: ['law', 'guide'] },
+  { key: 'circular', icon: 'megaphone', title: 'doc.part.circular', text: 'doc.part.circularText', kinds: ['circular'] },
+  { key: 'decision', icon: 'scale', title: 'doc.part.decision', text: 'doc.part.decisionText', kinds: ['decision'] },
+  { key: 'law', icon: 'book', title: 'doc.part.law', text: 'doc.part.lawText', kinds: ['law', 'guide'] },
 ];
 const CHIPS: Record<Part, Chip[]> = {
   circular: [],
@@ -80,7 +81,7 @@ function Home() {
           return (
             <section key={p.key} className="flex flex-col rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-2xl" aria-hidden="true">{p.icon}</span>
+                <IconTile name={p.icon} className="h-12 w-12" />
                 <div><h2 className="text-lg font-extrabold text-secondary">{t(p.title)}</h2>{r && <span className="text-xs text-gray-500">{r.meta.total} {t('doc.items')}</span>}</div>
               </div>
               <p className="mt-3 text-sm leading-7 text-gray-600">{t(p.text)}</p>

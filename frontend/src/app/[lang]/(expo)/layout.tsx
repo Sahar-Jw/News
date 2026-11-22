@@ -16,6 +16,7 @@ import { SocialIcon } from '@/components/site/icons';
 import { expoPageHref, readExpoMenu } from '@/lib/expo-menu';
 import type { WomenMenuEntry, WomenMenuPage } from '@/lib/women-menu';
 import { fmtDay } from '@/lib/utils';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const SOCIAL = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'] as const;
@@ -61,8 +62,8 @@ function Chrome({ children }: { children: React.ReactNode }) {
     can('expo.create') && { to: '', add: 'sponsor', label: ar ? '＋ إضافة راعٍ / شريك' : '＋ Add sponsor' },
     can('expo.create') && { to: '', add: 'session', label: ar ? '＋ إضافة جلسة' : '＋ Add session' },
     can('news.create') && { to: '/expo/news', label: ar ? '＋ إضافة خبر' : '＋ Add news' },
-    can('expo.applications.read') && { to: tab('applications'), label: ar ? '📥 طلبات المشاركة' : '📥 Participation requests' },
-    can('settings.read') && { to: tab('identity'), label: ar ? '🎨 الهوية والمظهر' : '🎨 Identity & theme' },
+    can('expo.applications.read') && { to: tab('applications'), label: ar ? 'طلبات المشاركة' : 'Participation requests' },
+    can('settings.read') && { to: tab('identity'), label: ar ? 'الهوية والمظهر' : 'Identity & theme' },
   ].filter(Boolean) as { to: string; label: string; add?: 'exhibitor' | 'sponsor' | 'session' }[];
   const logoutUser = async () => { await logout(); router.push(href('/')); };
   const avatar = me ? (me.avatarUrl ? <img src={fileUrl(me.avatarUrl)} alt="" className="h-full w-full object-cover" /> : me.fullName.slice(0, 1)) : null;
@@ -135,8 +136,8 @@ function Chrome({ children }: { children: React.ReactNode }) {
           <div>
             <FooterBrand logo={x.logo} name={x.name} summary={x.footerText || x.tagline} />
             <div className="mt-4 space-y-1.5 text-white/85">
-              {x.start && <div>📅 {fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</div>}
-              {x.venue && <div>📍 {x.venue}</div>}
+              {x.start && <div><InlineIcon name="calendar" />{fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</div>}
+              {x.venue && <div><InlineIcon name="pin" />{x.venue}</div>}
             </div>
           </div>
           <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
@@ -148,9 +149,9 @@ function Chrome({ children }: { children: React.ReactNode }) {
               </div>)}
           </div>
           <div className="space-y-2">
-            {x.phone && <div>☎ <a href={`tel:${x.phone.replace(/[^\d+]/g, '')}`} dir="ltr" className="hover:text-accent">{x.phone}</a></div>}
-            {x.email && <div>✉ <a href={`mailto:${x.email}`} dir="ltr" className="hover:text-accent">{x.email}</a></div>}
-            {x.website && <div>🌐 <a href={x.website} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{ar ? 'الموقع الإلكتروني' : 'Website'}</a></div>}
+            {x.phone && <div><InlineIcon name="phone" /><a href={`tel:${x.phone.replace(/[^\d+]/g, '')}`} dir="ltr" className="hover:text-accent">{x.phone}</a></div>}
+            {x.email && <div><InlineIcon name="mail" /><a href={`mailto:${x.email}`} dir="ltr" className="hover:text-accent">{x.email}</a></div>}
+            {x.website && <div><InlineIcon name="globe" /><a href={x.website} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{ar ? 'الموقع الإلكتروني' : 'Website'}</a></div>}
             {socials.length > 0 && <div className="flex flex-wrap gap-2 pt-1">{socials.map((k) => <a key={k} href={String(s('expo', `social_${k}`))} target="_blank" rel="noopener noreferrer" aria-label={k.replace('_url', '')} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/25 hover:border-accent hover:text-accent"><SocialIcon name={k} size={15} /></a>)}</div>}
             <Link href={href('/')} className="block pt-1 text-accent hover:underline">← {t('ex.backToChamber')}</Link>
           </div>

@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay, fmtNum } from '@/lib/utils';
 import { Card, NewsCard } from '@/components/site/cards';
 import { FloorPlanMap, Heading, SESSION_TYPES, SponsorTiers, sessionTypeLabel, useExpoData, useExpoInfo } from '@/components/site/expo-shared';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 /** DCC EXPO home (wireframe page 14): hero, stat tiles, about / why, programme, exhibitors, sponsors, news. */
 export default function ExpoHome() {
@@ -37,8 +38,8 @@ export default function ExpoHome() {
           <div className="text-sm font-bold tracking-[.3em] text-accent">{x.name}</div>
           <h1 className="mt-3 text-3xl font-extrabold leading-tight md:text-5xl">{x.tagline}</h1>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm text-white/90">
-            {x.start && <span>📅 {fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</span>}
-            {x.venue && <span>📍 {x.venue}</span>}
+            {x.start && <span><InlineIcon name="calendar" />{fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</span>}
+            {x.venue && <span><InlineIcon name="pin" />{x.venue}</span>}
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             {x.registerOpen && <Link href={href('/expo/register?kind=exhibitor')} className="rounded-full bg-accent px-6 py-3 font-extrabold text-secondary shadow-lg transition hover:brightness-110">{t('ex.registerExhibitor')}</Link>}
@@ -88,7 +89,7 @@ export default function ExpoHome() {
                 <span className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white">{s.startsAt ? fmtDate(lang, s.startsAt, true) : '—'}</span>
                 <span className="font-bold text-secondary">{s.name}</span>
                 <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-bold text-secondary">{sessionTypeLabel(s.type, lang === 'ar') ?? t(`ex.type.${(SESSION_TYPES as readonly string[]).includes(s.type) ? s.type : 'other'}`)}</span>
-                {s.hall && <span className="text-xs text-gray-500">📍 {s.hall}</span>}
+                {s.hall && <span className="text-xs text-gray-500"><InlineIcon name="pin" />{s.hall}</span>}
               </li>
             ))}
           </ul>

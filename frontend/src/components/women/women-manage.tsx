@@ -12,6 +12,7 @@ import { createContext, useContext } from 'react';
 import { womenPageHref } from '@/lib/women-menu';
 import { parseYoutubeId } from '@/lib/youtube';
 import { newsCategoryLabel } from '@/lib/news-categories';
+import { ProIcon } from '@/components/site/pro-icon';
 
 /** the committee being edited and what to do after a change (set by the committee page) */
 const AdminCtx = createContext<{ id: number; reload: () => void }>({ id: 0, reload: () => {} });
@@ -56,7 +57,7 @@ function ImagePick({ current, file, setFile, remove, setRemove, label }: { curre
   return (
     <Field label={label}>
       <div className="flex items-center gap-3">
-        {shown ? <img src={shown} alt="" className="h-16 w-24 rounded-lg object-cover ring-1 ring-line" /> : <span className="grid h-16 w-24 place-items-center rounded-lg bg-primary/10 text-primary">🖼</span>}
+        {shown ? <img src={shown} alt="" className="h-16 w-24 rounded-lg object-cover ring-1 ring-line" /> : <span className="grid h-16 w-24 place-items-center rounded-lg bg-primary/10 text-primary"><ProIcon name="image" size={24} /></span>}
         <div className="space-y-1 text-xs">
           <input type="file" accept="image/*" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRemove(false); }} />
           {(current || file) && !remove && <button type="button" onClick={() => { setFile(null); setRemove(true); }} className="block text-red-600 hover:underline">{tr('إزالة الصورة', 'Remove picture')}</button>}
@@ -258,13 +259,13 @@ export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number
 
 // ---------------------------------------------------------------- the committee's own texts (about / structure)
 // `where`: "committee" = a field of the committee record, "setting" = a setting of the women site (Settings -> women)
-type TextField = { key: string; where: 'committee' | 'setting'; ar: string; en: string; kind: 'text' | 'area' | 'rich' };
+type TextField = { key: string; where: 'committee' | 'setting'; ar: string; en: string; kind: 'text' | 'area' | 'rich' | 'goals' };
 const FIELDS: Record<'about' | 'structure', TextField[]> = {
   about: [
     { key: 'summary', where: 'committee', ar: 'تعريف باللجنة', en: 'About the committee', kind: 'area' },
     { key: 'vision', where: 'setting', ar: 'الرؤية', en: 'Vision', kind: 'area' },
     { key: 'mission', where: 'setting', ar: 'الرسالة', en: 'Mission', kind: 'area' },
-    { key: 'goals', where: 'setting', ar: 'الأهداف (كل هدف في سطر)', en: 'Goals (one per line)', kind: 'area' },
+    { key: 'goals', where: 'setting', ar: 'الأهداف', en: 'Goals', kind: 'goals' },
   ],
   structure: [
     { key: 'chairName', where: 'committee', ar: 'اسم رئيسة اللجنة', en: 'Chair name', kind: 'text' },
@@ -272,6 +273,41 @@ const FIELDS: Record<'about' | 'structure', TextField[]> = {
     { key: 'duties', where: 'committee', ar: 'الاختصاصات والمهام', en: 'Terms of reference and tasks', kind: 'rich' },
   ],
 };
+
+/**
+ * The committee goals: one input per goal and a "+" button for the next one, so a long goal can be typed in full
+ * (even with line breaks) and is never split into two goals. Stored as one goal per line, line breaks inside a goal become spaces.
+ */
+const goalRows = (v: string) => { const r = v.split(/\r?\n/).map((x) => x.trim()).filter(Boolean); return r.length ? r : ['']; };
+function GoalsField({ value, onChange, dir }: { value: string; onChange: (v: string) => void; dir: 'rtl' | 'ltr' }) {
+  const tr = useTr();
+  const [rows, setRows] = useState<string[]>(() => goalRows(value));
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const focusNext = useRef<number | null>(null);
+  const commit = (next: string[]) => { setRows(next); onChange(next.map((x) => x.replace(/\s*[\r\n]+\s*/g, ' ').trim()).filter(Boolean).join('\n')); };
+  useEffect(() => { if (focusNext.current !== null) { refs.current[focusNext.current]?.focus(); focusNext.current = null; } });
+  const add = (at: number) => { const next = [...rows]; next.splice(at, 0, ''); focusNext.current = at; commit(next); };
+  return (
+    <div className="space-y-2">
+      {rows.map((g, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold text-white">{i + 1}</span>
+          <input
+            ref={(el) => { refs.current[i] = el; }}
+            dir={dir}
+            className={inputCls}
+            value={g}
+            placeholder={tr('اكتبي الهدف كاملاً هنا', 'Type the full goal here')}
+            onChange={(e) => commit(rows.map((x, j) => (j === i ? e.target.value : x)))}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(i + 1); } }}
+          />
+          <button type="button" aria-label={tr('حذف الهدف', 'Remove goal')} disabled={rows.length === 1 && !g} onClick={() => commit(rows.length === 1 ? [''] : rows.filter((_, j) => j !== i))} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-gray-500 transition hover:border-red-400 hover:text-red-600 disabled:opacity-40">✕</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => add(rows.length)} className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-white px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-primary/10">＋ {tr('إضافة هدف', 'Add a goal')}</button>
+    </div>
+  );
+}
 
 export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; onClose: () => void }) {
   const tr = useTr();
@@ -324,8 +360,10 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
         <div className="space-y-4">
           <Tabs lang={lang} setLang={setLang} />
           {fields.map((fl) => (
-            <Field key={fl.key} plain={fl.kind === 'rich'} label={lang === 'ar' ? fl.ar : fl.en}>
-              {fl.kind === 'rich'
+            <Field key={fl.key} plain={fl.kind === 'rich' || fl.kind === 'goals'} label={lang === 'ar' ? fl.ar : fl.en}>
+              {fl.kind === 'goals'
+                ? <GoalsField key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
+                : fl.kind === 'rich'
                 ? <RichEditor key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
                 : fl.kind === 'text'
                   ? <input dir={dir} className={inputCls} value={v[`${fl.key}${sfx}`]} onChange={(e) => setV({ ...v, [`${fl.key}${sfx}`]: e.target.value })} />
@@ -540,7 +578,7 @@ export function WomenManageBar({ quickAdd = false, children }: { quickAdd?: bool
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-card ring-1 ring-accent/40">
       <span className="flex items-center gap-2 text-sm font-bold text-secondary">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10" aria-hidden="true">⚙</span>
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-primary" aria-hidden="true"><ProIcon name="settings" size={16} /></span>
         {tr('أدوات إدارة الصفحة', 'Page controls')}
       </span>
       <div className="flex flex-wrap items-center gap-2">
@@ -587,8 +625,8 @@ export function ItemTools({ kind, id, archived, onEdit, canArchive = true }: { k
     <>
       <span className="inline-flex flex-wrap items-center gap-1.5" data-manage>
         <button type="button" className={b} onClick={onEdit}>✎ {tr('تعديل', 'Edit')}</button>
-        {canArchive && kind === 'activity' && <button type="button" className={b} disabled={busy} onClick={toggleArchive}>{archived ? `↩ ${tr('إخراج من الأرشيف', 'Unarchive')}` : `🗄 ${tr('أرشفة', 'Archive')}`}</button>}
-        <button type="button" className={`${b} text-red-600 hover:border-red-400 hover:text-red-600`} onClick={() => setAsk(true)}>🗑 {tr('حذف', 'Delete')}</button>
+        {canArchive && kind === 'activity' && <button type="button" className={b} disabled={busy} onClick={toggleArchive}>{archived ? `↩ ${tr('إخراج من الأرشيف', 'Unarchive')}` : `${tr('أرشفة', 'Archive')}`}</button>}
+        <button type="button" className={`${b} text-red-600 hover:border-red-400 hover:text-red-600`} onClick={() => setAsk(true)}>{tr('حذف', 'Delete')}</button>
       </span>
       <Modal open={ask} onClose={() => setAsk(false)} title={tr('تأكيد الحذف', 'Confirm deletion')} brand>
         <p className="text-sm">{tr('سيُحذف هذا العنصر نهائياً. هل تريد المتابعة؟', 'This item will be deleted for good. Continue?')}</p>

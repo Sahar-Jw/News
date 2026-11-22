@@ -157,7 +157,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
                 <div className="my-1 border-t border-line px-3 pt-2 text-xs font-bold text-gray-500">{ar ? 'إضافة محتوى جديد' : 'Add new content'}</div>
                 {addItems.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{x.label}</Link>)}
                 {can('news.create') && <Link href={href(`${womenPageHref('news')}&add=news`)} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? '＋ خبر' : '＋ News item'}</Link>}
-                <Link href={href(womenPageHref('archive'))} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? '🗄 أرشيف المبادرات والأنشطة' : '🗄 Archive'}</Link>
+                <Link href={href(womenPageHref('archive'))} className="block rounded-xl px-3 py-2 text-sm transition hover:bg-primary/10 hover:text-primary">{ar ? 'أرشيف المبادرات والأنشطة' : 'Archive'}</Link>
               </>}
               <button type="button" onClick={logoutUser} className="w-full rounded-xl px-3 py-2 text-start text-sm text-red-600 transition hover:bg-red-50">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
             </WomenDropdown>}
@@ -187,7 +187,7 @@ function WomenChrome({ children }: { children: React.ReactNode }) {
             {canEdit && <>
               {addItems.map((x) => <Link key={x.add} href={href(`${womenPageHref(x.slug)}&add=${x.add}`)} className="block rounded-lg px-3 py-2 text-sm">{x.label}</Link>)}
               {can('news.create') && <Link href={href(`${womenPageHref('news')}&add=news`)} className="block rounded-lg px-3 py-2 text-sm">{ar ? '＋ خبر' : '＋ News item'}</Link>}
-              <Link href={href(womenPageHref('archive'))} className="block rounded-lg px-3 py-2 text-sm">{ar ? '🗄 الأرشيف' : '🗄 Archive'}</Link>
+              <Link href={href(womenPageHref('archive'))} className="block rounded-lg px-3 py-2 text-sm">{ar ? 'الأرشيف' : 'Archive'}</Link>
             </>}
             <button type="button" onClick={logoutUser} className="w-full rounded-lg px-3 py-2 text-start text-sm text-red-200">{lang === 'ar' ? 'تسجيل الخروج' : 'Log out'}</button>
           </div>}

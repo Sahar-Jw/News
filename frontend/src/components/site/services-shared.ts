@@ -5,4 +5,5 @@ export interface PublicService {
 }
 export const SERVICE_KINDS = ['membership', 'renewal', 'consulting', 'commercial', 'certificate', 'attestation', 'eservices', 'origin', 'other'] as const;
 /** the icon of each kind, on the Services page and in the One-Stop window */
-export const KIND_ICON: Record<string, string> = { membership: '🪪', renewal: '🔄', consulting: '💡', commercial: '🏪', certificate: '📄', attestation: '✅', eservices: '💻', origin: '🌍', other: '📌' };
+/** icon names of components/site/pro-icon.tsx */
+export const KIND_ICON: Record<string, string> = { membership: 'card', renewal: 'refresh', consulting: 'bulb', commercial: 'store', certificate: 'file', attestation: 'check', eservices: 'monitor', origin: 'globe', other: 'pin2' };

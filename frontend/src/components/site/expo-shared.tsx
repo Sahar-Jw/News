@@ -149,7 +149,7 @@ export function FloorPlanMap({ image, exhibitors }: { image: string; exhibitors:
         {pins.map((e) => (
           <button key={e.id} type="button" onClick={() => setPicked(e.id === picked ? null : e.id)} aria-label={e.name} aria-pressed={e.id === picked}
             style={{ left: `${e.mapX}%`, top: `${e.mapY}%` }}
-            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white px-2 py-0.5 text-[11px] font-extrabold shadow-lg transition hover:scale-110 ${e.id === picked ? 'z-10 scale-110 bg-accent text-secondary' : 'bg-primary text-white'}`}>
+            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white px-2 py-0.5 text-[11px] font-extrabold shadow-lg ${e.id === picked ? 'z-10 scale-110 bg-accent text-secondary' : 'bg-primary text-white'}`}>
             {e.booth || e.name.slice(0, 2)}
           </button>
         ))}

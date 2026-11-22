@@ -9,6 +9,7 @@ import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { FitImage } from '@/components/site/cards';
 import { Pager } from '@/components/site/pager';
+import { ProIcon } from '@/components/site/pro-icon';
 
 export interface Doc { id: number; kind: string; subtype?: string | null; docNumber: string; docDate: string | null; issuer: string; title: string; summary: string; fileUrl: string | null; cover?: string | null }
 export interface Result { data: Doc[]; meta: { page: number; totalPages: number; total: number } }
@@ -34,11 +35,11 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
           {/* cards: cover picture (or a document tile), kind, title, summary, number / date / issuer */}
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {res.data.map((d) => (
-              <li key={d.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
+              <li key={d.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:shadow-lg">
                 {/* same frame as the news card: the picture is shown whole (never cropped), contained over a blurred copy of itself */}
                 <Link href={href(`/documents/${d.id}`)} className="relative block aspect-[16/10] overflow-hidden bg-primary/5" aria-label={d.title}>
-                  {d.cover ? <div className="absolute inset-0 transition duration-500 group-hover:scale-105"><FitImage src={d.cover} alt="" /></div>
-                    : <span className="grid h-full w-full place-items-center text-5xl text-primary/40" aria-hidden="true">{d.fileUrl ? '📄' : '🖼'}</span>}
+                  {d.cover ? <div className="absolute inset-0"><FitImage src={d.cover} alt="" /></div>
+                    : <span className="grid h-full w-full place-items-center text-5xl text-primary/40" aria-hidden="true"><ProIcon name={d.fileUrl ? 'file' : 'image'} size={44} /></span>}
                   <span className="absolute start-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5">
                     <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-primary shadow">{t(`doc.kind.${d.kind}`)}</span>
                     {/* the category (government / economic / members decisions, laws, instructions…) */}

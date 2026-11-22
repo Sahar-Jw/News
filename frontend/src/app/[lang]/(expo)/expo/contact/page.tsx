@@ -3,6 +3,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
 import { SocialIcon } from '@/components/site/icons';
 import { ApplyForm, Block, Heading, useExpoInfo } from '@/components/site/expo-shared';
+import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 const SOCIAL = ['facebook_url', 'x_url', 'instagram_url', 'linkedin_url', 'youtube_url', 'whatsapp_url', 'telegram_url'] as const;
 
@@ -18,12 +19,12 @@ export default function ExpoContact() {
     <div className="mx-auto max-w-4xl px-4 py-10">
       <Heading>{t('ex.contact')}</Heading>
       <div className="mb-6 grid gap-3 text-sm sm:grid-cols-2">
-        {x.start && <div className={card}>📅 {fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</div>}
-        {x.venue && <div className={card}>📍 {x.venue}</div>}
-        {x.address && <div className={card}>🏢 {x.address}{x.mapUrl && <> · <a href={x.mapUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-primary hover:underline">{ar ? 'الموقع على الخريطة' : 'Map'} ↗</a></>}</div>}
-        {x.phone && <a href={`tel:${x.phone.replace(/[^+\d]/g, '')}`} className={card}>☎ <bdi dir="ltr">{x.phone}</bdi></a>}
-        {x.email && <a href={`mailto:${x.email}`} className={card}>✉ <bdi dir="ltr">{x.email}</bdi></a>}
-        {x.website && <a href={x.website} target="_blank" rel="noopener noreferrer" className={card}>🌐 {ar ? 'الموقع الإلكتروني' : 'Website'} ↗</a>}
+        {x.start && <div className={card}><InlineIcon name="calendar" />{fmtDay(lang, x.start)}{x.end && x.end !== x.start ? ` — ${fmtDay(lang, x.end)}` : ''}</div>}
+        {x.venue && <div className={card}><InlineIcon name="pin" />{x.venue}</div>}
+        {x.address && <div className={card}><InlineIcon name="building" />{x.address}{x.mapUrl && <> · <a href={x.mapUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-primary hover:underline">{ar ? 'الموقع على الخريطة' : 'Map'} ↗</a></>}</div>}
+        {x.phone && <a href={`tel:${x.phone.replace(/[^+\d]/g, '')}`} className={card}><InlineIcon name="phone" /><bdi dir="ltr">{x.phone}</bdi></a>}
+        {x.email && <a href={`mailto:${x.email}`} className={card}><InlineIcon name="mail" /><bdi dir="ltr">{x.email}</bdi></a>}
+        {x.website && <a href={x.website} target="_blank" rel="noopener noreferrer" className={card}><InlineIcon name="globe" />{ar ? 'الموقع الإلكتروني' : 'Website'} ↗</a>}
       </div>
       {socials.length > 0 && <div className="mb-6 flex flex-wrap items-center justify-center gap-2">{socials.map((k) => <a key={k} href={x.social(k)} target="_blank" rel="noopener noreferrer" aria-label={k.replace('_url', '')} className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition hover:brightness-110"><SocialIcon name={k} size={18} /></a>)}</div>}
       {team.length > 0 && (
