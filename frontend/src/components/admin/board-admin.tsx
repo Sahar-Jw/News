@@ -75,8 +75,8 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
               <select className={inputCls} value={draft.position} onChange={(e) => setDraft({ ...draft, position: e.target.value })}>{POSITIONS.map((p) => <option key={p} value={p}>{t(`board.pos.${p}`)}</option>)}</select>
             </Field>
             <Field label={t('board.term')} hint={t('board.termHint')}><input maxLength={100} dir="ltr" className={inputCls} value={draft.termLabel} onChange={(e) => setDraft({ ...draft, termLabel: e.target.value })} /></Field>
-            <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
-            <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
+            <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
+            <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
             <Field label={t('board.jobTitleAr')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.jobTitleAr} onChange={(e) => setDraft({ ...draft, jobTitleAr: e.target.value })} /></Field>
             <Field label={t('board.jobTitleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.jobTitleEn} onChange={(e) => setDraft({ ...draft, jobTitleEn: e.target.value })} /></Field>
             <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
@@ -118,8 +118,8 @@ export function BoardAdmin() {
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const cols: Col<Row>[] = [
-    { key: 'nameAr', label: t('pg.titleAr'), render: (r) => <span className="flex items-center gap-2">{r.photoUrl && <img src={fileUrl(r.photoUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />}{r.nameAr}</span>, text: (r) => r.nameAr },
-    { key: 'nameEn', label: t('pg.titleEn') },
+    { key: 'nameAr', label: t('board.nameAr'), render: (r) => <span className="flex items-center gap-2">{r.photoUrl && <img src={fileUrl(r.photoUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />}{r.nameAr}</span>, text: (r) => r.nameAr },
+    { key: 'nameEn', label: t('board.nameEn') },
     { key: 'position', searchable: false, label: t('board.position'), render: (r) => t(`board.pos.${r.position}`), text: (r) => t(`board.pos.${r.position}`) },
     { key: 'jobTitleAr', label: t('board.jobTitle') },
     { key: 'termLabel', label: t('board.term') },

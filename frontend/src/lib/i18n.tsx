@@ -1,6 +1,7 @@
 'use client';
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
 import { DICT } from './dict';
+import { fillLimits, limitsVersion, subscribeLimits } from './upload-limits';
 import type { Lang } from './utils';
 
 interface I18n {
@@ -16,11 +17,13 @@ interface I18n {
 const Ctx = createContext<I18n>(null as unknown as I18n);
 
 export function I18nProvider({ lang, children }: { lang: Lang; children: React.ReactNode }) {
+  // a new upload limit in Settings gives every text that mentions a limit its new value (new `t` => the readers re-render)
+  const limits = useSyncExternalStore(subscribeLimits, limitsVersion, () => 0);
   const value = useMemo<I18n>(
     () => ({
       lang,
       dir: lang === 'ar' ? 'rtl' : 'ltr',
-      t: (k) => DICT[lang][k] ?? k,
+      t: (k) => fillLimits(DICT[lang][k] ?? k),
       href: (p) => {
         const [path, q] = p.split('?');
         const base = `/${lang}${path === '/' ? '' : path}`;
@@ -33,7 +36,7 @@ export function I18nProvider({ lang, children }: { lang: Lang; children: React.R
         return `/${other}${rest || '/'}`;
       },
     }),
-    [lang],
+    [lang, limits],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

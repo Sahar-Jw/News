@@ -15,7 +15,7 @@ export const EMPTY_DRAFT: Draft = { kind: 'circular', subtype: '', docNumber: ''
 
 
 /** Add / edit one document (decision, circular, library file ...). Used by the Settings table and by the public pages' manage bars.
- *  A record needs a PDF (up to 25 MB), pictures, or both: at least one of them. On edit the PDF is replaced only when a new one is chosen. `lockKind` hides the kind choice. */
+ *  A record needs a PDF (up to the PDF limit set in Settings), pictures, or both: at least one of them. On edit the PDF is replaced only when a new one is chosen. `lockKind` hides the kind choice. */
 export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: Draft; lockKind?: boolean; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n();
   const toast = useToast();

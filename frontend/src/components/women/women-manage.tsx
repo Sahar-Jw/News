@@ -375,7 +375,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
     const ok = picked.filter((x) => /^image\/(jpeg|png|webp|gif)$/.test(x.type) && x.size <= UL.imageBytes);
     const next = ok.map((file) => { const url = URL.createObjectURL(file); urls.current.push(url); return { file, url }; });
     setImages((x) => [...x, ...next]);
-    setErrors((e) => ({ ...e, images: ok.length !== picked.length ? tr('بعض الصور مرفوضة: الأنواع المسموحة JPG/PNG/WEBP/GIF وحتى 5 ميغابايت للصورة', 'Some pictures were rejected: JPG/PNG/WEBP/GIF up to 5 MB each') : '' }));
+    setErrors((e) => ({ ...e, images: ok.length !== picked.length ? tr(`بعض الصور مرفوضة: الأنواع المسموحة JPG/PNG/WEBP/GIF وحتى ${UL.imageMb} ميغابايت للصورة`, `Some pictures were rejected: JPG/PNG/WEBP/GIF up to ${UL.imageMb} MB each`) : '' }));
   };
   const addPdfs = (list: FileList | null) => {
     if (!list) return;
@@ -383,7 +383,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
     const ok = picked.filter((x) => (x.type === 'application/pdf' || /\.pdf$/i.test(x.name)) && x.size <= UL.pdfBytes && !pdfs.some((y) => y.name === x.name && y.size === x.size));
     const room = UL.maxPdfs - pdfs.length;
     setPdfs((x) => [...x, ...ok.slice(0, Math.max(room, 0))]);
-    setErrors((e) => ({ ...e, pdfs: ok.length !== picked.length || ok.length > room ? tr('بعض الملفات مرفوضة: PDF فقط، حتى 25 ميغابايت للملف و10 ملفات', 'Some files were rejected: PDF only, up to 25 MB each and 10 files') : '' }));
+    setErrors((e) => ({ ...e, pdfs: ok.length !== picked.length || ok.length > room ? tr(`بعض الملفات مرفوضة: PDF فقط، حتى ${UL.pdfMb} ميغابايت للملف و${UL.maxPdfs} ملفات`, `Some files were rejected: PDF only, up to ${UL.pdfMb} MB each and ${UL.maxPdfs} files`) : '' }));
   };
 
   const validate = () => {
@@ -466,7 +466,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
           <input type="url" dir="ltr" maxLength={255} placeholder="https://www.youtube.com/watch?v=..." className={inputCls} value={f.youtubeUrl} onChange={(e) => set('youtubeUrl', e.target.value)} />
         </Field>
 
-        <Field label={tr('الصور (اختياري)', 'Pictures (optional)')} hint={tr('JPG / PNG / WEBP / GIF، حتى 5 ميغابايت للصورة؛ الأولى هي صورة الخبر', 'JPG / PNG / WEBP / GIF, up to 5 MB each; the first one is the cover')} error={errors.images}>
+        <Field label={tr('الصور (اختياري)', 'Pictures (optional)')} hint={tr(`JPG / PNG / WEBP / GIF، حتى ${UL.imageMb} ميغابايت للصورة؛ الأولى هي صورة الخبر`, `JPG / PNG / WEBP / GIF, up to ${UL.imageMb} MB each; the first one is the cover`)} error={errors.images}>
           <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" className={inputCls} onChange={(e) => { addImages(e.target.files); e.target.value = ''; }} />
         </Field>
         {images.length > 0 && (
@@ -480,7 +480,7 @@ export function NewsDialog({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        <Field label={tr('ملفات PDF (اختياري)', 'PDF files (optional)')} hint={tr('حتى 10 ملفات، 25 ميغابايت للملف', 'Up to 10 files, 25 MB each')} error={errors.pdfs}>
+        <Field label={tr('ملفات PDF (اختياري)', 'PDF files (optional)')} hint={tr(`حتى ${UL.maxPdfs} ملفات، ${UL.pdfMb} ميغابايت للملف`, `Up to ${UL.maxPdfs} files, ${UL.pdfMb} MB each`)} error={errors.pdfs}>
           <input type="file" multiple accept="application/pdf,.pdf" className={inputCls} onChange={(e) => { addPdfs(e.target.files); e.target.value = ''; }} />
         </Field>
         {pdfs.length > 0 && (

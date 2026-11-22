@@ -173,8 +173,8 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
           <form onSubmit={saveDetails} className="space-y-3">
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
-              <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
-              <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
+              <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
+              <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
               <Field label={t('cm.chairAr')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.chairNameAr} onChange={(e) => setDraft({ ...draft, chairNameAr: e.target.value })} /></Field>
               <Field label={t('cm.chairEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.chairNameEn} onChange={(e) => setDraft({ ...draft, chairNameEn: e.target.value })} /></Field>
               <Field label={t('cm.tagsAr')} hint={t('cm.tagsHint')}><textarea rows={2} maxLength={3000} dir="rtl" className={inputCls} value={draft.activityTagsAr} onChange={(e) => setDraft({ ...draft, activityTagsAr: e.target.value })} /></Field>
@@ -205,8 +205,8 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
                 <div className="grid gap-3 md:grid-cols-2">
                   <Field label={t('board.position')}><select className={inputCls} value={mDraft.role} onChange={(e) => setMDraft({ ...mDraft, role: e.target.value })}>{ROLES.map((r) => <option key={r} value={r}>{t(`cm.role.${r}`)}</option>)}</select></Field>
                   <Field label={t('faq.order')}><input type="number" min={0} className={inputCls} value={mDraft.sortOrder} onChange={(e) => setMDraft({ ...mDraft, sortOrder: e.target.value })} /></Field>
-                  <Field label={t('pg.titleAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={mDraft.nameAr} onChange={(e) => setMDraft({ ...mDraft, nameAr: e.target.value })} /></Field>
-                  <Field label={t('pg.titleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={mDraft.nameEn} onChange={(e) => setMDraft({ ...mDraft, nameEn: e.target.value })} /></Field>
+                  <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={mDraft.nameAr} onChange={(e) => setMDraft({ ...mDraft, nameAr: e.target.value })} /></Field>
+                  <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={mDraft.nameEn} onChange={(e) => setMDraft({ ...mDraft, nameEn: e.target.value })} /></Field>
                   <Field label={t('board.jobTitleAr')}><input maxLength={255} dir="rtl" className={inputCls} value={mDraft.titleAr} onChange={(e) => setMDraft({ ...mDraft, titleAr: e.target.value })} /></Field>
                   <Field label={t('board.jobTitleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={mDraft.titleEn} onChange={(e) => setMDraft({ ...mDraft, titleEn: e.target.value })} /></Field>
                 </div>
@@ -315,8 +315,8 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
   const cols: Col<Row>[] = [
-    { key: 'nameAr', label: t('pg.titleAr'), render: (r) => <span className="flex items-center gap-2">{r.logoUrl && <img src={fileUrl(r.logoUrl)} alt="" className="h-8 w-8 rounded object-contain" />}{r.nameAr}</span>, text: (r) => r.nameAr },
-    { key: 'nameEn', label: t('pg.titleEn') },
+    { key: 'nameAr', label: t('board.nameAr'), render: (r) => <span className="flex items-center gap-2">{r.logoUrl && <img src={fileUrl(r.logoUrl)} alt="" className="h-8 w-8 rounded object-contain" />}{r.nameAr}</span>, text: (r) => r.nameAr },
+    { key: 'nameEn', label: t('board.nameEn') },
     { key: 'chairNameAr', label: t('cm.chair') },
     { key: 'sortOrder', searchable: false, label: t('faq.order'), render: (r) => r.sortOrder, text: (r) => String(r.sortOrder) },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
