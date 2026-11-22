@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { UL } from '@/lib/upload-limits';
 import { useEffect, useState } from 'react';
+import { ProIcon } from '@/components/site/pro-icon';
 import { api, fileUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -25,9 +26,10 @@ const toDraft = (r: Row): Draft => ({ ...r, sortOrder: String(r.sortOrder) });
  * have to leave the page). Give `row` (already loaded) or `id` (loaded here); with neither it adds a new member.
  */
 export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | null; id?: number; onClose: () => void; onSaved: () => void }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const [committees, setCommittees] = useState<{ id: number; kind: string; name: string; role: string }[]>([]);
   const [draft, setDraft] = useState<Draft | null>(row ? toDraft(row) : id ? null : { ...EMPTY });
   const [photo, setPhoto] = useState<File | null>(null);
   const [dropPhoto, setDropPhoto] = useState(false);
@@ -37,6 +39,17 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
     if (draft || !id) return;
     api<Row>(`/admin/board/${id}`).then((r) => setDraft(toDraft(r))).catch((e) => { toast(e.message, 'err'); onClose(); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the committees come by themselves from Committees & sectors: they are the ones that list this person (by name) as a member or chair
+  const nameKey = `${draft?.nameAr ?? ''}|${draft?.nameEn ?? ''}`;
+  useEffect(() => {
+    if (!draft || (draft.nameAr.trim().length < 3 && draft.nameEn.trim().length < 3)) { setCommittees([]); return; }
+    const timer = setTimeout(() => {
+      api<typeof committees>('/admin/board/committees-of', { params: { nameAr: draft.nameAr.trim(), nameEn: draft.nameEn.trim() } }).then(setCommittees).catch(() => setCommittees([]));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [nameKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const roleLabel = (r: string) => (r === 'chair' ? (lang === 'ar' ? 'رئيس' : 'Chair') : r === 'vice' ? (lang === 'ar' ? 'نائب الرئيس' : 'Vice chair') : r === 'secretary' ? (lang === 'ar' ? 'أمين السر' : 'Secretary') : '');
 
   const pick = (f: File | undefined) => {
     if (!f) return;
@@ -51,7 +64,6 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
     const fd = new FormData();
     const f = draft;
     fd.set('position', f.position); fd.set('nameAr', f.nameAr.trim()); fd.set('nameEn', f.nameEn.trim());
-    fd.set('jobTitleAr', f.jobTitleAr.trim()); fd.set('jobTitleEn', f.jobTitleEn.trim());
     fd.set('bioAr', f.bioAr); fd.set('bioEn', f.bioEn); fd.set('dutiesAr', f.dutiesAr); fd.set('dutiesEn', f.dutiesEn);
     fd.set('termLabel', f.termLabel.trim()); fd.set('sortOrder', String(Number(f.sortOrder) || 0)); fd.set('isActive', String(f.isActive));
     if (photo) fd.set('photo', photo);
@@ -77,10 +89,15 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
             <Field label={t('board.term')} hint={t('board.termHint')}><input maxLength={100} dir="ltr" className={inputCls} value={draft.termLabel} onChange={(e) => setDraft({ ...draft, termLabel: e.target.value })} /></Field>
             <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
             <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
-            <Field label={t('board.jobTitleAr')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.jobTitleAr} onChange={(e) => setDraft({ ...draft, jobTitleAr: e.target.value })} /></Field>
-            <Field label={t('board.jobTitleEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.jobTitleEn} onChange={(e) => setDraft({ ...draft, jobTitleEn: e.target.value })} /></Field>
             <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
             <label className="flex items-center gap-2 self-end pb-2 text-sm"><input type="checkbox" checked={draft.isActive} onChange={(e) => setDraft({ ...draft, isActive: e.target.checked })} />{t('faq.active')}</label>
+          </div>
+          <div className="rounded-xl border border-line bg-primary/5 p-3">
+            <div className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-secondary"><ProIcon name="users" size={16} />{lang === 'ar' ? 'اللجان' : 'Committees'}</div>
+            {committees.length ? (
+              <ul className="flex flex-wrap gap-2">{committees.map((c) => <li key={c.id} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary ring-1 ring-line">{c.name}{roleLabel(c.role) && <span className="text-gray-500"> · {roleLabel(c.role)}</span>}</li>)}</ul>
+            ) : <p className="text-xs text-gray-500">{lang === 'ar' ? 'لا توجد لجان بعد.' : 'No committees yet.'}</p>}
+            <p className="mt-2 text-xs text-gray-500">{lang === 'ar' ? 'تظهر اللجان هنا تلقائياً من «اللجان والقطاعات» عند إضافة اسمه هناك بنفس الكتابة، وتظهر في صفحة العضو.' : 'Committees come from "Committees & sectors" by themselves when his / her name is added there with the same spelling, and show on the member page.'}</p>
           </div>
           <Field label={t('board.photo')} hint={t('board.photoHint')}>
             <input type="file" accept="image/jpeg,image/png,image/webp" className={inputCls} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
@@ -121,7 +138,6 @@ export function BoardAdmin() {
     { key: 'nameAr', label: t('board.nameAr'), render: (r) => <span className="flex items-center gap-2">{r.photoUrl && <img src={fileUrl(r.photoUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />}{r.nameAr}</span>, text: (r) => r.nameAr },
     { key: 'nameEn', label: t('board.nameEn') },
     { key: 'position', searchable: false, label: t('board.position'), render: (r) => t(`board.pos.${r.position}`), text: (r) => t(`board.pos.${r.position}`) },
-    { key: 'jobTitleAr', label: t('board.jobTitle') },
     { key: 'termLabel', label: t('board.term') },
     { key: 'sortOrder', searchable: false, label: t('faq.order'), render: (r) => r.sortOrder, text: (r) => String(r.sortOrder) },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },

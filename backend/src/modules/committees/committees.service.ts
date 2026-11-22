@@ -125,6 +125,29 @@ export class CommitteesService {
     return (await this.store.list(ACTIVITY_CODES)).filter((a) => Number(a.x.parentId) === id).map((a) => ({ r: a, v: this.activityView(a) })).sort((a, b) => newestFirst(a.v, b.v));
   }
 
+  // ---------------------------------------------------------------- committees of a person (board members page)
+  /**
+   * The committees a person belongs to: his / her name (Arabic or English) is a member row of the committee or its chair name.
+   * Names are compared after removing diacritics / tatweel and unifying alef and ya forms, so spelling variants still match.
+   * `onlyActive` (public pages) leaves out committees that are switched off.
+   */
+  async committeesOfPerson(names: (string | null | undefined)[], onlyActive: boolean, lang = 'ar') {
+    const norm = (v: unknown) => String(v ?? '').normalize('NFC').replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim().toLowerCase();
+    const wanted = new Set(names.map(norm).filter((n) => n.length >= 3));
+    if (!wanted.size) return [];
+    const [committees, members] = await Promise.all([this.store.list(COMMITTEE_CODES), this.store.list(CC.COMMITTEE_MEMBER)]);
+    const out: { id: number; kind: CommitteeKind; name: string; role: string }[] = [];
+    for (const c of committees) {
+      if (onlyActive && !isActive(c)) continue;
+      const v = this.view(c);
+      const asChair = wanted.has(norm(v.chairNameAr)) || wanted.has(norm(v.chairNameEn));
+      const m = members.find((x) => Number(x.x.parentId) === c.id && (wanted.has(norm(x.title)) || wanted.has(norm(s(x.x.nameEn)))));
+      if (!asChair && !m) continue;
+      out.push({ id: c.id, kind: v.kind, name: pick(v.nameAr, v.nameEn, lang === 'en'), role: asChair ? 'chair' : String(m!.x.role ?? 'member') });
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   // ---------------------------------------------------------------- admin: committees
   async list(q: CommitteeAdminQueryDto) {
     let rows = (await this.store.list(q.kind ? committeeCode(q.kind) : COMMITTEE_CODES)).map((r) => this.view(r));

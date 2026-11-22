@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { Brackets, In, Not, Repository } from 'typeorm';
 import { CC, RESERVED_CATEGORY_CODES } from '../../common/content-categories';
+import { CommitteesService } from '../committees/committees.service';
 import { AuthUser } from '../../common/types';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
 import { removedChanges } from '../audit/audit-snapshot';
@@ -10,7 +11,7 @@ import { ContentLinksService } from '../content-links/content-links.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
 import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { News } from '../news/news.entity';
-import { applyEligibility } from '../news/news.eligibility';
+import { applyEligibility, onlyRegular } from '../news/news.eligibility';
 import { FileStorageService } from '../files/file-storage.service';
 import { BOARD_POSITIONS, BoardPosition } from './board-member.entity';
 import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from './board.dto';
@@ -27,6 +28,7 @@ export class BoardService {
     private readonly storage: FileStorageService,
     @InjectRepository(News) private readonly news: Repository<News>,
     private readonly links: ContentLinksService,
+    private readonly committees: CommitteesService,
   ) {}
 
   private view(r: Rec) {
@@ -48,6 +50,11 @@ export class BoardService {
     const r = await this.store.get(id, CC.BOARD_MEMBER);
     if (!r) throw new NotFoundException('العضو غير موجود');
     return this.present(r);
+  }
+
+  /** The committees of a person by name (the add / edit window shows them while the name is typed). */
+  committeesOf(nameAr?: string, nameEn?: string) {
+    return this.committees.committeesOfPerson([nameAr, nameEn], false);
   }
 
   async list(q: BoardAdminQueryDto) {
@@ -176,14 +183,21 @@ export class BoardService {
     const r = await this.store.get(id, CC.BOARD_MEMBER);
     if (!r || !isActive(r)) throw new NotFoundException('العضو غير موجود');
     const en = lang === 'en';
-    const newsIds = await this.links.newsIdsOf('board_member', id);
-    let news: unknown[] = [];
-    if (newsIds.length) {
-      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...newsIds)', { newsIds });
-      applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
-      qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(12);
-      news = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
-    }
-    return { ...this.card(r, en), bio: pick(r.body, r.x.bioEn, en), duties: pick(r.x.dutiesAr, r.x.dutiesEn, en), news };
+    const v = this.view(r);
+    const linkedIds = await this.links.newsIdsOf('board_member', id);
+    // the member's news: news that mentions his / her name (title, subject or text) and news linked by hand. The Board of Directors news as a whole shows on the board page only.
+    const names = [...new Set([v.nameAr, v.nameEn].map((n) => n.trim()).filter((n) => n.length >= 4))];
+    const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']);
+    qb.where(new Brackets((b) => {
+      b.where('1 = 0'); // nothing by default: only the conditions below can match
+      if (linkedIds.length) b.orWhere('n.id IN (:...linkedIds)', { linkedIds });
+      names.forEach((name, i) => b.orWhere(`(n.title ILIKE :nm${i} OR n.subject ILIKE :nm${i} OR n.body ILIKE :nm${i})`, { [`nm${i}`]: `%${escapeLike(name)}%` }));
+    }));
+    onlyRegular(qb, 'n');
+    applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
+    qb.orderBy('n.publishAt', 'DESC', 'NULLS LAST').addOrderBy('n.id', 'DESC').take(30);
+    const news = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
+    const committees = await this.committees.committeesOfPerson([v.nameAr, v.nameEn], true, lang);
+    return { ...this.card(r, en), bio: pick(r.body, r.x.bioEn, en), duties: pick(r.x.dutiesAr, r.x.dutiesEn, en), committees, news };
   }
 }

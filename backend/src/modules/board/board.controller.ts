@@ -23,6 +23,13 @@ export class BoardAdminController {
     return this.service.list(q);
   }
 
+  /** the committees (Committees & sectors) a person belongs to, by name: shown in the add / edit window */
+  @Get('committees-of')
+  @Permissions(PERM.BOARD_READ)
+  committeesOf(@Query('nameAr') nameAr?: string, @Query('nameEn') nameEn?: string) {
+    return this.service.committeesOf(nameAr, nameEn);
+  }
+
   /** one member with all his fields (the public page opens its edit window from here) */
   @Get(':id')
   @Permissions(PERM.BOARD_READ)

@@ -10,7 +10,7 @@ import { BoardMemberDialog } from '@/components/admin/board-admin';
 import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
 import { CategoryNews } from '@/components/site/category-news';
 
-interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null }
+interface Member { id: number; position: string; name: string; termLabel: string; photoUrl: string | null }
 const POSITIONS = ['president', 'vice_president', 'secretary', 'treasurer', 'member'];
 
 function Card({ m, big, tools }: { m: Member; big?: boolean; tools?: React.ReactNode }) {
@@ -23,7 +23,6 @@ function Card({ m, big, tools }: { m: Member; big?: boolean; tools?: React.React
         : <span className={`flex items-center justify-center rounded-full bg-primary/10 text-3xl text-primary ${big ? 'h-32 w-32' : 'h-24 w-24'}`} aria-hidden="true">👤</span>}
       <h3 className="mt-3 font-bold text-secondary group-hover:text-primary">{m.name}</h3>
       <span className="mt-1 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">{t(`board.pos.${m.position}`)}</span>
-      {m.jobTitle && <p className="mt-2 text-xs leading-6 text-gray-600">{m.jobTitle}</p>}
     </Link>
     {tools}
     </div>
@@ -68,7 +67,7 @@ export default function BoardPage() {
   const terms = useMemo(() => [...new Set((items ?? []).map((m) => m.termLabel).filter(Boolean))], [items]);
   const needle = q.trim().toLowerCase();
   const shown = useMemo(
-    () => (items ?? []).filter((m) => (!pos || m.position === pos) && (!termSel || m.termLabel === termSel) && (!needle || `${m.name} ${m.jobTitle}`.toLowerCase().includes(needle))),
+    () => (items ?? []).filter((m) => (!pos || m.position === pos) && (!termSel || m.termLabel === termSel) && (!needle || m.name.toLowerCase().includes(needle))),
     [items, pos, termSel, needle],
   );
   const filtered = !!(pos || termSel || needle);

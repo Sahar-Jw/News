@@ -9,7 +9,7 @@ import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
 import { NotFoundContent } from '@/components/site/not-found-content';
 
-interface Member { id: number; position: string; name: string; jobTitle: string; termLabel: string; photoUrl: string | null; bio: string; duties: string; news: { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }[] }
+interface Member { id: number; position: string; name: string; termLabel: string; photoUrl: string | null; bio: string; duties: string; committees: { id: number; kind: string; name: string; role: string }[]; news: { id: number; title: string; excerpt: string; image: string | null; publishAt: string | null }[] }
 
 /** One board member: picture, name, position, bio, committees and duties: /board/3. The HTML is sanitised by the API. */
 function View() {
@@ -37,12 +37,25 @@ function View() {
           <div className="text-center md:text-start">
             <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{t(`board.pos.${m.position}`)}</span>
             <h1 className="mt-3 text-2xl font-extrabold leading-snug text-secondary md:text-3xl">{m.name}</h1>
-            {m.jobTitle && <p className="mt-1 text-gray-600">{m.jobTitle}</p>}
             {m.termLabel && <p className="mt-1 text-sm text-gray-500">{t('board.term')}: <bdi dir="ltr">{m.termLabel}</bdi></p>}
           </div>
         </div>
         {m.bio && <section className="mt-8"><h2 className="mb-2 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.bio')}</h2><div className="prose-news" dangerouslySetInnerHTML={{ __html: m.bio }} /></section>}
         {m.duties && <section className="mt-8"><h2 className="mb-2 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.duties')}</h2><div className="prose-news" dangerouslySetInnerHTML={{ __html: m.duties }} /></section>}
+        {m.committees?.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{lang === 'ar' ? 'اللجان' : 'Committees'}</h2>
+            <ul className="flex flex-wrap gap-2">
+              {m.committees.map((c) => (
+                <li key={c.id}>
+                  <Link href={href(c.kind === 'women' ? '/committees/women' : `/committees/${c.id}`)} className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary transition hover:bg-primary/20">
+                    {c.name}{c.role === 'chair' && <span className="text-gray-600"> · {lang === 'ar' ? 'رئيس' : 'Chair'}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {m.news.length > 0 && (
           <section className="mt-8">
             <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{t('board.news')}</h2>

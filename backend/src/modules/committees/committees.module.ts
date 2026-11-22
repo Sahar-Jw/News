@@ -12,5 +12,6 @@ import { CommitteesService } from './committees.service';
   imports: [TypeOrmModule.forFeature([News, Gallery, SiteSetting]), ContentLinksModule, FilesModule],
   controllers: [CommitteesAdminController, CommitteesPublicController],
   providers: [CommitteesService],
+  exports: [CommitteesService],
 })
 export class CommitteesModule {}
