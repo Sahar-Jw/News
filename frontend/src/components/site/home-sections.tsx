@@ -13,6 +13,7 @@ import { useSite } from './site-context';
 
 export { BreakingTicker } from './breaking-ticker';
 export { SubscribeSection } from './subscribe-section';
+export { MedicalSlider } from './medical-slider';
 
 /** Background band per section, so the page has rhythm instead of one flat sheet. */
 const BANDS: Record<string, 'tint' | 'dark'> = { team: 'tint', experts: 'tint', testimonials: 'dark' };

@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import { Center } from '@/components/ui/ui';
 import { PageLoader } from '@/components/ui/page-loader';
 import { Card } from '@/components/site/cards';
-import { AgendaSection, WomenCommitteeSection, BreakingTicker, Company, Experts, FeaturedCarousel, GallerySection, HeroSlider, Partners, RegularNews, SectionWrap, ServicesGrid, ShortcutsGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
+import { AgendaSection, WomenCommitteeSection, BreakingTicker, Company, Experts, FeaturedCarousel, GallerySection, HeroSlider, MedicalSlider, Partners, RegularNews, SectionWrap, ServicesGrid, ShortcutsGrid, StatsRow, SubscribeSection, TeamSlider, Testimonials } from '@/components/site/home-sections';
 import { AdMiddle } from '@/components/site/ad-slot';
 import { SECTION_ORDER_KEYS } from '@/components/site/sections-meta';
 import { useSite } from '@/components/site/site-context';
@@ -61,6 +61,7 @@ export default function HomePage() {
     switch (k) {
       case 'hero': return <HeroSlider key={k} />;
       case 'shortcuts': return <SectionWrap key={k} code={k} title={title(k)} compact><ShortcutsGrid /></SectionWrap>;
+      case 'medical': return <SectionWrap key={k} code={k} title={title(k)}><MedicalSlider /></SectionWrap>;
       case 'featured': return home.featured.length ? <SectionWrap key={k} code={k} title={title(k)}><FeaturedCarousel items={home.featured} /></SectionWrap> : null;
       case 'news': return <SectionWrap key={k} code={k} title={title(k)} action={<Link href={href('/media')} className="text-sm font-semibold text-primary">{t('site.allNews')} →</Link>}><RegularNews items={home.news} /></SectionWrap>;
       case 'agenda': return <AgendaSection key={k} code={k} title={title(k)} />;

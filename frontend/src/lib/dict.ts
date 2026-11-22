@@ -194,7 +194,7 @@ const ar: Record<string, string> = {
   'pub.upcoming': 'المناسبات القادمة', 'pub.current': 'المناسبات الحالية', 'pub.exhibitions': 'المعارض', 'pub.previous': 'المناسبات السابقة', 'pub.gallery': 'معرض الصور', 'pub.noOccasions': 'لا توجد مناسبات', 'pub.noGalleries': 'لا توجد معارض صور',
   'pub.photos': 'صورة', 'pub.backGallery': 'كل المعارض',
   // newsletter + ads
-  'adm.subscribers': 'المشتركون', 'adm.ads': 'الإعلانات', 'sec.subscribe': 'اشترك في نشرتنا',
+  'adm.subscribers': 'المشتركون', 'adm.ads': 'الإعلانات', 'sec.subscribe': 'اشترك في نشرتنا', 'sec.medical': 'المركز الطبي', 'med.hours': 'أوقات الدوام', 'med.winter': 'شتاءً', 'med.summer': 'صيفاً', 'med.phones': 'أرقام التواصل', 'med.facebook': 'صفحتنا على فيسبوك', 'med.doctors': 'الأطباء وأوقات الدوام', 'med.prev': 'السابق', 'med.next': 'التالي',
   'sub.email': 'البريد الإلكتروني', 'sub.verified': 'موثّق', 'sub.active': 'نشط', 'sub.verifiedAt': 'تاريخ التوثيق', 'sub.token': 'رمز التذكر', 'sub.createdAt': 'تاريخ الاشتراك',
   'sub.yes': 'نعم', 'sub.no': 'لا', 'sub.activate': 'تفعيل', 'sub.deactivate': 'تعطيل', 'sub.copy': 'نسخ',
   'sub.placeholder': 'بريدك الإلكتروني', 'sub.button': 'اشترك', 'sub.invalid': 'أدخل بريداً إلكترونياً صحيحاً', 'sub.sending': 'جارٍ الإرسال…',
@@ -420,7 +420,7 @@ const en: Record<string, string> = {
   'pub.upcoming': 'Upcoming occasions', 'pub.current': 'Current occasions', 'pub.exhibitions': 'Exhibitions', 'pub.previous': 'Previous occasions', 'pub.gallery': 'Image gallery', 'pub.noOccasions': 'No occasions found', 'pub.noGalleries': 'No galleries found',
   'pub.photos': 'photos', 'pub.backGallery': 'All galleries',
   // newsletter + ads
-  'adm.subscribers': 'Subscribers', 'adm.ads': 'Ads', 'sec.subscribe': 'Subscribe to our newsletter',
+  'adm.subscribers': 'Subscribers', 'adm.ads': 'Ads', 'sec.subscribe': 'Subscribe to our newsletter', 'sec.medical': 'Medical Center', 'med.hours': 'Working hours', 'med.winter': 'Winter', 'med.summer': 'Summer', 'med.phones': 'Contact numbers', 'med.facebook': 'Our Facebook page', 'med.doctors': 'Doctors & schedules', 'med.prev': 'Previous', 'med.next': 'Next',
   'sub.email': 'E-mail', 'sub.verified': 'Verified', 'sub.active': 'Active', 'sub.verifiedAt': 'Verified at', 'sub.token': 'Remember token', 'sub.createdAt': 'Subscribed at',
   'sub.yes': 'Yes', 'sub.no': 'No', 'sub.activate': 'Activate', 'sub.deactivate': 'Deactivate', 'sub.copy': 'Copy',
   'sub.placeholder': 'Your e-mail', 'sub.button': 'Subscribe', 'sub.invalid': 'Enter a valid e-mail address', 'sub.sending': 'Sending…',

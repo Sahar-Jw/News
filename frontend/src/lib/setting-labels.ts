@@ -20,6 +20,7 @@ const CATEGORY_AR: Record<string, string> = {
   women: 'لجنة سيدات الأعمال',
   incubator: 'حاضنة الأعمال',
   footer: 'التذييل (Footer)',
+  medical: 'المركز الطبي (سلايدر الصفحة الرئيسية)',
 };
 
 const BASE_AR: Record<string, string> = {
@@ -100,6 +101,7 @@ const BASE_AR: Record<string, string> = {
 const HOME_SECTION_AR: Record<string, string> = {
   hero: 'الرئيسية',
   subscribe: 'الاشتراك في النشرة',
+  medical: 'المركز الطبي',
   featured: 'الأخبار المميزة',
   news: 'آخر الأخبار',
   team: 'فريقنا',
@@ -147,6 +149,16 @@ const INCUBATOR_AR: Record<string, string> = {
   news_topic: 'وسم أخبار الحاضنة', officer_email: 'بريد مسؤول الحاضنة (يصله إشعار عند كل مشروع)', apply_open: 'استقبال المشاريع مفتوح (زر «قدّم مشروعك»)',
 };
 
+/** labels of the "medical" settings category (the home slider of the medical center) */
+const MEDICAL_AR: Record<string, string> = {
+  name: 'اسم المركز', about: 'نبذة قصيرة تحت الاسم (اختياري)', logo: 'شعار المركز',
+  hours_winter: 'دوام الشتاء', hours_summer: 'دوام الصيف',
+  phones: 'أرقام التواصل (رقم في كل سطر)', facebook_url: 'رابط صفحة فيسبوك (اتركه فارغاً لإخفاء الزر)',
+  autoplay: 'تقليب الشرائح تلقائياً', interval_seconds: 'مدة بقاء الشريحة (ثوانٍ، من 3 إلى 60)',
+  doctors_per_slide: 'عدد الأطباء في كل شريحة (من 1 إلى 12)', show_doctors: 'إظهار شرائح الأطباء وأوقات دوامهم',
+  doctors: 'الأطباء والأقسام',
+};
+
 const SECTION_PART_AR: Record<string, string> = { title: 'العنوان', order: 'الترتيب', visible: 'الظهور', eyebrow: 'النص الصغير أعلى العنوان', subtitle: 'النص تحت العنوان' };
 const MAIL_PAGE_AR: Record<string, string> = { system: 'رسائل النظام (استعادة كلمة المرور)', newsletter: 'النشرة البريدية', membership: 'الانتساب', get2trade: 'غيت تو تريد', training: 'مركز التدريب', incubator: 'حاضنة الأعمال', expo: 'DCC EXPO' };
 const SLIDE_PART_AR: Record<string, string> = { image: 'صورة', title: 'عنوان', description: 'وصف', link: 'رابط الزر في', button: 'نص الزر في' };
@@ -174,6 +186,7 @@ export function keyLabel(category: string, key: string, lang: string): string {
     if (m && MAIL_PAGE_AR[m[1]]) return `${MAIL_PAGE_AR[m[1]]} — ${m[2] === 'name' ? 'اسم المرسِل الظاهر (اتركه فارغاً لاسم حساب البريد)' : 'بريد استقبال الردود (اتركه فارغاً ليرد على حساب البريد)'}`;
   }
   if (category === 'incubator' && INCUBATOR_AR[base]) return `${INCUBATOR_AR[base]}${suffix}`;
+  if (category === 'medical' && MEDICAL_AR[base]) return `${MEDICAL_AR[base]}${suffix}`;
   if (category === 'expo' && EXPO_AR[base]) return `${EXPO_AR[base]}${suffix}`;
   if (category === 'one_stop' && ONE_STOP_AR[base]) return `${ONE_STOP_AR[base]}${suffix}`;
   if (category === 'women' && WOMEN_AR[base]) return `${WOMEN_AR[base]}${suffix}`;

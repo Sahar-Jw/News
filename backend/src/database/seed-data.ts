@@ -1,5 +1,6 @@
 import { DEFAULT_APPOINTMENT_STATUSES, statusSettingRows } from '../modules/appointments/appointment-statuses';
 import { EXPO_NEW_SETTINGS } from './expo-settings';
+import { MEDICAL_SETTINGS } from './medical-defaults';
 import { Language, PERM, SpecialCategory, NEWS_CREATE_PERMISSIONS, NEWS_DELETE_PERMISSIONS, NEWS_READ_PERMISSIONS, NEWS_UPDATE_PERMISSIONS } from '../common/constants';
 import { SettingValueType } from '../modules/settings/site-setting.entity';
 
@@ -76,6 +77,7 @@ const s = (category: string, key: string, type: SettingValueType, value: string 
 export const HOME_SECTIONS: { code: string; titleAr: string; titleEn: string }[] = [
   { code: 'hero', titleAr: 'الرئيسية', titleEn: 'Home' },
   { code: 'shortcuts', titleAr: 'اختصارات سريعة', titleEn: 'Quick links' },
+  { code: 'medical', titleAr: 'المركز الطبي', titleEn: 'Medical Center' },
   { code: 'featured', titleAr: 'الأخبار المميزة', titleEn: 'Featured News' },
   { code: 'news', titleAr: 'آخر الأخبار', titleEn: 'Latest News' },
   { code: 'agenda', titleAr: 'أجندة الغرفة', titleEn: 'Chamber agenda' },
@@ -343,6 +345,8 @@ export const SETTING_SEEDS: SettingSeed[] = [
   s('promo', 'text_ar', 'text'), s('promo', 'text_en', 'text'),
   s('promo', 'button_ar', 'text'), s('promo', 'button_en', 'text'),
   s('promo', 'link', 'text'), s('promo', 'image', 'file'),
+  // medical-center slider of the home page (section order / visibility are in sections_home -> medical_*)
+  ...MEDICAL_SETTINGS.map(([k, type, v]) => s('medical', k, type, v)),
   // Media Kit (shown on the media center only when "kit_enabled" is on)
   s('media', 'kit_enabled', 'boolean', 'false'),
   s('media', 'kit_logo', 'file'),
