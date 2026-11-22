@@ -165,7 +165,7 @@ entity classes once, with TypeORM's *synchronize*:
 
 1. Start the API once with `DB_SYNCHRONIZE=true` against the empty database: it creates every table. **Then remove `DB_SYNCHRONIZE` from the environment.**
 2. Import the data (data-only `INSERT`s; the dump's `CREATE TABLE` lines are not needed). After the import, restart the API.
-3. Keep `RUN_MIGRATIONS_ON_START=false` for such a database (it was built from the current entities, the old migrations are not recorded in it).
+3. The migration history is recorded automatically in that same first start (see "Migrations" below), so later versions can add migrations safely.
 
 `DB_SYNCHRONIZE=true` is honoured **only while the database has no `users` table**. On a database that already has tables it is ignored (a warning is logged), because synchronizing
 a database with data can drop columns with their data, or fail half-way (`column "created_at" of relation "roles" contains null values`) and stop the API from starting.
@@ -173,3 +173,30 @@ The string `false` never switches it on.
 
 `npm run schema:check` (dev) / `npm run schema:check:prod` (built app) is **read-only**: it prints the SQL TypeORM *would* run to make the database match the entities, and runs
 nothing. Lines starting with `!!` are DROPs - look at them carefully. Use it after importing a dump to see what differs.
+
+## Migrations (how every future change to the database is made)
+
+After the first version, the database is changed **only by migrations** (`src/database/migrations`). Which ones already ran on a database is stored **in that database**,
+in the table `typeorm_migrations` (one row per migration). On start with `RUN_MIGRATIONS_ON_START=true` TypeORM runs the migrations that have no row yet, oldest first, each
+once. That only works if the table is correct, so:
+
+- **A database created by synchronize** (a new empty one): its history is recorded automatically in the same start - every migration shipped with that version is marked
+  as applied without being run (the tables already contain their result). Only migrations added in later versions run.
+- **A database that has tables but no history** (built by synchronize before this version, or restored from a dump without the `typeorm_migrations` rows):
+  `RUN_MIGRATIONS_ON_START=true` is now **ignored with a warning**, because it would run all the old migrations again. Record the history once:
+  1. Set `MIGRATIONS_BASELINE=all` (every migration of the code is marked as applied) - or a timestamp, e.g. `MIGRATIONS_BASELINE=1767500000000`: migrations up to that
+     timestamp are marked as applied and the newer ones stay pending and run normally. Use the timestamp when the dump is older than the code (the last name in the
+     dump's `typeorm_migrations` rows tells you).
+  2. Restart the API once, then **remove `MIGRATIONS_BASELINE`**. Without a shell, the setting is the way; with one: `npm run migration:baseline:prod -- all` (add `--dry` to only look).
+- `npm run migration:status:prod` is **read-only**: tables yes/no, how many migrations are recorded, and which are pending.
+- When you restore a backup, the `typeorm_migrations` rows come with it (the dump has them) - then nothing needs to be recorded, only check `migration:status:prod`.
+
+### Adding a migration
+
+1. New file `src/database/migrations/<timestamp>-<Name>.ts`, class `<Name><timestamp>` with `name = '<Name><timestamp>'` (the file name and the class must agree - the history
+   stores that name). Use a timestamp **newer than the last one** (`Date.now()`), so it runs last.
+2. Write it so it can be repeated (`IF NOT EXISTS`, `IF EXISTS`, `UPDATE ... WHERE`), like the existing ones, and give it a `down`.
+3. Change the entity class in the same commit, so a brand-new database (created from the entities) and an upgraded one end up identical.
+4. Before the upgrade take a backup (Settings > Backups). Set `RUN_MIGRATIONS_ON_START=true`, deploy, check the log and `migration:status:prod`.
+   Each start runs all pending migrations in one transaction: if one fails nothing is applied and the API logs the error.
+5. Never use `DB_SYNCHRONIZE` for this, and avoid `REINDEX` / heavy rewrites in a migration on the hosted CuminDB (a `REINDEX` crashed it before).

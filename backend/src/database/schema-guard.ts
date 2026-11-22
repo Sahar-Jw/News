@@ -8,6 +8,9 @@ import { Client } from 'pg';
  * So DB_SYNCHRONIZE=true is honoured ONLY when the database has no tables yet (the `users` table does not exist). Once the tables exist
  * the setting is ignored (with a warning), and from then on the schema changes only through migrations.
  */
+/** true once this process decided that the schema is created now (the database was empty): the migration history is recorded right after. */
+export const schemaState = { createdNow: false };
+
 export async function mayCreateSchema(env: Record<string, any>, log: (msg: string) => void = console.warn): Promise<boolean> {
   if (env.DB_SYNCHRONIZE !== 'true') return false; // note: the string "false" must NOT switch it on
   const schema = env.DB_SCHEMA || 'public';
@@ -25,6 +28,7 @@ export async function mayCreateSchema(env: Record<string, any>, log: (msg: strin
     const r = await client.query('SELECT to_regclass($1) AS t', [`"${schema.replace(/"/g, '""')}".users`]);
     const empty = r.rows[0]?.t === null;
     if (!empty) log('DB_SYNCHRONIZE=true was IGNORED: the database already has tables, and synchronizing a database with data can drop columns. Remove DB_SYNCHRONIZE from the environment.');
+    schemaState.createdNow = empty;
     return empty;
   } catch (e) {
     log(`DB_SYNCHRONIZE not applied (could not check the database: ${(e as Error).message})`);

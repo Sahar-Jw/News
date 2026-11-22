@@ -45,6 +45,8 @@ import { NewsModule } from './modules/news/news.module';
 import { SiteSearchModule } from './modules/site-search/site-search.module';
 import { HealthModule } from './modules/health/health.module';
 import { mayCreateSchema } from './database/schema-guard';
+import { prepareMigrations } from './database/migration-history';
+import { SchemaBaselineService } from './database/schema-baseline.service';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { FormsModule } from './modules/forms/forms.module';
@@ -55,8 +57,8 @@ import { BackupModule } from './modules/backup/backup.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: async (c: ConfigService) => ({
-        ...buildDbOptions({
+      useFactory: async (c: ConfigService) => {
+        const dbEnv = {
           DB_HOST: c.get('DB_HOST'),
           DB_PORT: c.get('DB_PORT'),
           DB_USER: c.get('DB_USER'),
@@ -65,20 +67,28 @@ import { BackupModule } from './modules/backup/backup.module';
           DB_SCHEMA: c.get('DB_SCHEMA'),
           DB_SSL: c.get('DB_SSL'),
           DB_SSL_REJECT_UNAUTHORIZED: c.get('DB_SSL_REJECT_UNAUTHORIZED'),
-          DB_LOGGING: c.get('DB_LOGGING'),
-          DB_POOL_MAX: c.get('DB_POOL_MAX'),
-          DB_STATEMENT_TIMEOUT_MS: c.get('DB_STATEMENT_TIMEOUT_MS'),
-        }),
-        migrationsRun: c.get('RUN_MIGRATIONS_ON_START') === 'true',
-        // the database may still be starting when the API starts (both restarted together): wait for it - up to ~2.5 minutes - instead of giving up
-        retryAttempts: 30,
-        retryDelay: 5000,
+        };
         // only a brand-new EMPTY database may create its tables this way; see database/schema-guard.ts (a database with data is never synchronized)
-        synchronize: await mayCreateSchema({
-          DB_SYNCHRONIZE: c.get('DB_SYNCHRONIZE'), DB_HOST: c.get('DB_HOST'), DB_PORT: c.get('DB_PORT'), DB_USER: c.get('DB_USER'), DB_PASS: c.get('DB_PASS'),
-          DB_NAME: c.get('DB_NAME'), DB_SCHEMA: c.get('DB_SCHEMA'), DB_SSL: c.get('DB_SSL'), DB_SSL_REJECT_UNAUTHORIZED: c.get('DB_SSL_REJECT_UNAUTHORIZED'),
-        }),
-      }),
+        const synchronize = await mayCreateSchema({ ...dbEnv, DB_SYNCHRONIZE: c.get('DB_SYNCHRONIZE') });
+        // migrations run on start only when the database has a migration history (see database/migration-history.ts)
+        const { run } = await prepareMigrations(
+          { ...dbEnv, RUN_MIGRATIONS_ON_START: c.get('RUN_MIGRATIONS_ON_START'), MIGRATIONS_BASELINE: c.get('MIGRATIONS_BASELINE') },
+          { schemaCreatedNow: synchronize },
+        );
+        return {
+          ...buildDbOptions({
+            ...dbEnv,
+            DB_LOGGING: c.get('DB_LOGGING'),
+            DB_POOL_MAX: c.get('DB_POOL_MAX'),
+            DB_STATEMENT_TIMEOUT_MS: c.get('DB_STATEMENT_TIMEOUT_MS'),
+          }),
+          migrationsRun: run,
+          // the database may still be starting when the API starts (both restarted together): wait for it - up to ~2.5 minutes - instead of giving up
+          retryAttempts: 30,
+          retryDelay: 5000,
+          synchronize,
+        };
+      },
     }),
     TypeOrmModule.forFeature([User]), // the global guard needs the User repository
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
@@ -128,6 +138,7 @@ import { BackupModule } from './modules/backup/backup.module';
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LocalizeInterceptor },
+    SchemaBaselineService, // a database created from the entities in this start gets its migration history recorded
   ],
 })
 export class AppModule {}
