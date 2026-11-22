@@ -157,3 +157,19 @@ not the API: it is stopped, restarting or in crash recovery, and every request t
   Check the data volume: it must be a persistent volume and have free space. A database that comes back empty or old means a new / restored volume.
 - Data is restored from the Backups screen in Settings (or `npm run backup:restore:prod`).
 - Start the database and wait until `GET /api/health/ready` answers 200 before starting the API after a full restart.
+
+## A new or restored database (and `DB_SYNCHRONIZE`)
+
+The migrations in `src/database/migrations` start from an existing schema (there is no "create every table" migration), so a **brand-new empty database** gets its tables from the
+entity classes once, with TypeORM's *synchronize*:
+
+1. Start the API once with `DB_SYNCHRONIZE=true` against the empty database: it creates every table. **Then remove `DB_SYNCHRONIZE` from the environment.**
+2. Import the data (data-only `INSERT`s; the dump's `CREATE TABLE` lines are not needed). After the import, restart the API.
+3. Keep `RUN_MIGRATIONS_ON_START=false` for such a database (it was built from the current entities, the old migrations are not recorded in it).
+
+`DB_SYNCHRONIZE=true` is honoured **only while the database has no `users` table**. On a database that already has tables it is ignored (a warning is logged), because synchronizing
+a database with data can drop columns with their data, or fail half-way (`column "created_at" of relation "roles" contains null values`) and stop the API from starting.
+The string `false` never switches it on.
+
+`npm run schema:check` (dev) / `npm run schema:check:prod` (built app) is **read-only**: it prints the SQL TypeORM *would* run to make the database match the entities, and runs
+nothing. Lines starting with `!!` are DROPs - look at them carefully. Use it after importing a dump to see what differs.

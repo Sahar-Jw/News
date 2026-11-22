@@ -44,6 +44,7 @@ import { OccasionsModule } from './modules/occasions/occasions.module';
 import { NewsModule } from './modules/news/news.module';
 import { SiteSearchModule } from './modules/site-search/site-search.module';
 import { HealthModule } from './modules/health/health.module';
+import { mayCreateSchema } from './database/schema-guard';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { FormsModule } from './modules/forms/forms.module';
@@ -54,7 +55,7 @@ import { BackupModule } from './modules/backup/backup.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (c: ConfigService) => ({
+      useFactory: async (c: ConfigService) => ({
         ...buildDbOptions({
           DB_HOST: c.get('DB_HOST'),
           DB_PORT: c.get('DB_PORT'),
@@ -72,7 +73,11 @@ import { BackupModule } from './modules/backup/backup.module';
         // the database may still be starting when the API starts (both restarted together): wait for it - up to ~2.5 minutes - instead of giving up
         retryAttempts: 30,
         retryDelay: 5000,
-        synchronize:c.get('DB_SYNCHRONIZE') // only for development, never in production
+        // only a brand-new EMPTY database may create its tables this way; see database/schema-guard.ts (a database with data is never synchronized)
+        synchronize: await mayCreateSchema({
+          DB_SYNCHRONIZE: c.get('DB_SYNCHRONIZE'), DB_HOST: c.get('DB_HOST'), DB_PORT: c.get('DB_PORT'), DB_USER: c.get('DB_USER'), DB_PASS: c.get('DB_PASS'),
+          DB_NAME: c.get('DB_NAME'), DB_SCHEMA: c.get('DB_SCHEMA'), DB_SSL: c.get('DB_SSL'), DB_SSL_REJECT_UNAUTHORIZED: c.get('DB_SSL_REJECT_UNAUTHORIZED'),
+        }),
       }),
     }),
     TypeOrmModule.forFeature([User]), // the global guard needs the User repository

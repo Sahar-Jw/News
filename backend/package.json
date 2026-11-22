@@ -17,6 +17,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:run:prod": "typeorm migration:run -d dist/database/data-source.js",
+    "schema:check": "ts-node src/database/schema-check.ts",
+    "schema:check:prod": "node dist/database/schema-check.js",
     "seed": "ts-node src/database/seed.ts",
     "seed:prod": "node dist/database/seed.js",
     "backup:restore": "ts-node src/database/restore-backup.ts",
