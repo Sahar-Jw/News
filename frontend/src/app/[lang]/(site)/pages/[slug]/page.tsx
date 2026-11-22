@@ -61,9 +61,10 @@ function View() {
         {p.body ? <div className="prose-news mt-6" dangerouslySetInnerHTML={{ __html: p.body }} /> : <p className="mt-6 text-gray-500">{t('site.pageEmpty')}</p>}
         {/* the picture and the text written next to it, at the bottom of the page */}
         {(p.sideImage || p.sideText) && (
-          <div className={`mt-10 grid items-center gap-6 border-t border-line pt-8 ${p.sideImage && p.sideText ? 'md:grid-cols-2' : ''}`}>
-            {p.sideImage && <img src={fileUrl(p.sideImage)} alt="" loading="lazy" className="w-full rounded-2xl object-cover shadow-card" />}
-            {p.sideText && <p className="whitespace-pre-line text-base leading-8 text-gray-700">{p.sideText}</p>}
+          <div className="mt-10 flex flex-col items-center gap-5 border-t border-line pt-8 text-center sm:flex-row sm:text-start">
+            {/* small round picture; the text sits beside it (under it on phones) */}
+            {p.sideImage && <img src={fileUrl(p.sideImage)} alt="" loading="lazy" className="h-28 w-28 shrink-0 rounded-full object-cover shadow-card ring-4 ring-primary/10 sm:h-32 sm:w-32" />}
+            {p.sideText && <p className="min-w-0 flex-1 whitespace-pre-line text-base leading-8 text-gray-700">{p.sideText}</p>}
           </div>
         )}
       </article>
