@@ -119,7 +119,7 @@ const ar: Record<string, string> = {
   'nav.events': 'المعارض والفعاليات', 'nav.exhibitions': 'المعارض والفعاليات', 'nav.agenda': 'أجندة الغرفة', 'nav.upcomingOccasions': 'المناسبات القادمة', 'nav.currentOccasions': 'المناسبات الحالية', 'nav.exhibitionsOnly': 'المعارض', 'nav.eventsCalendar': 'تقويم الفعاليات', 'nav.previousOccasions': 'المناسبات السابقة', 'nav.expo': 'DCC EXPO',
   // committees (sector + businesswomen)
   'adm.committees': 'اللجان والقطاعات', 'mod.committees': 'اللجان والقطاعات', 'cm.title': 'اللجان والقطاعات', 'cm.add': 'إضافة لجنة', 'cm.womenOne': 'توجد لجنة سيدات أعمال واحدة فقط: عدّلي اللجنة الموجودة وتأكدي أنها مفعّلة لتظهر في الموقع', 'cm.edit': 'تعديل اللجنة',
-  'cm.kind': 'نوع اللجنة', 'cm.kind.sector': 'لجنة قطاعية', 'cm.kind.women': 'لجنة سيدات الأعمال', 'cm.chair': 'رئيس اللجنة', 'cm.chairAr': 'رئيس اللجنة بالعربية', 'cm.chairEn': 'رئيس اللجنة بالإنجليزية (اختياري)',
+  'cm.kind': 'نوع اللجنة', 'cm.kind.sector': 'لجنة قطاعية', 'cm.kind.women': 'لجنة سيدات الأعمال', 'cm.chair': 'رئيس اللجنة', 'cm.chairTaken': 'يوجد رئيس مسبقاً', 'cm.chairAr': 'رئيس اللجنة بالعربية', 'cm.chairEn': 'رئيس اللجنة بالإنجليزية (اختياري)',
   'cm.activity': 'النشاط التجاري', 'cm.tagsAr': 'الأنشطة التجارية بالعربية', 'cm.tagsEn': 'الأنشطة التجارية بالإنجليزية (اختياري)', 'cm.tagsHint': 'افصل بين الأنشطة بفاصلة؛ يبحث الزائر بها عن لجنته',
   'cm.summaryAr': 'تعريف مختصر بالعربية', 'cm.summaryEn': 'تعريف مختصر بالإنجليزية (اختياري)', 'cm.dutiesAr': 'الاختصاصات بالعربية', 'cm.dutiesEn': 'الاختصاصات بالإنجليزية (اختياري)', 'cm.logo': 'صورة أو شعار اللجنة',
   'cm.search': 'ابحث عن لجنة أو قطاع', 'cm.empty': 'لا توجد لجان مطابقة', 'cm.noContent': 'لا يوجد محتوى بعد',
@@ -345,7 +345,7 @@ const en: Record<string, string> = {
   'nav.events': 'Exhibitions & events', 'nav.exhibitions': 'Exhibitions & events', 'nav.agenda': 'Chamber agenda', 'nav.upcomingOccasions': 'Upcoming occasions', 'nav.currentOccasions': 'Current occasions', 'nav.exhibitionsOnly': 'Exhibitions', 'nav.eventsCalendar': 'Events calendar', 'nav.previousOccasions': 'Previous occasions', 'nav.expo': 'DCC EXPO',
   // committees (sector + businesswomen)
   'adm.committees': 'Committees & sectors', 'mod.committees': 'Committees & sectors', 'cm.title': 'Committees & sectors', 'cm.add': 'Add committee', 'cm.womenOne': 'Only one businesswomen committee is allowed: edit the existing one and make sure it is active so it shows on the site', 'cm.edit': 'Edit committee',
-  'cm.kind': 'Committee type', 'cm.kind.sector': 'Sector committee', 'cm.kind.women': 'Businesswomen committee', 'cm.chair': 'Committee chair', 'cm.chairAr': 'Chair (Arabic)', 'cm.chairEn': 'Chair (English, optional)',
+  'cm.kind': 'Committee type', 'cm.kind.sector': 'Sector committee', 'cm.kind.women': 'Businesswomen committee', 'cm.chair': 'Committee chair', 'cm.chairTaken': 'a chair already exists', 'cm.chairAr': 'Chair (Arabic)', 'cm.chairEn': 'Chair (English, optional)',
   'cm.activity': 'Business activity', 'cm.tagsAr': 'Business activities (Arabic)', 'cm.tagsEn': 'Business activities (English, optional)', 'cm.tagsHint': 'Separate activities with a comma; visitors search them to find their committee',
   'cm.summaryAr': 'Short description (Arabic)', 'cm.summaryEn': 'Short description (English, optional)', 'cm.dutiesAr': 'Terms of reference (Arabic)', 'cm.dutiesEn': 'Terms of reference (English, optional)', 'cm.logo': 'Committee picture or logo',
   'cm.search': 'Search a committee or sector', 'cm.empty': 'No matching committees', 'cm.noContent': 'Nothing here yet',

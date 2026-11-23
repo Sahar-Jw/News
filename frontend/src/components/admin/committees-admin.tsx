@@ -84,7 +84,6 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
     const fd = new FormData();
     fd.set('kind', f.kind); fd.set('nameAr', f.nameAr.trim()); fd.set('nameEn', f.nameEn.trim());
     fd.set('summaryAr', f.summaryAr); fd.set('summaryEn', f.summaryEn); fd.set('dutiesAr', f.dutiesAr); fd.set('dutiesEn', f.dutiesEn);
-    fd.set('chairNameAr', f.chairNameAr.trim()); fd.set('chairNameEn', f.chairNameEn.trim());
     fd.set('activityTagsAr', f.activityTagsAr); fd.set('activityTagsEn', f.activityTagsEn);
     fd.set('sortOrder', String(Number(f.sortOrder) || 0)); fd.set('isActive', String(f.isActive));
     if (logo) fd.set('logo', logo); else if (f.id && dropLogo) fd.set('removeLogo', 'true');
@@ -180,8 +179,6 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
               <Field label={t('faq.order')}><input type="number" min={0} max={100000} className={inputCls} value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value })} /></Field>
               <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
               <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.nameEn} onChange={(e) => setDraft({ ...draft, nameEn: e.target.value })} /></Field>
-              <Field label={t('cm.chairAr')}><input maxLength={255} dir="rtl" className={inputCls} value={draft.chairNameAr} onChange={(e) => setDraft({ ...draft, chairNameAr: e.target.value })} /></Field>
-              <Field label={t('cm.chairEn')}><input maxLength={255} dir="ltr" className={inputCls} value={draft.chairNameEn} onChange={(e) => setDraft({ ...draft, chairNameEn: e.target.value })} /></Field>
               <Field label={t('cm.tagsAr')} hint={t('cm.tagsHint')}><textarea rows={2} maxLength={3000} dir="rtl" className={inputCls} value={draft.activityTagsAr} onChange={(e) => setDraft({ ...draft, activityTagsAr: e.target.value })} /></Field>
               <Field label={t('cm.tagsEn')} hint={t('cm.tagsHint')}><textarea rows={2} maxLength={3000} dir="ltr" className={inputCls} value={draft.activityTagsEn} onChange={(e) => setDraft({ ...draft, activityTagsEn: e.target.value })} /></Field>
               <Field label={t('cm.summaryAr')}><textarea rows={3} maxLength={5000} dir="rtl" className={inputCls} value={draft.summaryAr} onChange={(e) => setDraft({ ...draft, summaryAr: e.target.value })} /></Field>
@@ -208,7 +205,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
             {mDraft && (
               <form onSubmit={saveMember} className="space-y-3 rounded-xl border border-line p-3">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Field label={t('board.position')}><select className={inputCls} value={mDraft.role} onChange={(e) => setMDraft({ ...mDraft, role: e.target.value })}>{roles[roleScope].map((o) => <option key={o.key} value={o.key}>{roleOf(roleScope, o.key)}</option>)}</select></Field>
+                  <Field label={t('board.position')}><select className={inputCls} value={mDraft.role} onChange={(e) => setMDraft({ ...mDraft, role: e.target.value })}>{roles[roleScope].map((o) => <option key={o.key} value={o.key} disabled={o.key === 'chair' && !!full?.members.some((m) => m.role === 'chair' && m.id !== mDraft.id)}>{roleOf(roleScope, o.key)}{o.key === 'chair' && full?.members.some((m) => m.role === 'chair' && m.id !== mDraft.id) ? ` — ${t('cm.chairTaken')}` : ''}</option>)}</select></Field>
                   <Field label={t('faq.order')}><input type="number" min={0} className={inputCls} value={mDraft.sortOrder} onChange={(e) => setMDraft({ ...mDraft, sortOrder: e.target.value })} /></Field>
                   <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={mDraft.nameAr} onChange={(e) => setMDraft({ ...mDraft, nameAr: e.target.value })} /></Field>
                   <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={mDraft.nameEn} onChange={(e) => setMDraft({ ...mDraft, nameEn: e.target.value })} /></Field>

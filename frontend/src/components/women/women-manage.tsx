@@ -239,7 +239,7 @@ export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number
     <Modal open onClose={onClose} title={editId ? tr('تعديل عضوة', 'Edit member') : tr('إضافة عضوة', 'Add a member')} brand>
       {!loaded ? <p className="py-8 text-center text-sm text-gray-500">…</p> : (
         <div className="space-y-3">
-          <Field label={tr('الصفة التنظيمية', 'Role')}><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{roles.women.map((o) => <option key={o.key} value={o.key}>{roleOf('women', o.key)}</option>)}</select></Field>
+          <Field label={tr('الصفة التنظيمية', 'Role')}><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{roles.women.map((o) => { const taken = o.key === 'chair' && !!(data as { members?: { id: number; role: string }[] } | null)?.members?.some((m) => m.role === 'chair' && m.id !== editId); return <option key={o.key} value={o.key} disabled={taken}>{roleOf('women', o.key)}{taken ? ` — ${tr('يوجد رئيسة مسبقاً', 'a chair already exists')}` : ''}</option>; })}</select></Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={tr('الاسم (عربي)', 'Name (Arabic)')}><input dir="rtl" className={inputCls} value={f.nameAr} onChange={(e) => setF({ ...f, nameAr: e.target.value })} /></Field>
             <Field label={tr('الاسم (إنجليزي)', 'Name (English)')}><input dir="ltr" className={inputCls} value={f.nameEn} onChange={(e) => setF({ ...f, nameEn: e.target.value })} /></Field>
@@ -268,7 +268,6 @@ const FIELDS: Record<'about' | 'structure', TextField[]> = {
     { key: 'goals', where: 'setting', ar: 'الأهداف', en: 'Goals', kind: 'goals' },
   ],
   structure: [
-    { key: 'chairName', where: 'committee', ar: 'اسم رئيسة اللجنة', en: 'Chair name', kind: 'text' },
     { key: 'structure', where: 'setting', ar: 'الصفات والمهام التنظيمية (نص حر أو كل صفة في سطر)', en: 'Organisational characteristics & tasks', kind: 'area' },
     { key: 'duties', where: 'committee', ar: 'الاختصاصات والمهام', en: 'Terms of reference and tasks', kind: 'rich' },
   ],

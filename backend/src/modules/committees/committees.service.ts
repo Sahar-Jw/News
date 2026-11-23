@@ -125,6 +125,24 @@ export class CommitteesService {
   private async membersOf(id: number) {
     return (await this.store.list(CC.COMMITTEE_MEMBER)).filter((m) => Number(m.x.parentId) === id).sort(by((m) => sortOf(m), (m) => m.id));
   }
+  /**
+   * The chair of a committee is its member whose position is "chair" (one per committee): his / her name is copied into the committee
+   * (chairNameAr / chairNameEn), which every public page and filter already reads. `cleared`: the chair member was removed or got another
+   * position, so a committee left without a chair shows none. A committee that never had a chair member keeps the name typed before.
+   */
+  private async syncChair(committeeId: number, cleared = false) {
+    const chair = (await this.membersOf(committeeId)).find((m) => m.x.role === 'chair');
+    if (chair) await this.store.update(committeeId, { x: { chairNameAr: chair.title, chairNameEn: s(chair.x.nameEn) || null } });
+    else if (cleared) await this.store.update(committeeId, { x: { chairNameAr: null, chairNameEn: null } });
+  }
+
+  /** one chair per committee */
+  private async assertSingleChair(committeeId: number, role: string | undefined, exceptMemberId?: number) {
+    if (role !== 'chair') return;
+    const other = (await this.membersOf(committeeId)).find((m) => m.x.role === 'chair' && m.id !== exceptMemberId);
+    if (other) throw new BadRequestException(`يوجد رئيس للجنة مسبقاً (${other.title}). لا يمكن إضافة أكثر من رئيس واحد، غيّر منصب الرئيس الحالي أولاً.`);
+  }
+
   private async activitiesOf(id: number) {
     return (await this.store.list(ACTIVITY_CODES)).filter((a) => Number(a.x.parentId) === id).map((a) => ({ r: a, v: this.activityView(a) })).sort((a, b) => newestFirst(a.v, b.v));
   }
@@ -177,7 +195,7 @@ export class CommitteesService {
         title: dto.nameAr.trim(), body: dto.summaryAr?.trim() || null, images: path ? [path] : [],
         x: {
           nameEn: dto.nameEn?.trim() || null, summaryEn: dto.summaryEn?.trim() || null, dutiesAr: sanitizeRichText(dto.dutiesAr), dutiesEn: sanitizeRichText(dto.dutiesEn),
-          chairNameAr: dto.chairNameAr?.trim() || null, chairNameEn: dto.chairNameEn?.trim() || null, activityTagsAr: dto.activityTagsAr?.trim() || null, activityTagsEn: dto.activityTagsEn?.trim() || null,
+          activityTagsAr: dto.activityTagsAr?.trim() || null, activityTagsEn: dto.activityTagsEn?.trim() || null,
           sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true,
         },
       });
@@ -201,7 +219,7 @@ export class CommitteesService {
         code: dto.kind !== undefined ? committeeCode(dto.kind) : undefined, title: dto.nameAr?.trim(), body: nz(dto.summaryAr),
         images: newPath ? [newPath] : dto.removeLogo ? [] : undefined,
         x: {
-          nameEn: nz(dto.nameEn), summaryEn: nz(dto.summaryEn), dutiesAr: rich(dto.dutiesAr), dutiesEn: rich(dto.dutiesEn), chairNameAr: nz(dto.chairNameAr), chairNameEn: nz(dto.chairNameEn),
+          nameEn: nz(dto.nameEn), summaryEn: nz(dto.summaryEn), dutiesAr: rich(dto.dutiesAr), dutiesEn: rich(dto.dutiesEn),
           activityTagsAr: nz(dto.activityTagsAr), activityTagsEn: nz(dto.activityTagsEn), sortOrder: dto.sortOrder, isActive: dto.isActive,
         },
       });
@@ -235,12 +253,14 @@ export class CommitteesService {
   async addMember(committeeId: number, dto: CreateMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
     const c = await this.mustFind(committeeId);
     await this.roles.assertKey(roleScope(c), dto.role);
+    await this.assertSingleChair(committeeId, dto.role);
     const path = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
     try {
       const r = await this.store.create(CC.COMMITTEE_MEMBER, {
         title: dto.nameAr.trim(), images: path ? [path] : [],
         x: { parentId: committeeId, role: dto.role, nameEn: dto.nameEn?.trim() || null, titleAr: dto.titleAr?.trim() || null, titleEn: dto.titleEn?.trim() || null, sortOrder: dto.sortOrder ?? 0 },
       });
+      if (dto.role === 'chair') await this.syncChair(committeeId);
       await this.audit.log({ category: 'committees', action: 'update', description: `إضافة عضو إلى لجنة ${c.title}: ${r.title}`, actorId: actor.id, entityType: 'committee_members', entityId: r.id });
       return this.memberView(r);
     } catch (e) {
@@ -253,6 +273,7 @@ export class CommitteesService {
     const cur = await this.store.get(id, CC.COMMITTEE_MEMBER);
     if (!cur) throw new NotFoundException('العضو غير موجود');
     if (dto.role !== undefined) await this.roles.assertKey(roleScope(await this.mustFind(Number(cur.x.parentId))), dto.role);
+    await this.assertSingleChair(Number(cur.x.parentId), dto.role, id);
     const newPath = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
     const oldPath = cur.images[0] ?? null;
     try {
@@ -261,6 +282,7 @@ export class CommitteesService {
         title: dto.nameAr?.trim(), images: newPath ? [newPath] : dto.removePhoto ? [] : undefined,
         x: { role: dto.role, nameEn: nz(dto.nameEn), titleAr: nz(dto.titleAr), titleEn: nz(dto.titleEn), sortOrder: dto.sortOrder },
       });
+      if (cur.x.role === 'chair' || r!.x.role === 'chair') await this.syncChair(Number(cur.x.parentId), cur.x.role === 'chair');
       await this.audit.log({ category: 'committees', action: 'update', description: `تعديل عضو لجنة: ${r!.title}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
       if (oldPath && oldPath !== (r!.images[0] ?? null)) await this.storage.remove(oldPath);
       return this.memberView(r!);
@@ -275,6 +297,7 @@ export class CommitteesService {
     if (!m) throw new NotFoundException('العضو غير موجود');
     await this.store.remove([id]);
     await this.storage.remove(m.images[0] ?? null);
+    if (m.x.role === 'chair') await this.syncChair(Number(m.x.parentId), true);
     await this.audit.log({ category: 'committees', action: 'update', description: `حذف عضو لجنة: ${m.title}`, actorId: actor.id, entityType: 'committee_members', entityId: id });
     return { deleted: 1 };
   }
