@@ -7,6 +7,7 @@ import { Button, Field, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { readWomenMenu, type WomenMenu, type WomenMenuEntry, type WomenMenuPage } from '@/lib/women-menu';
 import { readExpoMenu } from '@/lib/expo-menu';
+import { EXPO_PREVIEW, FooterPreview, NavPreview, WOMEN_PREVIEW, type PreviewEntry } from '@/components/admin/nav-preview';
 
 interface Row { id: number; key: string; value: unknown }
 type Part = 'navigation' | 'footer';
@@ -89,6 +90,24 @@ export function WomenMenuAdmin({ site = 'women' }: { site?: 'women' | 'expo' }) 
     [entries[index], entries[target]] = [entries[target], entries[index]];
     setPart(part, entries);
   };
+
+  /** adds a page to the bar / footer as a standalone link: it leaves its dropdown (if any), becomes visible and goes to the end */
+  const addStandalone = (part: Part, slug: string) => {
+    if (!menu) return;
+    const found: WomenMenuPage[] = [];
+    const rest = menu[part].flatMap((entry): WomenMenuEntry[] => {
+      if (entry.type === 'page') { if (entry.slug === slug) { found.push(entry); return []; } return [entry]; }
+      return [{ ...entry, items: entry.items.filter((item) => { if (item.slug === slug) { found.push(item); return false; } return true; }) }];
+    });
+    if (!found[0]) return;
+    setPart(part, [...rest, { ...found[0], isActive: true }]);
+  };
+  /** pages that can still be added as a standalone link: the ones inside a dropdown and the hidden ones */
+  const addable = (part: Part) => (menu?.[part] ?? []).flatMap((entry) => entry.type === 'page' ? (entry.isActive ? [] : [entry]) : entry.items);
+
+  const toPreview = (part: Part): PreviewEntry[] => (menu?.[part] ?? []).map((entry) => entry.type === 'page'
+    ? { kind: 'link', title: ar ? entry.labelAr : entry.labelEn, active: entry.isActive, items: [] }
+    : { kind: 'dropdown', title: ar ? entry.titleAr : entry.titleEn, active: entry.isActive, items: entry.items.map((page) => ({ title: ar ? page.labelAr : page.labelEn, active: page.isActive })) });
 
   const movePage = (part: Part, slug: string, targetGroup?: number, beforeSlug?: string) => {
     if (!menu) return;
@@ -203,10 +222,19 @@ export function WomenMenuAdmin({ site = 'women' }: { site?: 'women' | 'expo' }) 
     <section key={part} className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-bold text-secondary">{title}</h2>
-        {editable && <div className="flex gap-2">
+        {editable && <div className="flex flex-wrap items-center gap-2">
+          {addable(part).length > 0 && (
+            <select aria-label={ar ? 'إضافة رابط مستقل' : 'Add a standalone link'} value="" disabled={busy} className={`${inputCls} w-auto max-w-56 py-1.5 text-xs`} onChange={(event) => event.target.value && addStandalone(part, event.target.value)}>
+              <option value="">{ar ? '＋ رابط مستقل (صفحة واحدة)…' : '＋ Standalone link (single page)…'}</option>
+              {addable(part).map((page) => <option key={page.slug} value={page.slug}>{ar ? page.labelAr : page.labelEn}</option>)}
+            </select>
+          )}
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => addGroup(part)}>{ar ? '＋ قائمة منسدلة' : '＋ Add dropdown'}</Button>
         </div>}
       </header>
+      {part === 'navigation'
+        ? <NavPreview cfg={{ ...(expo ? EXPO_PREVIEW : WOMEN_PREVIEW), before: expo ? [] : [ar ? 'الرئيسية' : 'Home'] }} lang={ar ? 'ar' : 'en'} entries={toPreview(part)} />
+        : <FooterPreview lang={ar ? 'ar' : 'en'} entries={toPreview(part)} />}
       <div className={`grid items-start gap-5 xl:grid-cols-2 ${dropTarget?.part === part && dropTarget.group === undefined ? 'rounded-xl bg-primary/5' : ''}`}
         onDragOver={(event) => { if (drag?.part === part) { event.preventDefault(); setDropTarget({ part }); } }}
         onDrop={(event) => handleDrop(event, part)}>

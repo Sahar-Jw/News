@@ -19,6 +19,10 @@ export class NavGroup extends TimestampedEntity {
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
+
+  /** a standalone link shown directly in the bar (holds exactly one item) instead of a dropdown */
+  @Column({ name: 'is_single', type: 'boolean', default: false })
+  single: boolean;
 }
 
 /** One link inside a dropdown. `url` is a site path ("/news", "/pages/about") or a full http(s) address. */
@@ -52,4 +56,8 @@ export class NavItem extends TimestampedEntity {
 
   @Column({ name: 'new_tab', type: 'boolean', default: false })
   newTab: boolean;
+
+  /** added from Settings -> Main menu: it can be edited / deleted there (links made by a page's migration cannot) */
+  @Column({ name: 'is_custom', type: 'boolean', default: false })
+  custom: boolean;
 }

@@ -6,16 +6,24 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Center, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { RequirePerm } from '@/components/admin/guard';
+import { MAIN_PREVIEW, NavPreview, type PreviewEntry } from '@/components/admin/nav-preview';
 
-interface ItemD { uid: string; titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean }
-interface GroupD { uid: string; titleAr: string; titleEn: string; isActive: boolean; items: ItemD[] }
-interface Api { groups: { titleAr: string; titleEn: string; isActive: boolean; items: { titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean }[] }[] }
+interface ItemD { uid: string; titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean; custom: boolean }
+/** `single`: a standalone link shown directly in the bar (holds exactly one link); otherwise a dropdown */
+interface GroupD { uid: string; titleAr: string; titleEn: string; isActive: boolean; single: boolean; items: ItemD[] }
+interface Api { groups: { titleAr: string; titleEn: string; isActive: boolean; single?: boolean; items: { titleAr: string; titleEn: string; url: string; isActive: boolean; newTab: boolean; custom?: boolean }[] }[] }
+/** the same rule as the API: a site path ("/news") or a full http(s) address */
+const URL_OK = /^(\/(?!\/)\S*|https?:\/\/\S+)$/i;
 
 let seq = 0;
 const uid = () => `n${++seq}`;
-const fromApi = (d: Api): GroupD[] => d.groups.map((g) => ({ uid: uid(), titleAr: g.titleAr, titleEn: g.titleEn, isActive: g.isActive, items: g.items.map((i) => ({ uid: uid(), ...i })) }));
+const fromApi = (d: Api): GroupD[] => d.groups.map((g) => ({ uid: uid(), titleAr: g.titleAr, titleEn: g.titleEn, isActive: g.isActive, single: !!g.single, items: g.items.map((i) => ({ uid: uid(), ...i, custom: !!i.custom })) }));
 /** what is sent to the API (and compared to detect unsaved changes) */
-const toBody = (gs: GroupD[]) => ({ groups: gs.map((g) => ({ titleAr: g.titleAr.trim(), titleEn: g.titleEn.trim(), isActive: g.isActive, items: g.items.map((i) => ({ titleAr: i.titleAr.trim(), titleEn: i.titleEn.trim(), url: i.url.trim(), isActive: i.isActive, newTab: i.newTab })) })) });
+const toBody = (gs: GroupD[]) => ({ groups: gs.map((g) => ({
+  // a standalone link is named by its own link
+  titleAr: (g.single ? g.items[0]?.titleAr ?? '' : g.titleAr).trim(), titleEn: (g.single ? g.items[0]?.titleEn ?? '' : g.titleEn).trim(), isActive: g.isActive, single: g.single,
+  items: g.items.map((i) => ({ titleAr: i.titleAr.trim(), titleEn: i.titleEn.trim(), url: i.url.trim(), isActive: i.isActive, newTab: i.newTab, custom: i.custom })),
+})) });
 
 type Drag = { kind: 'item'; gid: string; iid: string } | { kind: 'group'; gid: string };
 
@@ -44,7 +52,8 @@ const IconBtn = ({ label, onClick, disabled, danger, children }: { label: string
  * or the "move to" list on touch screens) and reordered, but not added, deleted or pointed elsewhere here. Nothing is stored until "Save" is pressed.
  */
 export function NavAdmin() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const ar = lang === 'ar';
   const { can } = useAuth();
   const toast = useToast();
   const edit = can('nav.update');
@@ -75,22 +84,41 @@ export function NavAdmin() {
   const problems = useMemo(() => {
     const p = new Map<string, string>();
     (groups ?? []).forEach((g) => {
-      if (!g.titleAr.trim()) p.set(g.uid, t('nv.errGroup'));
-      g.items.forEach((i) => { if (!i.titleAr.trim()) p.set(i.uid + ':t', t('nv.errLink')); });
+      if (!g.single && !g.titleAr.trim()) p.set(g.uid, t('nv.errGroup'));
+      g.items.forEach((i) => {
+        if (!i.titleAr.trim()) p.set(i.uid + ':t', t('nv.errLink'));
+        if (i.custom && !URL_OK.test(i.url.trim())) p.set(i.uid + ':u', ar ? 'الرابط يجب أن يبدأ بـ / (صفحة داخل الموقع) أو http(s):// بدون مسافات.' : 'The link must start with / (a page of the site) or http(s):// with no spaces.');
+      });
     });
     return p;
-  }, [groups, t]);
+  }, [groups, t, ar]);
 
   // ---- state helpers
   const setG = (gid: string, patch: Partial<GroupD>) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, ...patch } : g)));
   const setI = (gid: string, iid: string, patch: Partial<ItemD>) => setGroups((gs) => gs!.map((g) => (g.uid === gid ? { ...g, items: g.items.map((i) => (i.uid === iid ? { ...i, ...patch } : i)) } : g)));
-  const addGroup = () => setGroups((gs) => [...gs!, { uid: uid(), titleAr: '', titleEn: '', isActive: true, items: [] }]);
+  const addGroup = () => setGroups((gs) => [...gs!, { uid: uid(), titleAr: '', titleEn: '', isActive: true, single: false, items: [] }]);
+  /** a new standalone link (a single page in the bar) */
+  const addSingle = () => setGroups((gs) => [...gs!, { uid: uid(), titleAr: '', titleEn: '', isActive: true, single: true, items: [{ uid: uid(), titleAr: '', titleEn: '', url: '/', isActive: true, newTab: false, custom: true }] }]);
+  /** takes a link out of its dropdown and makes it a standalone link, right after that dropdown */
+  const makeSingle = (gid: string, iid: string) => setGroups((gs) => {
+    const src = gs!.find((g) => g.uid === gid)?.items.find((i) => i.uid === iid);
+    if (!src) return gs;
+    const single: GroupD = { uid: uid(), titleAr: src.titleAr, titleEn: src.titleEn, isActive: true, single: true, items: [src] };
+    const out: GroupD[] = [];
+    gs!.forEach((g) => {
+      if (g.uid !== gid) { out.push(g); return; }
+      const rest = { ...g, items: g.items.filter((i) => i.uid !== iid) };
+      if (!g.single) out.push(rest);
+      out.push(single);
+    });
+    return out;
+  });
   const delGroup = (gid: string) => setGroups((gs) => gs!.filter((g) => g.uid !== gid));
 
   /** moves a link to `toGid`, before `beforeIid` (or at the end) */
   const moveItem = (fromGid: string, iid: string, toGid: string, beforeIid: string | null) => setGroups((gs) => {
     const src = gs!.find((g) => g.uid === fromGid)?.items.find((i) => i.uid === iid);
-    if (!src || iid === beforeIid) return gs;
+    if (!src || iid === beforeIid || gs!.find((g) => g.uid === toGid)?.single) return gs;
     const without = gs!.map((g) => (g.uid === fromGid ? { ...g, items: g.items.filter((i) => i.uid !== iid) } : g));
     return without.map((g) => {
       if (g.uid !== toGid) return g;
@@ -98,7 +126,7 @@ export function NavAdmin() {
       const items = [...g.items];
       items.splice(at < 0 ? items.length : at, 0, src);
       return { ...g, items };
-    });
+    }).filter((g) => !(g.single && g.items.length === 0));
   });
   const shiftItem = (gid: string, iid: string, by: -1 | 1) => setGroups((gs) => gs!.map((g) => {
     if (g.uid !== gid) return g;
@@ -169,6 +197,10 @@ export function NavAdmin() {
   };
 
   const total = groups?.reduce((n, g) => n + g.items.length, 0) ?? 0;
+  const en = lang === 'en';
+  const previewEntries: PreviewEntry[] = (groups ?? []).map((g) => g.single
+    ? { kind: 'link', title: (en && g.items[0]?.titleEn.trim()) || g.items[0]?.titleAr.trim() || '', active: g.isActive && !!g.items[0]?.isActive, items: [] }
+    : { kind: 'dropdown', title: (en && g.titleEn.trim()) || g.titleAr.trim(), active: g.isActive, items: g.items.map((i) => ({ title: (en && i.titleEn.trim()) || i.titleAr.trim(), active: i.isActive })) });
 
   return (
     <RequirePerm any={['nav.read']}>
@@ -177,26 +209,14 @@ export function NavAdmin() {
           <h1 className="text-2xl font-bold">{t('nv.title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-gray-600">{t('nv.subtitle')}</p>
         </div>
-        {edit && groups && <Button onClick={addGroup}>＋ {t('nv.addGroup')}</Button>}
+        {edit && groups && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={addSingle}>＋ {ar ? 'رابط مستقل (صفحة واحدة)' : 'Standalone link (single page)'}</Button><Button onClick={addGroup}>＋ {t('nv.addGroup')}</Button></div>}
       </div>
 
       {!groups ? <Center><Spinner /></Center> : (
         <>
-          {/* live preview of the navbar */}
-          <section className="mb-6 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line">
-            <div className="border-b border-line bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-500">{t('nv.preview')}</div>
-            <div className="flex flex-wrap items-center gap-1 px-4 py-3 text-sm font-semibold text-ink/80">
-              <span className="rounded-full px-3.5 py-1.5">{t('site.home')}</span>
-              {groups.map((g) => (
-                <span key={g.uid} className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 ${g.isActive && g.items.some((i) => i.isActive) ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 line-through'}`}>
-                  {g.titleAr.trim() || '—'}
-                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m3 6 5 5 5-5" /></svg>
-                </span>
-              ))}
-              <span className="rounded-full px-3.5 py-1.5">{t('contact.title')}</span>
-            </div>
-            <div className="border-t border-line px-4 py-2 text-xs text-gray-500">{groups.length} · {total} {t('nv.links')} — {t('nv.maxHint')}</div>
-          </section>
+          {/* live preview of the navbar, drawn from the unsaved draft */}
+          <NavPreview cfg={{ ...MAIN_PREVIEW, before: [t('site.home')], after: [t('contact.title')] }} lang={lang === 'en' ? 'en' : 'ar'} entries={previewEntries} />
+          <p className="-mt-3 mb-5 text-xs text-gray-500">{groups.length} · {total} {t('nv.links')} — {t('nv.maxHint')}</p>
 
           {groups.length === 0 && <Center>{t('nv.noGroups')}</Center>}
 
@@ -204,6 +224,57 @@ export function NavAdmin() {
             {groups.map((g, gi) => {
               const gProblem = problems.get(g.uid);
               const groupDrop = over?.gid === g.uid && drag.current?.kind === 'group';
+              if (g.single) {
+                const it = g.items[0];
+                if (!it) return null;
+                const tProblem = problems.get(it.uid + ':t');
+                const uProblem = problems.get(it.uid + ':u');
+                const dropdowns = groups.filter((x) => !x.single);
+                return (
+                  <section key={g.uid} data-card onDragOver={allow('group', { gid: g.uid })} onDrop={dropGroup(g.uid)}
+                    className={`overflow-hidden rounded-2xl bg-white shadow-card ring-1 transition ${groupDrop ? 'ring-2 ring-primary' : 'ring-line'} ${g.isActive && it.isActive ? '' : 'opacity-75'}`}>
+                    <div className="flex items-start gap-2 p-3">
+                      {edit && <Grip draggable onDragStart={startDrag({ kind: 'group', gid: g.uid }, null)} onDragEnd={endDrag} title={t('nv.drag')} />}
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">{ar ? 'رابط مستقل' : 'Standalone link'}</span>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div>
+                            <input value={it.titleAr} disabled={!edit} dir="rtl" maxLength={150} placeholder={t('nv.linkAr')} aria-label={t('nv.linkAr')} onChange={(e) => setI(g.uid, it.uid, { titleAr: e.target.value })} className={`${inputCls} font-bold ${tProblem ? 'border-red-400' : ''}`} />
+                            {tProblem && <span className="mt-1 block text-xs text-red-600">{tProblem}</span>}
+                          </div>
+                          <input value={it.titleEn} disabled={!edit} dir="ltr" maxLength={150} placeholder={t('nv.linkEn')} aria-label={t('nv.linkEn')} onChange={(e) => setI(g.uid, it.uid, { titleEn: e.target.value })} className={`${inputCls} font-bold`} />
+                        </div>
+                        {it.custom ? (
+                          <div>
+                            <input value={it.url} disabled={!edit} dir="ltr" maxLength={500} placeholder="/news  |  https://example.com" aria-label={ar ? 'الرابط' : 'Link address'} onChange={(e) => setI(g.uid, it.uid, { url: e.target.value })} className={`${inputCls} ${uProblem ? 'border-red-400' : ''}`} />
+                            {uProblem && <span className="mt-1 block text-xs text-red-600">{uProblem}</span>}
+                            <label className="mt-2 flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" disabled={!edit} checked={it.newTab} onChange={(e) => setI(g.uid, it.uid, { newTab: e.target.checked })} />{ar ? 'فتح في تبويب جديد' : 'Open in a new tab'}</label>
+                          </div>
+                        ) : <p dir="ltr" className="truncate rounded-lg bg-gray-50 px-3 py-1.5 text-start text-xs text-gray-500">{it.url}</p>}
+                        {edit && dropdowns.length > 0 && !it.custom && (
+                          <label className="flex items-center gap-1.5 text-xs text-gray-600">{t('nv.moveTo')}
+                            <select value="" onChange={(e) => e.target.value && moveItem(g.uid, it.uid, e.target.value, null)} aria-label={t('nv.moveTo')} className="max-w-[10rem] rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-primary">
+                              <option value="">{ar ? 'رابط مستقل' : 'Standalone link'}</option>
+                              {dropdowns.map((x) => <option key={x.uid} value={x.uid}>{x.titleAr.trim() || '—'}</option>)}
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-center gap-1.5 pt-1">
+                        <Switch on={g.isActive && it.isActive} onChange={(v) => { setG(g.uid, { isActive: v }); setI(g.uid, it.uid, { isActive: v }); }} label={t('nv.visible')} disabled={!edit} />
+                        <span className="text-[10px] text-gray-500">{t(g.isActive && it.isActive ? 'nv.visible' : 'nv.hidden')}</span>
+                      </div>
+                      {edit && (
+                        <div className="flex shrink-0 items-center">
+                          <IconBtn label={t('nv.up')} onClick={() => shiftGroup(g.uid, -1)} disabled={gi === 0}>↑</IconBtn>
+                          <IconBtn label={t('nv.down')} onClick={() => shiftGroup(g.uid, 1)} disabled={gi === groups.length - 1}>↓</IconBtn>
+                          <IconBtn label={it.custom ? (ar ? 'حذف الرابط' : 'Delete link') : (ar ? 'هذا رابط صفحة موجودة: انقله إلى قائمة بدل حذفه' : 'This link belongs to an existing page: move it into a dropdown instead of deleting it')} danger disabled={!it.custom} onClick={() => delGroup(g.uid)}>✕</IconBtn>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                );
+              }
               return (
                 <section
                   key={g.uid}
@@ -255,10 +326,11 @@ export function NavAdmin() {
                             </div>
                             <input value={it.titleEn} disabled={!edit} dir="ltr" maxLength={150} placeholder={t('nv.linkEn')} aria-label={t('nv.linkEn')} onChange={(e) => setI(g.uid, it.uid, { titleEn: e.target.value })} className={inputCls} />
                           </div>
-                          {edit && groups.length > 1 && (
+                          {edit && (
                             <label className="flex shrink-0 items-center gap-1.5 pt-1.5 text-xs text-gray-600"><span className="hidden sm:inline">{t('nv.moveTo')}</span>
-                              <select value={g.uid} onChange={(e) => moveItem(g.uid, it.uid, e.target.value, null)} aria-label={t('nv.moveTo')} className="max-w-[9rem] rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-primary">
-                                {groups.map((x) => <option key={x.uid} value={x.uid}>{x.titleAr.trim() || '—'}</option>)}
+                              <select value={g.uid} onChange={(e) => (e.target.value === '__single' ? makeSingle(g.uid, it.uid) : moveItem(g.uid, it.uid, e.target.value, null))} aria-label={t('nv.moveTo')} className="max-w-[9rem] rounded-lg border border-line bg-white px-2 py-1 text-xs outline-none focus:border-primary">
+                                {groups.filter((x) => !x.single).map((x) => <option key={x.uid} value={x.uid}>{x.titleAr.trim() || '—'}</option>)}
+                                <option value="__single">{ar ? '↗ رابط مستقل' : '↗ Standalone link'}</option>
                               </select>
                             </label>
                           )}

@@ -6,6 +6,8 @@ import { NAV_GROUPS } from '@/lib/nav';
 export interface PublicNavGroup {
   id: number | string;
   title: string;
+  /** a standalone link shown directly in the bar (its only item is the link) */
+  single?: boolean;
   items: { id: number | string; title: string; url: string; newTab: boolean }[];
 }
 

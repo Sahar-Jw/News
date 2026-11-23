@@ -12,12 +12,15 @@ export class NavItemDto {
   @IsString() @MaxLength(500) @Matches(NAV_URL, { message: 'الرابط يجب أن يكون مساراً داخل الموقع يبدأ بـ / أو رابطاً كاملاً http(s)' }) url: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsBoolean() newTab?: boolean;
+  @IsOptional() @IsBoolean() custom?: boolean;
 }
 
 export class NavGroupDto {
   @IsString() @MinLength(1) @MaxLength(150) titleAr: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) titleEn?: string | null;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** a standalone link in the bar (exactly one item) instead of a dropdown */
+  @IsOptional() @IsBoolean() single?: boolean;
   @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => NavItemDto) items: NavItemDto[];
 }
 

@@ -94,6 +94,16 @@ function NavLink({ item, href }: { item: NavItem; href: (p: string) => string })
   return <Link href={href(item.to)} target={item.newTab ? '_blank' : undefined} className={ROW}>{item.label}</Link>;
 }
 
+/** A standalone link of the main menu: one page shown directly in the bar (same look as Home / Contact). */
+function NavSingle({ item, href, pathname }: { item: NavItem; href: (p: string) => string; pathname: string }) {
+  const external = /^https?:\/\//i.test(item.to);
+  const path = item.to.split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+  const on = !external && path !== '/' && pathname.replace(/\/+$/, '').replace(/^\/(ar|en)(?=\/|$)/, '') === path;
+  const cls = `w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto xl:whitespace-nowrap ${on ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`;
+  if (external) return <a href={item.to} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener noreferrer' : undefined} className={cls}>{item.label}</a>;
+  return <Link href={href(item.to)} target={item.newTab ? '_blank' : undefined} className={cls}>{item.label}</Link>;
+}
+
 /** Hover dropdown used for the public menu groups (same look as the other nav dropdowns). */
 function NavDropdown({ label, items, href }: { label: string; items: NavItem[]; href: (p: string) => string }) {
   const visible = items.filter((i) => i.show);
@@ -257,7 +267,7 @@ export function Navbar() {
   // Public dropdowns: managed in Settings -> Main menu (loaded from the API).
   const navGroups = useNavGroups(lang, t);
   const groups = [
-    ...(navGroups ?? []).map((g) => ({ key: String(g.id), label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) })),
+    ...(navGroups ?? []).map((g) => ({ key: String(g.id), single: !!g.single, label: g.title, items: g.items.map((i): NavItem => ({ label: i.title, to: i.url, show: true, newTab: i.newTab })) })),
   ];
   // Settings is the hub of every page of the site (courses, trainers, trainees, expo, membership ...): it is listed for anyone who can open at least one of its tabs.
   const securityItems: NavItem[] = [
@@ -349,7 +359,7 @@ export function Navbar() {
         <nav onClick={(e) => { if (window.matchMedia('(max-width: 1279px)').matches && (e.target as HTMLElement).closest('a')) setMenu(false); }} className="flex w-full flex-col gap-1 xl:ms-auto xl:w-auto xl:shrink-0 xl:flex-row xl:items-center xl:gap-1">
           <Link href={href('/')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${isHome ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('site.home')}</Link>
 
-          {groups.map((g) => <NavDropdown key={g.key} label={g.label} items={g.items} href={href} />)}
+          {groups.map((g) => (g.single && g.items[0] ? <NavSingle key={g.key} item={g.items[0]} href={href} pathname={pathname} /> : <NavDropdown key={g.key} label={g.label} items={g.items} href={href} />))}
 
           <Link href={href('/contact')} className={`w-full rounded-full px-3.5 py-2 text-start text-sm font-semibold transition duration-200 hover:bg-primary/10 hover:text-primary xl:w-auto ${/\/contact\/?$/.test(pathname) ? 'bg-primary/10 text-primary ring-1 ring-primary/15' : 'text-ink/80'}`}>{t('contact.title')}</Link>
 
