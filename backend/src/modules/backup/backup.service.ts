@@ -1,12 +1,15 @@
 import { BadGatewayException, BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { spawn } from 'child_process';
-import { createReadStream, promises as fs } from 'fs';
+import { createReadStream, createWriteStream, promises as fs } from 'fs';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { randomBytes } from 'crypto';
 import * as path from 'path';
 import { DataSource } from 'typeorm';
 import { AuthUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
-import { backupKey, dumpDatabase, writeEncryptedOrPlain } from './backup-core';
+import { backupKey, dumpDatabase, openProtected, writeEncryptedOrPlain } from './backup-core';
 
 export interface BackupInfo {
   id: string;
@@ -227,14 +230,39 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     return { deleted: true };
   }
 
-  /** the path of one file of a backup (only names this service made; never a path from the client) */
-  async fileOf(id: string, kind: 'db' | 'files', actor: AuthUser) {
+  /**
+   * One file of a backup (only names this service made; never a path from the client).
+   * readable = true: the file is decrypted on the way out (a plain .json.gz / .tar.gz that any archive tool opens), so an encrypted backup can be
+   * looked at or restored without the key. Needs the same permission as the download, and is written to the audit log.
+   */
+  async fileOf(id: string, kind: 'db' | 'files', actor: AuthUser, readable = false) {
     const b = (await this.list()).find((x) => x.id === id && x.ok);
     const name = kind === 'db' ? b?.dbFile : b?.filesFile;
     if (!b || !name || !FILE_RE.test(name)) throw new NotFoundException('الملف غير موجود');
-    await this.audit.log({ category: 'backup', action: 'download', description: `تنزيل ${name}`, actorId: actor.id });
-    if (this.useS3) return { name, stream: (await this.storage.backupStream(name)).stream };
-    return { name, stream: createReadStream(path.join(this.dir, name)) };
+    await this.audit.log({ category: 'backup', action: readable && b.encrypted ? 'download.readable' : 'download', description: `تنزيل ${name}${readable && b.encrypted ? ' (بعد فك التشفير)' : ''}`, actorId: actor.id });
+    if (!readable || !b.encrypted) {
+      if (this.useS3) return { name, stream: (await this.storage.backupStream(name)).stream as Readable };
+      return { name, stream: createReadStream(path.join(this.dir, name)) as Readable };
+    }
+    const key = backupKey();
+    if (!key) throw new BadRequestException('الملف مشفّر ولا يوجد BACKUP_ENCRYPTION_KEY على الخادم لفك تشفيره. نزّل النسخة المشفّرة واحتفظ بالمفتاح الذي أُنشئت به.');
+    // decryption needs the whole file (the authentication tag is at its end): from the bucket it is first copied to a work file
+    let file = path.join(this.dir, name);
+    let temp: string | null = null;
+    if (this.useS3) {
+      temp = path.join(this.dir, `${name}.${randomBytes(4).toString('hex')}.tmp`);
+      file = temp;
+      await fs.mkdir(this.dir, { recursive: true, mode: 0o700 });
+      await pipeline((await this.storage.backupStream(name)).stream, createWriteStream(temp, { mode: 0o600 }));
+    }
+    try {
+      const stream = (await openProtected(file, key)) as Readable;
+      if (temp) stream.once('close', () => void fs.rm(temp!, { force: true }));
+      return { name, stream };
+    } catch (e) {
+      if (temp) await fs.rm(temp, { force: true });
+      throw new BadRequestException(`تعذّر فك التشفير: ${(e as Error).message}`.slice(0, 200));
+    }
   }
 
   /**

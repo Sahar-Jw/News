@@ -114,6 +114,8 @@ BACKUP_INCLUDE_FILES=true
 
 Restore (REPLACES all data; stop the API, run the migrations of the same version first):
 ```bash
+# an encrypted backup downloaded with "Download encrypted" can be decrypted anywhere you have the key:
+# BACKUP_ENCRYPTION_KEY=... node dist/database/decrypt-backup.js backup-X.json.gz backup-X.plain.json.gz   (npm run backup:decrypt -- <in> <out>)
 BACKUP_ENCRYPTION_KEY=... npm run backup:restore:prod -- /path/backup-YYYYMMDD-HHMMSS.json.gz --yes
 tar -xzf backup-….files.tar.gz -C "$STORAGE_DIR"   # an encrypted archive must be decrypted first (AES-256-GCM: "DCCBK1" | iv 12 B | data | tag 16 B)
 ```

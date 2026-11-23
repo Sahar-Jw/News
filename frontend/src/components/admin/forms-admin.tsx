@@ -412,7 +412,7 @@ export function BackupsAdmin() {
   const load = useCallback(() => { api<{ status: BackupStatus; data: Backup[] }>('/admin/backups').then(setData).catch((e) => toast(e.message, 'err')); }, [toast]);
   useEffect(load, [load]);
   const create = async () => { setBusy(true); try { await api('/admin/backups', { method: 'POST' }); toast(L('تم إنشاء النسخة الاحتياطية', 'Backup created')); load(); } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); } };
-  const get = async (b: Backup, kind: 'db' | 'files') => { try { await download(`/admin/backups/${b.id}/${kind}`, {}, `${b.id}.${kind === 'db' ? 'json.gz' : 'files.tar.gz'}`); } catch (e: any) { toast(e.message, 'err'); } };
+  const get = async (b: Backup, kind: 'db' | 'files', readable: boolean) => { try { await download(`/admin/backups/${b.id}/${kind}`, readable ? { readable: 1 } : {}, `${b.id}.${kind === 'db' ? 'json.gz' : 'files.tar.gz'}`); } catch (e: any) { toast(e.message, 'err'); } };
   const del = async (b: Backup) => { if (!(await confirm({ danger: true, message: L('حذف هذه النسخة؟', 'Delete this backup?') }))) return; try { await api(`/admin/backups/${b.id}`, { method: 'DELETE' }); load(); } catch (e: any) { toast(e.message, 'err'); } };
   if (!data) return <Center><Spinner /></Center>;
   const st = data.status;
@@ -420,7 +420,7 @@ export function BackupsAdmin() {
     <div className="space-y-4">
       <div className="rounded-2xl bg-canvas p-4 text-sm leading-7">
         <p>{st.automatic ? L(`نسخ تلقائي كل ${st.intervalHours} ساعة، ويُحتفظ بآخر ${st.keep} نسخة.`, `Automatic backup every ${st.intervalHours} h; the last ${st.keep} are kept.`) : L('النسخ التلقائي متوقف (BACKUP_ENABLED=false).', 'Automatic backup is off (BACKUP_ENABLED=false).')}</p>
-        <p>{st.encrypted ? L('🔒 الملفات مشفّرة (BACKUP_ENCRYPTION_KEY).', '🔒 Files are encrypted (BACKUP_ENCRYPTION_KEY).') : <span className="text-red-700">{L('⚠ الملفات غير مشفّرة وتحتوي بيانات شخصية: عيّن BACKUP_ENCRYPTION_KEY.', '⚠ Files are NOT encrypted and hold personal data: set BACKUP_ENCRYPTION_KEY.')}</span>}</p>
+        <p>{st.encrypted ? L('🔒 الملفات مشفّرة على الخادم (BACKUP_ENCRYPTION_KEY). زر «تنزيل» يفك التشفير ويعطيك ملفاً يُفتح مباشرة (7-Zip)، وزر «تنزيل مشفّر» للأرشفة خارج الخادم.', '🔒 Files are encrypted on the server (BACKUP_ENCRYPTION_KEY). "Download" decrypts them into a file that opens directly (7-Zip); "Download encrypted" is for archiving off the server.') : <span className="text-red-700">{L('⚠ الملفات غير مشفّرة وتحتوي بيانات شخصية: عيّن BACKUP_ENCRYPTION_KEY.', '⚠ Files are NOT encrypted and hold personal data: set BACKUP_ENCRYPTION_KEY.')}</span>}</p>
         <p className="text-xs text-gray-600">{L('انسخ هذه الملفات دورياً خارج الخادم. الاستعادة تتم بأمر (npm run backup:restore) لأنها تستبدل كل البيانات.', 'Copy these files off the server regularly. Restoring is a command (npm run backup:restore) because it replaces all data.')}</p>
         {st.filesDriver !== 'local' && <p className="text-xs text-gray-600">{L('الملفات المرفوعة على التخزين السحابي S3: فعّل الإصدارات/النسخ المتكرر في الحاوية نفسها.', 'Uploaded files live in S3: enable versioning / replication on the bucket itself.')}</p>}
       </div>
@@ -443,8 +443,9 @@ export function BackupsAdmin() {
                 <td className="p-3">{fmtDate(lang, b.createdAt, true)}</td>
                 <td className="p-3 text-xs">{b.ok ? <>{b.tables} {L('جدول', 'tables')} · {b.rows} {L('سجل', 'rows')} · {kb(b.dbBytes ?? 0)}{b.filesFile ? ` · ${L('الملفات', 'files')} ${kb(b.filesBytes ?? 0)}` : b.filesNote ? ` · ${b.filesNote}` : ''}</> : <span className="text-red-600">{L('فشلت', 'Failed')}</span>}</td>
                 <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
-                  {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db')}>{L('تنزيل قاعدة البيانات', 'Download database')}</Button>}
-                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files')}>{L('تنزيل الملفات', 'Download files')}</Button>}
+                  {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', true)}>{L('تنزيل قاعدة البيانات', 'Download database')}</Button>}
+                  {b.ok && b.encrypted && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', false)}>{L('تنزيل مشفّر', 'Download encrypted')}</Button>}
+                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files', true)}>{L('تنزيل الملفات', 'Download files')}</Button>}
                   {can('backups.delete') && <Button size="sm" variant="danger" onClick={() => del(b)}>{L('حذف', 'Delete')}</Button>}
                 </span></td>
               </tr>

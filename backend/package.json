@@ -26,7 +26,9 @@
     "seed": "ts-node src/database/seed.ts",
     "seed:prod": "node dist/database/seed.js",
     "backup:restore": "ts-node src/database/restore-backup.ts",
-    "backup:restore:prod": "node dist/database/restore-backup.js"
+    "backup:restore:prod": "node dist/database/restore-backup.js",
+    "backup:decrypt": "ts-node src/database/decrypt-backup.ts",
+    "backup:decrypt:prod": "node dist/database/decrypt-backup.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1157.0",
