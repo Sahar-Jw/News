@@ -2,6 +2,7 @@ import { BadGatewayException, BadRequestException, ConflictException, Injectable
 import { spawn } from 'child_process';
 import { createReadStream, createWriteStream, promises as fs } from 'fs';
 import { Readable } from 'stream';
+import { createGunzip } from 'zlib';
 import { pipeline } from 'stream/promises';
 import { randomBytes } from 'crypto';
 import * as path from 'path';
@@ -10,6 +11,7 @@ import { AuthUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { backupKey, dumpDatabase, openProtected, writeEncryptedOrPlain } from './backup-core';
+import { ndjsonToSql, zipSingle } from './backup-zip';
 
 export interface BackupInfo {
   id: string;
@@ -244,9 +246,13 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       if (this.useS3) return { name, stream: (await this.storage.backupStream(name)).stream as Readable };
       return { name, stream: createReadStream(path.join(this.dir, name)) as Readable };
     }
+    return { name, stream: await this.openPlain(name) };
+  }
+
+  /** a backup file as plain bytes: decrypted when it was encrypted (needs BACKUP_ENCRYPTION_KEY). From the bucket it is first copied to a work file, because decryption needs the authentication tag at the end of the file. */
+  private async openPlain(name: string): Promise<Readable> {
     const key = backupKey();
-    if (!key) throw new BadRequestException('الملف مشفّر ولا يوجد BACKUP_ENCRYPTION_KEY على الخادم لفك تشفيره. نزّل النسخة المشفّرة واحتفظ بالمفتاح الذي أُنشئت به.');
-    // decryption needs the whole file (the authentication tag is at its end): from the bucket it is first copied to a work file
+    if (!key) throw new BadRequestException('الملف مشفّر ولا يوجد BACKUP_ENCRYPTION_KEY على الخادم لفك تشفيره.');
     let file = path.join(this.dir, name);
     let temp: string | null = null;
     if (this.useS3) {
@@ -258,11 +264,32 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     try {
       const stream = (await openProtected(file, key)) as Readable;
       if (temp) stream.once('close', () => void fs.rm(temp!, { force: true }));
-      return { name, stream };
+      return stream;
     } catch (e) {
       if (temp) await fs.rm(temp, { force: true });
       throw new BadRequestException(`تعذّر فك التشفير: ${(e as Error).message}`.slice(0, 200));
     }
+  }
+
+  /**
+   * The database backup as a ZIP holding one folder with the restorable SQL script (backup-X/backup-X.sql).
+   * protectedZip = true: the ZIP is AES-256 password protected, the password being BACKUP_ENCRYPTION_KEY (7-Zip / WinRAR / WinZip ask for it).
+   */
+  async sqlZip(id: string, actor: AuthUser, protectedZip: boolean) {
+    const b = (await this.list()).find((x) => x.id === id && x.ok && x.dbFile);
+    if (!b || !b.dbFile || !FILE_RE.test(b.dbFile)) throw new NotFoundException('الملف غير موجود');
+    const password = protectedZip ? (process.env.BACKUP_ENCRYPTION_KEY ?? '').trim() : '';
+    if (protectedZip && !password) throw new BadRequestException('لا يوجد BACKUP_ENCRYPTION_KEY على الخادم، فلا يمكن تنزيل نسخة مشفّرة.');
+    await this.audit.log({ category: 'backup', action: protectedZip ? 'download.sql.encrypted' : 'download.sql', description: `تنزيل ${id}.zip ${protectedZip ? '(مشفّر بكلمة مرور)' : '(غير مشفّر)'}`, actorId: actor.id });
+    const gz = b.encrypted
+      ? await this.openPlain(b.dbFile)
+      : this.useS3 ? (await this.storage.backupStream(b.dbFile)).stream : (createReadStream(path.join(this.dir, b.dbFile)) as Readable);
+    const gunzip = createGunzip();
+    gz.on('error', (e) => gunzip.destroy(e));
+    gz.pipe(gunzip);
+    const sql = ndjsonToSql(gunzip);
+    gunzip.on('error', (e) => sql.destroy(e));
+    return { name: `${id}${protectedZip ? '-encrypted' : ''}.zip`, stream: zipSingle(`${id}/${id}.sql`, sql, password || undefined) };
   }
 
   /**

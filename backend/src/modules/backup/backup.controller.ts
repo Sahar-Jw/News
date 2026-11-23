@@ -21,12 +21,14 @@ export class BackupController {
     return this.service.run('manual', u);
   }
 
+  /** db = a ZIP with the restorable .sql (?encrypted=1: password-protected ZIP); files = the uploaded files as .tar.gz (decrypted) */
   @Get(':id/:kind')
   @Permissions('backups.download')
-  async download(@Param('id') id: string, @Param('kind') kind: string, @Query('readable') readable: string | undefined, @Res() res: Response, @CurrentUser() u: AuthUser) {
-    const plain = readable === '1' || readable === 'true';
-    const { name, stream } = await this.service.fileOf(id, kind === 'files' ? 'files' : 'db', u, plain);
-    res.setHeader('Content-Type', 'application/octet-stream');
+  async download(@Param('id') id: string, @Param('kind') kind: string, @Query('encrypted') encrypted: string | undefined, @Res() res: Response, @CurrentUser() u: AuthUser) {
+    const { name, stream } = kind === 'files'
+      ? await this.service.fileOf(id, 'files', u, true)
+      : await this.service.sqlZip(id, u, encrypted === '1' || encrypted === 'true');
+    res.setHeader('Content-Type', kind === 'files' ? 'application/gzip' : 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
     res.setHeader('Cache-Control', 'private, no-store');
     stream.on('error', () => res.destroy());

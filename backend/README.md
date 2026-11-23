@@ -112,6 +112,8 @@ BACKUP_ENCRYPTION_KEY=        # needed to restore
 BACKUP_INCLUDE_FILES=true
 ```
 
+Dashboard download: **Download** = a ZIP with one folder holding `backup-X.sql` (a restorable script); **Download encrypted** = the same ZIP protected with the password `BACKUP_ENCRYPTION_KEY` (AES-256, opens in 7-Zip / WinRAR / WinZip). To restore from it: extract, then `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backup-X.sql` (or run the file in pgAdmin) on a database that already has the tables. It first empties every table and runs in ONE transaction.
+
 Restore (REPLACES all data; stop the API, run the migrations of the same version first):
 ```bash
 # an encrypted backup downloaded with "Download encrypted" can be decrypted anywhere you have the key:
