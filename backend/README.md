@@ -104,7 +104,7 @@ FORMS_ENCRYPTION_KEY=   # long random secret. Keep a copy elsewhere: if lost, "s
 Settings → Forms & requests → Backups, or automatic (default every 24 h, keep 14). A backup = the whole database (`backup-….json.gz`) + the uploaded files when they are on local disk (`backup-….files.tar.gz`; with S3 enable bucket versioning). Encrypted when `BACKUP_ENCRYPTION_KEY` is set. **Copy `BACKUP_DIR` off the server** and keep the key somewhere else.
 
 ```dotenv
-BACKUP_DIR=./backups          # mount as a volume
+BACKUP_DIR=./backups          # with S3 file storage the backups are uploaded to the bucket (<S3_PREFIX>/.backups/, never served) and this is only a work folder; BACKUP_STORAGE=local keeps them here instead. On local storage it MUST be a mounted persistent volume (e.g. mount a volume at /app/backups): on the container's own disk every redeploy / restart erases the backups (the Backups page warns when it is not)
 BACKUP_ENABLED=true           # false = no automatic backup
 BACKUP_INTERVAL_HOURS=24
 BACKUP_KEEP=14

@@ -399,7 +399,7 @@ export function FormSubmissionsAdmin({ slugs }: { slugs?: string[] } = {}) {
 
 // ============================================================================================ backups
 interface Backup { id: string; createdAt: string; trigger: string; by: string | null; ok: boolean; tables?: number; rows?: number; dbBytes?: number; filesFile?: string | null; filesBytes?: number; filesNote?: string; encrypted: boolean; durationMs: number }
-interface BackupStatus { dir: string; running: boolean; encrypted: boolean; automatic: boolean; intervalHours: number; keep: number; filesDriver: string }
+interface BackupStatus { store?: 's3' | 'disk'; persistent?: boolean; dir: string; running: boolean; encrypted: boolean; automatic: boolean; intervalHours: number; keep: number; filesDriver: string }
 
 export function BackupsAdmin() {
   const L = useL();
@@ -424,6 +424,13 @@ export function BackupsAdmin() {
         <p className="text-xs text-gray-600">{L('انسخ هذه الملفات دورياً خارج الخادم. الاستعادة تتم بأمر (npm run backup:restore) لأنها تستبدل كل البيانات.', 'Copy these files off the server regularly. Restoring is a command (npm run backup:restore) because it replaces all data.')}</p>
         {st.filesDriver !== 'local' && <p className="text-xs text-gray-600">{L('الملفات المرفوعة على التخزين السحابي S3: فعّل الإصدارات/النسخ المتكرر في الحاوية نفسها.', 'Uploaded files live in S3: enable versioning / replication on the bucket itself.')}</p>}
       </div>
+      {st.store === 's3' && <p className="rounded-2xl bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">{L('☁ النسخ تُحفظ في حاوية S3 (مجلد .backups)، فلا تضيع عند إعادة النشر.', '☁ Backups are stored in the S3 bucket (.backups folder), so redeploys do not erase them.')}</p>}
+      {st.persistent === false && (
+        <div role="alert" className="rounded-2xl bg-red-50 p-4 text-sm leading-7 text-red-800 ring-1 ring-red-200">
+          <p className="font-bold">{L('⚠ النسخ الاحتياطية تُحفظ على قرص الحاوية المؤقت وتُمحى عند كل إعادة نشر أو إعادة تشغيل.', '⚠ Backups are stored on the container\'s temporary disk and are erased at every redeploy or restart.')}</p>
+          <p>{L(`اربط Volume دائماً بالمسار ${st.dir} (أو غيّر BACKUP_DIR إلى مسار مربوط بـ Volume) ثم أعد التشغيل. نزّل نسخك الحالية الآن قبل ذلك.`, `Mount a persistent volume at ${st.dir} (or point BACKUP_DIR at a mounted volume) and restart. Download your current backups first.`)}</p>
+        </div>
+      )}
       {can('backups.create') && <Button disabled={busy || st.running} onClick={create}>{busy ? L('جارٍ النسخ…', 'Backing up…') : L('إنشاء نسخة احتياطية الآن', 'Back up now')}</Button>}
       <div className="overflow-x-auto rounded-2xl ring-1 ring-line">
         <table className="w-full text-sm">
@@ -436,8 +443,8 @@ export function BackupsAdmin() {
                 <td className="p-3">{fmtDate(lang, b.createdAt, true)}</td>
                 <td className="p-3 text-xs">{b.ok ? <>{b.tables} {L('جدول', 'tables')} · {b.rows} {L('سجل', 'rows')} · {kb(b.dbBytes ?? 0)}{b.filesFile ? ` · ${L('الملفات', 'files')} ${kb(b.filesBytes ?? 0)}` : b.filesNote ? ` · ${b.filesNote}` : ''}</> : <span className="text-red-600">{L('فشلت', 'Failed')}</span>}</td>
                 <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
-                  {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db')}>{L('قاعدة البيانات', 'Database')}</Button>}
-                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files')}>{L('الملفات', 'Files')}</Button>}
+                  {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db')}>{L('تنزيل قاعدة البيانات', 'Download database')}</Button>}
+                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files')}>{L('تنزيل الملفات', 'Download files')}</Button>}
                   {can('backups.delete') && <Button size="sm" variant="danger" onClick={() => del(b)}>{L('حذف', 'Delete')}</Button>}
                 </span></td>
               </tr>

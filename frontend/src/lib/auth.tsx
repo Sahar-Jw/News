@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { ApiError, SESSION_EXPIRED_EVENT, api, currentLang, sessionHint } from './api';
+import { API_URL, ApiError, SESSION_EXPIRED_EVENT, api, currentLang, sessionHint } from './api';
 
 export interface Me {
   id: number;
@@ -70,16 +70,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const r = await api<{ user: Me }>('/auth/login', { method: 'POST', body: { email, password } });
-    // The password was right, but is the sign-in cookie really kept and sent back? (Browsers that block cross-site cookies, or a site and API on
-    // different domains without COOKIE_SAMESITE=none, accept the login and then refuse every next call with "login required".) Check at once
-    // and say so, instead of showing a signed-in page that cannot do anything.
-    try { await api<Me>('/auth/me'); } catch (e) {
-      if (e instanceof ApiError && e.status === 401) {
-        setMe(null);
-        throw new ApiError(401, currentLang() === 'ar'
-          ? 'تم التحقق من كلمة المرور لكن المتصفح لم يحتفظ بجلسة الدخول. اسمح بملفات تعريف الارتباط (cookies) لهذا الموقع، أو أخبر مدير الموقع أن إعدادات الكوكيز في الخادم (COOKIE_SAMESITE / COOKIE_SECURE) غير صحيحة.'
-          : 'Your password was accepted but the browser did not keep the sign-in session. Allow cookies for this site, or tell the site administrator that the server cookie settings (COOKIE_SAMESITE / COOKIE_SECURE) are wrong.');
+    // The password was right, but is the sign-in cookie really kept and sent back? Check at once, instead of showing a signed-in page that
+    // cannot do anything. Two things keep this from raising a false alarm:
+    //  - one more try after a moment (a slow connection / a proxy that is still handling the Set-Cookie answer), and
+    //  - only the server's "no sign-in cookie arrived" answer means a cookie problem: any other 401 (account switched off, password just
+    //    reset ...) is shown with the server's own words, and the cause that is really measurable here (site and API on different domains) is named.
+    const ar = currentLang() === 'ar';
+    let failure: ApiError | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { await api<Me>('/auth/me'); failure = null; break; } catch (e) {
+        if (!(e instanceof ApiError) || e.status !== 401) break; // a network error is not a cookie problem
+        failure = e;
+        if (attempt < 2) await new Promise((ok) => setTimeout(ok, 400 * (attempt + 1)));
       }
+    }
+    if (failure) {
+      setMe(null);
+      const noCookie = failure.message === 'يلزم تسجيل الدخول' || failure.message === 'You need to sign in';
+      if (!noCookie) throw failure;
+      let apiHost = '';
+      try { apiHost = new URL(API_URL).hostname; } catch { /* relative API address: same site by definition */ }
+      const site = window.location.hostname;
+      const base = (h: string) => h.split('.').slice(-2).join('.');
+      const crossSite = !!apiHost && base(apiHost) !== base(site);
+      // eslint-disable-next-line no-console
+      console.warn('[login] password accepted but /auth/me answered 401 without a cookie', { site, api: apiHost || '(same origin)', crossSite, https: window.location.protocol === 'https:' });
+      throw new ApiError(401, crossSite
+        ? (ar ? `الموقع (${site}) والخادم (${apiHost}) على نطاقين مختلفين، فيرفض المتصفح الكوكيز. استخدم نطاقاً فرعياً من نفس النطاق للطرفين، أو اضبط COOKIE_SAMESITE=none مع COOKIE_SECURE=true.` : `The site (${site}) and the API (${apiHost}) are on different domains, so the browser refuses the cookie. Put both on subdomains of the same domain, or set COOKIE_SAMESITE=none with COOKIE_SECURE=true.`)
+        : (ar ? 'تم التحقق من كلمة المرور لكن المتصفح لم يحتفظ بجلسة الدخول. أعد المحاولة؛ وإن تكرر فاسمح بملفات تعريف الارتباط (cookies) لهذا الموقع وافتح الموقع من المتصفح مباشرة وليس من داخل تطبيق (واتساب/فيسبوك).' : 'Your password was accepted but the browser did not keep the sign-in session. Try again; if it repeats, allow cookies for this site and open it in the browser itself, not inside an app (WhatsApp / Facebook).'));
     }
     setMe(r.user);
     return r.user;

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { spawn } from 'child_process';
 import { createReadStream, promises as fs } from 'fs';
 import * as path from 'path';
@@ -37,6 +37,8 @@ const FILE_RE = /^backup-\d{8}-\d{6}\.(json\.gz|files\.tar\.gz|meta\.json)$/;
  *  BACKUP_KEEP               how many backups are kept; older ones are deleted (default 14)
  *  BACKUP_ENCRYPTION_KEY     encrypts the backup files (AES-256-GCM). Keep this key somewhere else: without it an encrypted backup cannot be restored.
  *  BACKUP_INCLUDE_FILES=false  database only
+ *  BACKUP_STORAGE=local      keep the backups on BACKUP_DIR even when the uploaded files are in S3 (by default, with S3 storage, the backups go to the SAME
+ *                            bucket under "<S3_PREFIX>/.backups/" - never served by any file URL - and BACKUP_DIR is only a temporary work folder)
  * Restoring is deliberately NOT a button: it replaces all data, so it is a command (npm run backup:restore, see README).
  */
 @Injectable()
@@ -44,6 +46,8 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BackupService.name);
   readonly dir = path.resolve(process.env.BACKUP_DIR || './backups');
   private running = false;
+  /** meta files never change once written: read each from the bucket once */
+  private readonly metaCache = new Map<string, BackupInfo>();
   private timer?: ReturnType<typeof setInterval>;
 
   constructor(
@@ -65,12 +69,18 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       const last = (await this.list()).find((b) => b.ok);
       if (!last || Date.now() - new Date(last.createdAt).getTime() >= hours * 3600_000 - 60_000) await this.run('schedule', null).catch(() => undefined);
     };
-    setTimeout(() => void tick(), 2 * 60_000).unref();
-    this.timer = setInterval(() => void tick(), 30 * 60_000);
+    const safeTick = () => tick().catch((e) => this.logger.error(`Scheduled backup check failed: ${(e as Error).message}`));
+    setTimeout(() => void safeTick(), 2 * 60_000).unref();
+    this.timer = setInterval(() => void safeTick(), 30 * 60_000);
     this.timer.unref();
   }
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
+  }
+
+  /** true = backups are kept in the S3 bucket (the container disk is wiped at every redeploy, the bucket is not) */
+  private get useS3() {
+    return this.storage.driver === 's3' && process.env.BACKUP_STORAGE !== 'local';
   }
 
   private stamp() {
@@ -103,6 +113,10 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
           this.logger.warn(info.filesNote);
         }
       }
+      if (this.useS3) {
+        await this.storage.backupPut(dbFile, path.join(this.dir, dbFile));
+        if (info.filesFile) await this.storage.backupPut(info.filesFile, path.join(this.dir, info.filesFile));
+      }
       info.ok = true;
     } catch (e) {
       info.error = (e as Error).message.slice(0, 300);
@@ -111,6 +125,19 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       this.running = false;
       info.durationMs = Date.now() - started;
       await fs.writeFile(path.join(this.dir, `${id}.meta.json`), JSON.stringify(info), { mode: 0o600 }).catch(() => undefined);
+    }
+    if (this.useS3) {
+      // the meta file goes up LAST: a backup is listed only when everything it points to is already in the bucket
+      try {
+        if (info.ok) await this.storage.backupPut(`${id}.meta.json`, path.join(this.dir, `${id}.meta.json`));
+      } catch (e) {
+        info.ok = false;
+        info.error = (e as Error).message.slice(0, 300);
+        this.logger.error(`Backup ${id} failed: ${info.error}`);
+      }
+      if (!info.ok) for (const n of [info.dbFile, info.filesFile]) if (n) await this.storage.backupDelete(n).catch(() => undefined);
+      // the bucket is the store now: the local copy was only a work file
+      for (const ext of ['json.gz', 'files.tar.gz', 'meta.json']) await fs.rm(path.join(this.dir, `${id}.${ext}`), { force: true }).catch(() => undefined);
     }
     await this.audit.log({ category: 'backup', action: info.ok ? 'create' : 'create.failed', description: info.ok ? `نسخة احتياطية ${id} (${trigger === 'manual' ? 'يدوية' : 'تلقائية'})` : `فشل النسخ الاحتياطي ${id}`, actorId: actor?.id ?? null, details: { ok: info.ok, rows: info.rows, tables: info.tables, error: info.error } });
     if (info.ok) await this.prune();
@@ -138,7 +165,26 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  private async listS3(): Promise<BackupInfo[]> {
+    let names: string[];
+    try { names = await this.storage.backupNames(); } catch (e) { throw new BadGatewayException(`تعذّر قراءة النسخ من S3: ${(e as Error).message}`.slice(0, 300)); }
+    const present = new Set(names);
+    const out: BackupInfo[] = [];
+    for (const n of names.filter((x) => x.endsWith('.meta.json') && ID_RE.test(x.replace('.meta.json', '')))) {
+      const id = n.replace('.meta.json', '');
+      try {
+        let m = this.metaCache.get(id);
+        if (!m) { m = JSON.parse(await this.storage.backupText(n)) as BackupInfo; this.metaCache.set(id, m); }
+        if (m.ok && m.dbFile && !present.has(m.dbFile)) continue; // removed from the bucket by hand
+        out.push(m);
+      } catch { /* unreadable meta: skip */ }
+    }
+    for (const id of [...this.metaCache.keys()]) if (!present.has(`${id}.meta.json`)) this.metaCache.delete(id);
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   async list(): Promise<BackupInfo[]> {
+    if (this.useS3) return this.listS3();
     let names: string[] = [];
     try { names = await fs.readdir(this.dir); } catch { return []; }
     const out: BackupInfo[] = [];
@@ -165,6 +211,12 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
   private async removeFiles(id: string) {
     if (!ID_RE.test(id)) throw new NotFoundException('النسخة غير موجودة');
+    if (this.useS3) {
+      // the meta file first, so a half-deleted backup is never listed
+      for (const ext of ['meta.json', 'json.gz', 'files.tar.gz']) await this.storage.backupDelete(`${id}.${ext}`);
+      this.metaCache.delete(id);
+      return;
+    }
     for (const ext of ['json.gz', 'files.tar.gz', 'meta.json']) await fs.rm(path.join(this.dir, `${id}.${ext}`), { force: true });
   }
 
@@ -181,10 +233,22 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     const name = kind === 'db' ? b?.dbFile : b?.filesFile;
     if (!b || !name || !FILE_RE.test(name)) throw new NotFoundException('الملف غير موجود');
     await this.audit.log({ category: 'backup', action: 'download', description: `تنزيل ${name}`, actorId: actor.id });
+    if (this.useS3) return { name, stream: (await this.storage.backupStream(name)).stream };
     return { name, stream: createReadStream(path.join(this.dir, name)) };
   }
 
-  status() {
-    return { dir: this.dir, running: this.running, encrypted: !!backupKey(), automatic: process.env.BACKUP_ENABLED !== 'false', intervalHours: Math.max(1, Number(process.env.BACKUP_INTERVAL_HOURS) || 24), keep: Math.max(1, Number(process.env.BACKUP_KEEP) || 14), filesDriver: this.storage.driver };
+  /**
+   * Is BACKUP_DIR on its own mount (a volume) or on the container's own disk? A container disk is wiped at every redeploy / restart,
+   * and the backups with it, so the page would show an empty list afterwards. A mounted volume has another device id than "/".
+   */
+  private async onVolume(): Promise<boolean> {
+    try {
+      const [d, root] = await Promise.all([fs.stat(this.dir), fs.stat(path.parse(this.dir).root)]);
+      return d.dev !== root.dev;
+    } catch { return true; } // cannot tell (e.g. Windows paths): do not warn
+  }
+
+  async status() {
+    return { store: this.useS3 ? 's3' : 'disk', persistent: this.useS3 || (await this.onVolume()), dir: this.dir, running: this.running, encrypted: !!backupKey(), automatic: process.env.BACKUP_ENABLED !== 'false', intervalHours: Math.max(1, Number(process.env.BACKUP_INTERVAL_HOURS) || 24), keep: Math.max(1, Number(process.env.BACKUP_KEEP) || 14), filesDriver: this.storage.driver };
   }
 }

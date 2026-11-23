@@ -3,7 +3,7 @@ import { uploadLimits } from '../../common/upload-limits';
 import { ConfigService } from '@nestjs/config';
 import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
+import { createReadStream, promises as fs } from 'fs';
 import * as path from 'path';
 import { Readable } from 'stream';
 import { MAX_DOC_BYTES, MAX_IMAGE_BYTES, MAX_PDF_BYTES } from '../../common/constants';
@@ -393,6 +393,59 @@ export class FileStorageService implements OnModuleInit {
     // the PDF spec allows junk (a BOM, blank lines) before the header: it only has to appear in the first 1024 bytes
     if (!file.buffer.subarray(0, 1024).toString('latin1').includes('%PDF-')) throw new BadRequestException('الملف ليس PDF صالحاً');
     return this.writeNew(folder, 'pdf', file.buffer);
+  }
+
+  // ---------- backups in the bucket ----------
+  // Backups live at "<S3_PREFIX>/.backups/<name>". openS3() refuses every path with a segment that starts with a dot, so no file URL can ever reach them.
+  private static readonly BACKUP_NAME = /^backup-\d{8}-\d{6}\.(json\.gz|files\.tar\.gz|meta\.json)$/;
+  private bkey(name: string) {
+    if (!FileStorageService.BACKUP_NAME.test(name)) throw new Error('invalid backup file name');
+    return `${this.prefix}.backups/${name}`;
+  }
+
+  /** uploads a local file (streamed, never read into memory) */
+  async backupPut(name: string, file: string): Promise<void> {
+    if (!this.s3) throw new Error('S3 is not the active storage');
+    const { size } = await fs.stat(file);
+    try {
+      await this.s3.send(new PutObjectCommand({ Bucket: this.bucket, Key: this.bkey(name), Body: createReadStream(file), ContentLength: size, ContentType: 'application/octet-stream', CacheControl: 'private, no-store' }));
+    } catch (e) {
+      throw new Error(`S3 upload of ${name} failed - ${this.errText(e)}`);
+    }
+  }
+
+  /** names of every backup file in the bucket */
+  async backupNames(): Promise<string[]> {
+    if (!this.s3) return [];
+    const out: string[] = [];
+    let token: string | undefined;
+    const base = `${this.prefix}.backups/`;
+    do {
+      const r = await this.s3.send(new ListObjectsV2Command({ Bucket: this.bucket, Prefix: base, ContinuationToken: token }));
+      for (const o of r.Contents ?? []) {
+        const n = (o.Key ?? '').slice(base.length);
+        if (FileStorageService.BACKUP_NAME.test(n)) out.push(n);
+      }
+      token = r.IsTruncated ? r.NextContinuationToken : undefined;
+    } while (token);
+    return out;
+  }
+
+  async backupStream(name: string): Promise<{ stream: Readable; size?: number }> {
+    if (!this.s3) throw new Error('S3 is not the active storage');
+    const o = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: this.bkey(name) }));
+    return { stream: o.Body as Readable, size: o.ContentLength };
+  }
+
+  async backupText(name: string): Promise<string> {
+    const { stream } = await this.backupStream(name);
+    const chunks: Buffer[] = [];
+    for await (const c of stream) chunks.push(Buffer.from(c));
+    return Buffer.concat(chunks).toString('utf8');
+  }
+
+  async backupDelete(name: string): Promise<void> {
+    if (this.s3) await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: this.bkey(name) })); // a missing key is not an error
   }
 
   // ---------- deletion ----------

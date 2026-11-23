@@ -11,7 +11,7 @@ export class BackupController {
   @Get()
   @Permissions('backups.read')
   async list() {
-    return { status: this.service.status(), data: await this.service.list() };
+    return { status: await this.service.status(), data: await this.service.list() };
   }
 
   @Post()
