@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { womenPageHref } from '@/lib/women-menu';
 import { useSite } from '@/components/site/site-context';
+import { useMemberRoles } from '@/lib/member-roles';
 import { ContactForm } from '@/components/site/contact-form';
 import { ContactIcon, SocialIcon } from '@/components/site/icons';
 import type { CommitteeData, Activity, Member, NewsItem } from '@/components/site/committee-view';
@@ -174,8 +175,8 @@ function NewsGrid({ items, limit }: { items: NewsItem[]; limit?: number }) {
 }
 
 function PersonCard({ m, big, tools }: { m: Member; big?: boolean; tools?: React.ReactNode }) {
-  const { t } = useI18n();
-  const role = m.role !== 'member' ? t(`cm.role.${m.role}`) : '';
+  const { label: roleOf } = useMemberRoles();
+  const role = m.role !== 'member' ? roleOf('women', m.role) : '';
   return (
     <div className={`text-center ${big ? 'rounded-2xl bg-white p-5 shadow-card ring-1 ring-accent/50' : ''}`}>
       {m.photoUrl
@@ -233,7 +234,8 @@ function Home({ c, open }: { c: CommitteeData; open: Open }) {
   const initiatives = c.initiatives.filter((a) => !isArchived(a)).sort(byDateDesc);
   const comingUp = activities.filter((a) => a.upcoming).sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
   const stories = [...(c.successStories ?? [])].sort(byDateDesc);
-  const leader = c.members.find((m) => m.role === 'chair');
+  const { roles } = useMemberRoles();
+  const leader = c.members.find((m) => m.role === roles.women[0]?.key); // the first position of the list (Settings -> Women Business Committee -> Positions)
   const stats = [
     { n: c.members.length, label: tr('عضوة', 'Members'), icon: '👥', slug: 'organization' },
     { n: c.initiatives.length, label: tr('مبادرة ومشروع', 'Initiatives'), icon: '🌱', slug: 'initiatives' },
@@ -357,12 +359,12 @@ function Structure({ c, open }: { c: CommitteeData; open: Open }) {
   const { loc } = useSite();
   const structure = loc('women', 'structure');
   const traits = lines(structure);
-  const chair = c.members.filter((m) => m.role === 'chair');
-  const deputies = c.members.filter((m) => m.role === 'vice');
-  const secretary = c.members.filter((m) => m.role === 'secretary');
+  const { roles } = useMemberRoles();
+  // every position except the plain member leads the structure, in the order of the positions list; the plain members come below
+  const rank = (k: string) => { const i = roles.women.findIndex((o) => o.key === k); return i < 0 ? 999 : i; };
   const members = c.members.filter((m) => m.role === 'member');
+  const leaders = c.members.filter((m) => m.role !== 'member').sort((a, b) => rank(a.role) - rank(b.role));
   const tools = (m: Member) => <ItemTools kind="member" id={m.id} onEdit={() => open({ type: 'member', editId: m.id })} />;
-  const leaders = [...chair, ...deputies, ...secretary];
   return (
     <div className="space-y-6">
       <PageTitle icon="🏛" title={tr('الهيكلية التنظيمية', 'Organisational structure')} />

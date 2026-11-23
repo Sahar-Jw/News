@@ -4,8 +4,9 @@ import { ContentLinksModule } from '../content-links/content-links.module';
 import { News } from '../news/news.entity';
 import { FilesModule } from '../files/files.module';
 import { CommitteesModule } from '../committees/committees.module';
+import { MemberRolesModule } from '../member-roles/member-roles.module';
 import { BoardAdminController, BoardPublicController } from './board.controller';
 import { BoardService } from './board.service';
 
-@Module({ imports: [TypeOrmModule.forFeature([News]), ContentLinksModule, FilesModule, CommitteesModule], controllers: [BoardAdminController, BoardPublicController], providers: [BoardService] })
+@Module({ imports: [TypeOrmModule.forFeature([News]), ContentLinksModule, FilesModule, CommitteesModule, MemberRolesModule], controllers: [BoardAdminController, BoardPublicController], providers: [BoardService] })
 export class BoardModule {}

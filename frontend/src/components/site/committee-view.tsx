@@ -19,6 +19,7 @@ import { WomenManageBar } from '@/components/women/women-manage';
 import { useAuth } from '@/lib/auth';
 import { CommitteeDialog } from '@/components/admin/committees-admin';
 import { ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
+import { useMemberRoles } from '@/lib/member-roles';
 import { WomenError, WomenLoader, WomenNotFound, WomenSoon } from '@/components/women/women-states';
 
 export interface Member { id: number; role: string; name: string; title: string; photoUrl: string | null }
@@ -36,8 +37,8 @@ export interface CommitteeData {
 const Heading = ({ children }: { children: React.ReactNode }) => <h2 className="mb-3 border-s-4 border-accent ps-3 text-lg font-bold text-secondary">{children}</h2>;
 const Box = ({ children }: { children: React.ReactNode }) => <section className="rounded-2xl bg-white p-5 shadow-card ring-1 ring-line">{children}</section>;
 
-function MemberGrid({ members }: { members: Member[] }) {
-  const { t } = useI18n();
+function MemberGrid({ members, kind }: { members: Member[]; kind: string }) {
+  const { label: roleOf } = useMemberRoles();
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
       {members.map((m) => (
@@ -46,7 +47,7 @@ function MemberGrid({ members }: { members: Member[] }) {
             ? <img src={fileUrl(m.photoUrl)} alt="" loading="lazy" className="mx-auto h-24 w-24 rounded-2xl object-cover ring-2 ring-accent/50" />
             : <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-primary/10 text-3xl text-primary" aria-hidden="true">👤</span>}
           <div className="mt-2 text-sm font-bold text-secondary">{m.name}</div>
-          <div className="text-xs text-primary">{m.role !== 'member' ? t(`cm.role.${m.role}`) : ''}</div>
+          <div className="text-xs text-primary">{m.role !== 'member' ? roleOf(kind === 'women' ? 'women' : 'committee', m.role) : ''}</div>
           {m.title && <div className="text-xs text-gray-600">{m.title}</div>}
         </div>
       ))}
@@ -308,7 +309,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
             <Box><Heading>{t('cm.latestNews')}</Heading><NewsList items={c.news} limit={3} /></Box>
             <Box><Heading>{t('cm.upcomingMeetings')}</Heading><ActivityList items={upcoming.slice(0, 3)} empty={t('cm.noContent')} /></Box>
           </div>
-          {c.members.length > 0 && <Box><Heading>{t('cm.tab.members')}</Heading><MemberGrid members={c.members.slice(0, 6)} /></Box>}
+          {c.members.length > 0 && <Box><Heading>{t('cm.tab.members')}</Heading><MemberGrid members={c.members.slice(0, 6)} kind={c.kind} /></Box>}
         </div>
       )}
       {women && womenPage === 'about' && <div className="space-y-5">
@@ -323,7 +324,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
         <Box><Heading>{t('women.organization')}</Heading>
           {structure && <p className="mb-4 whitespace-pre-line text-sm leading-7 text-ink/80">{structure}</p>}
           {c.duties && <><h3 className="mb-2 font-bold text-secondary">{t('women.duties')}</h3><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></>}
-          <div className="mt-5"><MemberGrid members={c.members} /></div>
+          <div className="mt-5"><MemberGrid members={c.members} kind={c.kind} /></div>
         </Box>
       </div>}
       {women && womenPage === 'activities' && <div id="activities" className="scroll-mt-24"><Box><Heading>{t('women.activities')}</Heading><ActivityList items={womenActivities} empty={t('cm.noContent')} /></Box></div>}
@@ -358,7 +359,7 @@ export function CommitteeView({ path, womenPage = 'home' }: { path: string; wome
         </Box>
       </div>}
       {customPage && <Box><Heading>{lang === 'ar' ? customPage.labelAr : customPage.labelEn}</Heading><p className="whitespace-pre-line text-sm leading-8 text-ink/80">{lang === 'ar' ? customPage.bodyAr : customPage.bodyEn}</p></Box>}
-      {tab === 'members' && <div id="members" className="scroll-mt-24"><Box><MemberGrid members={c.members} /></Box></div>}
+      {tab === 'members' && <div id="members" className="scroll-mt-24"><Box><MemberGrid members={c.members} kind={c.kind} /></Box></div>}
       {tab === 'duties' && <div id="duties" className="scroll-mt-24"><Box><div className="prose-news" dangerouslySetInnerHTML={{ __html: c.duties }} /></Box></div>}
       {tab === 'news' && <div id="news" className="scroll-mt-24"><Box><NewsList items={c.news} /></Box></div>}
       {tab === 'meetings' && <div id="meetings" className="scroll-mt-24"><Box><ActivityList items={c.meetings} empty={t('cm.noContent')} /></Box></div>}

@@ -13,6 +13,7 @@ import { womenPageHref } from '@/lib/women-menu';
 import { parseYoutubeId } from '@/lib/youtube';
 import { newsCategoryLabel } from '@/lib/news-categories';
 import { ProIcon } from '@/components/site/pro-icon';
+import { useMemberRoles } from '@/lib/member-roles';
 
 /** the committee being edited and what to do after a change (set by the committee page) */
 const AdminCtx = createContext<{ id: number; reload: () => void }>({ id: 0, reload: () => {} });
@@ -197,10 +198,10 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
 }
 
 // ---------------------------------------------------------------- members
-const ROLE_KEYS = ['chair', 'vice', 'secretary', 'member'] as const;
 export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number; defaultRole?: string; onClose: () => void }) {
   const tr = useTr();
   const toast = useToast();
+  const { roles, label: roleOf } = useMemberRoles(); // the positions list of this page (Settings -> Women Business Committee -> Positions)
   const { data, reload } = useWomen();
   const [f, setF] = useState({ role: defaultRole ?? 'member', nameAr: '', nameEn: '', titleAr: '', titleEn: '' });
   const [loaded, setLoaded] = useState(!editId);
@@ -218,7 +219,6 @@ export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number
       setLoaded(true);
     }).catch((e) => { toast(e.message, 'err'); onClose(); });
   }, [editId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const roleName: Record<string, string> = { chair: tr('رئيسة اللجنة', 'Chair'), vice: tr('نائبة الرئيسة', 'Vice chair'), secretary: tr('أمينة السر', 'Secretary'), member: tr('عضوة', 'Member') };
   const save = async () => {
     if (!data) return;
     if (!f.nameAr.trim()) { toast(tr('الاسم بالعربية مطلوب', 'The Arabic name is required'), 'err'); return; }
@@ -239,7 +239,7 @@ export function MemberDialog({ editId, defaultRole, onClose }: { editId?: number
     <Modal open onClose={onClose} title={editId ? tr('تعديل عضوة', 'Edit member') : tr('إضافة عضوة', 'Add a member')} brand>
       {!loaded ? <p className="py-8 text-center text-sm text-gray-500">…</p> : (
         <div className="space-y-3">
-          <Field label={tr('الصفة التنظيمية', 'Role')}><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{ROLE_KEYS.map((r) => <option key={r} value={r}>{roleName[r]}</option>)}</select></Field>
+          <Field label={tr('الصفة التنظيمية', 'Role')}><select className={inputCls} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{roles.women.map((o) => <option key={o.key} value={o.key}>{roleOf('women', o.key)}</option>)}</select></Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={tr('الاسم (عربي)', 'Name (Arabic)')}><input dir="rtl" className={inputCls} value={f.nameAr} onChange={(e) => setF({ ...f, nameAr: e.target.value })} /></Field>
             <Field label={tr('الاسم (إنجليزي)', 'Name (English)')}><input dir="ltr" className={inputCls} value={f.nameEn} onChange={(e) => setF({ ...f, nameEn: e.target.value })} /></Field>

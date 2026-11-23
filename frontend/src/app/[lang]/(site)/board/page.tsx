@@ -9,11 +9,11 @@ import { Center, Spinner } from '@/components/ui/ui';
 import { BoardMemberDialog } from '@/components/admin/board-admin';
 import { ConfirmDelete, ItemActions, ManageBtn, PageManageBar } from '@/components/site/page-manage-bar';
 import { CategoryNews } from '@/components/site/category-news';
+import { useMemberRoles } from '@/lib/member-roles';
 
 interface Member { id: number; position: string; name: string; termLabel: string; photoUrl: string | null }
-const POSITIONS = ['president', 'vice_president', 'secretary', 'treasurer', 'member'];
 
-function Card({ m, big, tools }: { m: Member; big?: boolean; tools?: React.ReactNode }) {
+function Card({ m, big, tools, posLabel }: { m: Member; big?: boolean; tools?: React.ReactNode; posLabel: string }) {
   const { t, href } = useI18n();
   return (
     <div className="flex flex-col items-center gap-2">
@@ -22,18 +22,20 @@ function Card({ m, big, tools }: { m: Member; big?: boolean; tools?: React.React
         ? <img src={fileUrl(m.photoUrl)} alt="" loading="lazy" className={`rounded-full object-cover ring-2 ring-accent/60 ${big ? 'h-32 w-32' : 'h-24 w-24'}`} />
         : <span className={`flex items-center justify-center rounded-full bg-primary/10 text-3xl text-primary ${big ? 'h-32 w-32' : 'h-24 w-24'}`} aria-hidden="true">👤</span>}
       <h3 className="mt-3 font-bold text-secondary group-hover:text-primary">{m.name}</h3>
-      <span className="mt-1 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">{t(`board.pos.${m.position}`)}</span>
+      <span className="mt-1 rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">{posLabel}</span>
     </Link>
     {tools}
     </div>
   );
 }
 
-/** Public board of directors, top to bottom: president, vice presidents, secretary, treasurer, members. */
+/** Public board of directors, top to bottom in the order of the positions list (Settings -> Board of directors -> Positions). */
 export default function BoardPage() {
   const { lang, t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const { roles, label: roleOf } = useMemberRoles();
+  const POSITIONS = useMemo(() => roles.board.map((o) => o.key), [roles.board]);
   const [items, setItems] = useState<Member[] | null>(null);
   // manager tools: the add / edit window (id = member being edited, 0 = new) and the member waiting for the delete confirmation
   const [dialog, setDialog] = useState<{ id?: number } | null>(null);
@@ -102,7 +104,7 @@ export default function BoardPage() {
               const n = countOf(p);
               return (
                 <button key={p || 'all'} type="button" aria-pressed={pos === p} onClick={() => setPos(p)} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${pos === p ? 'bg-secondary text-white shadow-card' : n ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
-                  {p ? t(`board.pos.${p}`) : t('app.all')} <span className="text-xs opacity-70">({n})</span>
+                  {p ? roleOf('board', p) : t('app.all')} <span className="text-xs opacity-70">({n})</span>
                 </button>
               );
             })}
@@ -117,8 +119,8 @@ export default function BoardPage() {
             const group = shown.filter((m) => m.position === pos);
             if (!group.length) return null;
             return (
-              <section key={pos} aria-label={t(`board.pos.${pos}`)}>
-                <div className="flex flex-wrap justify-center gap-4">{group.map((m) => <Card key={m.id} m={m} big={pos === 'president'} tools={<ItemActions onEdit={mayEdit ? () => setDialog({ id: m.id }) : undefined} onDelete={mayDelete ? () => setAsk(m) : undefined} />} />)}</div>
+              <section key={pos} aria-label={roleOf('board', pos)}>
+                <div className="flex flex-wrap justify-center gap-4">{group.map((m) => <Card key={m.id} m={m} big={pos === POSITIONS[0]} posLabel={roleOf('board', m.position)} tools={<ItemActions onEdit={mayEdit ? () => setDialog({ id: m.id }) : undefined} onDelete={mayDelete ? () => setAsk(m) : undefined} />} />)}</div>
               </section>
             );
           })}

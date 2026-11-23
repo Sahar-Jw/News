@@ -47,7 +47,7 @@ export const HUBS: HubMeta[] = [
   },
   {
     key: 'women', ar: 'لجنة سيدات الأعمال', en: 'Women Business Committee', hintAr: 'محتوى اللجنة وهوية صفحتها المستقلة', hintEn: 'Committee content and its separate page identity', icon: '✿', color: '#8b3d63', nav: ['/committees/women'],
-    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, { key: 'messages', ar: 'رسائل التواصل', en: 'Contact messages', perms: ['committees.read', 'forms.submissions.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
+    tabs: [{ key: 'content', ar: 'محتوى الصفحة', en: 'Page content', perms: ['committees.read'] }, { key: 'roles', ar: 'الصفات', en: 'Positions', perms: ['committees.read'] }, { key: 'messages', ar: 'رسائل التواصل', en: 'Contact messages', perms: ['committees.read', 'forms.submissions.read'] }, settings(['women']), { key: 'links', ar: 'القائمة والتذييل', en: 'Navigation & footer', perms: S }],
   },
   {
     key: 'membership', ar: 'الانتساب والخدمات', en: 'Membership & services', hintAr: 'خدمات الغرفة وطلبات الانتساب ومحتوى الصفحة', hintEn: 'Chamber services, membership requests and page content', icon: '☑', color: '#0f766e', nav: ['/membership'],
@@ -72,8 +72,8 @@ export const HUBS: HubMeta[] = [
   { key: 'backups', ar: 'النسخ الاحتياطي', en: 'Backups', hintAr: 'النسخ الاحتياطي المجدول واليدوي وتنزيله', hintEn: 'Scheduled and manual backups, with download', icon: '⛁', color: '#0f766e', tabs: [{ key: 'backups', ar: 'النسخ الاحتياطي', en: 'Backups', perms: ['backups.read'] }] },
   { key: 'documents', ar: 'القرارات والتعاميم', en: 'Decisions & circulars', hintAr: 'القرارات والتعاميم والقوانين والأدلة', hintEn: 'Decisions, circulars, laws and guides', icon: '▤', color: '#7c3aed', nav: ['/documents'], tabs: [{ key: 'documents', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }] },
   { key: 'library', ar: 'المكتبة والأرشيف الرقمي', en: 'Library & digital archive', hintAr: 'وثائق المكتبة والأرشيف الرقمي', hintEn: 'Library and digital archive documents', icon: '▥', color: '#7c3aed', nav: ['/library'], tabs: [{ key: 'library', ar: 'الوثائق', en: 'Documents', perms: ['documents.read'] }] },
-  { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', nav: ['/board'], tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }] },
-  { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', nav: ['/committees'], tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }] },
+  { key: 'board', ar: 'مجلس الإدارة', en: 'Board', hintAr: 'أعضاء المجلس', hintEn: 'Board members', icon: '♚', color: '#b45309', nav: ['/board'], tabs: [{ key: 'board', ar: 'الأعضاء', en: 'Members', perms: ['board.read'] }, { key: 'positions', ar: 'الصفات', en: 'Positions', perms: ['board.read'] }] },
+  { key: 'committees', ar: 'اللجان', en: 'Committees', hintAr: 'اللجان وأعضاؤها ونشاطاتها', hintEn: 'Committees, their members and activities', icon: '☷', color: '#15803d', nav: ['/committees'], tabs: [{ key: 'committees', ar: 'اللجان', en: 'Committees', perms: ['committees.read'] }, { key: 'roles', ar: 'الصفات', en: 'Positions', perms: ['committees.read'] }] },
   {
     key: 'media', ar: 'المركز الإعلامي', en: 'Media center', hintAr: 'الأخبار (إضافة وتعديل وحذف حسب الفئة) والألبومات وإعدادات المركز الإعلامي', hintEn: 'News (add, edit, delete by category), albums and media center settings', icon: '✉', color: '#be123c', nav: ['/media'],
     tabs: [{ key: 'news', ar: 'الأخبار', en: 'News', perms: ['news.read'] }, settings(['media'])],

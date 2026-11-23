@@ -26,6 +26,7 @@ import { SubscribersModule } from './modules/subscribers/subscribers.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { BoardModule } from './modules/board/board.module';
 import { CommitteesModule } from './modules/committees/committees.module';
+import { MemberRolesModule } from './modules/member-roles/member-roles.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { Get2TradeModule } from './modules/get2trade/get2trade.module';
 import { ContentLinksModule } from './modules/content-links/content-links.module';
@@ -118,6 +119,7 @@ import { BackupModule } from './modules/backup/backup.module';
     IncubatorModule,
     BoardModule,
     CommitteesModule,
+    MemberRolesModule,
     MembershipModule,
     Get2TradeModule,
     ContentLinksModule,

@@ -129,7 +129,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
     return textMatch && categoryMatch && typeMatch;
   };
   const eligibleRows = (rows ?? []).filter((r) =>
-    r.key !== 'page_links' && r.category !== 'shortcuts' && !(r.category === 'medical' && r.key === 'doctors') && !(r.category === 'one_stop' && r.key === 'schedule') && (only ? only.includes(groupOf(r.category)) : r.category !== 'pages'),
+    r.key !== 'page_links' && r.category !== 'shortcuts' && r.category !== 'member_roles' && !(r.category === 'medical' && r.key === 'doctors') && !(r.category === 'one_stop' && r.key === 'schedule') && (only ? only.includes(groupOf(r.category)) : r.category !== 'pages'),
   );
   const categories = [...new Set(eligibleRows.map((r) => r.category))].sort();
   const typeRows = eligibleRows.filter((r) => !categoryFilter || r.category === categoryFilter);
@@ -145,7 +145,7 @@ export function SettingsEditor({ groups: only }: { groups?: GroupId[] }) {
   const groups = useMemo(() => {
     const m = new Map<GroupId, Map<string, Row[]>>();
     for (const r of rows ?? []) {
-      if (r.key === 'page_links' || r.category === 'shortcuts' || (r.category === 'medical' && r.key === 'doctors') || (r.category === 'one_stop' && r.key === 'schedule') || (!only && r.category === 'pages')) continue;
+      if (r.key === 'page_links' || r.category === 'shortcuts' || r.category === 'member_roles' || (r.category === 'medical' && r.key === 'doctors') || (r.category === 'one_stop' && r.key === 'schedule') || (!only && r.category === 'pages')) continue;
       const g = groupOf(r.category);
       if (only && only.length && !only.includes(g)) continue;
       if (!m.has(g)) m.set(g, new Map());

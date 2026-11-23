@@ -12,6 +12,7 @@ import { SettingsEditor } from '@/components/admin/settings-editor';
 import { AdsAdmin } from '@/components/admin/ads-admin';
 import { AppointmentsAdmin } from '@/components/admin/appointments-admin';
 import { BoardAdmin } from '@/components/admin/board-admin';
+import { MemberRolesAdmin } from '@/components/admin/member-roles-admin';
 import { CommitteesAdmin } from '@/components/admin/committees-admin';
 import { CoursesAdmin } from '@/components/admin/courses-admin';
 import { CustomersAdmin } from '@/components/admin/customers-admin';
@@ -55,6 +56,7 @@ const SCREENS: Record<string, () => React.ReactNode> = {
   'media.news': () => <MediaNewsAdmin />, 'gallery.gallery': () => <GalleryAdmin />,
   'occasions.events': () => <OccasionsAdmin view="events" />, 'agenda.events': () => <OccasionsAdmin view="agenda" />,
   'women.content': () => <CommitteesAdmin kind="women" />,
+  'women.roles': () => <MemberRolesAdmin scope="women" />, 'board.positions': () => <MemberRolesAdmin scope="board" />, 'committees.roles': () => <MemberRolesAdmin scope="committee" />,
   'women.links': () => <WomenMenuAdmin />,
   'about.about': () => <PagesAdmin slug="about" />, 'privacy.privacy': () => <PagesAdmin slug="privacy" />, 'terms.terms': () => <PagesAdmin slug="terms" />, 'faq.faqs': () => <FaqsAdmin />,
   'subscribers.subscribers': () => <SubscribersAdmin />, 'ads.ads': () => <AdsAdmin />,

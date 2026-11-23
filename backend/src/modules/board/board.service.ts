@@ -13,7 +13,7 @@ import { by, filterByCf, matches, pageRows } from '../content/mem';
 import { News } from '../news/news.entity';
 import { applyEligibility, onlyRegular } from '../news/news.eligibility';
 import { FileStorageService } from '../files/file-storage.service';
-import { BOARD_POSITIONS, BoardPosition } from './board-member.entity';
+import { MemberRolesService } from '../member-roles/member-roles.service';
 import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from './board.dto';
 
 /**
@@ -29,11 +29,12 @@ export class BoardService {
     @InjectRepository(News) private readonly news: Repository<News>,
     private readonly links: ContentLinksService,
     private readonly committees: CommitteesService,
+    private readonly roles: MemberRolesService,
   ) {}
 
   private view(r: Rec) {
     return {
-      id: r.id, position: (r.x.position ?? 'member') as BoardPosition, nameAr: r.title, nameEn: s(r.x.nameEn), jobTitleAr: s(r.x.jobTitleAr), jobTitleEn: s(r.x.jobTitleEn),
+      id: r.id, position: String(r.x.position ?? 'member'), nameAr: r.title, nameEn: s(r.x.nameEn), jobTitleAr: s(r.x.jobTitleAr), jobTitleEn: s(r.x.jobTitleEn),
       bioAr: r.body ?? '', bioEn: s(r.x.bioEn), dutiesAr: s(r.x.dutiesAr), dutiesEn: s(r.x.dutiesEn), termLabel: s(r.x.termLabel),
       photo: r.images[0] ?? null, photoUrl: this.storage.url(r.images[0] ?? null), sortOrder: sortOf(r), isActive: isActive(r), createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
@@ -67,6 +68,7 @@ export class BoardService {
   }
 
   async create(dto: CreateBoardMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
+    await this.roles.assertKey('board', dto.position);
     const path = photo ? await this.storage.saveImage(photo, 'board', 1200) : null;
     try {
       const r = await this.store.create(CC.BOARD_MEMBER, {
@@ -86,6 +88,7 @@ export class BoardService {
   }
 
   async update(id: number, dto: UpdateBoardMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
+    await this.roles.assertKey('board', dto.position);
     const cur = await this.store.get(id, CC.BOARD_MEMBER);
     if (!cur) throw new NotFoundException('العضو غير موجود');
     const newPath = photo ? await this.storage.saveImage(photo, 'board', 1200) : null;
@@ -175,7 +178,7 @@ export class BoardService {
   /** All active members, already in hierarchy order: position rank first, then the manual order. */
   async publicList(lang: string) {
     const rows = (await this.store.list(CC.BOARD_MEMBER)).filter(isActive).sort(by((r) => sortOf(r), (r) => r.id));
-    const rank = (p: unknown) => BOARD_POSITIONS.indexOf(p as BoardPosition);
+    const rank = await this.roles.ranker('board'); // the order of the list in Settings -> Board of directors
     return rows.sort((a, b) => rank(a.x.position) - rank(b.x.position)).map((r) => this.card(r, lang === 'en'));
   }
 

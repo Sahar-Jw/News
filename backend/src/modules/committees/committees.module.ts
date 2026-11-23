@@ -5,11 +5,12 @@ import { FilesModule } from '../files/files.module';
 import { Gallery } from '../gallery/gallery.entity';
 import { News } from '../news/news.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
+import { MemberRolesModule } from '../member-roles/member-roles.module';
 import { CommitteesAdminController, CommitteesPublicController } from './committees.controller';
 import { CommitteesService } from './committees.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([News, Gallery, SiteSetting]), ContentLinksModule, FilesModule],
+  imports: [TypeOrmModule.forFeature([News, Gallery, SiteSetting]), ContentLinksModule, FilesModule, MemberRolesModule],
   controllers: [CommitteesAdminController, CommitteesPublicController],
   providers: [CommitteesService],
   exports: [CommitteesService],

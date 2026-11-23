@@ -1,15 +1,15 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
-import { BOARD_POSITIONS } from './board-member.entity';
 
 // multipart/form-data: every value is a string
 const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
 const toBool = () => Transform(({ value }) => (value === 'true' || value === true || value === '1' ? true : value === 'false' || value === false || value === '0' ? false : value));
-const POS = BOARD_POSITIONS as unknown as string[];
+/** a position key; which keys exist is the list edited in Settings (Board of directors), checked by the service */
+const POS = /^[a-z][a-z0-9_]{0,39}$/;
 
 export class CreateBoardMemberDto {
-  @IsIn(POS) position: string;
+  @IsString() @Matches(POS) position: string;
   @IsString() @MinLength(1) @MaxLength(255) nameAr: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) nameEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) jobTitleAr?: string | null;
@@ -24,7 +24,7 @@ export class CreateBoardMemberDto {
 }
 
 export class UpdateBoardMemberDto {
-  @IsOptional() @IsIn(POS) position?: string;
+  @IsOptional() @IsString() @Matches(POS) position?: string;
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) nameAr?: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) nameEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) jobTitleAr?: string | null;
@@ -41,5 +41,5 @@ export class UpdateBoardMemberDto {
 }
 
 export class BoardAdminQueryDto extends AdminListQueryDto {
-  @IsOptional() @IsIn(POS) position?: string;
+  @IsOptional() @IsString() @Matches(POS) position?: string;
 }

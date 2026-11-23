@@ -1,13 +1,14 @@
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { AdminListQueryDto } from '../../common/dto/list-query.dto';
-import { ACTIVITY_KINDS, COMMITTEE_KINDS, EVENT_TYPES, MEMBER_ROLES } from './committee.entity';
+import { ACTIVITY_KINDS, COMMITTEE_KINDS, EVENT_TYPES } from './committee.entity';
 
 // committees and members are multipart (picture): every value is a string
 const blankToNull = () => Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? null : value));
 const toBool = () => Transform(({ value }) => (value === 'true' || value === true || value === '1' ? true : value === 'false' || value === false || value === '0' ? false : value));
 const KINDS = COMMITTEE_KINDS as unknown as string[];
-const ROLES = MEMBER_ROLES as unknown as string[];
+/** a position key; which keys exist is the list edited in the settings of the page (checked by the service) */
+const ROLE_KEY = /^[a-z][a-z0-9_]{0,39}$/;
 const ACTS = ACTIVITY_KINDS as unknown as string[];
 const EVENT_KINDS = EVENT_TYPES as unknown as string[];
 
@@ -50,7 +51,7 @@ export class CommitteeAdminQueryDto extends AdminListQueryDto {
 }
 
 export class CreateMemberDto {
-  @IsIn(ROLES) role: string;
+  @IsString() @Matches(ROLE_KEY) role: string;
   @IsString() @MinLength(1) @MaxLength(255) nameAr: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) nameEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) titleAr?: string | null;
@@ -59,7 +60,7 @@ export class CreateMemberDto {
 }
 
 export class UpdateMemberDto {
-  @IsOptional() @IsIn(ROLES) role?: string;
+  @IsOptional() @IsString() @Matches(ROLE_KEY) role?: string;
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) nameAr?: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) nameEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) titleAr?: string | null;

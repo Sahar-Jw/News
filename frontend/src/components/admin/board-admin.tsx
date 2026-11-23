@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useMemberRoles } from '@/lib/member-roles';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
@@ -15,17 +16,17 @@ import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
 export interface BoardRow { id: number; position: string; nameAr: string; nameEn: string; jobTitleAr: string; jobTitleEn: string; bioAr: string; bioEn: string; dutiesAr: string; dutiesEn: string; termLabel: string; photoUrl: string | null; sortOrder: number; isActive: boolean }
 interface Draft { id?: number; position: string; nameAr: string; nameEn: string; jobTitleAr: string; jobTitleEn: string; bioAr: string; bioEn: string; dutiesAr: string; dutiesEn: string; termLabel: string; sortOrder: string; isActive: boolean; photoUrl: string | null }
 type Row = BoardRow;
-const POSITIONS = ['president', 'vice_president', 'secretary', 'treasurer', 'member'];
 const EMPTY: Draft = { position: 'member', nameAr: '', nameEn: '', jobTitleAr: '', jobTitleEn: '', bioAr: '', bioEn: '', dutiesAr: '', dutiesEn: '', termLabel: '', sortOrder: '0', isActive: true, photoUrl: null };
 
 
-/** The bio and duties are plain text in the form; they are stored (and shown on the public page) as simple HTML paragraphs. */
+/** The bio is plain text in the form; they are stored (and shown on the public page) as simple HTML paragraphs. */
 const htmlToText = (h: string) => (h ?? '')
   .replace(/<\s*br\s*\/?>/gi, '\n').replace(/<\/(p|div|h[1-6]|li|ul|ol|blockquote)>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<[^>]+>/g, '')
   .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
   .replace(/\n{3,}/g, '\n\n').trim();
 const textToHtml = (t: string) => t.trim() === '' ? '' : t.trim().split(/\n{2,}/).map((para) => `<p>${para.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</p>`).join('');
-const BODY_KEYS = ['bioAr', 'bioEn', 'dutiesAr', 'dutiesEn'] as const;
+// the committees and tasks of a member come by themselves from Committees & sectors, so the form has no duties fields any more
+const BODY_KEYS = ['bioAr', 'bioEn'] as const;
 
 const toDraft = (r: Row): Draft => ({ ...r, sortOrder: String(r.sortOrder), bioAr: htmlToText(r.bioAr), bioEn: htmlToText(r.bioEn), dutiesAr: htmlToText(r.dutiesAr), dutiesEn: htmlToText(r.dutiesEn) });
 
@@ -37,6 +38,7 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
   const { t, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const { roles, label: roleOf } = useMemberRoles();
   const [committees, setCommittees] = useState<{ id: number; kind: string; name: string; role: string }[]>([]);
   const [draft, setDraft] = useState<Draft | null>(row ? toDraft(row) : id ? null : { ...EMPTY });
   const [photo, setPhoto] = useState<File | null>(null);
@@ -57,7 +59,7 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
     }, 400);
     return () => clearTimeout(timer);
   }, [nameKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const roleLabel = (r: string) => (r === 'chair' ? (lang === 'ar' ? 'رئيس' : 'Chair') : r === 'vice' ? (lang === 'ar' ? 'نائب الرئيس' : 'Vice chair') : r === 'secretary' ? (lang === 'ar' ? 'أمين السر' : 'Secretary') : '');
+  const roleLabel = (c: { kind: string; role: string }) => (c.role === 'member' ? '' : roleOf(c.kind === 'women' ? 'women' : 'committee', c.role));
 
   const pick = (f: File | undefined) => {
     if (!f) return;
@@ -92,7 +94,7 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
         <form onSubmit={save} className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <Field label={t('board.position')}>
-              <select className={inputCls} value={draft.position} onChange={(e) => setDraft({ ...draft, position: e.target.value })}>{POSITIONS.map((p) => <option key={p} value={p}>{t(`board.pos.${p}`)}</option>)}</select>
+              <select className={inputCls} value={draft.position} onChange={(e) => setDraft({ ...draft, position: e.target.value })}>{roles.board.map((o) => <option key={o.key} value={o.key}>{lang === 'ar' ? o.ar : o.en || o.ar}</option>)}</select>
             </Field>
             <Field label={t('board.term')} hint={t('board.termHint')}><input maxLength={100} dir="ltr" className={inputCls} value={draft.termLabel} onChange={(e) => setDraft({ ...draft, termLabel: e.target.value })} /></Field>
             <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={draft.nameAr} onChange={(e) => setDraft({ ...draft, nameAr: e.target.value })} /></Field>
@@ -103,7 +105,7 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
           <div className="rounded-xl border border-line bg-primary/5 p-3">
             <div className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-secondary"><ProIcon name="users" size={16} />{lang === 'ar' ? 'اللجان' : 'Committees'}</div>
             {committees.length ? (
-              <ul className="flex flex-wrap gap-2">{committees.map((c) => <li key={c.id} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary ring-1 ring-line">{c.name}{roleLabel(c.role) && <span className="text-gray-500"> · {roleLabel(c.role)}</span>}</li>)}</ul>
+              <ul className="flex flex-wrap gap-2">{committees.map((c) => <li key={c.id} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary ring-1 ring-line">{c.name}{roleLabel(c) && <span className="text-gray-500"> · {roleLabel(c)}</span>}</li>)}</ul>
             ) : <p className="text-xs text-gray-500">{lang === 'ar' ? 'لا توجد لجان بعد.' : 'No committees yet.'}</p>}
             <p className="mt-2 text-xs text-gray-500">{lang === 'ar' ? 'تظهر اللجان هنا تلقائياً من «اللجان والقطاعات» عند إضافة اسمه هناك بنفس الكتابة، وتظهر في صفحة العضو.' : 'Committees come from "Committees & sectors" by themselves when his / her name is added there with the same spelling, and show on the member page.'}</p>
           </div>
@@ -122,8 +124,6 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
           </div>
           <Field label={t('board.bioAr')}><textarea dir="rtl" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.bioAr} onChange={(e) => setDraft({ ...draft, bioAr: e.target.value })} /></Field>
           <Field label={t('board.bioEn')} hint={t('faq.hint')}><textarea dir="ltr" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.bioEn} onChange={(e) => setDraft({ ...draft, bioEn: e.target.value })} /></Field>
-          <Field label={t('board.dutiesAr')}><textarea dir="rtl" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.dutiesAr} onChange={(e) => setDraft({ ...draft, dutiesAr: e.target.value })} /></Field>
-          <Field label={t('board.dutiesEn')} hint={t('faq.hint')}><textarea dir="ltr" rows={4} className={`${inputCls} h-28 resize-none overflow-y-auto`} value={draft.dutiesEn} onChange={(e) => setDraft({ ...draft, dutiesEn: e.target.value })} /></Field>
           <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>{t('app.cancel')}</Button><Button disabled={busy}>{t('app.save')}</Button></div>
         </form>
       )}
@@ -132,11 +132,12 @@ export function BoardMemberDialog({ row, id, onClose, onSaved }: { row?: Row | n
   );
 }
 
-/** Board members: position, names, titles, bio and duties (rich text), term, picture. The public page orders by position, then by "order". */
+/** Board members: position, names, titles, bio, term, picture. The public page orders by position, then by "order". */
 export function BoardAdmin() {
   const { t, href } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
+  const { roles, label: roleOf } = useMemberRoles();
   const [dialog, setDialog] = useState<{ row?: Row } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
@@ -145,7 +146,7 @@ export function BoardAdmin() {
   const cols: Col<Row>[] = [
     { key: 'nameAr', label: t('board.nameAr'), render: (r) => <span className="flex items-center gap-2">{r.photoUrl && <img src={fileUrl(r.photoUrl)} alt="" className="h-8 w-8 rounded-full object-cover" />}{r.nameAr}</span>, text: (r) => r.nameAr },
     { key: 'nameEn', label: t('board.nameEn') },
-    { key: 'position', searchable: false, label: t('board.position'), render: (r) => t(`board.pos.${r.position}`), text: (r) => t(`board.pos.${r.position}`) },
+    { key: 'position', searchable: false, label: t('board.position'), render: (r) => roleOf('board', r.position), text: (r) => roleOf('board', r.position) },
     { key: 'termLabel', label: t('board.term') },
     { key: 'sortOrder', searchable: false, label: t('faq.order'), render: (r) => r.sortOrder, text: (r) => String(r.sortOrder) },
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
@@ -169,7 +170,7 @@ export function BoardAdmin() {
         columns={cols}
         refreshKey={key}
         exportable={false}
-        filters={[{ key: 'position', label: t('board.position'), options: ['president', 'vice_president', 'secretary', 'treasurer', 'member'].map((p) => ({ value: p, label: t(`board.pos.${p}`) })) }]}
+        filters={[{ key: 'position', label: t('board.position'), options: roles.board.map((o) => ({ value: o.key, label: roleOf('board', o.key) })) }]}
         bulkDelete={{ path: '/admin/board/bulk-delete', can: can('board.delete') }}
         toolbar={can('board.create') && <Button onClick={() => setDialog({})}>＋ {t('board.add')}</Button>}
         rowActions={(r, reload) => (

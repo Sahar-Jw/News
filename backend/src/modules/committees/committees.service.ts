@@ -16,7 +16,8 @@ import { newsCategoryLabel } from '../../common/news-categories';
 import { News } from '../news/news.entity';
 import { SiteSetting } from '../settings/site-setting.entity';
 import { applyEligibility } from '../news/news.eligibility';
-import { ActivityKind, CommitteeKind, MEMBER_ROLES, MemberRole } from './committee.entity';
+import { ActivityKind, CommitteeKind, MemberRole } from './committee.entity';
+import { MemberRolesService, RoleScope } from '../member-roles/member-roles.service';
 import { CommitteeAdminQueryDto, CreateActivityDto, CreateCommitteeDto, CreateMemberDto, UpdateActivityDto, UpdateCommitteeDto, UpdateMemberDto } from './committees.dto';
 
 const tags = (v: string | null) => (v ?? '').split(/[,،\n]/).map((x) => x.trim()).filter(Boolean);
@@ -25,6 +26,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 const COMMITTEE_CODES = [CC.COMMITTEE, CC.WOMEN_COMMITTEE] as string[];
 const committeeCode = (kind: string) => (kind === 'women' ? CC.WOMEN_COMMITTEE : CC.COMMITTEE);
 const kindOfCode = (code: string): CommitteeKind => (code === CC.WOMEN_COMMITTEE ? 'women' : 'sector');
+/** which positions list a committee's members use: the women committee has its own, every other committee shares one */
+const roleScope = (c: Rec): RoleScope => (c.code === CC.WOMEN_COMMITTEE ? 'women' : 'committee');
 const ACTIVITY_CODES = [CC.COMMITTEE_MEETING, CC.COMMITTEE_VISIT, CC.COMMITTEE_RECOMMENDATION, CC.COMMITTEE_OUTPUT, CC.COMMITTEE_EVENT, CC.COMMITTEE_INITIATIVE, CC.COMMITTEE_SUCCESS] as string[];
 const activityCode = (kind: string) => `COMMITTEE_${kind.toUpperCase()}`;
 /**
@@ -79,6 +82,7 @@ export class CommitteesService {
     private readonly links: ContentLinksService,
     private readonly audit: AuditService,
     private readonly storage: FileStorageService,
+    private readonly roles: MemberRolesService,
   ) {}
 
   // ---------------------------------------------------------------- presenters
@@ -230,6 +234,7 @@ export class CommitteesService {
   // ---------------------------------------------------------------- admin: members
   async addMember(committeeId: number, dto: CreateMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
     const c = await this.mustFind(committeeId);
+    await this.roles.assertKey(roleScope(c), dto.role);
     const path = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
     try {
       const r = await this.store.create(CC.COMMITTEE_MEMBER, {
@@ -247,6 +252,7 @@ export class CommitteesService {
   async updateMember(id: number, dto: UpdateMemberDto, photo: Express.Multer.File | undefined, actor: AuthUser) {
     const cur = await this.store.get(id, CC.COMMITTEE_MEMBER);
     if (!cur) throw new NotFoundException('العضو غير موجود');
+    if (dto.role !== undefined) await this.roles.assertKey(roleScope(await this.mustFind(Number(cur.x.parentId))), dto.role);
     const newPath = photo ? await this.storage.saveImage(photo, 'committees', 600) : null;
     const oldPath = cur.images[0] ?? null;
     try {
@@ -411,7 +417,7 @@ export class CommitteesService {
   private async detail(c: Rec, lang: string, newsCategories?: string[]) {
     const en = lang === 'en';
     const [members, acts, newsIds] = await Promise.all([this.membersOf(c.id), this.activitiesOf(c.id), this.links.newsIdsOf('committee', c.id)]);
-    const rank = (r: unknown) => MEMBER_ROLES.indexOf(r as MemberRole);
+    const rank = await this.roles.ranker(roleScope(c)); // the order of the page's positions list (Settings)
     const t = today();
     const act = ({ r, v }: { r: Rec; v: ReturnType<CommitteesService['activityView']> }) => ({
       id: v.id, kind: v.kind, title: pick(v.titleAr, v.titleEn, en), body: pick(r.body, r.x.bodyEn, en),

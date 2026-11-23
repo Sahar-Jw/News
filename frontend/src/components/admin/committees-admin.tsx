@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay } from '@/lib/utils';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
+import { useMemberRoles, type RoleScope } from '@/lib/member-roles';
 import { useConfirm } from '@/components/ui/confirm';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
@@ -21,7 +22,6 @@ type Row = CommitteeRow;
 interface Full extends Row { members: Member[]; activities: Activity[]; news: LinkedNews[] }
 type Draft = Omit<Row, 'id' | 'sortOrder'> & { id?: number; sortOrder: string };
 
-const ROLES = ['chair', 'secretary', 'vice', 'member'];
 const ACTS = ['meeting', 'visit', 'recommendation', 'output', 'event', 'initiative', 'success'];
 const EMPTY: Draft = { kind: 'sector', nameAr: '', nameEn: '', summaryAr: '', summaryEn: '', dutiesAr: '', dutiesEn: '', chairNameAr: '', chairNameEn: '', activityTagsAr: '', activityTagsEn: '', logoUrl: null, sortOrder: '0', isActive: true };
 const EMPTY_MEMBER = { role: 'member', nameAr: '', nameEn: '', titleAr: '', titleEn: '', sortOrder: '0' };
@@ -34,10 +34,13 @@ const EMPTY_ACT = { kind: 'meeting', titleAr: '', titleEn: '', bodyAr: '', bodyE
  */
 export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose, onChanged }: { row?: Row | null; id?: number; /** what a NEW committee is: a sector committee (default) or the businesswomen one; an existing record keeps its own kind */ kind?: 'sector' | 'women'; initialTab?: 'details' | 'members' | 'activities' | 'news'; onClose: () => void; onChanged: () => void }) {
   const { t } = useI18n();
+  const { roles, label: roleOf } = useMemberRoles();
   const { can } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
   const [draft, setDraft] = useState<Draft | null>(null);
+  // the women committee has its own list of positions; every other committee shares one (Settings -> the page -> Positions)
+  const roleScope: RoleScope = (draft?.kind ?? kind) === 'women' ? 'women' : 'committee';
   const [tab, setTab] = useState<'details' | 'members' | 'activities' | 'news'>(initialTab ?? 'details');
   const [full, setFull] = useState<Full | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
@@ -205,7 +208,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
             {mDraft && (
               <form onSubmit={saveMember} className="space-y-3 rounded-xl border border-line p-3">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Field label={t('board.position')}><select className={inputCls} value={mDraft.role} onChange={(e) => setMDraft({ ...mDraft, role: e.target.value })}>{ROLES.map((r) => <option key={r} value={r}>{t(`cm.role.${r}`)}</option>)}</select></Field>
+                  <Field label={t('board.position')}><select className={inputCls} value={mDraft.role} onChange={(e) => setMDraft({ ...mDraft, role: e.target.value })}>{roles[roleScope].map((o) => <option key={o.key} value={o.key}>{roleOf(roleScope, o.key)}</option>)}</select></Field>
                   <Field label={t('faq.order')}><input type="number" min={0} className={inputCls} value={mDraft.sortOrder} onChange={(e) => setMDraft({ ...mDraft, sortOrder: e.target.value })} /></Field>
                   <Field label={t('board.nameAr')}><input required maxLength={255} dir="rtl" className={inputCls} value={mDraft.nameAr} onChange={(e) => setMDraft({ ...mDraft, nameAr: e.target.value })} /></Field>
                   <Field label={t('board.nameEn')}><input maxLength={255} dir="ltr" className={inputCls} value={mDraft.nameEn} onChange={(e) => setMDraft({ ...mDraft, nameEn: e.target.value })} /></Field>
@@ -225,7 +228,7 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
               {(full?.members ?? []).map((m) => (
                 <li key={m.id} className="flex items-center gap-3 p-3 text-sm">
                   {m.photoUrl ? <img src={fileUrl(m.photoUrl)} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">👤</span>}
-                  <span className="min-w-0 flex-1"><b>{m.nameAr}</b> <span className="text-xs text-primary">{t(`cm.role.${m.role}`)}</span><span className="block truncate text-xs text-gray-500">{m.titleAr}</span></span>
+                  <span className="min-w-0 flex-1"><b>{m.nameAr}</b> <span className="text-xs text-primary">{roleOf(roleScope, m.role)}</span><span className="block truncate text-xs text-gray-500">{m.titleAr}</span></span>
                   {canUpdate && <><Button size="sm" variant="outline" onClick={() => { setMDraft({ ...m, sortOrder: String(m.sortOrder) }); setMPhoto(null); setMDrop(false); }}>{t('app.edit')}</Button><Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => removeMember(m)}>✕</Button></>}
                 </li>
               ))}
