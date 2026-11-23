@@ -119,10 +119,10 @@ export function PagesAdmin({ slug }: { slug: StaticSlug }) {
           </div>
           <Field plain={slug === 'about'} label={t('pg.bodyAr')}>{slug === 'about'
             ? <RichEditor value={draft.bodyAr} onChange={(bodyAr) => setDraft((current) => ({ ...current, bodyAr }))} dir="rtl" />
-            : <textarea rows={12} maxLength={20000} dir="rtl" className={inputCls} value={draft.bodyAr} onChange={(e) => setDraft({ ...draft, bodyAr: e.target.value })} disabled={busy} />}</Field>
+            : <textarea rows={12} maxLength={20000} dir="rtl" className={`${inputCls} h-64 overflow-y-auto`} value={draft.bodyAr} onChange={(e) => setDraft({ ...draft, bodyAr: e.target.value })} disabled={busy} />}</Field>
           <Field plain={slug === 'about'} label={t('pg.bodyEn')}>{slug === 'about'
             ? <RichEditor value={draft.bodyEn} onChange={(bodyEn) => setDraft((current) => ({ ...current, bodyEn }))} dir="ltr" />
-            : <textarea rows={12} maxLength={20000} dir="ltr" className={inputCls} value={draft.bodyEn} onChange={(e) => setDraft({ ...draft, bodyEn: e.target.value })} disabled={busy} />}</Field>
+            : <textarea rows={12} maxLength={20000} dir="ltr" className={`${inputCls} h-64 overflow-y-auto`} value={draft.bodyEn} onChange={(e) => setDraft({ ...draft, bodyEn: e.target.value })} disabled={busy} />}</Field>
           {slug === 'about' && (
             <fieldset className="space-y-3 rounded-2xl border border-line p-4">
               <legend className="px-2 text-sm font-bold text-secondary">{t('pg.sideTitle')}</legend>

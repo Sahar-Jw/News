@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/components/ui/toast';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { RichEditor } from '@/components/admin/rich-editor';
+import { PlainEditor } from '@/components/admin/plain-editor';
 import { createContext, useContext } from 'react';
 import { womenPageHref } from '@/lib/women-menu';
 import { parseYoutubeId } from '@/lib/youtube';
@@ -176,11 +177,11 @@ export function ActivityDialog({ group, editId, defaultKind, onClose }: { group:
           </div>
           <Field label={`${tr('العنوان', 'Title')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('title')] as string} onChange={(e) => set(L('title'), e.target.value)} /></Field>
           {(isInit || isStory) && <Field label={`${isStory ? tr('صاحبة التجربة / المشروع', 'Woman / project') : tr('الجهة أو الشريك (اختياري)', 'Partner (optional)')} (${lang === 'ar' ? 'العربية' : 'English'})`}><input dir={dir} className={inputCls} value={f[L('subtitle')] as string} onChange={(e) => set(L('subtitle'), e.target.value)} /></Field>}
-          <Field plain label={isStory ? tr('القصة', 'The story') : tr('التفاصيل', 'Details')}><RichEditor key={`b-${lang}`} dir={dir} value={f[L('body')] as string} onChange={(v) => set(L('body'), v)} /></Field>
+          <Field plain label={isStory ? tr('القصة', 'The story') : tr('التفاصيل', 'Details')}><PlainEditor key={`b-${lang}`} dir={dir} value={f[L('body')] as string} onChange={(v) => set(L('body'), v)} /></Field>
           {isInit && (
             <>
-              <Field plain label={tr('الأهداف', 'Goals')}><RichEditor key={`g-${lang}`} dir={dir} value={f[L('goals')] as string} onChange={(v) => set(L('goals'), v)} /></Field>
-              <Field plain label={tr('النتائج', 'Results')}><RichEditor key={`r-${lang}`} dir={dir} value={f[L('results')] as string} onChange={(v) => set(L('results'), v)} /></Field>
+              <Field plain label={tr('الأهداف', 'Goals')}><PlainEditor key={`g-${lang}`} dir={dir} value={f[L('goals')] as string} onChange={(v) => set(L('goals'), v)} /></Field>
+              <Field plain label={tr('النتائج', 'Results')}><PlainEditor key={`r-${lang}`} dir={dir} value={f[L('results')] as string} onChange={(v) => set(L('results'), v)} /></Field>
             </>
           )}
           <ImagePick current={current} file={image} setFile={setImage} remove={dropImage} setRemove={setDropImage} label={tr('صورة (اختياري)', 'Picture (optional)')} />
@@ -363,7 +364,7 @@ export function TextsDialog({ part, onClose }: { part: 'about' | 'structure'; on
               {fl.kind === 'goals'
                 ? <GoalsField key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
                 : fl.kind === 'rich'
-                ? <RichEditor key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
+                ? <PlainEditor key={`${fl.key}-${lang}`} dir={dir} value={v[`${fl.key}${sfx}`]} onChange={(h) => setV((s) => ({ ...s!, [`${fl.key}${sfx}`]: h }))} />
                 : fl.kind === 'text'
                   ? <input dir={dir} className={inputCls} value={v[`${fl.key}${sfx}`]} onChange={(e) => setV({ ...v, [`${fl.key}${sfx}`]: e.target.value })} />
                   : <textarea dir={dir} rows={5} className={inputCls} value={v[`${fl.key}${sfx}`]} onChange={(e) => setV({ ...v, [`${fl.key}${sfx}`]: e.target.value })} />}

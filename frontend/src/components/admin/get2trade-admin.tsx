@@ -9,7 +9,7 @@ import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui
 import { useToast } from '@/components/ui/toast';
 import { Col, DataTable } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
-import { RichEditor } from '@/components/admin/rich-editor';
+import { PlainEditor } from '@/components/admin/plain-editor';
 
 const STATUSES = ['new', 'in_review', 'accepted', 'rejected'];
 const COLOR: Record<string, string> = { new: 'bg-blue-100 text-blue-700', in_review: 'bg-amber-100 text-amber-700', accepted: 'bg-emerald-100 text-emerald-700', rejected: 'bg-red-100 text-red-700' };
@@ -315,8 +315,8 @@ function Content() {
   if (!s) return <Center><Spinner /></Center>;
   const rich = (k: 'about' | 'services', label: string) => (
     <div className="grid gap-3 lg:grid-cols-2">
-      <Field plain label={`${label} — ${t('gt.a.ar')}`}><RichEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
-      <Field plain label={`${label} — ${t('gt.a.en')}`}><RichEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
+      <Field plain label={`${label} — ${t('gt.a.ar')}`}><PlainEditor key={`${k}Ar`} value={s[`${k}Ar`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}Ar`]: h } : x))} dir="rtl" /></Field>
+      <Field plain label={`${label} — ${t('gt.a.en')}`}><PlainEditor key={`${k}En`} value={s[`${k}En`]} onChange={(h) => setS((x) => (x ? { ...x, [`${k}En`]: h } : x))} dir="ltr" /></Field>
     </div>
   );
   return (

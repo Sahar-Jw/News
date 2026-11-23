@@ -39,7 +39,7 @@ export function Button({ variant = 'primary', size = 'md', className, onClick, d
   );
 }
 
-export const inputCls = 'w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-gray-400 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-gray-100';
+export const inputCls = 'w-full resize-none rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-gray-400 hover:border-primary/40 focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:bg-gray-100';
 
 /** `plain`: a <div> instead of a <label>. Needed around a rich-text editor: a label forwards every click inside it to its first button (Undo). */
 export function Field({ label, children, hint, error, plain }: { label?: string; children: React.ReactNode; hint?: string; error?: string; plain?: boolean }) {
