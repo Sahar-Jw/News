@@ -112,7 +112,7 @@ BACKUP_ENCRYPTION_KEY=        # needed to restore
 BACKUP_INCLUDE_FILES=true
 ```
 
-Dashboard download: **Download** = a ZIP with one folder holding `backup-X.sql` (a restorable script); **Download encrypted** = the same ZIP protected with the password `BACKUP_ENCRYPTION_KEY` (AES-256, opens in 7-Zip / WinRAR / WinZip). To restore from it: extract, then `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backup-X.sql` (or run the file in pgAdmin) on a database that already has the tables. It first empties every table and runs in ONE transaction.
+Dashboard download: **Download** = a ZIP with one folder holding `backup-X.sql`; **Download encrypted** = the same ZIP protected with the password `BACKUP_ENCRYPTION_KEY` (AES-256, opens in 7-Zip / WinRAR / WinZip). The SQL file is readable and importable: structure (CREATE TABLE IF NOT EXISTS ...), then `INSERT INTO "table" ("col", ...) VALUES (...)` one row per line, then sequences, foreign keys and indexes, all in ONE transaction. Import it into an EMPTY database (tables are created and filled) or into the app's own database (tables are EMPTIED and refilled): `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backup-X.sql`, or run it in pgAdmin.
 
 Restore (REPLACES all data; stop the API, run the migrations of the same version first):
 ```bash

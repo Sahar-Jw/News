@@ -11,7 +11,9 @@ import { AuthUser } from '../../common/types';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { backupKey, dumpDatabase, openProtected, writeEncryptedOrPlain } from './backup-core';
-import { ndjsonToSql, zipSingle } from './backup-zip';
+import { buildSchema } from './backup-schema';
+import { ndjsonToSql } from './backup-sql';
+import { zipSingle } from './backup-zip';
 
 export interface BackupInfo {
   id: string;
@@ -287,8 +289,13 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     const gunzip = createGunzip();
     gz.on('error', (e) => gunzip.destroy(e));
     gz.pipe(gunzip);
-    const sql = ndjsonToSql(gunzip);
-    gunzip.on('error', (e) => sql.destroy(e));
+    const raw = ndjsonToSql(gunzip, (schema, tables) => buildSchema(this.ds, schema, tables));
+    gunzip.on('error', (e) => raw.destroy(e));
+    // wait for the first piece (the structure part): a broken backup or a database error then answers with a normal error message instead of a cut-off download
+    const it = raw[Symbol.asyncIterator]();
+    let first: IteratorResult<unknown>;
+    try { first = await it.next(); } catch (e) { gz.destroy(); throw new BadRequestException(`تعذّر تجهيز ملف SQL: ${(e as Error).message}`.slice(0, 200)); }
+    const sql = Readable.from((async function* () { if (!first.done) yield first.value as Buffer; for await (const c of { [Symbol.asyncIterator]: () => it }) yield c as Buffer; })());
     return { name: `${id}${protectedZip ? '-encrypted' : ''}.zip`, stream: zipSingle(`${id}/${id}.sql`, sql, password || undefined) };
   }
 
