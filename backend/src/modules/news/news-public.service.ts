@@ -38,6 +38,10 @@ export class NewsPublicService {
   /** Card = what lists/sections need. Never exposes created_by, status, or storage paths of other kinds. */
   card(n: News, withBody = false) {
     const images = toStringArray(n.images);
+    // a news that has only a YouTube link and no picture shows the video's own thumbnail on its card (lists, sections, search);
+    // the detail page keeps its real pictures only, because it embeds the video itself
+    const ytId = parseYoutubeId(n.youtubeUrl);
+    const cardImages = !withBody && !images.length && ytId ? [`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`] : images.map((p) => this.storage.url(p));
     return {
       id: n.id,
       title: n.title,
@@ -46,7 +50,7 @@ export class NewsPublicService {
       subcategory: n.subcategory,
       topics: toStringArray(n.topics),
       excerpt: n.excerpt || excerpt(n.body) || n.subject || '',
-      images: images.map((p) => this.storage.url(p)),
+      images: cardImages,
       rating: n.rating,
       isFeatured: n.isFeatured,
       publishAt: n.publishAt,
