@@ -61,7 +61,8 @@ export class AuthController {
   private cookieBase() {
     return {
       httpOnly: true,
-      secure: this.config.get('COOKIE_SECURE') === 'true',
+      // secure by default in production (HTTPS); COOKIE_SECURE=false only for a plain-http test server
+      secure: this.config.get('COOKIE_SECURE') ? this.config.get('COOKIE_SECURE') === 'true' : process.env.NODE_ENV === 'production',
       sameSite: this.config.get('COOKIE_SAMESITE', 'lax') as 'lax' | 'strict' | 'none',
     };
   }

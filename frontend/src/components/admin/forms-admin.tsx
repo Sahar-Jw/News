@@ -438,7 +438,7 @@ export function BackupsAdmin() {
                 <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
                   {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', false)}>{L('تنزيل', 'Download')}</Button>}
                   {b.ok && st.encrypted && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', true)}>{L('تنزيل مشفّر', 'Download encrypted')}</Button>}
-                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files', false)}>{L('الملفات', 'Files')}</Button>}
+                  {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files', false)}>{L('تنزيل الملفات', 'Download files')}</Button>}
                   {can('backups.delete') && <Button size="sm" variant="danger" onClick={() => del(b)}>{L('حذف', 'Delete')}</Button>}
                 </span></td>
               </tr>

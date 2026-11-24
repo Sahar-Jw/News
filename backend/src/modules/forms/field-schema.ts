@@ -241,8 +241,8 @@ export function isVisible(f: FieldDef, answers: Record<string, any>): boolean {
 }
 
 /** Validates one value against its field; returns the cleaned value (undefined = empty). Throws a message naming the field. */
-function validateValue(f: FieldDef, raw: unknown): any {
-  const name = f.labelAr;
+function validateValue(f: FieldDef, raw: unknown, lang: 'ar' | 'en' = 'ar'): any {
+  const name = lang === 'en' && f.labelEn ? f.labelEn : f.labelAr; // the error names the field in the visitor's language
   const empty = raw === undefined || raw === null || raw === '' || (Array.isArray(raw) && raw.length === 0);
   if (empty) {
     if (f.required && f.type !== 'checkbox') throw new BadRequestException(`الحقل "${name}" مطلوب`);
@@ -315,7 +315,7 @@ function validateValue(f: FieldDef, raw: unknown): any {
 }
 
 /** Walks the form's fields (never the submitted keys): unknown keys are ignored, hidden fields are skipped, every value is checked. File fields are checked by the caller. */
-export function cleanAnswers(fields: FieldDef[], input: Record<string, any>): CleanAnswers {
+export function cleanAnswers(fields: FieldDef[], input: Record<string, any>, lang: 'ar' | 'en' = 'ar'): CleanAnswers {
   const answers: Record<string, any> = {};
   const fileFields: FieldDef[] = [];
   for (const f of fields) {
@@ -325,7 +325,7 @@ export function cleanAnswers(fields: FieldDef[], input: Record<string, any>): Cl
       fileFields.push(f);
       continue;
     }
-    const v = validateValue(f, Object.prototype.hasOwnProperty.call(input, f.key) ? input[f.key] : undefined);
+    const v = validateValue(f, Object.prototype.hasOwnProperty.call(input, f.key) ? input[f.key] : undefined, lang);
     if (v !== undefined) answers[f.key] = v;
   }
   return { answers, fileFields };

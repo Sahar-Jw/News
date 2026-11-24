@@ -245,7 +245,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     if (!dto.data) throw new BadRequestException('بيانات النموذج غير صالحة');
     const ctxInput = this.parseJson(dto.context);
     const fields = await this.withSourcedOptions(form.fields);
-    const { answers, fileFields } = cleanAnswers(fields, input);
+    const { answers, fileFields } = cleanAnswers(fields, input, lang);
 
     const roleValue = (role: string) => {
       const f = form.fields.find((x) => x.role === role);
@@ -267,8 +267,8 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     }
     for (const ff of fileFields) {
       const n = byField.get(ff.key)?.length ?? 0;
-      if (ff.required && n === 0) throw new BadRequestException(`الحقل "${ff.labelAr}" مطلوب`);
-      if (n > (ff.maxFiles ?? 1)) throw new BadRequestException(`الحد الأقصى ${ff.maxFiles ?? 1} من الملفات في "${ff.labelAr}"`);
+      if (ff.required && n === 0) throw new BadRequestException(`الحقل "${(lang === 'en' && ff.labelEn) || ff.labelAr}" مطلوب`);
+      if (n > (ff.maxFiles ?? 1)) throw new BadRequestException(`الحد الأقصى ${ff.maxFiles ?? 1} من الملفات في "${(lang === 'en' && ff.labelEn) || ff.labelAr}"`);
     }
 
     const saved: { fieldKey: string; originalName: string; path: string; size: number }[] = [];
@@ -307,7 +307,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
     const ref = reference(sub);
     // the log names the request, never the answers (personal data stays in form_submissions only)
     await this.audit.log({ category: 'forms', action: 'submit', description: `طلب جديد ${ref} (${form.slug})`, entityType: 'form_submissions', entityId: sub.id });
-    this.notify(form, sub, ref, saved.length);
+    this.notify(form, sub, ref, saved.length, lang);
     this.hooks.dispatch(form, 'submitted', { ...this.hookPayload(form, sub, ref, answers), context: sub.context });
     return { id: sub.id, reference: ref, message: this.successText(form, lang) };
   }
@@ -359,7 +359,7 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Never throws: a mail problem must not fail the applicant's request. Staff e-mails carry no answers, only who / what / how many files. */
-  private notify(form: FormDefinition, sub: FormSubmission, ref: string, fileCount: number) {
+  private notify(form: FormDefinition, sub: FormSubmission, ref: string, fileCount: number, lang: 'ar' | 'en' = 'ar') {
     const front = (process.env.FRONTEND_URL || (process.env.CORS_ORIGINS ?? '').split(',')[0] || '').trim().replace(/\/+$/, '');
     const link = front ? `${front}/ar/admin/settings/?page=forms&tab=submissions` : '';
     const staff = emails(form.notifyEmails);
@@ -369,8 +369,14 @@ export class FormsService implements OnModuleInit, OnModuleDestroy {
         `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><h3>طلب جديد ${ref}</h3><p><b>النموذج:</b> ${esc(form.titleAr)}${name}<br><b>عدد المرفقات:</b> ${fileCount}</p>${link ? `<p><a href="${esc(link)}">فتح لوحة الطلبات</a></p>` : ''}<p style="color:#666;font-size:12px">لحماية البيانات الشخصية لا تتضمن هذه الرسالة محتوى الطلب. افتحه من لوحة التحكم.</p></div>`);
     }
     if (form.sendReceipt && sub.applicantEmail) {
-      void this.mail.as('forms').send(sub.applicantEmail, `استلمنا طلبك ${ref}`,
-        `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك، استلمنا طلبك على نموذج <b>${esc(form.titleAr)}</b>.</p><p>رقم الطلب: <b>${ref}</b></p><p>سنراجع الطلب ونتواصل معك على هذا البريد.</p></div>`);
+      // the receipt is written in the language the applicant used on the site
+      if (lang === 'en') {
+        void this.mail.as('forms').send(sub.applicantEmail, `We received your request ${ref}`,
+          `<div dir="ltr" style="font-family:Tahoma,Arial,sans-serif"><p>Thank you, we received your request on the form <b>${esc(form.titleEn || form.titleAr)}</b>.</p><p>Reference: <b>${ref}</b></p><p>We will review it and contact you at this address.</p></div>`);
+      } else {
+        void this.mail.as('forms').send(sub.applicantEmail, `استلمنا طلبك ${ref}`,
+          `<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif"><p>شكراً لك، استلمنا طلبك على نموذج <b>${esc(form.titleAr)}</b>.</p><p>رقم الطلب: <b>${ref}</b></p><p>سنراجع الطلب ونتواصل معك على هذا البريد.</p></div>`);
+      }
     }
   }
 
