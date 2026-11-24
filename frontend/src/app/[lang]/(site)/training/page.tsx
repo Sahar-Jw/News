@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { fmtDay } from '@/lib/utils';
 import { Button, Center, Spinner, inputCls } from '@/components/ui/ui';
 import { Card, NewsCard, Thumb } from '@/components/site/cards';
 import { CourseRegister } from '@/components/site/course-register';
 import { Pager } from '@/components/site/pager';
 import { useSite } from '@/components/site/site-context';
-import { COURSE_KINDS, PublicCourse, courseDates } from '@/components/site/training-shared';
+import { COURSE_KINDS, PublicCourse, courseFacts } from '@/components/site/training-shared';
+import { IconTile } from '@/components/site/pro-icon';
 import { NewsFormDialog } from '@/components/admin/news-form';
 import { newsCategoryLabel } from '@/lib/news-categories';
 import { useNewsSaved } from '@/lib/news-events';
@@ -139,20 +139,33 @@ export default function TrainingPage() {
         <>
           <div className="space-y-4">
             {data.data.map((c) => {
-              const meta: [string, string][] = ([
-                [t('tr.trainer'), c.trainer?.name ?? ''], [t('tr.audience'), c.audience], [t('tr.date'), courseDates(c, (d) => fmtDay(lang, d), t('tr.fromTo'))],
-                [t('tr.place'), c.location], [t('tr.hours'), c.hours != null ? String(c.hours) : ''], [t('tr.fee'), c.fee],
-              ] as [string, string][]).filter(([, v]) => v);
+              const facts = courseFacts(c, t, lang);
               return (
-                <article key={c.id} className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-card ring-1 ring-line sm:flex-row sm:items-center">
-                  <Thumb src={c.imageUrl} alt="" className="h-28 w-full shrink-0 rounded-xl sm:w-36" />
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-extrabold text-secondary"><Link href={href(`/training/${c.id}`)} className="hover:text-primary">{c.name}</Link></h2>
-                    <p className="mt-1 text-sm leading-7 text-gray-600">{meta.map(([k, v]) => `${k}: ${v}`).join(' · ')}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${BADGE[c.status]}`}>{t(`tr.status.${c.status}`)}</span>
-                    {c.status === 'open' && <Button type="button" onClick={() => setReg(c)}>{t('tr.registerNow')}</Button>}
+                <article key={c.id} className="overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line sm:flex">
+                  {/* the picture is on the start side (right in Arabic), everything else beside it */}
+                  <Link href={href(`/training/${c.id}`)} className="block shrink-0 bg-gray-100 sm:w-60 md:w-72" aria-label={c.name} tabIndex={-1}>
+                    <Thumb src={c.imageUrl} alt="" className="h-48 w-full sm:h-full sm:min-h-[15rem]" />
+                  </Link>
+                  <div className="flex min-w-0 flex-1 flex-col p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{t(`tr.kind.${c.kind}`)}</span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${BADGE[c.status]}`}>{t(`tr.status.${c.status}`)}</span>
+                    </div>
+                    <h2 className="mt-2 text-lg font-extrabold leading-snug text-secondary md:text-xl"><Link href={href(`/training/${c.id}`)} className="hover:text-primary">{c.name}</Link></h2>
+                    {facts.length > 0 && (
+                      <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                        {facts.map((f) => (
+                          <div key={f.label} className="flex min-w-0 items-start gap-2.5">
+                            <IconTile name={f.icon} size={16} className="h-8 w-8 !rounded-lg" />
+                            <div className="min-w-0"><dt className="text-xs font-semibold text-gray-500">{f.label}</dt><dd className="break-words text-sm font-bold leading-6 text-secondary">{f.value}</dd></div>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    <div className="mt-auto flex flex-wrap items-center justify-end gap-2 pt-5">
+                      <Link href={href(`/training/${c.id}`)} className="rounded-full border border-primary/30 bg-white px-4 py-2 text-sm font-bold text-primary transition hover:bg-primary/5">{t('tr.viewCourse')}</Link>
+                      {c.status === 'open' && <Button type="button" onClick={() => setReg(c)}>{t('tr.registerNow')}</Button>}
+                    </div>
                   </div>
                 </article>
               );

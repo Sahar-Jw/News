@@ -41,7 +41,12 @@ export class CreateCourseDto {
   @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(1) trainerId?: number | null;
   @IsDateString({ strict: true }, { message: 'startDate must be a valid date (YYYY-MM-DD)' }) startDate: string;
   @blankToNull() @IsOptional() @IsDateString({ strict: true }, { message: 'endDate must be a valid date (YYYY-MM-DD)' }) endDate?: string | null;
-  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(2000) hours?: number | null;
+  /** duration: hours (0-2000) and minutes (0-59), e.g. 3 h 30 min */
+  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(2000) hours?: number | null;
+  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(59) minutes?: number | null;
+  /** time of day, 24-hour "HH:MM" (the site shows it with AM / PM) */
+  @blankToNull() @IsOptional() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'startTime must be HH:MM' }) startTime?: string | null;
+  @blankToNull() @IsOptional() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'endTime must be HH:MM' }) endTime?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;
@@ -65,7 +70,12 @@ export class UpdateCourseDto {
   @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(1) trainerId?: number | null;
   @IsOptional() @IsDateString({ strict: true }, { message: 'startDate must be a valid date (YYYY-MM-DD)' }) startDate?: string;
   @blankToNull() @IsOptional() @IsDateString({ strict: true }, { message: 'endDate must be a valid date (YYYY-MM-DD)' }) endDate?: string | null;
-  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(2000) hours?: number | null;
+  /** duration: hours (0-2000) and minutes (0-59), e.g. 3 h 30 min */
+  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(2000) hours?: number | null;
+  @blankToNull() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(59) minutes?: number | null;
+  /** time of day, 24-hour "HH:MM" (the site shows it with AM / PM) */
+  @blankToNull() @IsOptional() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'startTime must be HH:MM' }) startTime?: string | null;
+  @blankToNull() @IsOptional() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'endTime must be HH:MM' }) endTime?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationAr?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) locationEn?: string | null;
   @blankToNull() @IsOptional() @IsString() @MaxLength(150) feeAr?: string | null;

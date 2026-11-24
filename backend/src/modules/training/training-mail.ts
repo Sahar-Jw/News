@@ -1,3 +1,5 @@
+import { durationText, timeRange } from './training-format';
+
 /** E-mails of the Training Center (Arabic or English). Every value that comes from a form or from the admin is escaped. */
 export const esc = (s: string | null | undefined) => (s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
@@ -12,6 +14,9 @@ export interface CourseMailInfo {
   endDate: string | null;
   location: string;
   hours: number | null;
+  minutes?: number | null;
+  startTime?: string | null;
+  endTime?: string | null;
   fee: string;
   trainer: string;
 }
@@ -21,8 +26,8 @@ export function registrationConfirmation(lang: Lang, traineeName: string, c: Cou
   const ar = lang === 'ar';
   const dates = c.endDate && c.endDate !== c.startDate ? (ar ? `من ${c.startDate} إلى ${c.endDate}` : `${c.startDate} to ${c.endDate}`) : c.startDate;
   const info = table(rows(ar
-    ? [['الدورة', c.name], ['التاريخ', dates], ['المكان', c.location], ['عدد الساعات', c.hours != null ? String(c.hours) : ''], ['الرسوم', c.fee], ['المدرب', c.trainer]]
-    : [['Course', c.name], ['Date', dates], ['Place', c.location], ['Hours', c.hours != null ? String(c.hours) : ''], ['Fees', c.fee], ['Trainer', c.trainer]]));
+    ? [['الدورة', c.name], ['التاريخ', dates], ['الوقت', timeRange(c.startTime, c.endTime, 'ar')], ['المكان', c.location], ['المدة', durationText(c.hours, c.minutes, 'ar')], ['الرسوم', c.fee], ['المدرب', c.trainer]]
+    : [['Course', c.name], ['Date', dates], ['Time', timeRange(c.startTime, c.endTime, 'en')], ['Place', c.location], ['Duration', durationText(c.hours, c.minutes, 'en')], ['Fees', c.fee], ['Trainer', c.trainer]]));
   return ar
     ? { subject: `تأكيد التسجيل في دورة: ${c.name}`, html: wrap(lang, `<h3>تأكيد التسجيل</h3><p>السيد/ة <b>${esc(traineeName)}</b>،</p><p>تم استلام تسجيلك في الدورة التالية بنجاح:</p>${info}<p>سيتواصل معك فريق مركز التدريب الإداري لتأكيد التفاصيل. إذا لم تقم بهذا التسجيل فيرجى تجاهل هذه الرسالة.</p>`) }
     : { subject: `Registration confirmed: ${c.name}`, html: wrap(lang, `<h3>Registration confirmation</h3><p>Dear <b>${esc(traineeName)}</b>,</p><p>We have received your registration for the following course:</p>${info}<p>The Administrative Training Center will contact you to confirm the details. If you did not make this registration, please ignore this e-mail.</p>`) };

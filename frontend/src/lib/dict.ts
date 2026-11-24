@@ -232,6 +232,7 @@ const ar: Record<string, string> = {
   // in-place management bar of the public pages (Board, Committees)
   'mg.requests': 'طلبات الانتساب', 'mg.pageContent': 'محتوى الصفحة', 'mg.closeMembership': 'إغلاق باب الانتساب', 'mg.openMembership': 'فتح باب الانتساب', 'mg.allFaqs': 'كل الأسئلة', 'mg.addCourse': 'إضافة دورة', 'mg.addTrainer': 'إضافة مدرب', 'mg.courses': 'الدورات', 'mg.trainers': 'المدربون', 'mg.trainees': 'المتدربون', 'mg.trainerApps': 'طلبات المدربين', 'mg.pageTexts': 'نصوص الصفحة', 'mg.membershipOpened': 'تم فتح باب الانتساب', 'mg.membershipClosed': 'تم إغلاق باب الانتساب', 'mg.bar': 'إدارة الصفحة', 'mg.settings': 'كل الإعدادات', 'mg.deleteText': 'سيُحذف هذا العنصر نهائياً ولا يمكن التراجع. هل تريد المتابعة؟', 'mg.deleteTitle': 'تأكيد الحذف', 'mg.editItem': 'تعديل', 'mg.deleteItem': 'حذف',
   'app.pages': 'التنقل بين الصفحات', 'app.page': 'صفحة', 'os.mg.hours': 'تعديل أوقات الدوام', 'os.mg.texts': 'نصوص النافذة والتواصل', 'os.noFaqs': 'لا توجد أسئلة شائعة بعد',
+  'tr.time': 'الوقت', 'tr.duration': 'مدة الدورة', 'tr.hoursPart': 'ساعات', 'tr.minutesPart': 'دقائق', 'tr.startTime': 'وقت البدء', 'tr.endTime': 'وقت الانتهاء', 'tr.timeHint': 'اختياري. يظهر للزوار بنظام 12 ساعة (ص / م).', 'tr.durationHint': 'مثال: 3 ساعات و30 دقيقة.', 'tr.durationInvalid': 'أدخل ساعات من 0 إلى 2000 ودقائق من 0 إلى 59', 'tr.endTimeBeforeStart': 'وقت الانتهاء يجب أن يكون بعد وقت البدء', 'tr.am': 'ص', 'tr.pm': 'م', 'tr.noTime': '—', 'tr.viewCourse': 'التفاصيل',
 };
 
 const en: Record<string, string> = {
@@ -459,6 +460,7 @@ const en: Record<string, string> = {
   // in-place management bar of the public pages (Board, Committees)
   'mg.requests': 'Membership requests', 'mg.pageContent': 'Page content', 'mg.closeMembership': 'Close membership', 'mg.openMembership': 'Open membership', 'mg.allFaqs': 'All questions', 'mg.addCourse': 'Add course', 'mg.addTrainer': 'Add trainer', 'mg.courses': 'Courses', 'mg.trainers': 'Trainers', 'mg.trainees': 'Trainees', 'mg.trainerApps': 'Trainer applications', 'mg.pageTexts': 'Page texts', 'mg.membershipOpened': 'Membership is now open', 'mg.membershipClosed': 'Membership is now closed', 'mg.bar': 'Manage this page', 'mg.settings': 'All settings', 'mg.deleteText': 'This item will be deleted for good and this cannot be undone. Continue?', 'mg.deleteTitle': 'Confirm deletion', 'mg.editItem': 'Edit', 'mg.deleteItem': 'Delete',
   'app.pages': 'Pagination', 'app.page': 'Page', 'os.mg.hours': 'Edit opening hours', 'os.mg.texts': 'Window texts & contact', 'os.noFaqs': 'No FAQs yet',
+  'tr.time': 'Time', 'tr.duration': 'Course duration', 'tr.hoursPart': 'Hours', 'tr.minutesPart': 'Minutes', 'tr.startTime': 'Start time', 'tr.endTime': 'End time', 'tr.timeHint': 'Optional. Visitors see it on a 12-hour clock (AM / PM).', 'tr.durationHint': 'Example: 3 hours and 30 minutes.', 'tr.durationInvalid': 'Enter hours from 0 to 2000 and minutes from 0 to 59', 'tr.endTimeBeforeStart': 'The end time must be after the start time', 'tr.am': 'AM', 'tr.pm': 'PM', 'tr.noTime': '—', 'tr.viewCourse': 'Details',
 };
 
 export const DICT: Record<string, Record<string, string>> = { ar, en };

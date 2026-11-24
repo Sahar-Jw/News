@@ -15,13 +15,45 @@ import { COURSE_KINDS } from '@/components/site/training-shared';
 type Text = 'nameEn' | 'fieldAr' | 'fieldEn' | 'topicsAr' | 'topicsEn' | 'audienceAr' | 'audienceEn' | 'locationAr' | 'locationEn' | 'feeAr' | 'feeEn';
 const TEXT: Text[] = ['nameEn', 'fieldAr', 'fieldEn', 'topicsAr', 'topicsEn', 'audienceAr', 'audienceEn', 'locationAr', 'locationEn', 'feeAr', 'feeEn'];
 type Fields = Record<Text, string>;
-interface Row extends Fields { id: number; kind: string; nameAr: string; trainerId: number | null; trainerName: string; startDate: string; endDate: string; hours: number | null; capacity: number | null; registrationClosed: boolean; isActive: boolean; registered: number; status: string; imageUrl: string | null }
-interface Draft extends Fields { id?: number; kind: string; nameAr: string; trainerId: string; startDate: string; endDate: string; hours: string; capacity: string; registrationClosed: boolean; isActive: boolean; imageUrl: string | null; removeImage: boolean }
-type Errors = Partial<Record<'nameAr' | 'startDate' | 'endDate' | 'hours' | 'capacity' | 'image', string>>;
+interface Row extends Fields { id: number; kind: string; nameAr: string; trainerId: number | null; trainerName: string; startDate: string; endDate: string; hours: number | null; minutes: number | null; startTime: string; endTime: string; capacity: number | null; registrationClosed: boolean; isActive: boolean; registered: number; status: string; imageUrl: string | null }
+interface Draft extends Fields { id?: number; kind: string; nameAr: string; trainerId: string; startDate: string; endDate: string; hours: string; minutes: string; startTime: string; endTime: string; capacity: string; registrationClosed: boolean; isActive: boolean; imageUrl: string | null; removeImage: boolean }
+type Errors = Partial<Record<'nameAr' | 'startDate' | 'endDate' | 'hours' | 'endTime' | 'capacity' | 'image', string>>;
 
 const blank = (): Fields => Object.fromEntries(TEXT.map((k) => [k, ''])) as Fields;
-const EMPTY: Draft = { ...blank(), kind: 'course', nameAr: '', trainerId: '', startDate: '', endDate: '', hours: '', capacity: '', registrationClosed: false, isActive: true, imageUrl: null, removeImage: false };
+const EMPTY: Draft = { ...blank(), kind: 'course', nameAr: '', trainerId: '', startDate: '', endDate: '', hours: '', minutes: '', startTime: '', endTime: '', capacity: '', registrationClosed: false, isActive: true, imageUrl: null, removeImage: false };
 const posInt = (v: string, max: number) => /^\d+$/.test(v.trim()) && Number(v) >= 1 && Number(v) <= max;
+const wholeIn = (v: string, min: number, max: number) => /^\d+$/.test(v.trim()) && Number(v) >= min && Number(v) <= max;
+
+/** a 12-hour time box: hour, minute and AM / PM lists. Value and result are 24-hour "HH:MM" ('' = no time). */
+function TimeField({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const { t } = useI18n();
+  const m = /^(\d{2}):(\d{2})$/.exec(value);
+  const h24 = m ? Number(m[1]) : null;
+  const hour12 = h24 === null ? '' : String(h24 % 12 === 0 ? 12 : h24 % 12);
+  const minute = m ? m[2] : '';
+  const pm = h24 !== null && h24 >= 12;
+  const emit = (h: string, mi: string, isPm: boolean) => {
+    if (!h) { onChange(''); return; }
+    const base = Number(h) % 12;
+    onChange(`${String(isPm ? base + 12 : base).padStart(2, '0')}:${mi || '00'}`);
+  };
+  const sel = 'rounded-xl border border-line bg-white px-2.5 py-2 text-sm outline-none focus:border-primary disabled:opacity-60';
+  return (
+    <div dir="ltr" className="flex flex-wrap items-center gap-2">
+      <select disabled={disabled} aria-label={t('tr.hoursPart')} className={sel} value={hour12} onChange={(e) => emit(e.target.value, minute, pm)}>
+        <option value="">--</option>{Array.from({ length: 12 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <span aria-hidden="true">:</span>
+      <select disabled={disabled || !hour12} aria-label={t('tr.minutesPart')} className={sel} value={minute} onChange={(e) => emit(hour12, e.target.value, pm)}>
+        <option value="">--</option>{Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map((n) => <option key={n} value={n}>{n}</option>)}
+      </select>
+      <select disabled={disabled || !hour12} aria-label="AM / PM" className={sel} value={pm ? 'pm' : 'am'} onChange={(e) => emit(hour12, minute, e.target.value === 'pm')}>
+        <option value="am">{t('tr.am')} (AM)</option><option value="pm">{t('tr.pm')} (PM)</option>
+      </select>
+      {value && !disabled && <button type="button" onClick={() => onChange('')} aria-label="×" className="rounded-full px-2 text-gray-500 hover:text-red-600">✕</button>}
+    </div>
+  );
+}
 
 /** Courses of the Training Center. Current/archive is computed from the dates, never set by hand. */
 export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
@@ -42,7 +74,7 @@ export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
     setImage(null);
     setErrors({});
     setDraft(r
-      ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, trainerId: r.trainerId != null ? String(r.trainerId) : '', startDate: r.startDate, endDate: r.endDate, hours: r.hours != null ? String(r.hours) : '', capacity: r.capacity != null ? String(r.capacity) : '', registrationClosed: r.registrationClosed, isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false }
+      ? { ...(Object.fromEntries(TEXT.map((k) => [k, r[k] ?? ''])) as Fields), id: r.id, kind: r.kind, nameAr: r.nameAr, trainerId: r.trainerId != null ? String(r.trainerId) : '', startDate: r.startDate, endDate: r.endDate, hours: r.hours != null ? String(r.hours) : '', minutes: r.minutes != null ? String(r.minutes) : '', startTime: r.startTime ?? '', endTime: r.endTime ?? '', capacity: r.capacity != null ? String(r.capacity) : '', registrationClosed: r.registrationClosed, isActive: r.isActive, imageUrl: r.imageUrl, removeImage: false }
       : { ...EMPTY });
   };
   const up = (patch: Partial<Draft>) => draft && setDraft({ ...draft, ...patch });
@@ -77,13 +109,14 @@ export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
     if (draft.nameAr.trim().length < 2) err.nameAr = t('tr.nameRequired');
     if (!draft.startDate) err.startDate = t('tr.startRequired');
     if (draft.endDate && draft.startDate && draft.endDate < draft.startDate) err.endDate = t('tr.endBeforeStart');
-    if (draft.hours.trim() && !posInt(draft.hours, 2000)) err.hours = t('tr.hoursInvalid');
+    if ((draft.hours.trim() && !wholeIn(draft.hours, 0, 2000)) || (draft.minutes.trim() && !wholeIn(draft.minutes, 0, 59))) err.hours = t('tr.durationInvalid');
+    if (draft.startTime && draft.endTime && draft.endTime <= draft.startTime) err.endTime = t('tr.endTimeBeforeStart');
     if (draft.capacity.trim() && !posInt(draft.capacity, 100000)) err.capacity = t('tr.capacityInvalid');
     setErrors(err);
     if (Object.keys(err).length) return;
     const fd = new FormData();
     fd.set('kind', draft.kind); fd.set('nameAr', draft.nameAr.trim()); fd.set('trainerId', draft.trainerId); fd.set('startDate', draft.startDate); fd.set('endDate', draft.endDate);
-    fd.set('hours', draft.hours.trim()); fd.set('capacity', draft.capacity.trim()); fd.set('registrationClosed', String(draft.registrationClosed)); fd.set('isActive', String(draft.isActive));
+    fd.set('hours', draft.hours.trim()); fd.set('minutes', draft.minutes.trim()); fd.set('startTime', draft.startTime); fd.set('endTime', draft.endTime); fd.set('capacity', draft.capacity.trim()); fd.set('registrationClosed', String(draft.registrationClosed)); fd.set('isActive', String(draft.isActive));
     for (const k of TEXT) fd.set(k, draft[k].trim());
     if (draft.id) fd.set('removeImage', String(draft.removeImage));
     if (image) fd.set('image', image);
@@ -163,7 +196,16 @@ export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
               {pair('tr.fee', 'feeAr', 'feeEn', { max: 150, hint: t('tr.feeHint') })}
               <Field label={t('tr.startDate')} error={errors.startDate}><input type="date" dir="ltr" aria-invalid={!!errors.startDate} className={cls(errors.startDate)} value={draft.startDate} onChange={(e) => up({ startDate: e.target.value })} /></Field>
               <Field label={t('tr.endDate')} error={errors.endDate}><input type="date" dir="ltr" min={draft.startDate || undefined} aria-invalid={!!errors.endDate} className={cls(errors.endDate)} value={draft.endDate} onChange={(e) => up({ endDate: e.target.value })} /></Field>
-              <Field label={t('tr.hoursField')} error={errors.hours}><input inputMode="numeric" dir="ltr" aria-invalid={!!errors.hours} className={cls(errors.hours)} value={draft.hours} onChange={(e) => up({ hours: e.target.value })} /></Field>
+              <Field label={t('tr.startTime')} hint={t('tr.timeHint')} plain><TimeField value={draft.startTime} onChange={(v) => up({ startTime: v })} /></Field>
+              <Field label={t('tr.endTime')} error={errors.endTime} plain><TimeField value={draft.endTime} onChange={(v) => up({ endTime: v })} /></Field>
+              <Field label={t('tr.duration')} hint={t('tr.durationHint')} error={errors.hours} plain>
+                <div className="flex flex-wrap items-center gap-2" dir="ltr">
+                  <input inputMode="numeric" maxLength={4} aria-label={t('tr.hoursPart')} aria-invalid={!!errors.hours} placeholder="0" className={`${cls(errors.hours)} w-20 text-center`} value={draft.hours} onChange={(e) => up({ hours: e.target.value })} />
+                  <span className="text-sm text-gray-600">{t('tr.hoursPart')}</span>
+                  <input inputMode="numeric" maxLength={2} aria-label={t('tr.minutesPart')} aria-invalid={!!errors.hours} placeholder="0" className={`${cls(errors.hours)} w-20 text-center`} value={draft.minutes} onChange={(e) => up({ minutes: e.target.value })} />
+                  <span className="text-sm text-gray-600">{t('tr.minutesPart')}</span>
+                </div>
+              </Field>
               <Field label={t('tr.capacity')} hint={t('tr.capacityHint')} error={errors.capacity}><input inputMode="numeric" dir="ltr" aria-invalid={!!errors.capacity} className={cls(errors.capacity)} value={draft.capacity} onChange={(e) => up({ capacity: e.target.value })} /></Field>
             </div>
             <div className="flex flex-wrap gap-6 text-sm">

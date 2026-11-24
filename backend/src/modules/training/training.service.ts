@@ -75,7 +75,7 @@ export class TrainingService {
     return {
       id: r.id, kind: (x.kind ?? 'course') as CourseKind, nameAr: r.title, nameEn: s(x.nameEn), fieldAr: s(x.fieldAr), fieldEn: s(x.fieldEn), topicsAr: s(x.topicsAr), topicsEn: s(x.topicsEn),
       audienceAr: s(x.audienceAr), audienceEn: s(x.audienceEn), locationAr: s(x.locationAr), locationEn: s(x.locationEn), feeAr: s(x.feeAr), feeEn: s(x.feeEn),
-      trainerId: x.trainerId != null ? Number(x.trainerId) : null, startDate: String(x.startDate ?? ''), endDate: (x.endDate ?? null) as string | null, hours: (x.hours ?? null) as number | null,
+      trainerId: x.trainerId != null ? Number(x.trainerId) : null, startDate: String(x.startDate ?? ''), endDate: (x.endDate ?? null) as string | null, hours: (x.hours ?? null) as number | null, minutes: (x.minutes ?? null) as number | null, startTime: (x.startTime ?? null) as string | null, endTime: (x.endTime ?? null) as string | null,
       capacity: (x.capacity ?? null) as number | null, registrationClosed: x.registrationClosed === true, isActive: isActive(r), image: r.images[0] ?? null, createdAt: r.createdAt, updatedAt: r.updatedAt,
     };
   }
@@ -89,7 +89,7 @@ export class TrainingService {
     const t = c.trainerId != null ? trainers.get(c.trainerId) : undefined;
     const out: Record<string, unknown> = {
       id: c.id, kind: c.kind, nameAr: c.nameAr, trainerId: c.trainerId, trainerName: t?.title ?? '',
-      startDate: c.startDate, endDate: c.endDate ?? '', hours: c.hours, capacity: c.capacity, registrationClosed: c.registrationClosed,
+      startDate: c.startDate, endDate: c.endDate ?? '', hours: c.hours, minutes: c.minutes, startTime: c.startTime ?? '', endTime: c.endTime ?? '', capacity: c.capacity, registrationClosed: c.registrationClosed,
       isActive: c.isActive, registered, status: registrationStatus(c, registered), imageUrl: this.storage.url(c.image), createdAt: c.createdAt, updatedAt: c.updatedAt,
     };
     for (const f of X_TEXT_FIELDS) out[f] = (c as Record<string, any>)[f] ?? '';
@@ -122,10 +122,17 @@ export class TrainingService {
     if (!(await this.store.get(id, CC.TRAINER))) throw new BadRequestException('المدرب غير موجود');
   }
 
+  /** hours + minutes as stored: both zero / empty = no duration; sent together by the form */
+  private durationOf(dto: CreateCourseDto | UpdateCourseDto): { hours?: number | null; minutes?: number | null } {
+    if (dto.hours === undefined && dto.minutes === undefined) return {};
+    const h = dto.hours ?? 0, m = dto.minutes ?? 0;
+    return h <= 0 && m <= 0 ? { hours: null, minutes: null } : { hours: h, minutes: m };
+  }
+
   private xOf(dto: CreateCourseDto | UpdateCourseDto) {
     const x: Record<string, any> = {
       kind: dto.kind, trainerId: dto.trainerId === undefined ? undefined : dto.trainerId ?? null, startDate: dto.startDate, endDate: dto.endDate === undefined ? undefined : dto.endDate ?? null,
-      hours: dto.hours === undefined ? undefined : dto.hours ?? null, capacity: dto.capacity === undefined ? undefined : dto.capacity ?? null, registrationClosed: dto.registrationClosed, isActive: dto.isActive,
+      ...this.durationOf(dto), startTime: dto.startTime === undefined ? undefined : dto.startTime ?? null, endTime: dto.endTime === undefined ? undefined : dto.endTime ?? null, capacity: dto.capacity === undefined ? undefined : dto.capacity ?? null, registrationClosed: dto.registrationClosed, isActive: dto.isActive,
     };
     for (const f of X_TEXT_FIELDS) {
       const v = (dto as Record<string, any>)[f];
@@ -137,6 +144,7 @@ export class TrainingService {
   async create(dto: CreateCourseDto, image: Express.Multer.File | undefined, actor: AuthUser) {
     await this.checkTrainer(dto.trainerId);
     if (dto.endDate && dto.endDate < dto.startDate) throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+    if (dto.startTime && dto.endTime && dto.endTime <= dto.startTime) throw new BadRequestException('وقت النهاية يجب أن يكون بعد وقت البداية');
     const path = image ? await this.storage.saveImage(image, 'courses', 1200) : null;
     try {
       const x = this.xOf(dto);
@@ -156,6 +164,9 @@ export class TrainingService {
     const start = dto.startDate ?? String(cur.x.startDate ?? '');
     const end = dto.endDate !== undefined ? dto.endDate : (cur.x.endDate ?? null);
     if (end && end < start) throw new BadRequestException('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+    const st = dto.startTime !== undefined ? dto.startTime : (cur.x.startTime ?? null);
+    const et = dto.endTime !== undefined ? dto.endTime : (cur.x.endTime ?? null);
+    if (st && et && et <= st) throw new BadRequestException('وقت النهاية يجب أن يكون بعد وقت البداية');
     const newPath = image ? await this.storage.saveImage(image, 'courses', 1200) : null;
     const oldPath = cur.images[0] ?? null;
     try {
@@ -225,7 +236,7 @@ export class TrainingService {
     return {
       id: c.id, kind: c.kind, name: pick(c.nameAr, c.nameEn, en), field: pick(c.fieldAr, c.fieldEn, en), audience: pick(c.audienceAr, c.audienceEn, en),
       topics: lines(en && c.topicsEn ? c.topicsEn : c.topicsAr), trainer: t ? { id: t.id, name: pick(t.title, t.x.nameEn, en), bio: pick(t.body, t.x.bioEn, en) } : null,
-      startDate: c.startDate, endDate: c.endDate, hours: c.hours, location: pick(c.locationAr, c.locationEn, en), fee: pick(c.feeAr, c.feeEn, en),
+      startDate: c.startDate, endDate: c.endDate, hours: c.hours, minutes: c.minutes, startTime: c.startTime, endTime: c.endTime, location: pick(c.locationAr, c.locationEn, en), fee: pick(c.feeAr, c.feeEn, en),
       seatsLeft: c.capacity != null ? Math.max(0, c.capacity - registered) : null, status: registrationStatus(c, registered, today), imageUrl: this.storage.url(c.image),
     };
   }
@@ -327,7 +338,7 @@ export class TrainingService {
       const t = course.trainerId != null ? (await this.trainerMap()).get(course.trainerId) : undefined;
       const mail = registrationConfirmation(en ? 'en' : 'ar', dto.name.trim(), {
         name: pick(course.nameAr, course.nameEn, en), startDate: course.startDate, endDate: course.endDate, location: pick(course.locationAr, course.locationEn, en),
-        hours: course.hours, fee: pick(course.feeAr, course.feeEn, en), trainer: t ? pick(t.title, t.x.nameEn, en) : '',
+        hours: course.hours, minutes: course.minutes, startTime: course.startTime, endTime: course.endTime, fee: pick(course.feeAr, course.feeEn, en), trainer: t ? pick(t.title, t.x.nameEn, en) : '',
       });
       await this.mail.as('training').send(email, mail.subject, mail.html);
     } catch (e) {
