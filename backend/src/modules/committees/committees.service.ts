@@ -18,6 +18,8 @@ import { SiteSetting } from '../settings/site-setting.entity';
 import { applyEligibility } from '../news/news.eligibility';
 import { ActivityKind, CommitteeKind, MemberRole } from './committee.entity';
 import { MemberRolesService, RoleScope } from '../member-roles/member-roles.service';
+import { Matcher, committeeMatcher, personMatcher, sameName } from '../../common/utils/name-match';
+import { mentionedNews, mergeNews } from '../news/news-mentions';
 import { CommitteeAdminQueryDto, CreateActivityDto, CreateCommitteeDto, CreateMemberDto, UpdateActivityDto, UpdateCommitteeDto, UpdateMemberDto } from './committees.dto';
 
 const tags = (v: string | null) => (v ?? '').split(/[,،\n]/).map((x) => x.trim()).filter(Boolean);
@@ -150,20 +152,21 @@ export class CommitteesService {
   // ---------------------------------------------------------------- committees of a person (board members page)
   /**
    * The committees a person belongs to: his / her name (Arabic or English) is a member row of the committee or its chair name.
-   * Names are compared after removing diacritics / tatweel and unifying alef and ya forms, so spelling variants still match.
+   * Names are compared loosely (common/utils/name-match.ts: same first + last name, titles / diacritics / spelling variants ignored).
    * `onlyActive` (public pages) leaves out committees that are switched off.
    */
   async committeesOfPerson(names: (string | null | undefined)[], onlyActive: boolean, lang = 'ar') {
-    const norm = (v: unknown) => String(v ?? '').normalize('NFC').replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim().toLowerCase();
-    const wanted = new Set(names.map(norm).filter((n) => n.length >= 3));
-    if (!wanted.size) return [];
+    // the same person written a little differently (a missing middle name, a title, another spelling of a letter) is still the same person
+    const wanted = names.map((n) => String(n ?? '').trim()).filter((n) => n.length >= 3);
+    if (!wanted.length) return [];
+    const same = (candidate: unknown) => wanted.some((w) => sameName(w, candidate));
     const [committees, members] = await Promise.all([this.store.list(COMMITTEE_CODES), this.store.list(CC.COMMITTEE_MEMBER)]);
     const out: { id: number; kind: CommitteeKind; name: string; role: string }[] = [];
     for (const c of committees) {
       if (onlyActive && !isActive(c)) continue;
       const v = this.view(c);
-      const asChair = wanted.has(norm(v.chairNameAr)) || wanted.has(norm(v.chairNameEn));
-      const m = members.find((x) => Number(x.x.parentId) === c.id && (wanted.has(norm(x.title)) || wanted.has(norm(s(x.x.nameEn)))));
+      const asChair = same(v.chairNameAr) || same(v.chairNameEn);
+      const m = members.find((x) => Number(x.x.parentId) === c.id && (same(x.title) || same(s(x.x.nameEn))));
       if (!asChair && !m) continue;
       out.push({ id: c.id, kind: v.kind, name: pick(v.nameAr, v.nameEn, lang === 'en'), role: asChair ? 'chair' : String(m!.x.role ?? 'member') });
     }
@@ -450,7 +453,9 @@ export class CommitteesService {
       // not over yet (upcoming or ongoing): what the home page and the "current" tabs show
       upcoming: ['upcoming', 'ongoing'].includes(activityStatus(v.kind, v.eventDate, v.endDate, v.archived, t) ?? ''),
     });
-    let newsList: unknown[] = [];
+    // the committee's news: linked by hand + (women page) its categories + any news that mentions the committee's name or one of its
+    // members / its chair. Names need not be written exactly as saved (see common/utils/name-match.ts).
+    let base: News[] = [];
     if (newsIds.length || newsCategories?.length) {
       const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']);
       qb.where(new Brackets((b) => {
@@ -459,8 +464,15 @@ export class CommitteesService {
       }));
       applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
       qb.orderBy('n.publishAt', 'DESC').addOrderBy('n.id', 'DESC').take(30);
-      newsList = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
+      base = await qb.getMany();
     }
+    const cv = this.view(c);
+    const matchers = [
+      committeeMatcher(cv.nameAr), committeeMatcher(cv.nameEn), personMatcher(cv.chairNameAr), personMatcher(cv.chairNameEn),
+      ...members.flatMap((m) => [personMatcher(m.title), personMatcher(m.x.nameEn)]),
+    ].filter((m): m is Matcher => !!m);
+    const mentioned = matchers.length ? await mentionedNews(this.news, matchers, { lang: en ? 'en' : 'ar' }) : [];
+    const newsList = mergeNews(base, mentioned, 40).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
     const albums = await this.galleries.find({ where: { committeeId: c.id }, order: { id: 'DESC' }, take: 96 });
     const title = (g: (typeof albums)[number]) => (en && g.titleEn) || g.titleAr;
     // an item can hold pictures and a video: it is a card in the photos tab when it has pictures and a card in the videos tab when it has a video

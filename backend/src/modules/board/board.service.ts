@@ -14,6 +14,8 @@ import { News } from '../news/news.entity';
 import { applyEligibility, onlyRegular } from '../news/news.eligibility';
 import { FileStorageService } from '../files/file-storage.service';
 import { MemberRolesService } from '../member-roles/member-roles.service';
+import { Matcher, personMatcher } from '../../common/utils/name-match';
+import { mentionedNews, mergeNews } from '../news/news-mentions';
 import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from './board.dto';
 
 /**
@@ -188,18 +190,20 @@ export class BoardService {
     const en = lang === 'en';
     const v = this.view(r);
     const linkedIds = await this.links.newsIdsOf('board_member', id);
-    // the member's news: news that mentions his / her name (title, subject or text) and news linked by hand. The Board of Directors news as a whole shows on the board page only.
-    const names = [...new Set([v.nameAr, v.nameEn].map((n) => n.trim()).filter((n) => n.length >= 4))];
-    const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']);
-    qb.where(new Brackets((b) => {
-      b.where('1 = 0'); // nothing by default: only the conditions below can match
-      if (linkedIds.length) b.orWhere('n.id IN (:...linkedIds)', { linkedIds });
-      names.forEach((name, i) => b.orWhere(`(n.title ILIKE :nm${i} OR n.subject ILIKE :nm${i} OR n.body ILIKE :nm${i})`, { [`nm${i}`]: `%${escapeLike(name)}%` }));
-    }));
-    onlyRegular(qb, 'n');
-    applyEligibility(qb, 'n', { lang: en ? 'en' : 'ar', authenticated: false });
-    qb.orderBy('n.publishAt', 'DESC', 'NULLS LAST').addOrderBy('n.id', 'DESC').take(30);
-    const news = (await qb.getMany()).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
+    // the member's news: news linked by hand + news that mention his / her name. The name need not be written exactly as saved: first + last name,
+    // first + third name, or 3 parts of it close together are enough (see common/utils/name-match.ts). The Board of Directors news as a whole shows on the board page only.
+    const newsLang = en ? 'en' : 'ar';
+    let linked: News[] = [];
+    if (linkedIds.length) {
+      const qb = this.news.createQueryBuilder('n').select(['n.id', 'n.title', 'n.excerpt', 'n.images', 'n.publishAt']).where('n.id IN (:...linkedIds)', { linkedIds });
+      onlyRegular(qb, 'n');
+      applyEligibility(qb, 'n', { lang: newsLang, authenticated: false });
+      qb.orderBy('n.publishAt', 'DESC', 'NULLS LAST').addOrderBy('n.id', 'DESC').take(30);
+      linked = await qb.getMany();
+    }
+    const matchers = [personMatcher(v.nameAr), personMatcher(v.nameEn)].filter((m): m is Matcher => !!m);
+    const mentioned = matchers.length ? await mentionedNews(this.news, matchers, { lang: newsLang }) : [];
+    const news = mergeNews(linked, mentioned).map((n) => ({ id: n.id, title: n.title, excerpt: n.excerpt ?? '', image: this.storage.url((n.images ?? [])[0] ?? null), publishAt: n.publishAt }));
     const committees = await this.committees.committeesOfPerson([v.nameAr, v.nameEn], true, lang);
     return { ...this.card(r, en), bio: pick(r.body, r.x.bioEn, en), duties: pick(r.x.dutiesAr, r.x.dutiesEn, en), committees, news };
   }
