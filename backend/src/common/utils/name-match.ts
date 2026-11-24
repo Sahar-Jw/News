@@ -91,6 +91,12 @@ export function sameName(a: unknown, b: unknown): boolean {
   if (A.length < 2 || B.length < 2) return false;
   const first = A[0] === B[0], last = A[A.length - 1] === B[B.length - 1];
   if (first && last) return true; // same first and last name, whatever is between
+  // the shorter name is written inside the longer one, in the same order ("محمد خالد" in "محمد أحمد خالد الحريري"): same person when it starts
+  // with the same first name, or when it is at least 3 parts long
+  const [S, L] = A.length <= B.length ? [A, B] : [B, A];
+  let k = 0;
+  for (const w of L) if (k < S.length && w === S[k]) k++;
+  if (k === S.length && (S[0] === L[0] || S.length >= 3)) return true;
   if (first && A.slice(1).filter((w) => B.slice(1).includes(w)).length >= 2) return true; // same first name and 2 more parts
   const mid = (X: string[]) => X.slice(1, -1);
   if (last && A.length >= 3 && B.length >= 3 && mid(A).filter((w) => mid(B).includes(w)).length >= 2) return true; // same family and 2 middle parts
