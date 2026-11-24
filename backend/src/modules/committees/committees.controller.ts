@@ -121,7 +121,7 @@ export class CommitteesPublicController {
   @Public()
   @Get()
   list(@Query() q: PublicCommitteesQueryDto) {
-    return this.service.publicList(q.lang === 'en' ? 'en' : 'ar', q.q);
+    return this.service.publicList(q.lang === 'en' ? 'en' : 'ar', q.q, q.includeWomen === '1');
   }
 
   // declared before ":id" so "women" is not parsed as an id

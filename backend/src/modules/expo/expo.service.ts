@@ -14,7 +14,7 @@ import { SiteSetting } from '../settings/site-setting.entity';
 import { ExpoApplication } from './expo-application.entity';
 import { CC } from '../../common/content-categories';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
-import { filterByCf, matches, pageRows } from '../content/mem';
+import { byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { ApplicationsAdminQueryDto, ApplyDto, CreateExpoItemDto, ExpoItemsAdminQueryDto, UpdateApplicationDto, UpdateExpoItemDto } from './expo.dto';
 
 const TEXT = ['nameEn', 'descriptionAr', 'descriptionEn', 'sectorAr', 'sectorEn', 'category', 'personAr', 'personEn', 'placeAr', 'placeEn', 'website'] as const;
@@ -63,6 +63,7 @@ export class ExpoService {
   async list(q: ExpoItemsAdminQueryDto) {
     let rows = (await this.store.list(expoCode(q.kind))).map((r) => ({ r, v: this.view(r) }));
     if (q.q) rows = rows.filter(({ v }) => matches([v.nameAr, v.nameEn, v.sectorAr, v.personAr], q.q!));
+    if (q.visible) rows = rows.filter(({ v }) => byVisible([v], q.visible).length > 0);
     rows = filterByCf(rows, q.cf, { nameAr: (x) => [x.v.nameAr], nameEn: (x) => [x.v.nameEn], sectorAr: (x) => [x.v.sectorAr], category: (x) => [x.v.category], personAr: (x) => [x.v.personAr], placeAr: (x) => [x.v.placeAr] });
     const startKey = (v: { startsAt: string | null }) => (v.startsAt ? new Date(v.startsAt).getTime() : Infinity);
     rows.sort((a, b) => (q.kind === 'session' ? startKey(a.v) - startKey(b.v) : a.v.sortOrder - b.v.sortOrder) || a.v.nameAr.localeCompare(b.v.nameAr) || a.v.id - b.v.id);

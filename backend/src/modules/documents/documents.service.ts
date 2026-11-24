@@ -6,7 +6,7 @@ import { publicPage, paged } from '../../common/utils/pagination';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentStore, Rec, isActive, pick, s } from '../content/content.store';
-import { filterByCf, matches, pageRows } from '../content/mem';
+import { byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { DOCUMENT_KINDS, DocumentKind, OFFICIAL_DOCUMENT_KINDS, SUBTYPES_OF_KIND } from './document.entity';
 import { } from '../../common/constants';
@@ -61,6 +61,10 @@ export class DocumentsService {
   async list(q: DocumentsAdminQueryDto) {
     let rows = (await this.store.list(q.kind ? docCode(q.kind) : DOC_CODES)).map((r) => this.view(r));
     if (q.q) rows = rows.filter((d) => matches([d.titleAr, d.titleEn, d.docNumber], q.q!));
+    rows = byVisible(rows, q.visible);
+    // from / to = the date written on the document
+    if (q.from) rows = rows.filter((d) => !!d.docDate && d.docDate >= q.from!.slice(0, 10));
+    if (q.to) rows = rows.filter((d) => !!d.docDate && d.docDate <= q.to!.slice(0, 10));
     rows = filterByCf(rows, q.cf, { titleAr: (d) => [d.titleAr], titleEn: (d) => [d.titleEn], docNumber: (d) => [d.docNumber] });
     rows.sort(DocumentsService.newest);
     return pageRows(rows, q, (d) => d);

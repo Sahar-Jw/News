@@ -1,7 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { IsArray, IsIn, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { parseStringList } from '../../common/dto/form-transforms';
-import { PublicListQueryDto } from '../../common/dto/list-query.dto';
+import { AdminListQueryDto, PublicListQueryDto } from '../../common/dto/list-query.dto';
 import { GALLERY_CATEGORIES, GALLERY_KINDS } from './gallery.entity';
 
 /** multipart value: "" or missing = no committee */
@@ -33,6 +33,13 @@ export class UpdateGalleryDto {
   @IsOptional() @IsString() @MaxLength(255) titleEn?: string;
   @blankToNull() @IsOptional() @IsString() @MaxLength(255) thumbnail?: string | null;
   @IsOptional() @Transform(parseStringList) @IsArray() @IsString({ each: true }) keepImages?: string[];
+}
+
+/** filters of the Gallery table in Settings: what the item holds (pictures / a video), its classification and its committee */
+export class GalleryAdminQueryDto extends AdminListQueryDto {
+  @IsOptional() @IsIn(['photos', 'video']) type?: string;
+  @IsOptional() @IsIn(CATS) category?: string;
+  @IsOptional() @Type(() => Number) @IsInt() committeeId?: number;
 }
 
 export class PublicGalleryQueryDto extends PublicListQueryDto {

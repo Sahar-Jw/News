@@ -34,6 +34,13 @@ export function filterByCf<T>(rows: T[], raw: string | undefined, accessors: Rec
 }
 
 /** One admin page of already filtered + sorted rows, in the shape every admin table expects. */
+/** `visible=1` keeps the rows that are shown on the site, `visible=0` the hidden ones; anything else keeps every row */
+export function byVisible<T extends { isActive?: boolean }>(rows: T[], visible?: string): T[] {
+  if (visible === '1') return rows.filter((r) => r.isActive !== false);
+  if (visible === '0') return rows.filter((r) => r.isActive === false);
+  return rows;
+}
+
 export function pageRows<T, R>(rows: T[], q: { page?: number; limit?: string }, present: (r: T) => R) {
   const p = adminPage(q);
   return paged(rows.slice(p.skip, p.skip + p.limit).map(present), rows.length, p);

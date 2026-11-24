@@ -9,7 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { useMemberRoles } from '@/lib/member-roles';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { LinkedNewsPanel } from '@/components/admin/linked-news-panel';
 
@@ -170,7 +170,7 @@ export function BoardAdmin() {
         columns={cols}
         refreshKey={key}
         exportable={false}
-        filters={[{ key: 'position', label: t('board.position'), options: roles.board.map((o) => ({ value: o.key, label: roleOf('board', o.key) })) }]}
+        filters={[{ key: 'position', label: t('board.position'), options: roles.board.map((o) => ({ value: o.key, label: roleOf('board', o.key) })) }, visibleFilter(t)]}
         bulkDelete={{ path: '/admin/board/bulk-delete', can: can('board.delete') }}
         toolbar={can('board.create') && <Button onClick={() => setDialog({})}>＋ {t('board.add')}</Button>}
         rowActions={(r, reload) => (

@@ -10,7 +10,7 @@ import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import { useMemberRoles, type RoleScope } from '@/lib/member-roles';
 import { useConfirm } from '@/components/ui/confirm';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { PlainEditor } from '@/components/admin/plain-editor';
 
@@ -301,18 +301,18 @@ export function CommitteeDialog({ row, id, kind = 'sector', initialTab, onClose,
 /** Committees (sector + businesswomen): the table of Settings; the window of a committee is `CommitteeDialog`. */
 /** `kind` picks the table: sector committees (Committees settings, the default) or the businesswomen committee (Women settings). */
 export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women' } = {}) {
-  const { t, href } = useI18n();
+  const { t, href, lang } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const [dialog, setDialog] = useState<{ row?: Row } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
   const canUpdate = can('committees.update');
-  // the businesswomen committee: one only, so its table offers "add" only while there is none
-  const [womenCount, setWomenCount] = useState<number | null>(null);
+  // the businesswomen committee: there is exactly one, so Settings shows it as a card (not as a table with filters)
+  const [women, setWomen] = useState<Row | null | undefined>(undefined); // undefined = loading, null = none yet
   useEffect(() => {
     if (kind !== 'women') return;
-    api<{ meta: { total: number } }>('/admin/committees', { params: { kind: 'women', limit: 10 } }).then((r) => setWomenCount(r.meta.total)).catch(() => setWomenCount(null));
+    api<{ data: Row[] }>('/admin/committees', { params: { kind: 'women', limit: 10 } }).then((r) => setWomen(r.data[0] ?? null)).catch(() => setWomen(null));
   }, [kind, key]);
 
   const yn = (on: boolean) => <span className={`rounded px-1.5 py-0.5 text-[10px] ${on ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>{t(on ? 'sub.yes' : 'sub.no')}</span>;
@@ -324,13 +324,56 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
     { key: 'isActive', searchable: false, label: t('faq.active'), render: (r) => yn(r.isActive), text: (r) => t(r.isActive ? 'sub.yes' : 'sub.no') },
   ];
 
+
+  /** The one Women Business Committee: its details at a glance with the actions, instead of a one-row table. */
+  const womenCard = () => {
+    const ar = lang === 'ar';
+    if (women === undefined) return <p className="text-sm text-gray-500">…</p>;
+    if (women === null) {
+      return (
+        <div className="rounded-2xl border border-dashed border-line bg-white p-8 text-center shadow-card">
+          <p className="text-gray-600">{ar ? 'لم تُضف لجنة سيدات الأعمال بعد' : 'The Women Business Committee has not been added yet'}</p>
+          {can('committees.create') && <Button className="mt-4" onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
+        </div>
+      );
+    }
+    const fact = (label: string, value: React.ReactNode) => (
+      <div className="rounded-xl bg-primary/[0.04] px-3 py-2"><dt className="text-xs text-gray-500">{label}</dt><dd className="mt-0.5 text-sm font-semibold text-ink">{value || '—'}</dd></div>
+    );
+    return (
+      <section className="rounded-2xl border border-line bg-white p-5 shadow-card" aria-label={women.nameAr}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {women.logoUrl && <img src={fileUrl(women.logoUrl)} alt="" className="h-14 w-14 rounded-xl object-contain" />}
+            <div>
+              <h2 className="text-lg font-bold text-ink">{women.nameAr}</h2>
+              {women.nameEn && <p dir="ltr" className="text-sm text-gray-500">{women.nameEn}</p>}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <Link href={href('/committees/women')} target="_blank" className="rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50">{t('pg.view')}</Link>
+            {canUpdate && <Button size="sm" variant="outline" onClick={() => setDialog({ row: women })}>{t('app.edit')}</Button>}
+            {can('committees.delete') && <Button size="sm" variant="ghost" className="text-red-600" aria-label={t('app.delete')} onClick={() => setDeleteTarget({ row: women, reload: () => setKey((k) => k + 1) })}>✕</Button>}
+          </div>
+        </div>
+        <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+          {fact(t('cm.chair'), women.chairNameAr)}
+          {fact(t('faq.order'), String(women.sortOrder))}
+          {fact(t('faq.active'), yn(women.isActive))}
+        </dl>
+        {!women.isActive && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{t('cm.womenOne')}</p>}
+        <p className="mt-3 text-xs text-gray-500">{ar ? 'أعضاء اللجنة وأنشطتها وأخبارها من نافذة «تعديل»، وقائمة الصفات من تبويب «الصفات».' : 'Members, activities and news are managed from “Edit”; the position list is in the “Positions” tab.'}</p>
+      </section>
+    );
+  };
+
   const removeCommittee = async () => {
     if (!deleteTarget) return;
     try {
       await api(`/admin/committees/${deleteTarget.row.id}`, { method: 'DELETE' });
       toast(t('app.deleted'));
       deleteTarget.reload();
-      setKey((k) => k + 1); // re-count so the add button comes back after the only women committee is deleted
+      setKey((k) => k + 1); // reload so the add button comes back after the only women committee is deleted
       setDeleteTarget(null);
     } catch (err: any) { toast(err.message, 'err'); }
   };
@@ -338,14 +381,16 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
   return (
     <RequirePerm any={['committees.read']}>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.committees')}</h1>
+      {kind === 'women' ? womenCard() : (
       <DataTable<Row>
         endpoint="/admin/committees"
         baseParams={{ kind }}
         columns={cols}
+        filters={[visibleFilter(t)]}
         refreshKey={key}
         exportable={false}
         bulkDelete={{ path: '/admin/committees/bulk-delete', can: can('committees.delete') }}
-        toolbar={can('committees.create') && (kind === 'women' ? (womenCount === null ? null : womenCount > 0 ? <span className="text-xs text-gray-500">{t('cm.womenOne')}</span> : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>) : <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>)}
+        toolbar={can('committees.create') && <Button onClick={() => setDialog({})}>＋ {t('cm.add')}</Button>}
         rowActions={(r, reload) => (
           <div className="flex gap-1">
             <Link href={href(r.kind === 'women' ? '/committees/women' : `/committees/${r.id}`)} target="_blank" className="rounded-lg border px-2.5 py-1 text-xs hover:bg-gray-50">{t('pg.view')}</Link>
@@ -354,6 +399,7 @@ export function CommitteesAdmin({ kind = 'sector' }: { kind?: 'sector' | 'women'
           </div>
         )}
       />
+      )}
 
 
       {dialog && <CommitteeDialog key={dialog.row?.id ?? 'new'} row={dialog.row} kind={kind} onClose={() => setDialog(null)} onChanged={() => setKey((k) => k + 1)} />}

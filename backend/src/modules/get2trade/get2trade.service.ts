@@ -8,7 +8,7 @@ import { adminPage, paged } from '../../common/utils/pagination';
 import { escapeLike, sanitizeRichText } from '../../common/utils/text';
 import { CC } from '../../common/content-categories';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
@@ -89,7 +89,7 @@ export class Get2TradeService {
   async listPackages(q: PackagesAdminQueryDto) {
     let rows = (await this.store.list(CC.G2T_PACKAGE)).map((r) => this.presentPackage(r));
     if (q.q) rows = rows.filter((p) => matches([p.nameAr, p.nameEn], q.q!));
-    rows = filterByCf(rows, q.cf, { nameAr: (p) => [p.nameAr], nameEn: (p) => [p.nameEn], priceAr: (p) => [p.priceAr] });
+    rows = filterByCf(byVisible(rows, q.visible), q.cf, { nameAr: (p) => [p.nameAr], nameEn: (p) => [p.nameEn], priceAr: (p) => [p.priceAr] });
     rows.sort(by((p) => p.sortOrder, (p) => p.id));
     return pageRows(rows, q, (p) => p);
   }
@@ -142,6 +142,7 @@ export class Get2TradeService {
   async listSpaces(q: SpacesAdminQueryDto) {
     let rows = (await this.store.list(CC.G2T_SPACE)).map((r) => ({ r, v: this.spaceView(r) }));
     if (q.kind) rows = rows.filter(({ v }) => v.kind === q.kind);
+    if (q.visible) rows = rows.filter(({ v }) => byVisible([v], q.visible).length > 0);
     if (q.q) rows = rows.filter(({ v }) => matches([v.nameAr, v.nameEn], q.q!));
     rows = filterByCf(rows, q.cf, { nameAr: (x) => [x.v.nameAr], nameEn: (x) => [x.v.nameEn], priceAr: (x) => [x.v.priceAr] });
     rows.sort(by((x) => x.v.sortOrder, (x) => x.v.id));

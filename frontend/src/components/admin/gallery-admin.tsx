@@ -7,7 +7,7 @@ import { fmtDate } from '@/lib/utils';
 import { parseYoutubeId } from '@/lib/youtube';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, FilterDef } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { ImageSet, ImageSetField, appendImages, coverField, emptyImageSet, imageSetOf, imageTotal, releaseImages } from '@/components/admin/image-set-field';
 
@@ -29,8 +29,8 @@ export function GalleryDialog({ id, onClose, onSaved }: { id?: number; onClose: 
   const [busy, setBusy] = useState(false);
   const [committees, setCommittees] = useState<CommitteeOpt[]>([]);
 
-  // committees an album can be attached to (public list: no extra permission needed)
-  useEffect(() => { api<CommitteeOpt[]>('/public/committees', { params: { lang } }).then(setCommittees).catch(() => setCommittees([])); }, [lang]);
+  // committees an album can be attached to, the Women Business Committee included (public list: no extra permission needed)
+  useEffect(() => { api<CommitteeOpt[]>('/public/committees', { params: { lang, includeWomen: '1' } }).then(setCommittees).catch(() => setCommittees([])); }, [lang]);
   useEffect(() => {
     if (!id) return;
     api<Row>(`/admin/gallery/${id}`)
@@ -112,6 +112,14 @@ export function GalleryAdmin() {
   const [dialog, setDialog] = useState<{ id?: number } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ row: Row; reload: () => void } | null>(null);
   const [key, setKey] = useState(0);
+  // filters of the table: what the item holds, its classification and its committee (the Women Business Committee included)
+  const [committeeOpts, setCommitteeOpts] = useState<CommitteeOpt[]>([]);
+  useEffect(() => { api<CommitteeOpt[]>('/public/committees', { params: { lang, includeWomen: '1' } }).then(setCommitteeOpts).catch(() => setCommitteeOpts([])); }, [lang]);
+  const filters: FilterDef[] = [
+    { key: 'type', label: t('gl.type'), options: ['photos', 'video'].map((k) => ({ value: k, label: t(`gl.kind.${k}`) })) },
+    { key: 'category', label: t('gl.category'), options: CATEGORIES.map((c) => ({ value: c, label: t(`gl.cat.${c}`) })) },
+    ...(committeeOpts.length ? [{ key: 'committeeId', label: t('gl.committee'), options: committeeOpts.map((c) => ({ value: String(c.id), label: c.name })) }] : []),
+  ];
 
   const cols: Col<Row>[] = [
     { key: 'titleAr', label: t('oc.titleAr') },
@@ -146,6 +154,8 @@ export function GalleryAdmin() {
       <DataTable<Row>
         endpoint="/admin/gallery"
         columns={cols}
+        filters={filters}
+        dateFilter
         exportable={false}
         refreshKey={key}
         bulkDelete={{ path: '/admin/gallery/bulk-delete', can: can('gallery.delete') }}

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 interface Row {
@@ -99,7 +99,7 @@ export function StatisticDialog({ id, onClose, onSaved }: { id?: number; onClose
 
 /** Home page statistics: each one is typed by hand (titles in both languages); only the first five visible ones show. */
 export function StatisticsAdmin() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
   const ar = lang === 'ar';
@@ -136,6 +136,7 @@ export function StatisticsAdmin() {
       <p className="mb-4 text-sm text-gray-600">{tr('اكتب عنوان كل إحصائية بالعربية والإنجليزية وقيمتها بنفسك. تظهر خمس إحصائيات كحد أقصى بحسب الترتيب. إذا لم تضف أي إحصائية هنا تبقى الإحصائيات القديمة ظاهرة.', 'Type the title (Arabic and English) and the value of each statistic yourself. At most five show, in order. While none are added here, the older statistics stay on the site.')}</p>
       <DataTable<Row>
         endpoint="/admin/statistics"
+        filters={[visibleFilter(t)]}
         columns={cols}
         refreshKey={key}
         exportable={false}

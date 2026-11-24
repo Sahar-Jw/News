@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import type { QuickAdd } from '@/lib/quick-add';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 interface Row { id: number; nameAr: string; nameEn: string; bioAr: string; bioEn: string; isActive: boolean }
@@ -74,6 +74,7 @@ export function TrainersAdmin({ quick }: { quick?: QuickAdd } = {}) {
       <h1 className="mb-4 text-2xl font-bold">{t('adm.trainers')}</h1>
       <DataTable<Row>
         endpoint="/admin/trainers"
+        filters={[visibleFilter(t)]}
         columns={cols}
         refreshKey={key}
         exportable={false}

@@ -5,7 +5,7 @@ import { AuthUser } from '../../common/types';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentStore, Rec, isActive, s, sortOf } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { CreateStatisticDto, PublicStatisticsQueryDto, StatisticsAdminQueryDto, UpdateStatisticDto } from './statistics.dto';
 
 // ---- DB-BACKED NUMBERS: switched off for now (the code is kept below, commented, together with statistics.metrics.ts) ----
@@ -120,7 +120,7 @@ export class StatisticsService {
   async list(q: StatisticsAdminQueryDto) {
     let rows = (await this.store.list(CC.STATISTIC)).map((r) => this.view(r));
     if (q.q) rows = rows.filter((x) => matches([x.titleAr, x.titleEn, x.value], q.q!));
-    rows = filterByCf(rows, q.cf, { titleAr: (x) => [x.titleAr], titleEn: (x) => [x.titleEn] });
+    rows = filterByCf(byVisible(rows, q.visible), q.cf, { titleAr: (x) => [x.titleAr], titleEn: (x) => [x.titleEn] });
     rows.sort(by((x) => x.sortOrder, (x) => x.id));
     return pageRows(rows, q, (x) => x);
   }

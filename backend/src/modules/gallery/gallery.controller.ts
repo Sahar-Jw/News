@@ -4,10 +4,9 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { MAX_FILES_PER_UPLOAD, MAX_IMAGE_BYTES, PERM } from '../../common/constants';
 import { CurrentUser, Permissions, Public } from '../../common/decorators';
-import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { BulkDeleteDto } from '../news/news.dto';
-import { CreateGalleryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
+import { CreateGalleryDto, GalleryAdminQueryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
 import { GalleryService } from './gallery.service';
 
 const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
@@ -18,7 +17,7 @@ export class GalleryAdminController {
 
   @Get()
   @Permissions(PERM.GALLERY_READ)
-  list(@Query() q: AdminListQueryDto) {
+  list(@Query() q: GalleryAdminQueryDto) {
     return this.service.list(q);
   }
 

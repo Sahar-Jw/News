@@ -11,6 +11,8 @@ export class AdminListQueryDto {
   /** per-column search: JSON object {columnKey: text} */
   @emptyToUndef() @IsOptional() @IsString() @MaxLength(2000) cf?: string;
   @emptyToUndef() @IsOptional() @IsString() @MaxLength(200) q?: string;
+  /** 1 = only what is shown on the site, 0 = only what is hidden (pages whose rows can be switched on / off) */
+  @emptyToUndef() @IsOptional() @IsIn(['1', '0']) visible?: string;
   @emptyToUndef() @IsOptional() @IsDateString() from?: string;
   @emptyToUndef() @IsOptional() @IsDateString() to?: string;
   @emptyToUndef() @IsOptional() @IsIn(['asc', 'desc', 'ASC', 'DESC']) sortDir?: string;

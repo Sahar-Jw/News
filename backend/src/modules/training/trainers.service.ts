@@ -4,7 +4,7 @@ import { AuthUser } from '../../common/types';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentStore, Rec, isActive, s } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { CreateTrainerDto, TrainersAdminQueryDto, UpdateTrainerDto } from './training.dto';
 
 /** Trainers: news rows of the main category TRAINER (name = news title, bio = news body, English texts in `extra`). */
@@ -22,7 +22,7 @@ export class TrainersService {
   async list(q: TrainersAdminQueryDto) {
     let rows = (await this.store.list(CC.TRAINER)).map((r) => this.present(r));
     if (q.q) rows = rows.filter((t) => matches([t.nameAr, t.nameEn], q.q!));
-    rows = filterByCf(rows, q.cf, { nameAr: (t) => [t.nameAr], nameEn: (t) => [t.nameEn] });
+    rows = filterByCf(byVisible(rows, q.visible), q.cf, { nameAr: (t) => [t.nameAr], nameEn: (t) => [t.nameEn] });
     rows.sort(by((t) => t.nameAr, (t) => t.id));
     return pageRows(rows, q, (t) => t);
   }

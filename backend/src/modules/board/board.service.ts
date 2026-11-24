@@ -9,7 +9,7 @@ import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentLinksService } from '../content-links/content-links.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { News } from '../news/news.entity';
 import { applyEligibility, onlyRegular } from '../news/news.eligibility';
 import { FileStorageService } from '../files/file-storage.service';
@@ -63,6 +63,7 @@ export class BoardService {
   async list(q: BoardAdminQueryDto) {
     let rows = (await this.store.list(CC.BOARD_MEMBER)).map((r) => this.view(r));
     if (q.position) rows = rows.filter((m) => m.position === q.position);
+    rows = byVisible(rows, q.visible);
     if (q.q) rows = rows.filter((m) => matches([m.nameAr, m.nameEn, m.jobTitleAr], q.q!));
     rows = filterByCf(rows, q.cf, { nameAr: (m) => [m.nameAr], nameEn: (m) => [m.nameEn], jobTitleAr: (m) => [m.jobTitleAr], termLabel: (m) => [m.termLabel] });
     rows.sort(by((m) => m.sortOrder, (m) => m.id));

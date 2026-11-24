@@ -8,7 +8,7 @@ import { fmtDate } from '@/lib/utils';
 import { Button, Field, Modal, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
 import type { QuickAdd } from '@/lib/quick-add';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { SESSION_TYPES, SPONSOR_TIERS, sessionTypeLabel } from '@/components/site/expo-shared';
 
@@ -137,6 +137,7 @@ export function ExpoAdmin({ kind, quick }: { kind: ExpoKind; quick?: QuickAdd })
       <h1 className="mb-4 text-2xl font-bold">{t(TITLE[kind])}</h1>
       <DataTable<Row>
         endpoint="/admin/expo-items"
+        filters={[visibleFilter(t)]}
         baseParams={{ kind }}
         columns={cols}
         refreshKey={key}

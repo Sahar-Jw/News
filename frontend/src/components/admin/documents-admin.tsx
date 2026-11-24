@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, Modal } from '@/components/ui/ui';
 import { DocumentDialog, EMPTY_DRAFT, toDraft, type DocRow, type Draft } from '@/components/admin/document-dialog';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 type Row = DocRow;
@@ -50,6 +50,8 @@ export function DocumentsAdmin({ kind }: { kind?: 'library' } = {}) {
       <h1 className="mb-4 text-2xl font-bold">{t(kind ? 'adm.library' : 'adm.documents')}</h1>
       <DataTable<Row>
         endpoint="/admin/documents"
+        filters={[visibleFilter(t)]}
+        dateFilter
         baseParams={kind ? { kind } : undefined}
         columns={cols}
         refreshKey={key}

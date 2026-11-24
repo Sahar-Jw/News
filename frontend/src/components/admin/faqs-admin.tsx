@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { Button, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 
 const SCOPES = ['general', 'one_stop', 'membership', 'training', 'expo'] as const;
@@ -111,7 +111,7 @@ export function FaqsAdmin({ scope }: { scope?: string } = {}) {
         columns={cols}
         refreshKey={key}
         exportable={false}
-        filters={!scope ? [{ key: 'scope', label: t('faq.scope'), options: SCOPES.map((s) => ({ value: s, label: t(`faq.scope.${s}`) })) }] : []}
+        filters={[...(!scope ? [{ key: 'scope', label: t('faq.scope'), options: SCOPES.map((s) => ({ value: s, label: t(`faq.scope.${s}`) })) }] : []), visibleFilter(t)]}
         bulkDelete={{ path: '/admin/faqs/bulk-delete', can: can('faqs.delete') }}
         toolbar={can('faqs.create') && <Button onClick={() => setDialog({})}>＋ {t('faq.add')}</Button>}
         rowActions={(r, reload) => (

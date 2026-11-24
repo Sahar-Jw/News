@@ -14,7 +14,7 @@ export interface Col<T> {
   text?: (row: T) => string;
   /** false = never offered in export/print (e.g. computed cells) */
   exportable?: boolean;
-  /** false = no per-column search box (default true) */
+  /** kept for older callers: there is no per-column search box any more (each page offers its own filters above the table) */
   searchable?: boolean;
   /** date columns are searched as YYYY-MM-DD text */
   type?: 'date';
@@ -24,6 +24,8 @@ export interface FilterDef {
   label: string;
   options: { value: string; label: string }[];
 }
+/** the same "shown on the site / hidden" filter for every table whose rows can be switched on and off */
+export const visibleFilter = (t: (k: string) => string): FilterDef => ({ key: 'visible', label: t('faq.active'), options: [{ value: '1', label: t('sub.yes') }, { value: '0', label: t('sub.no') }] });
 interface Meta { page: number; total: number; totalPages: number; from: number; to: number }
 
 interface Props<T> {
@@ -57,8 +59,6 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
   const [fv, setFv] = useState<Record<string, string>>({});
   const [sel, setSel] = useState<Set<number>>(new Set());
   const [bump, setBump] = useState(0);
-  const [cf, setCf] = useState<Record<string, string>>({});
-  const [dcf, setDcf] = useState<Record<string, string>>({});
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [colMenu, setColMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -72,11 +72,6 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
   }, [q]);
 
   useEffect(() => {
-    const id = setTimeout(() => { setDcf(cf); setPage(1); }, 350);
-    return () => clearTimeout(id);
-  }, [cf]);
-
-  useEffect(() => {
     if (!colMenu) return;
     const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setColMenu(false); };
     document.addEventListener('mousedown', close);
@@ -84,9 +79,8 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
   }, [colMenu]);
 
   const params = useCallback(() => {
-    const active = Object.fromEntries(Object.entries(dcf).filter(([, v]) => v.trim()));
-    return { ...baseParams, ...fv, q: dq, from, to, ...(Object.keys(active).length && { cf: JSON.stringify(active) }) };
-  }, [baseParams, fv, dq, from, to, dcf]);
+    return { ...baseParams, ...fv, q: dq, from, to };
+  }, [baseParams, fv, dq, from, to]);
 
   // every request gets a number: an answer that is no longer the latest one (a slow first page arriving after page 2 was asked for) is dropped
   const reqId = useRef(0);
@@ -211,25 +205,6 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
               {bulkDelete?.can && <th className="w-10 px-3"><input type="checkbox" aria-label={t('tbl.selectAll')} checked={allOnPage} onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
               {rowActions && <th className="px-3 text-start">{t('app.actions')}</th>}
               {shown.map((c) => <th key={c.key} className="px-3 py-3 text-start font-semibold">{c.label}</th>)}
-            </tr>
-            <tr className="no-print border-t bg-white normal-case">
-              <th className="px-3 py-2" />
-              {bulkDelete?.can && <th className="px-3" />}
-              {rowActions && <th className="px-3" />}
-              {shown.map((c) => (
-                <th key={c.key} className="px-2 py-2">
-                  {c.searchable !== false && c.key !== '_actions' && (
-                    <input
-                      value={cf[c.key] ?? ''}
-                      onChange={(e) => setCf((v) => ({ ...v, [c.key]: e.target.value }))}
-                      placeholder={c.type === 'date' ? 'YYYY-MM-DD' : t('tbl.colSearch')}
-                      aria-label={`${t('tbl.colSearch')}: ${c.label}`}
-                      className="w-full min-w-24 rounded border px-2 py-1 text-xs font-normal outline-none focus:border-primary"
-                      dir={c.type === 'date' ? 'ltr' : undefined}
-                    />
-                  )}
-                </th>
-              ))}
             </tr>
           </thead>
           <tbody>

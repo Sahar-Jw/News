@@ -4,7 +4,7 @@ import { AuthUser } from '../../common/types';
 import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { FaqScope } from './faq.entity';
 import { CreateFaqDto, FaqsAdminQueryDto, PublicFaqsQueryDto, UpdateFaqDto } from './faqs.dto';
 
@@ -31,6 +31,7 @@ export class FaqsService {
     if (q.q) rows = rows.filter((f) => matches([f.questionAr, f.questionEn, f.answerAr], q.q!));
     rows = filterByCf(rows, q.cf, { questionAr: (f) => [f.questionAr], questionEn: (f) => [f.questionEn], scope: (f) => [f.scope] });
     if (q.scope) rows = rows.filter((f) => f.scope === q.scope);
+    rows = byVisible(rows, q.visible);
     rows.sort(by((f) => f.scope, (f) => f.sortOrder, (f) => f.id));
     return pageRows(rows, q, (f) => f);
   }

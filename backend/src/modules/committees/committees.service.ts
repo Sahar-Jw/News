@@ -9,7 +9,7 @@ import { removedChanges } from '../audit/audit-snapshot';
 import { AuditService } from '../audit/audit.service';
 import { ContentLinksService } from '../content-links/content-links.service';
 import { ContentStore, Rec, isActive, pick, s, sortOf } from '../content/content.store';
-import { by, filterByCf, matches, pageRows } from '../content/mem';
+import { by, byVisible, filterByCf, matches, pageRows } from '../content/mem';
 import { FileStorageService } from '../files/file-storage.service';
 import { Gallery, galleryCoverPath } from '../gallery/gallery.entity';
 import { newsCategoryLabel } from '../../common/news-categories';
@@ -177,7 +177,7 @@ export class CommitteesService {
   async list(q: CommitteeAdminQueryDto) {
     let rows = (await this.store.list(q.kind ? committeeCode(q.kind) : COMMITTEE_CODES)).map((r) => this.view(r));
     if (q.q) rows = rows.filter((c) => matches([c.nameAr, c.nameEn, c.chairNameAr], q.q!));
-    rows = filterByCf(rows, q.cf, { nameAr: (c) => [c.nameAr], nameEn: (c) => [c.nameEn], chairNameAr: (c) => [c.chairNameAr] });
+    rows = filterByCf(byVisible(rows, q.visible), q.cf, { nameAr: (c) => [c.nameAr], nameEn: (c) => [c.nameEn], chairNameAr: (c) => [c.chairNameAr] });
     rows.sort(by((c) => c.sortOrder, (c) => c.id));
     return pageRows(rows, q, ({ logo, ...c }) => (void logo, c));
   }
@@ -415,8 +415,8 @@ export class CommitteesService {
   }
 
   /** Sector committees with the "find my committee by business activity" search. Women kind has its own page. */
-  async publicList(lang: string, q?: string) {
-    let rows = (await this.store.list(CC.COMMITTEE)).filter(isActive).map((r) => ({ r, c: this.view(r) }));
+  async publicList(lang: string, q?: string, includeWomen = false) {
+    let rows = (await this.store.list(includeWomen ? COMMITTEE_CODES : CC.COMMITTEE)).filter(isActive).map((r) => ({ r, c: this.view(r) }));
     if (q?.trim()) rows = rows.filter(({ c }) => matches([c.nameAr, c.nameEn, c.activityTagsAr, c.activityTagsEn, c.summaryAr], q));
     rows.sort((a, b) => by((x: { c: { sortOrder: number; id: number } }) => x.c.sortOrder, (x) => x.c.id)(a, b));
     return rows.map(({ r }) => this.card(r, lang === 'en'));

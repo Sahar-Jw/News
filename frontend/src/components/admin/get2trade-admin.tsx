@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Button, Center, Field, Modal, Spinner, inputCls } from '@/components/ui/ui';
 import { useToast } from '@/components/ui/toast';
-import { Col, DataTable } from '@/components/admin/data-table';
+import { Col, DataTable, visibleFilter } from '@/components/admin/data-table';
 import { RequirePerm } from '@/components/admin/guard';
 import { PlainEditor } from '@/components/admin/plain-editor';
 
@@ -157,7 +157,8 @@ function Spaces() {
   return (
     <>
       <DataTable<SpaceRow>
-        endpoint="/admin/get2trade/spaces" columns={cols} refreshKey={key} exportable={false}
+        endpoint="/admin/get2trade/spaces"
+        filters={[visibleFilter(t)]} columns={cols} refreshKey={key} exportable={false}
         bulkDelete={{ path: '/admin/get2trade/spaces/bulk-delete', can: can('get2trade.delete') }}
         toolbar={can('get2trade.create') && <Button onClick={() => open()}>＋ {t('gt.a.addSpace')}</Button>}
         rowActions={(r, reload) => (
@@ -253,7 +254,8 @@ function Packages() {
   return (
     <>
       <DataTable<PackRow>
-        endpoint="/admin/get2trade/packages" columns={cols} refreshKey={key} exportable={false}
+        endpoint="/admin/get2trade/packages"
+        filters={[visibleFilter(t)]} columns={cols} refreshKey={key} exportable={false}
         bulkDelete={{ path: '/admin/get2trade/packages/bulk-delete', can: can('get2trade.delete') }}
         toolbar={can('get2trade.create') && <Button onClick={() => open()}>＋ {t('gt.a.addPackage')}</Button>}
         rowActions={(r, reload) => (

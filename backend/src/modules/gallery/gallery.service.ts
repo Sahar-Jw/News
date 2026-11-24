@@ -3,7 +3,6 @@ import { uploadLimits } from '../../common/upload-limits';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
 import { } from '../../common/constants';
-import { AdminListQueryDto } from '../../common/dto/list-query.dto';
 import { AuthUser } from '../../common/types';
 import { adminPage, paged, publicPage } from '../../common/utils/pagination';
 import { applyColumnFilters } from '../../common/utils/column-filters';
@@ -12,7 +11,7 @@ import { AuditService } from '../audit/audit.service';
 import { FileStorageService } from '../files/file-storage.service';
 import { parseYoutubeId, youtubeWatchUrl } from '../../common/utils/youtube';
 import { GALLERY_CATEGORIES, Gallery, GalleryCategory, GalleryKind, galleryCoverPath } from './gallery.entity';
-import { CreateGalleryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
+import { CreateGalleryDto, GalleryAdminQueryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
 import { removedChanges } from '../audit/audit-snapshot';
 
 @Injectable()
@@ -28,13 +27,19 @@ export class GalleryService {
     return { id: g.id, titleAr: g.titleAr, titleEn: g.titleEn ?? '', kind: g.kind, youtubeUrl: g.youtubeUrl ?? '', category: g.category ?? '', images, imageUrls: images.map((p) => this.storage.url(p)), imageCount: images.length, thumbnail: galleryCoverPath(g), committeeId: g.committeeId ? Number(g.committeeId) : null, createdAt: g.createdAt, updatedAt: g.updatedAt };
   }
 
-  async list(q: AdminListQueryDto) {
+  async list(q: GalleryAdminQueryDto) {
     const p = adminPage(q);
     const qb = this.repo.createQueryBuilder('g');
     if (q.q) {
       const like = `%${escapeLike(q.q)}%`;
       qb.andWhere(new Brackets((b) => b.where('g.titleAr ILIKE :like', { like }).orWhere('g.titleEn ILIKE :like', { like })));
     }
+    if (q.type === 'video') qb.andWhere('g.youtubeUrl IS NOT NULL');
+    if (q.type === 'photos') qb.andWhere("jsonb_array_length(coalesce(g.images, '[]'::jsonb)) > 0");
+    if (q.category) qb.andWhere('g.category = :cat', { cat: q.category });
+    if (q.committeeId) qb.andWhere('g.committeeId = :committeeId', { committeeId: q.committeeId });
+    if (q.from) qb.andWhere('g.createdAt >= :from', { from: new Date(`${q.from.slice(0, 10)}T00:00:00`) });
+    if (q.to) qb.andWhere('g.createdAt <= :to', { to: new Date(`${q.to.slice(0, 10)}T23:59:59.999`) });
     applyColumnFilters(qb, q.cf, { titleAr: 'g.titleAr', titleEn: 'g.titleEn' });
     qb.orderBy('g.id', q.sortDir?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC');
     const [rows, total] = await qb.skip(p.skip).take(p.limit).getManyAndCount();

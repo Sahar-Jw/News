@@ -118,5 +118,7 @@ export class LinkNewsDto {
 
 export class PublicCommitteesQueryDto {
   @IsOptional() @IsString() @MaxLength(100) q?: string;
+  /** 1 = also list the Women Business Committee (it has its own page and is left out of the committees list otherwise) */
+  @IsOptional() @IsIn(['1']) includeWomen?: string;
   @IsOptional() @IsString() lang?: string;
 }
