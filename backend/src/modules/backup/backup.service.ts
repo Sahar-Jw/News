@@ -13,7 +13,7 @@ import { FileStorageService } from '../files/file-storage.service';
 import { backupKey, dumpDatabase, openProtected, writeEncryptedOrPlain } from './backup-core';
 import { buildSchema } from './backup-schema';
 import { ndjsonToSql } from './backup-sql';
-import { zipSingle } from './backup-zip';
+import { ZipEntry, zipEntries } from './backup-zip';
 
 export interface BackupInfo {
   id: string;
@@ -274,15 +274,18 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * The database backup as a ZIP holding one folder with the restorable SQL script (backup-X/backup-X.sql).
+   * The backup as a ZIP holding one folder: the restorable SQL script (backup-X/backup-X.sql) and, when withFiles, every uploaded file
+   * in a "files" folder (backup-X/files/news/abc.jpg ...). The files are read from storage at download time (disk or S3), so they are the
+   * current ones, not a frozen copy from the minute the backup ran.
    * protectedZip = true: the ZIP is AES-256 password protected, the password being BACKUP_ENCRYPTION_KEY (7-Zip / WinRAR / WinZip ask for it).
    */
-  async sqlZip(id: string, actor: AuthUser, protectedZip: boolean) {
+  async sqlZip(id: string, actor: AuthUser, protectedZip: boolean, withFiles = true) {
     const b = (await this.list()).find((x) => x.id === id && x.ok && x.dbFile);
     if (!b || !b.dbFile || !FILE_RE.test(b.dbFile)) throw new NotFoundException('الملف غير موجود');
     const password = protectedZip ? (process.env.BACKUP_ENCRYPTION_KEY ?? '').trim() : '';
     if (protectedZip && !password) throw new BadRequestException('لا يوجد BACKUP_ENCRYPTION_KEY على الخادم، فلا يمكن تنزيل نسخة مشفّرة.');
-    await this.audit.log({ category: 'backup', action: protectedZip ? 'download.sql.encrypted' : 'download.sql', description: `تنزيل ${id}.zip ${protectedZip ? '(مشفّر بكلمة مرور)' : '(غير مشفّر)'}`, actorId: actor.id });
+    const files = withFiles && process.env.BACKUP_INCLUDE_FILES !== 'false';
+    await this.audit.log({ category: 'backup', action: protectedZip ? 'download.sql.encrypted' : 'download.sql', description: `تنزيل ${id}.zip ${protectedZip ? '(مشفّر بكلمة مرور)' : '(غير مشفّر)'}${files ? ' مع الملفات' : ''}`, actorId: actor.id });
     const gz = b.encrypted
       ? await this.openPlain(b.dbFile)
       : this.useS3 ? (await this.storage.backupStream(b.dbFile)).stream : (createReadStream(path.join(this.dir, b.dbFile)) as Readable);
@@ -296,7 +299,15 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     let first: IteratorResult<unknown>;
     try { first = await it.next(); } catch (e) { gz.destroy(); throw new BadRequestException(`تعذّر تجهيز ملف SQL: ${(e as Error).message}`.slice(0, 200)); }
     const sql = Readable.from((async function* () { if (!first.done) yield first.value as Buffer; for await (const c of { [Symbol.asyncIterator]: () => it }) yield c as Buffer; })());
-    return { name: `${id}${protectedZip ? '-encrypted' : ''}.zip`, stream: zipSingle(`${id}/${id}.sql`, sql, password || undefined) };
+    const storage = this.storage;
+    async function* entries(): AsyncGenerator<ZipEntry> {
+      yield { name: `${id}/${id}.sql`, open: () => sql };
+      if (!files) return;
+      for await (const rel of storage.listStoredFiles()) {
+        yield { name: `${id}/files/${rel}`, open: () => storage.openStored(rel), store: /\.(jpe?g|png|gif|webp|pdf|docx)$/i.test(rel) };
+      }
+    }
+    return { name: `${id}${protectedZip ? '-encrypted' : ''}.zip`, stream: zipEntries(entries(), password || undefined) };
   }
 
   /**

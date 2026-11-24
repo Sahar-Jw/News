@@ -21,13 +21,13 @@ export class BackupController {
     return this.service.run('manual', u);
   }
 
-  /** db = a ZIP with the restorable .sql (?encrypted=1: password-protected ZIP); files = the uploaded files as .tar.gz (decrypted) */
+  /** db = a ZIP with the restorable .sql and a "files" folder holding the uploaded files (?encrypted=1: password-protected ZIP; ?files=0: SQL only); files = the separate .tar.gz made at backup time (decrypted) */
   @Get(':id/:kind')
   @Permissions('backups.download')
-  async download(@Param('id') id: string, @Param('kind') kind: string, @Query('encrypted') encrypted: string | undefined, @Res() res: Response, @CurrentUser() u: AuthUser) {
+  async download(@Param('id') id: string, @Param('kind') kind: string, @Query('encrypted') encrypted: string | undefined, @Query('files') withFiles: string | undefined, @Res() res: Response, @CurrentUser() u: AuthUser) {
     const { name, stream } = kind === 'files'
       ? await this.service.fileOf(id, 'files', u, true)
-      : await this.service.sqlZip(id, u, encrypted === '1' || encrypted === 'true');
+      : await this.service.sqlZip(id, u, encrypted === '1' || encrypted === 'true', withFiles !== '0' && withFiles !== 'false');
     res.setHeader('Content-Type', kind === 'files' ? 'application/gzip' : 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
     res.setHeader('Cache-Control', 'private, no-store');

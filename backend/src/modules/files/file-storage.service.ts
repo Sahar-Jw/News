@@ -448,6 +448,47 @@ export class FileStorageService implements OnModuleInit {
     if (this.s3) await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: this.bkey(name) })); // a missing key is not an error
   }
 
+  // ---------- every stored file (used by the backup download) ----------
+  /**
+   * Relative paths of every uploaded file, from the disk folder or the bucket. Skips temp files, dot-files and the ".backups/" folder.
+   * Names with characters resolveSafe() rejects are skipped too, so nothing outside the storage area can ever be listed.
+   */
+  async *listStoredFiles(): AsyncGenerator<string> {
+    const ok = (rel: string) => !rel.split('/').some((seg) => seg.startsWith('.')) && !!this.resolveSafe(rel);
+    if (this.driver === 's3') {
+      let token: string | undefined;
+      do {
+        const r = await this.s3!.send(new ListObjectsV2Command({ Bucket: this.bucket, Prefix: this.prefix, ContinuationToken: token }));
+        for (const o of r.Contents ?? []) {
+          const rel = (o.Key ?? '').slice(this.prefix.length);
+          if (rel && !rel.endsWith('/') && ok(rel)) yield rel;
+        }
+        token = r.IsTruncated ? r.NextContinuationToken : undefined;
+      } while (token);
+      return;
+    }
+    const walk = async function* (self: FileStorageService, dir: string, rel: string): AsyncGenerator<string> {
+      let items;
+      try { items = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
+      for (const d of items.sort((a, b) => a.name.localeCompare(b.name))) {
+        const r = rel ? `${rel}/${d.name}` : d.name;
+        if (d.name.startsWith('.') || (!rel && d.name === 'tmp')) continue;
+        if (d.isDirectory()) yield* walk(self, path.join(dir, d.name), r);
+        else if (d.isFile() && ok(r)) yield r;
+      }
+    };
+    yield* walk(this, this.root, '');
+  }
+
+  /** One stored file as a stream (null = gone or not allowed) */
+  async openStored(rel: string): Promise<Readable | null> {
+    if (this.driver === 's3') return (await this.openS3(rel))?.body ?? null;
+    const abs = this.resolveSafe(rel);
+    if (!abs) return null;
+    try { await fs.access(abs); } catch { return null; }
+    return createReadStream(abs);
+  }
+
   // ---------- deletion ----------
   async remove(rel: string | null | undefined): Promise<boolean> {
     if (!rel) return true;
