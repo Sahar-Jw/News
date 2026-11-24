@@ -73,7 +73,7 @@ function View() {
   ];
   const info: [string, string][] = [
     [ar ? 'التاريخ' : 'Date', `${fmtDay(lang, d.date)}${d.finishDate !== d.date ? ` — ${fmtDay(lang, d.finishDate)}` : ''}`],
-    [ar ? 'الوقت' : 'Time', timeRange(d)],
+    [ar ? 'الوقت' : 'Time', timeRange(d, lang)],
     [ar ? 'القطاع' : 'Sector', d.sector],
     [ar ? 'الجهة المنظمة' : 'Organizer', d.organizer],
     [ar ? 'نوع المشاركة' : 'Participation', part],

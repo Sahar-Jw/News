@@ -13,6 +13,7 @@ export const NEWS_MAIN_CATEGORIES = [
   { key: 'women', ar: 'أخبار لجنة سيدات الأعمال', en: 'Businesswomen Committee News' },
   { key: 'economic', ar: 'الأخبار الاقتصادية', en: 'Economic News' },
   { key: 'events', ar: 'المعارض والفعاليات', en: 'Exhibitions & Events' },
+  { key: 'expo', ar: 'DCC EXPO', en: 'DCC EXPO' },
   { key: 'visits', ar: 'الزيارات واللقاءات', en: 'Visits & Meetings' },
 ] as const;
 

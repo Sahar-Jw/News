@@ -202,7 +202,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     }
     // a brand new site (or a language with no news yet) is offered the fixed categories so the form can still be used
     const none = !usedKeys.size && !others.size;
-    const keys = none ? NEWS_MAIN_CATEGORIES.map((c) => c.key) : NEWS_MAIN_CATEGORIES.filter((c) => usedKeys.has(c.key)).map((c) => c.key);
+    const keys = none ? NEWS_MAIN_CATEGORIES.map((c) => c.key) : NEWS_MAIN_CATEGORIES.filter((c) => usedKeys.has(c.key) || c.key === 'expo').map((c) => c.key); // DCC EXPO is always offered (its "Add news" button and the content menus need it before the first expo news exists)
     const fixed = NEWS_MAIN_CATEGORIES.filter((c) => keys.includes(c.key)).flatMap((c) => (lang ? [lang === 'en' ? c.en : c.ar] : [c.ar, c.en]));
     const subs = new Map<string, string>();
     for (const r of sub) { const label = normalizeLabel(String(r.v ?? '')); if (label && !subs.has(label.toLowerCase())) subs.set(label.toLowerCase(), label); }

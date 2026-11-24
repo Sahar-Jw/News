@@ -45,7 +45,7 @@ export function ExpoManageBar() {
       {maySettings && TEXT_TABS.includes(slug) && <ManageLink tone="solid" to={TAB(slug)}>✎ {ar ? 'تعديل نص الصفحة' : 'Edit page text'}</ManageLink>}
       {maySettings && home && <ManageLink to={TAB('identity')}>🎨 {ar ? 'الهوية والمظهر' : 'Identity & theme'}</ManageLink>}
       {maySettings && home && <ManageLink to={TAB('links')}>☰ {ar ? 'القائمة والتذييل' : 'Navigation & footer'}</ManageLink>}
-      {adding && <NewsFormDialog category="events" onClose={() => setAdding(false)} />}
+      {adding && <NewsFormDialog category="expo" onClose={() => setAdding(false)} />}
       {/* the add form opens right here; the page's lists reload when it is saved */}
       {addKind && <ExpoAdmin kind={addKind} quick={{ onClose: () => setAddKind(null) }} />}
     </PageManageBar>

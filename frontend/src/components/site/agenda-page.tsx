@@ -22,7 +22,7 @@ function AgendaCard({ e }: { e: PublicEvent }) {
   const ar = lang === 'ar';
   const link = href(`/occasions/${e.id}`);
   const when = `${fmtDay(lang, e.date)}${e.finishDate !== e.date ? ` — ${fmtDay(lang, e.finishDate)}` : ''}`;
-  const time = timeRange(e);
+  const time = timeRange(e, lang);
   const month = new Intl.DateTimeFormat(ar ? 'ar' : 'en', { month: 'short', timeZone: 'UTC' }).format(new Date(`${e.date}T00:00:00Z`));
   const part = participationLabel(e.participation, ar);
   const rows: [string, string, React.ReactNode][] = [

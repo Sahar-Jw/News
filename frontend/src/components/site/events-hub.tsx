@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDay } from '@/lib/utils';
+import { time12 } from '@/components/site/training-shared';
 import { useAuth } from '@/lib/auth';
 import { Center, Spinner, inputCls } from '@/components/ui/ui';
 import { WomenCalendar, type CalItem } from '@/components/women/women-calendar';
@@ -37,7 +38,8 @@ const LABEL = {
 } as const;
 
 /** "10:00 – 12:00", "10:00", or '' */
-export const timeRange = (e: { startTime: string; endTime: string }) => (e.startTime && e.endTime ? `${e.startTime} – ${e.endTime}` : e.startTime || '');
+/** "3:00 PM – 9:00 PM" / "3:00 م – 9:00 م": always the 12-hour clock with AM / PM (the stored value stays 24-hour HH:MM) */
+export const timeRange = (e: { startTime: string; endTime: string }, lang: string) => { const a = time12(e.startTime, lang), b = time12(e.endTime, lang); return a && b ? `${a} – ${b}` : a || b; };
 
 export const participationLabel = (p: string, ar: boolean) => p === 'organized' ? (ar ? 'تنظمها الغرفة' : 'Organized by the Chamber') : p === 'participating' ? (ar ? 'تشارك فيها الغرفة' : 'Chamber participates') : '';
 
@@ -66,7 +68,7 @@ export function EventCard({ event }: { event: PublicEvent }) {
     <Link href={href(`/occasions/${event.id}`)} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-lg">
       <Thumb src={event.images[0]} alt={event.title} className="h-40 w-full" />
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-semibold text-primary">{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}{timeRange(event) && <span dir="ltr" className="ms-2 text-gray-500">{timeRange(event)}</span>}</p>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs font-semibold text-primary"><span>{fmtDay(lang, event.date)}{event.finishDate !== event.date ? ` — ${fmtDay(lang, event.finishDate)}` : ''}</span>{timeRange(event, lang) && <span dir="ltr" className="text-gray-500">{timeRange(event, lang)}</span>}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${event.type === 'exhibition' ? 'bg-accent/25 text-secondary' : 'bg-primary/10 text-primary'}`}>{event.type === 'exhibition' ? (ar ? 'معرض' : 'Exhibition') : (ar ? 'مناسبة' : 'Occasion')}</span>
           {part && <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold text-gray-700">{part}</span>}
