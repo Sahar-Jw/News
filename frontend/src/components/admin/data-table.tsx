@@ -202,7 +202,7 @@ export function DataTable<T extends { id: number }>({ endpoint, columns, basePar
           <thead className="bg-primary/[0.06] text-start text-xs uppercase text-ink/70">
             <tr>
               <th className="w-10 px-3 py-3 text-start">{t('tbl.no')}</th>
-              {bulkDelete?.can && <th className="w-10 px-3"><input type="checkbox" aria-label={t('tbl.selectAll')} checked={allOnPage} onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
+              {bulkDelete?.can && <th className="w-16 px-3"><input type="checkbox" aria-label={t('tbl.selectAll')} checked={allOnPage} onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.id)) : new Set())} /></th>}
               {rowActions && <th className="px-3 text-start">{t('app.actions')}</th>}
               {shown.map((c) => <th key={c.key} className="px-3 py-3 text-start font-semibold">{c.label}</th>)}
             </tr>

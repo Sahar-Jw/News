@@ -55,7 +55,7 @@ function View() {
               ))}
             </dl>
           )}
-          {c.topics.length > 0 && <section className="mt-6"><h2 className="mb-2 text-lg font-extrabold text-secondary">{t('tr.topics')}</h2><ul className="list-disc space-y-1 ps-5 text-sm leading-7 text-gray-700">{c.topics.map((x, i) => <li key={i}>{x}</li>)}</ul></section>}
+          {c.topics.length > 0 && <section className="mt-6"><h2 className="mb-2 text-lg font-extrabold text-secondary">{t('tr.topics')}</h2><div className="space-y-1 text-sm leading-7 text-gray-700">{c.topics.map((x, i) => <p key={i}>{x}</p>)}</div></section>}
           {c.trainer?.bio && <section className="mt-6"><h2 className="mb-2 text-lg font-extrabold text-secondary">{t('tr.about')}</h2><p className="whitespace-pre-line text-sm leading-7 text-gray-700">{c.trainer.bio}</p></section>}
           {c.status === 'open' && <Button type="button" className="mt-8" onClick={() => setReg(true)}>{t('tr.registerNow')}</Button>}
         </div>

@@ -14,12 +14,15 @@ export const SUBTYPES: Record<string, string[]> = { decision: ['government', 'ec
 export const EMPTY_DRAFT: Draft = { kind: 'circular', subtype: '', docNumber: '', titleAr: '', titleEn: '', summaryAr: '', summaryEn: '', issuerAr: '', issuerEn: '', docDate: '', isActive: true, fileUrl: null, images: [], imageUrls: [] };
 
 
+const todayLocal = () => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; };
+
 /** Add / edit one document (decision, circular, library file ...). Used by the Settings table and by the public pages' manage bars.
  *  A record needs a PDF (up to the PDF limit set in Settings), pictures, or both: at least one of them. On edit the PDF is replaced only when a new one is chosen. `lockKind` hides the kind choice. */
 export function DocumentDialog({ draft, lockKind, onClose, onSaved }: { draft: Draft; lockKind?: boolean; onClose: () => void; onSaved: () => void }) {
   const { t } = useI18n();
   const toast = useToast();
-  const [d, setD] = useState<Draft>(draft);
+  // a NEW record starts with today's date (the browser's local day); it can be changed or cleared. Editing keeps the saved date.
+  const [d, setD] = useState<Draft>(() => (draft.id || draft.docDate ? draft : { ...draft, docDate: todayLocal() }));
   const [pdf, setPdf] = useState<File | null>(null);
   const [imgs, setImgs] = useState<ImageSet>(() => imageSetOf(draft.images, draft.imageUrls));
   const [dropPdf, setDropPdf] = useState(false);
