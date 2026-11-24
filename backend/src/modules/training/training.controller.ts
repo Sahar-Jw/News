@@ -29,6 +29,13 @@ export class CoursesAdminController {
     return this.service.list(q);
   }
 
+  /** one course in the shape of the admin list: the Edit button on the public Training page opens the form with it */
+  @Get(':id')
+  @Permissions(PERM.COURSES_UPDATE)
+  one(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getOne(id);
+  }
+
   @Post()
   @Permissions(PERM.COURSES_CREATE)
   @UseInterceptors(upload())

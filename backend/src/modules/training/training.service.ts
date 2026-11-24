@@ -112,6 +112,12 @@ export class TrainingService {
     return pageRows(rows, q, (c) => this.presentAdmin(c, n.get(c.id) ?? 0, trainers));
   }
 
+  async getOne(id: number) {
+    const r = await this.store.get(id, CC.COURSE);
+    if (!r) throw new NotFoundException('الدورة غير موجودة');
+    return this.presentAdmin(this.view(r), (await this.counts([r.id])).get(r.id) ?? 0, await this.trainerMap());
+  }
+
   /** lists for the course picker in the registrations screen */
   async options() {
     return (await this.store.list(CC.COURSE)).map((r) => this.view(r)).sort((a, b) => (a.startDate === b.startDate ? b.id - a.id : a.startDate < b.startDate ? 1 : -1)).slice(0, 500).map((r) => ({ id: r.id, name: `${r.nameAr} (${r.startDate})` }));

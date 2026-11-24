@@ -56,7 +56,7 @@ function TimeField({ value, onChange, disabled }: { value: string; onChange: (v:
 }
 
 /** Courses of the Training Center. Current/archive is computed from the dates, never set by hand. */
-export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
+export function CoursesAdmin({ quick }: { quick?: QuickAdd & { editId?: number } } = {}) {
   const { t } = useI18n();
   const { can } = useAuth();
   const toast = useToast();
@@ -155,11 +155,17 @@ export function CoursesAdmin({ quick }: { quick?: QuickAdd } = {}) {
   const cls = (bad?: string) => `${inputCls} ${bad ? 'border-red-500' : ''}`;
 
   // quick-add mode (a button on a public page): only the add window, opened at once
-  useEffect(() => { if (quick && can('courses.create')) open(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // with `editId` (the Edit button of a course card) the window opens on that course instead
+  useEffect(() => {
+    if (!quick) return;
+    if (quick.editId) {
+      if (can('courses.update')) api<Row>(`/admin/courses/${quick.editId}`).then((r) => open(r)).catch((e) => { toast(e.message, 'err'); quick.onClose(); });
+    } else if (can('courses.create')) open();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const closeDraft = () => { setDraft(null); quick?.onClose(); };
 
   return (
-    <RequirePerm any={quick ? ['courses.create'] : ['courses.read']}>
+    <RequirePerm any={quick ? [quick.editId ? 'courses.update' : 'courses.create'] : ['courses.read']}>
       {!quick && (<>
       <h1 className="mb-4 text-2xl font-bold">{t('adm.courses')}</h1>
       <DataTable<Row>
