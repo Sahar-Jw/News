@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, downloadUrl } from '@/lib/api';
+import { api, downloadUrl, fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate } from '@/lib/utils';
 import { Center, Spinner } from '@/components/ui/ui';
@@ -18,13 +18,19 @@ const dateOk = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '
 /** The results of a documents search: a grid of cards and the pager. Shared by the Library and the Decisions & circulars section. */
 export function DocResults({ res, onPage, actions: rowTools }: { res: Result | null; onPage: (page: number) => void; /** extra buttons under a row (edit / delete for the people who manage documents) */ actions?: (d: Doc) => React.ReactNode }) {
   const { lang, t, href } = useI18n();
-  const actions = (d: Doc) => (
-    <div className="flex flex-wrap gap-2 text-sm">
-      <Link href={href(`/documents/${d.id}`)} className="rounded-lg bg-primary px-3 py-1 font-semibold text-white transition hover:brightness-110">{t('doc.open')}</Link>
-      {d.fileUrl && <a href={downloadUrl(d.fileUrl, d.title)} download className="rounded-lg border border-line px-3 py-1 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">{t('doc.download')}</a>}
+  // the whole card opens the details (stretched link on the title); the buttons exist only for the attached FILE and sit above that link
+  const ext = (d: Doc) => (d.fileUrl?.match(/\.([a-z0-9]{2,5})(?:\?|#|$)/i)?.[1] ?? '').toUpperCase();
+  const actions = (d: Doc) => d.fileUrl ? (
+    <div className="relative z-10 flex flex-wrap gap-2 text-sm">
+      <a href={fileUrl(d.fileUrl)} target="_blank" rel="noopener noreferrer" title={t('doc.viewFileHint')} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 font-semibold text-white transition hover:brightness-110">
+        <ProIcon name="file" size={15} />{t('doc.viewFile')}{ext(d) && <span className="rounded bg-white/20 px-1 text-[10px]" dir="ltr">{ext(d)}</span>}
+      </a>
+      <a href={downloadUrl(d.fileUrl, d.title)} download title={t('doc.downloadFileHint')} className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 font-semibold text-gray-700 transition hover:border-primary hover:text-primary">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" /></svg>{t('doc.downloadFile')}
+      </a>
     </div>
-  );
-  const tools = (d: Doc) => { const x = rowTools?.(d); return x ? <div className="mt-2">{x}</div> : null; };
+  ) : null;
+  const tools = (d: Doc) => { const x = rowTools?.(d); return x ? <div className="relative z-10 mt-2">{x}</div> : null; };
   // numbered pages (1 2 3 … 9) above and below the list; changing page brings the list back into view
   const change = (n: number) => { onPage(n); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   if (!res) return <Center><Spinner /></Center>;
@@ -35,7 +41,7 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
           {/* cards: cover picture (or a document tile), kind, title, summary, number / date / issuer */}
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {res.data.map((d) => (
-              <li key={d.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:shadow-lg">
+              <li key={d.id} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-line transition hover:shadow-lg focus-within:ring-2 focus-within:ring-primary">
                 {/* same frame as the news card: the picture is shown whole (never cropped), contained over a blurred copy of itself */}
                 <Link href={href(`/documents/${d.id}`)} className="relative block aspect-[16/10] overflow-hidden bg-primary/5" aria-label={d.title}>
                   {d.cover ? <div className="absolute inset-0"><FitImage src={d.cover} alt="" /></div>
@@ -51,10 +57,14 @@ export function DocResults({ res, onPage, actions: rowTools }: { res: Result | n
                     {d.docNumber && <span>{t('doc.number')}: <bdi dir="ltr">{d.docNumber}</bdi></span>}
                     {d.docDate && <span>{fmtDate(lang, d.docDate)}</span>}
                   </div>
-                  <h2 className="mt-2 text-base font-bold leading-snug text-secondary"><Link href={href(`/documents/${d.id}`)} className="hover:text-primary">{d.title}</Link></h2>
+                  <h2 className="mt-2 text-base font-bold leading-snug text-secondary"><Link href={href(`/documents/${d.id}`)} className="after:absolute after:inset-0 after:z-0 after:content-[''] group-hover:text-primary focus:outline-none">{d.title}</Link></h2>
                   {d.issuer && <p className="mt-1 text-xs text-gray-500">{d.issuer}</p>}
                   {d.summary && <p className="mt-2 line-clamp-3 text-sm leading-7 text-gray-600">{d.summary}</p>}
-                  <div className="mt-auto pt-4">{actions(d)}{tools(d)}</div>
+                  <div className="mt-auto pt-4">
+                    {actions(d)}
+                    <span className={`inline-flex items-center gap-1 text-xs font-semibold text-primary ${d.fileUrl ? 'mt-3' : ''}`}>{t('doc.open')} <span aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></span>
+                    {tools(d)}
+                  </div>
                 </div>
               </li>
             ))}

@@ -308,6 +308,55 @@ async function request<T = any>(path: string, opts: ApiOpts = {}): Promise<T> {
 }
 
 /** Download an export (csv/xlsx) – sends the same filters as the table. */
+/**
+ * Saves a (possibly huge) file straight to disk without holding it in memory, so there is no size limit.
+ *  - Chrome / Edge: asks where to save, then streams the response into that file and reports the bytes received (onProgress).
+ *  - Other browsers: a native download (the browser streams it itself and shows its own progress).
+ * Returns "saved" (finished), "started" (handed to the browser) or "cancelled" (the person closed the save dialog). Errors throw with the server's message.
+ */
+export async function downloadStream(path: string, params: Q, fileName: string, onProgress?: (bytes: number) => void): Promise<'saved' | 'started' | 'cancelled'> {
+  const url = API_URL + path + qs(params);
+  type Picker = (o: { suggestedName: string }) => Promise<{ createWritable: () => Promise<{ write: (c: Uint8Array) => Promise<void>; close: () => Promise<void>; abort: () => Promise<void> }>; remove?: () => Promise<void> }>;
+  const pick = (window as unknown as { showSaveFilePicker?: Picker }).showSaveFilePicker;
+  if (pick) {
+    let handle: Awaited<ReturnType<Picker>> | null = null;
+    try { handle = await pick({ suggestedName: fileName }); } catch (e) { if ((e as Error)?.name === 'AbortError') return 'cancelled'; handle = null; } // blocked: use the native download below
+    if (handle) {
+      let writable: Awaited<ReturnType<Awaited<ReturnType<Picker>>['createWritable']>> | null = null;
+      try {
+        const res = await fetch(url, { credentials: 'include', headers: { 'X-Lang': currentLang() } });
+        if (!res.ok) await parse(res);
+        if (!res.body) throw new ApiError(500, 'The browser could not read the download.');
+        writable = await handle.createWritable();
+        const reader = res.body.getReader();
+        let bytes = 0; let last = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writable.write(value);
+          bytes += value.length;
+          const now = Date.now();
+          if (onProgress && now - last > 250) { last = now; onProgress(bytes); }
+        }
+        onProgress?.(bytes);
+        await writable.close();
+        return 'saved';
+      } catch (e) {
+        await writable?.abort().catch(() => undefined);
+        await handle.remove?.().catch(() => undefined); // do not leave an empty / cut file behind
+        throw e;
+      }
+    }
+  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return 'started';
+}
+
 export async function download(path: string, params: Q, fallbackName: string) {
   const res = await fetch(API_URL + path + qs(params), { credentials: 'include', headers: { 'X-Lang': currentLang() } });
   if (!res.ok) await parse(res);

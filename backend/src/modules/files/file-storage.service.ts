@@ -454,6 +454,11 @@ export class FileStorageService implements OnModuleInit {
    * Names with characters resolveSafe() rejects are skipped too, so nothing outside the storage area can ever be listed.
    */
   async *listStoredFiles(): AsyncGenerator<string> {
+    for await (const f of this.listStoredFilesWithSize()) yield f.rel;
+  }
+
+  /** the same files with their real size in bytes (what a backup of them weighs) */
+  async *listStoredFilesWithSize(): AsyncGenerator<{ rel: string; size: number }> {
     const ok = (rel: string) => !rel.split('/').some((seg) => seg.startsWith('.')) && !!this.resolveSafe(rel);
     if (this.driver === 's3') {
       let token: string | undefined;
@@ -461,20 +466,20 @@ export class FileStorageService implements OnModuleInit {
         const r = await this.s3!.send(new ListObjectsV2Command({ Bucket: this.bucket, Prefix: this.prefix, ContinuationToken: token }));
         for (const o of r.Contents ?? []) {
           const rel = (o.Key ?? '').slice(this.prefix.length);
-          if (rel && !rel.endsWith('/') && ok(rel)) yield rel;
+          if (rel && !rel.endsWith('/') && ok(rel)) yield { rel, size: Number(o.Size ?? 0) };
         }
         token = r.IsTruncated ? r.NextContinuationToken : undefined;
       } while (token);
       return;
     }
-    const walk = async function* (self: FileStorageService, dir: string, rel: string): AsyncGenerator<string> {
+    const walk = async function* (self: FileStorageService, dir: string, rel: string): AsyncGenerator<{ rel: string; size: number }> {
       let items;
       try { items = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
       for (const d of items.sort((a, b) => a.name.localeCompare(b.name))) {
         const r = rel ? `${rel}/${d.name}` : d.name;
         if (d.name.startsWith('.') || (!rel && d.name === 'tmp')) continue;
         if (d.isDirectory()) yield* walk(self, path.join(dir, d.name), r);
-        else if (d.isFile() && ok(r)) yield r;
+        else if (d.isFile() && ok(r)) { try { yield { rel: r, size: (await fs.stat(path.join(dir, d.name))).size }; } catch { /* vanished meanwhile */ } }
       }
     };
     yield* walk(this, this.root, '');

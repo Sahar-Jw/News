@@ -28,6 +28,9 @@ export interface BackupInfo {
   dbBytes?: number;
   filesFile?: string | null;
   filesBytes?: number;
+  /** the uploaded files the backup covers, measured when it was made: how many and how many bytes (the real size of what the ZIP download holds besides the database) */
+  filesCount?: number;
+  filesTotalBytes?: number;
   filesNote?: string;
   encrypted: boolean;
   durationMs: number;
@@ -107,6 +110,11 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       const r = await dumpDatabase(this.ds, path.join(this.dir, dbFile), key, { app: 'news-cms-backend', trigger });
       Object.assign(info, { tables: r.tables, rows: r.rows, dbFile, dbBytes: r.bytes });
 
+      if (process.env.BACKUP_INCLUDE_FILES !== 'false') {
+        // real size of the uploaded files (local disk or bucket): the table shows database + files, not only the small database dump
+        let count = 0; let total = 0;
+        try { for await (const f of this.storage.listStoredFilesWithSize()) { count++; total += f.size; } info.filesCount = count; info.filesTotalBytes = total; } catch (e) { this.logger.warn(`Could not measure the files: ${(e as Error).message}`); }
+      }
       if (process.env.BACKUP_INCLUDE_FILES === 'false') info.filesNote = 'disabled';
       else if (this.storage.driver !== 'local') info.filesNote = 's3'; // the bucket is the store: enable versioning / replication there
       else {

@@ -1,5 +1,6 @@
 import { createCipheriv, createHmac, pbkdf2Sync, randomBytes } from 'crypto';
 import { Readable, Transform } from 'stream';
+import * as zlib from 'zlib';
 import { createDeflateRaw } from 'zlib';
 
 /**
@@ -54,13 +55,23 @@ export interface ZipEntry {
   store?: boolean;
 }
 
-/** A streamed ZIP of many entries (optionally protected with a password, AES-256 per entry). Nothing is buffered: each file flows through. */
+const u64 = (n: number) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
+// zlib.crc32 (Node 22+) is native and much faster than the table loop; older Node keeps the loop
+const nativeCrc: ((d: Buffer, v?: number) => number) | undefined = (zlib as unknown as { crc32?: (d: Buffer, v?: number) => number }).crc32;
+const crc = (value: number, buf: Buffer) => (nativeCrc ? nativeCrc(buf, value) : crc32(value, buf));
+
+/**
+ * A streamed ZIP of many entries (optionally protected with a password, AES-256 per entry). Nothing is buffered: each file flows through.
+ * NO SIZE LIMITS: every entry is written in ZIP64 form (8-byte sizes and offsets, ZIP64 end records), so files and the whole backup can be
+ * larger than 4 GB and the ZIP can hold more than 65,535 files. 7-Zip, WinRAR, WinZip, unzip, macOS and Windows 10+ open ZIP64.
+ */
 export function zipEntries(entries: AsyncIterable<ZipEntry> | Iterable<ZipEntry>, password?: string): Readable {
   const aes = !!password;
   const flags = 0x0008 | 0x0800 | (aes ? 0x0001 : 0); // data descriptor | UTF-8 name | encrypted
   const method = aes ? 99 : 8;
-  const extra = aes ? Buffer.concat([u16(0x9901), u16(7), u16(2), Buffer.from('AE'), Buffer.from([3]), u16(8)]) : Buffer.alloc(0);
-  const version = aes ? 51 : 20;
+  const aesExtra = aes ? Buffer.concat([u16(0x9901), u16(7), u16(2), Buffer.from('AE'), Buffer.from([3]), u16(8)]) : Buffer.alloc(0);
+  const version = aes ? 51 : 45; // 4.5 = ZIP64
+  const FFFF32 = 0xffffffff;
 
   async function* gen() {
     const { time, date } = dosTime(new Date());
@@ -71,13 +82,15 @@ export function zipEntries(entries: AsyncIterable<ZipEntry> | Iterable<ZipEntry>
       try { source = await entry.open(); } catch { source = null; }
       if (!source) continue; // file vanished between the listing and now
       const name = Buffer.from(entry.name, 'utf8');
-      const local = Buffer.concat([u32(0x04034b50), u16(version), u16(flags), u16(method), u16(time), u16(date), u32(0), u32(0), u32(0), u16(name.length), u16(extra.length), name, extra]);
+      // streamed entry: sizes are not known yet, so the local header says "see the ZIP64 field" (0 / 0) and a 24-byte ZIP64 data descriptor follows the data
+      const localExtra = Buffer.concat([u16(0x0001), u16(16), u64(0), u64(0), aesExtra]);
+      const local = Buffer.concat([u32(0x04034b50), u16(version), u16(flags), u16(method), u16(time), u16(date), u32(0), u32(FFFF32), u32(FFFF32), u16(name.length), u16(localExtra.length), name, localExtra]);
       const entryOffset = offset;
       yield local;
       let written = 0;
       let usize = 0;
-      let crc = 0;
-      const tap = new Transform({ transform(chunk: Buffer, _e, cb) { crc = crc32(crc, chunk); usize += chunk.length; cb(null, chunk); } });
+      let sum = 0;
+      const tap = new Transform({ transform(chunk: Buffer, _e, cb) { sum = crc(sum, chunk); usize += chunk.length; cb(null, chunk); } });
       const deflate = createDeflateRaw({ level: entry.store ? 0 : 6 });
       source.on('error', (e) => tap.destroy(e));
       tap.on('error', (e) => deflate.destroy(e));
@@ -100,17 +113,19 @@ export function zipEntries(entries: AsyncIterable<ZipEntry> | Iterable<ZipEntry>
         yield out;
       }
       if (hmac) { const tag = hmac.digest().subarray(0, 10); written += tag.length; yield tag; }
-      if (written > 0xfffffffe || usize > 0xfffffffe) throw new Error('A file in the backup is too large for a ZIP (4 GB): use the command-line backup file.');
-      const crcField = aes ? 0 : crc; // AE-2 keeps the CRC field at 0 (the HMAC authenticates the data)
-      yield Buffer.concat([u32(0x08074b50), u32(crcField), u32(written), u32(usize)]);
-      offset += local.length + written + 16;
-      if (offset > 0xfffffffe) throw new Error('The backup is too large for a ZIP (4 GB): use the command-line backup file.');
-      central.push(Buffer.concat([u32(0x02014b50), u16(version), u16(version), u16(flags), u16(method), u16(time), u16(date), u32(crcField), u32(written), u32(usize), u16(name.length), u16(extra.length), u16(0), u16(0), u16(0), u32(0), u32(entryOffset), name, extra]));
+      const crcField = aes ? 0 : sum; // AE-2 keeps the CRC field at 0 (the HMAC authenticates the data)
+      yield Buffer.concat([u32(0x08074b50), u32(crcField), u64(written), u64(usize)]);
+      offset += local.length + written + 24;
+      const centralExtra = Buffer.concat([u16(0x0001), u16(24), u64(usize), u64(written), u64(entryOffset), aesExtra]);
+      central.push(Buffer.concat([u32(0x02014b50), u16(version), u16(version), u16(flags), u16(method), u16(time), u16(date), u32(crcField), u32(FFFF32), u32(FFFF32), u16(name.length), u16(centralExtra.length), u16(0), u16(0), u16(0), u32(0), u32(FFFF32), name, centralExtra]));
     }
-    if (central.length > 0xffff) throw new Error('Too many files for a ZIP (65535): use the command-line backup file.');
     const cd = Buffer.concat(central);
     yield cd;
-    yield Buffer.concat([u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length), u32(cd.length), u32(offset), u16(0)]);
+    const zip64Offset = offset + cd.length;
+    // ZIP64 end of central directory + its locator, then the classic end record with "see ZIP64" markers
+    yield Buffer.concat([u32(0x06064b50), u64(44), u16(45), u16(45), u32(0), u32(0), u64(central.length), u64(central.length), u64(cd.length), u64(offset)]);
+    yield Buffer.concat([u32(0x07064b50), u32(0), u64(zip64Offset), u32(1)]);
+    yield Buffer.concat([u32(0x06054b50), u16(0), u16(0), u16(0xffff), u16(0xffff), u32(FFFF32), u32(FFFF32), u16(0)]);
   }
   return Readable.from(gen());
 }

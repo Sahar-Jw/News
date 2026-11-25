@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { api, download } from '@/lib/api';
+import { api, download, downloadStream } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { mayOnForms, type SubAction } from '@/lib/form-pages';
 import { useI18n } from '@/lib/i18n';
@@ -24,7 +24,7 @@ const TYPES: [string, string, string][] = [
   ['date', 'تاريخ', 'Date'], ['select', 'قائمة منسدلة', 'Dropdown'], ['radio', 'اختيار واحد', 'Single choice'], ['multiselect', 'اختيار متعدد', 'Multiple choice'], ['checkbox', 'مربع موافقة', 'Checkbox'],
   ['file', 'مرفق (ملفات)', 'Attachment'], ['heading', 'عنوان قسم', 'Section heading'], ['note', 'نص توضيحي', 'Note'],
 ];
-const kb = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+const kb = (n: number) => (n >= 1073741824 ? `${(n / 1073741824).toFixed(2)} GB` : n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : n >= 1024 ? `${Math.round(n / 1024)} KB` : `${Math.max(0, Math.round(n))} B`);
 const keyOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^[^a-z]+/, '');
 const move = <T,>(a: T[], i: number, d: number) => { const b = [...a]; const j = i + d; if (j < 0 || j >= b.length) return b; [b[i], b[j]] = [b[j], b[i]]; return b; };
 /** the course / space / package a request is about */
@@ -398,7 +398,7 @@ export function FormSubmissionsAdmin({ slugs }: { slugs?: string[] } = {}) {
 }
 
 // ============================================================================================ backups
-interface Backup { id: string; createdAt: string; trigger: string; by: string | null; ok: boolean; tables?: number; rows?: number; dbBytes?: number; filesFile?: string | null; filesBytes?: number; filesNote?: string; encrypted: boolean; durationMs: number }
+interface Backup { filesCount?: number; filesTotalBytes?: number; id: string; createdAt: string; trigger: string; by: string | null; ok: boolean; tables?: number; rows?: number; dbBytes?: number; filesFile?: string | null; filesBytes?: number; filesNote?: string; encrypted: boolean; durationMs: number }
 interface BackupStatus { store?: 's3' | 'disk'; persistent?: boolean; dir: string; running: boolean; encrypted: boolean; automatic: boolean; intervalHours: number; keep: number; filesDriver: string }
 
 export function BackupsAdmin() {
@@ -412,7 +412,29 @@ export function BackupsAdmin() {
   const load = useCallback(() => { api<{ status: BackupStatus; data: Backup[] }>('/admin/backups').then(setData).catch((e) => toast(e.message, 'err')); }, [toast]);
   useEffect(load, [load]);
   const create = async () => { setBusy(true); try { await api('/admin/backups', { method: 'POST' }); toast(L('تم إنشاء النسخة الاحتياطية', 'Backup created')); load(); } catch (e: any) { toast(e.message, 'err'); } finally { setBusy(false); } };
-  const get = async (b: Backup, kind: 'db' | 'files', encrypted: boolean) => { try { await download(`/admin/backups/${b.id}/${kind}`, encrypted ? { encrypted: 1 } : {}, kind === 'db' ? `${b.id}${encrypted ? '-encrypted' : ''}.zip` : `${b.id}.files.tar.gz`); } catch (e: any) { toast(e.message, 'err'); } };
+  // the download in progress (one per button): its button is disabled and says what is happening, with the bytes received so far
+  const [dl, setDl] = useState<Record<string, number | null>>({});
+  const get = async (b: Backup, kind: 'db' | 'files', encrypted: boolean) => {
+    const k = `${b.id}:${kind}:${encrypted ? 1 : 0}`;
+    if (k in dl) return;
+    setDl((d) => ({ ...d, [k]: 0 }));
+    const done = () => setDl((d) => { const n = { ...d }; delete n[k]; return n; });
+    try {
+      const r = await downloadStream(`/admin/backups/${b.id}/${kind}`, encrypted ? { encrypted: 1 } : {}, kind === 'db' ? `${b.id}${encrypted ? '-encrypted' : ''}.zip` : `${b.id}.files.tar.gz`, (bytes) => setDl((d) => (k in d ? { ...d, [k]: bytes } : d)));
+      if (r === 'saved') toast(L('تم حفظ الملف', 'File saved'));
+      else if (r === 'started') { toast(L('بدأ التنزيل: تابعه من قائمة تنزيلات المتصفح', 'Download started: follow it in your browser\'s downloads')); await new Promise((ok) => setTimeout(ok, 5000)); }
+    } catch (e: any) { toast(e.message, 'err'); } finally { done(); }
+  };
+  /** a download button: while its file is being downloaded it is disabled and shows "Downloading… 120 MB" */
+  const dlBtn = (b: Backup, kind: 'db' | 'files', encrypted: boolean, label: string) => {
+    const k = `${b.id}:${kind}:${encrypted ? 1 : 0}`;
+    const on = k in dl;
+    return (
+      <Button size="sm" variant="outline" disabled={on} aria-busy={on} onClick={() => get(b, kind, encrypted)}>
+        {on ? <span className="inline-flex items-center gap-1.5"><Spinner />{L('جارٍ التنزيل…', 'Downloading…')}{dl[k] ? <span dir="ltr" className="text-[11px] text-gray-500">{kb(dl[k] as number)}</span> : null}</span> : label}
+      </Button>
+    );
+  };
   const del = async (b: Backup) => { if (!(await confirm({ danger: true, message: L('حذف هذه النسخة؟', 'Delete this backup?') }))) return; try { await api(`/admin/backups/${b.id}`, { method: 'DELETE' }); load(); } catch (e: any) { toast(e.message, 'err'); } };
   if (!data) return <Center><Spinner /></Center>;
   const st = data.status;
@@ -427,17 +449,22 @@ export function BackupsAdmin() {
       {can('backups.create') && <Button disabled={busy || st.running} onClick={create}>{busy ? L('جارٍ النسخ…', 'Backing up…') : L('إنشاء نسخة احتياطية الآن', 'Back up now')}</Button>}
       <div className="overflow-x-auto rounded-2xl ring-1 ring-line">
         <table className="w-full text-sm">
-          <thead className="bg-canvas text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النسخة', 'Backup')}</th><th className="p-3 text-start">{L('التاريخ', 'Date')}</th><th className="p-3 text-start">{L('المحتوى', 'Content')}</th><th className="p-3" /></tr></thead>
+          <thead className="bg-canvas text-xs text-gray-600"><tr><th className="p-3 text-start">{L('النسخة', 'Backup')}</th><th className="p-3 text-start">{L('التاريخ', 'Date')}</th><th className="p-3 text-start">{L('المحتوى', 'Content')}</th><th className="p-3 text-start">{L('الحجم', 'Size')}</th><th className="p-3" /></tr></thead>
           <tbody className="divide-y divide-line bg-white">
-            {data.data.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-gray-500">{L('لا توجد نسخ', 'No backups yet')}</td></tr>}
+            {data.data.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-gray-500">{L('لا توجد نسخ', 'No backups yet')}</td></tr>}
             {data.data.map((b) => (
               <tr key={b.id}>
                 <td className="p-3"><span dir="ltr" className="text-xs">{b.id}</span><br /><span className="text-xs text-gray-500">{b.trigger === 'manual' ? `${L('يدوي', 'Manual')}${b.by ? ` — ${b.by}` : ''}` : L('تلقائي', 'Automatic')}</span></td>
                 <td className="p-3">{fmtDate(lang, b.createdAt, true)}</td>
-                <td className="p-3 text-xs">{b.ok ? <>{b.tables} {L('جدول', 'tables')} · {b.rows} {L('سجل', 'rows')} · {kb(b.dbBytes ?? 0)}{b.filesFile ? ` · ${L('الملفات', 'files')} ${kb(b.filesBytes ?? 0)}` : ''}</> : <span className="text-red-600">{L('فشلت', 'Failed')}</span>}</td>
+                <td className="p-3 text-xs">{b.ok ? <>{b.tables} {L('جدول', 'tables')} · {b.rows} {L('سجل', 'rows')}{b.filesCount !== undefined ? ` · ${b.filesCount} ${L('ملف', 'files')}` : ''}</> : <span className="text-red-600">{L('فشلت', 'Failed')}</span>}</td>
+                <td className="p-3 text-xs">{b.ok ? (() => {
+                  // the real size: the database dump + every uploaded file the backup covers (measured when it was made)
+                  const files = b.filesTotalBytes ?? b.filesBytes ?? 0;
+                  return <><span className="block text-sm font-bold text-secondary" dir="ltr">{kb((b.dbBytes ?? 0) + files)}</span><span className="block text-gray-500">{L('قاعدة البيانات', 'Database')} {kb(b.dbBytes ?? 0)}{files > 0 ? ` + ${L('الملفات', 'files')} ${kb(files)}` : ''}</span></>;
+                })() : '—'}</td>
                 <td className="p-3"><span className="flex flex-wrap justify-end gap-1">
-                  {b.ok && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', false)}>{L('تنزيل', 'Download')}</Button>}
-                  {b.ok && st.encrypted && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'db', true)}>{L('تنزيل مشفّر', 'Download encrypted')}</Button>}
+                  {b.ok && can('backups.download') && dlBtn(b, 'db', false, L('تنزيل', 'Download'))}
+                  {b.ok && st.encrypted && can('backups.download') && dlBtn(b, 'db', true, L('تنزيل مشفّر', 'Download encrypted'))}
                   {b.ok && b.filesFile && can('backups.download') && <Button size="sm" variant="outline" onClick={() => get(b, 'files', false)}>{L('تنزيل الملفات', 'Download files')}</Button>}
                   {can('backups.delete') && <Button size="sm" variant="danger" onClick={() => del(b)}>{L('حذف', 'Delete')}</Button>}
                 </span></td>
