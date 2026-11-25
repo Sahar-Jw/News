@@ -8,22 +8,22 @@ import { Pager } from '@/components/site/pager';
 import { ImageSlider } from '@/components/site/image-slider';
 import { PlayBadge } from '@/components/site/play-badge';
 import { YoutubeEmbed } from '@/components/site/youtube-embed';
-import { Heading, useExpoInfo } from '@/components/site/expo-shared';
+import { EXPO_CATEGORY, Heading, useExpoInfo } from '@/components/site/expo-shared';
 
 interface Album { id: number; title: string; kind: 'photos' | 'video'; youtubeId: string | null; thumb: string | null; images: string[] }
 type Tab = 'news' | 'photos' | 'videos' | 'coverage' | 'interviews' | 'materials';
 
 /**
- * EXPO news and media. News tabs filter the news by the topics set in Settings → DCC EXPO (news, media coverage, interviews, media materials;
- * a tab with no topic set is hidden). Photos and videos are the gallery items with the category "DCC EXPO".
+ * EXPO news and media. The News tab lists every news of the DCC EXPO main category; the other news tabs (media coverage, interviews, media materials)
+ * filter by the topics set in Settings → DCC EXPO (a tab with no topic set is hidden). Photos and videos are the gallery items with the category "DCC EXPO".
  */
 export default function ExpoNews() {
   const { lang } = useI18n();
   const ar = lang === 'ar';
   const x = useExpoInfo();
-  const topics: Partial<Record<Tab, string>> = { news: x.newsTopic, coverage: x.L('coverage_topic'), interviews: x.L('interviews_topic'), materials: x.L('materials_topic') };
+  const topics: Partial<Record<Tab, string>> = { coverage: x.L('coverage_topic'), interviews: x.L('interviews_topic'), materials: x.L('materials_topic') };
   const tabs: [Tab, string][] = [['news', ar ? 'الأخبار' : 'News'], ['photos', ar ? 'الصور' : 'Photos'], ['videos', ar ? 'الفيديوهات' : 'Videos'], ['coverage', ar ? 'التغطية الإعلامية' : 'Media coverage'], ['interviews', ar ? 'اللقاءات والمقابلات' : 'Interviews'], ['materials', ar ? 'المواد الإعلامية' : 'Media materials']];
-  const visible = tabs.filter(([k]) => k === 'photos' || k === 'videos' || !!topics[k]);
+  const visible = tabs.filter(([k]) => k === 'news' || k === 'photos' || k === 'videos' || !!topics[k]); // the News tab is always there
   const [tab, setTab] = useState<Tab>('news');
   const [page, setPage] = useState(1);
   const [news, setNews] = useState<{ data: Card[]; meta: { totalPages: number } } | null>(null);
@@ -39,13 +39,15 @@ export default function ExpoNews() {
         .then((r) => live && setAlbums(r)).catch(() => live && setAlbums({ data: [], meta: { totalPages: 1 } }));
     } else {
       const topic = topics[tab];
-      if (!topic) { setNews({ data: [], meta: { totalPages: 1 } }); return; }
+      if (tab !== 'news' && !topic) { setNews({ data: [], meta: { totalPages: 1 } }); return; }
       setNews(null);
-      api<{ data: Card[]; meta: { totalPages: number } }>('/public/news', { params: { lang, topics: topic, page, limit: 9 } })
+      // News tab: every news whose main category is DCC EXPO. The other tabs (coverage, interviews, materials) keep their own topics from Settings.
+      const params = tab === 'news' ? { lang, category: EXPO_CATEGORY, page, limit: 9 } : { lang, topics: topic, page, limit: 9 };
+      api<{ data: Card[]; meta: { totalPages: number } }>('/public/news', { params })
         .then((r) => live && setNews(r)).catch(() => live && setNews({ data: [], meta: { totalPages: 1 } }));
     }
     return () => { live = false; };
-  }, [lang, tab, page, x.newsTopic]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lang, tab, page]); // eslint-disable-line react-hooks/exhaustive-deps
   const current = isMedia ? albums : news;
   const opened = albums?.data.find((a) => a.id === open);
   return (

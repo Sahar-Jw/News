@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { fmtDate, fmtDay, fmtNum } from '@/lib/utils';
 import { Card, NewsCard } from '@/components/site/cards';
-import { FloorPlanMap, Heading, SESSION_TYPES, SponsorTiers, sessionTypeLabel, useExpoData, useExpoInfo } from '@/components/site/expo-shared';
+import { EXPO_CATEGORY, FloorPlanMap, Heading, SESSION_TYPES, SponsorTiers, sessionTypeLabel, useExpoData, useExpoInfo } from '@/components/site/expo-shared';
 import { ProIcon, IconTile, InlineIcon } from '@/components/site/pro-icon';
 
 /** DCC EXPO home (wireframe page 14): hero, stat tiles, about / why, programme, exhibitors, sponsors, news. */
@@ -15,9 +15,9 @@ export default function ExpoHome() {
   const data = useExpoData();
   const [news, setNews] = useState<Card[]>([]);
   useEffect(() => {
-    if (!x.newsTopic) return setNews([]);
-    api<{ data: Card[] }>('/public/news', { params: { lang, topics: x.newsTopic, limit: 3 } }).then((r) => setNews(r.data)).catch(() => setNews([]));
-  }, [lang, x.newsTopic]);
+    // every news whose main category is DCC EXPO
+    api<{ data: Card[] }>('/public/news', { params: { lang, category: EXPO_CATEGORY, limit: 3 } }).then((r) => setNews(r.data)).catch(() => setNews([]));
+  }, [lang]);
 
   const stats: [string, string][] = [
     [data ? fmtNum(lang, data.exhibitors.length) : '…', t('ex.stat.exhibitors')],

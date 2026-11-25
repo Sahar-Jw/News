@@ -55,7 +55,6 @@ const SECTIONS: Record<Section, { titleAr: string; titleEn: string; hintAr: stri
       p('team', 'lines', 'فريق المعرض', 'Expo team', 'كل عضو في سطر بالشكل: الاسم | الصفة | الهاتف | البريد', 'One member per line: Name | Role | Phone | E-mail'),
       one('social_facebook_url', 'url', 'فيسبوك', 'Facebook'), one('social_x_url', 'url', 'إكس', 'X'), one('social_instagram_url', 'url', 'إنستغرام', 'Instagram'), one('social_linkedin_url', 'url', 'لينكدإن', 'LinkedIn'),
       one('social_youtube_url', 'url', 'يوتيوب', 'YouTube'), one('social_whatsapp_url', 'url', 'واتساب', 'WhatsApp'), one('social_telegram_url', 'url', 'تيليغرام', 'Telegram'),
-      p('news_topic', 'text', 'وسم الأخبار', 'News topic', 'الأخبار التي تحمل هذا الوسم تظهر في تبويب «الأخبار»', 'News with this topic appear in the "News" tab'),
       p('coverage_topic', 'text', 'وسم التغطية الإعلامية', 'Media coverage topic', 'اتركه فارغاً لإخفاء التبويب', 'Leave empty to hide the tab'),
       p('interviews_topic', 'text', 'وسم اللقاءات والمقابلات', 'Interviews topic', 'اتركه فارغاً لإخفاء التبويب', 'Leave empty to hide the tab'),
       p('materials_topic', 'text', 'وسم المواد الإعلامية', 'Media materials topic', 'اتركه فارغاً لإخفاء التبويب', 'Leave empty to hide the tab'),

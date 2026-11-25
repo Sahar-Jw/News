@@ -53,7 +53,7 @@ export function useExpoInfo() {
     pageLinks: readBrandedPageLinks(s('expo', 'page_links'), 'expo'),
     email: String(s('expo', 'contact_email') ?? ''), phone: String(s('expo', 'contact_phone') ?? ''), website: String(s('expo', 'contact_website') ?? ''), address: L('contact_address'), mapUrl: String(s('expo', 'contact_map_url') ?? ''),
     floorPlanImage: img('expo', 'floor_plan_image'), social: (key: string) => String(s('expo', `social_${key}`) ?? ''),
-    newsTopic: L('news_topic'), registerOpen: s('expo', 'register_open') !== false && s('expo', 'register_open') !== 'false',
+    registerOpen: s('expo', 'register_open') !== false && s('expo', 'register_open') !== 'false',
   };
 }
 
@@ -85,6 +85,9 @@ const MAX_PROFILE = 10 * 1024 * 1024;
 export function ApplyForm({ kind }: { kind: (typeof APPLICATION_KINDS)[number]; sectors?: string[] }) {
   return <FormBySlug key={kind} slug={`expo-${kind}`} />;
 }
+
+/** The main news category of DCC EXPO (the fixed category "DCC EXPO"): the expo pages list every news of it, nothing else is needed. */
+export const EXPO_CATEGORY = 'DCC EXPO';
 
 export function Heading({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
