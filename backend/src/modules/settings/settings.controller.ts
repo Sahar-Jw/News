@@ -64,7 +64,7 @@ export class SettingsController {
 
   @Post(':id/file')
   @Permissions(PERM.SETTINGS_UPDATE)
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
   upload(@Param('id', ParseIntPipe) id: number, @UploadedFile() file: Express.Multer.File, @CurrentUser() u: AuthUser) {
     return this.service.uploadFile(id, file, u);
   }

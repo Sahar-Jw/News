@@ -11,7 +11,7 @@ import { DocumentsService } from './documents.service';
 
 /** an optional PDF in the field "file" and optional pictures in the field "images" (a record needs at least one of them) */
 const upload = () => FileFieldsInterceptor([{ name: 'file', maxCount: 1 }, { name: 'images', maxCount: MAX_FILES_PER_UPLOAD }], {
-  storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 },
+  storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + 1, fieldSize: 2 * 1024 * 1024 },
 });
 export type DocUploads = { file?: Express.Multer.File[]; images?: Express.Multer.File[] };
 

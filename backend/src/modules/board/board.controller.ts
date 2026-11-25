@@ -11,7 +11,7 @@ import { BoardAdminQueryDto, CreateBoardMemberDto, UpdateBoardMemberDto } from '
 import { BoardService } from './board.service';
 
 /** one picture in the multipart field "photo" */
-const upload = () => FileInterceptor('photo', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('photo', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/board')
 export class BoardAdminController {

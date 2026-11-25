@@ -151,7 +151,7 @@ export class FormsPublicController {
   @Public()
   @Throttle({ default: { limit: 20, ttl: 600_000 } })
   @Post(':slug/submit')
-  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 60, fieldSize: 512 * 1024, fields: 10 } }))
+  @UseInterceptors(AnyFilesInterceptor({ storage: memoryStorage(), defParamCharset: 'utf8', limits: { fileSize: 10 * 1024 * 1024, files: 60, fieldSize: 512 * 1024, fields: 10 } }))
   submit(@Param('slug') slug: string, @Body() dto: SubmitFormDto, @UploadedFiles() files: Express.Multer.File[] | undefined) {
     return this.service.submit(slug, dto, files ?? []);
   }

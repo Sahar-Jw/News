@@ -9,7 +9,7 @@ import { BulkDeleteDto } from '../news/news.dto';
 import { AdsAdminQueryDto, CreateAdDto, PublicAdsQueryDto, UpdateAdDto } from './ads.dto';
 import { AdsService } from './ads.service';
 
-const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
+const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
 
 @Controller('admin/ads')
 export class AdsAdminController {

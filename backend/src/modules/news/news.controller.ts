@@ -25,7 +25,7 @@ const upload = () =>
       { name: 'images', maxCount: MAX_FILES_PER_UPLOAD },
       { name: 'pdf', maxCount: HARD_PDFS_PER_UPLOAD },
     ],
-    { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + HARD_PDFS_PER_UPLOAD, fieldSize: 2 * 1024 * 1024 } },
+    { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.maxBytes; }, files: MAX_FILES_PER_UPLOAD + HARD_PDFS_PER_UPLOAD, fieldSize: 2 * 1024 * 1024 } },
   );
 
 const cols = (ar: boolean): ExportColumn[] => [

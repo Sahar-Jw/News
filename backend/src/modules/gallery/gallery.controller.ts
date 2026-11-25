@@ -9,7 +9,7 @@ import { BulkDeleteDto } from '../news/news.dto';
 import { CreateGalleryDto, GalleryAdminQueryDto, PublicGalleryQueryDto, UpdateGalleryDto } from './gallery.dto';
 import { GalleryService } from './gallery.service';
 
-const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
+const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
 
 @Controller('admin/gallery')
 export class GalleryAdminController {

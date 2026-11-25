@@ -9,7 +9,7 @@ import { PagesAdminQueryDto, UpdatePageDto } from './pages.dto';
 import { PagesService } from './pages.service';
 
 /** one picture in the multipart field "photo" (a plain JSON body still works) */
-const upload = () => FileInterceptor('photo', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('photo', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/pages')
 export class PagesAdminController {

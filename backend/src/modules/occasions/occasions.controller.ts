@@ -13,7 +13,7 @@ import { BulkDeleteDto } from '../news/news.dto';
 import { CreateOccasionDto, LinkEventNewsDto, OccasionsAdminQueryDto, OccasionsFeedQueryDto, PublicOccasionsQueryDto, UpdateOccasionDto } from './occasions.dto';
 import { OccasionsService } from './occasions.service';
 
-const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
+const upload = () => FilesInterceptor('images', MAX_FILES_PER_UPLOAD, { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: MAX_FILES_PER_UPLOAD, fieldSize: 64 * 1024 } });
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'id', label: '#', value: (r) => r.id },

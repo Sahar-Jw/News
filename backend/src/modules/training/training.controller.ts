@@ -17,7 +17,7 @@ import { TrainersService } from './trainers.service';
 import { TrainingService } from './training.service';
 
 /** one picture in the multipart field "image" */
-const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('image', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/courses')
 export class CoursesAdminController {

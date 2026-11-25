@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { Public } from '../../common/decorators';
 import { SiteSearchQueryDto } from './site-search.dto';
 import { SiteSearchService } from './site-search.service';
 
@@ -7,6 +8,7 @@ export class SiteSearchController {
   constructor(private readonly service: SiteSearchService) {}
 
   /** The site-wide search outside the news: events, documents, committees, services, courses, projects, FAQs, pages ... */
+  @Public()
   @Get()
   search(@Query() q: SiteSearchQueryDto) {
     return this.service.search(q);

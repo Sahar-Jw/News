@@ -10,7 +10,7 @@ import { CommitteeAdminQueryDto, CreateActivityDto, CreateCommitteeDto, CreateMe
 import { CommitteesService } from './committees.service';
 
 /** one picture in the multipart field named `field` */
-const upload = (field: string) => FileInterceptor(field, { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = (field: string) => FileInterceptor(field, { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/committees')
 export class CommitteesAdminController {

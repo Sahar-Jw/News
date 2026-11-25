@@ -15,7 +15,7 @@ import { ApplicationsAdminQueryDto, ApplyDto, CreateExpoItemDto, ExpoItemsAdminQ
 import { ExpoService } from './expo.service';
 
 /** one logo in the multipart field "logo" */
-const upload = () => FileInterceptor('logo', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('logo', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 @Controller('admin/expo-items')
 export class ExpoItemsAdminController {

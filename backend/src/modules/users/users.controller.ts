@@ -100,13 +100,13 @@ export class ProfileController {
   }
 
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1 } }))
   avatar(@UploadedFile() file: Express.Multer.File, @CurrentUser() u: AuthUser) {
     return this.service.setAvatar(u.id, file);
   }
 
   @Post('cv')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_DOC_BYTES, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { fileSize: MAX_DOC_BYTES, files: 1 } }))
   cv(@UploadedFile() file: Express.Multer.File, @CurrentUser() u: AuthUser) {
     return this.service.setCv(u.id, file);
   }

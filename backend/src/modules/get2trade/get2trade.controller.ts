@@ -15,7 +15,7 @@ import { BookingDto, BookingsAdminQueryDto, CreatePackageDto, CreateSpaceDto, Pa
 import { Get2TradeService } from './get2trade.service';
 
 /** one picture in the multipart field "image" */
-const upload = () => FileInterceptor('image', { storage: memoryStorage(), limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
+const upload = () => FileInterceptor('image', { storage: memoryStorage(), defParamCharset: 'utf8', limits: { get fileSize() { return uploadLimits.imageBytes; }, files: 1, fieldSize: 2 * 1024 * 1024 } });
 
 const cols = (ar: boolean): ExportColumn[] => [
   { key: 'reference', label: ar ? 'رقم الطلب' : 'Reference', value: (r) => r.reference },
